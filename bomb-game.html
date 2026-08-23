@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <link rel="icon" href="data:," />
+    <title>炸弹迷宫 - 马里奥学习系统</title>
+
+    <link rel="stylesheet" href="./bomb-game.css?v=1.1" />
+  </head>
+  <body>
+    <div class="bomb-game-app">
+      <header class="bomb-topbar">
+        <div class="bomb-hud" aria-label="游戏状态">
+          <span class="hud-pill">❤️ <strong id="bombHp">3</strong></span>
+          <span class="hud-pill">💣 <strong id="bombAmmo">3</strong></span>
+          <span class="hud-pill">🍄 <strong id="mushroomLeft">0</strong></span>
+          <span class="hud-pill">关卡 <strong id="bombLevel">1-1/5</strong></span>
+          <span class="hud-pill">威力 <strong id="bombPower">1</strong></span>
+        </div>
+        <nav class="bomb-actions">
+          <button id="startBombGame" type="button">开始</button>
+          <button id="restartBombGame" type="button">重开</button>
+          <a href="./index.html">返回</a>
+        </nav>
+      </header>
+
+      <main class="bomb-stage">
+        <canvas id="bombCanvas" width="1280" height="720" tabindex="0" aria-label="炸弹迷宫游戏"></canvas>
+        <div class="bomb-message" id="bombMessage" aria-live="polite"></div>
+        <section class="bomb-start-layer" id="bombStartLayer" aria-labelledby="bombStartTitle">
+          <div class="bomb-start-panel">
+            <h2 id="bombStartTitle">炸弹迷宫</h2>
+            <button id="overlayStartBombGame" type="button">开始</button>
+          </div>
+        </section>
+      </main>
+    </div>
+
+  <script src="./data/characters.js?v=1.0"></script>
+  <script src="./data/pinyin-readings.js?v=1.0"></script>
+
+  <script src="./bomb-game.js?v=1.3"></script>
+</body>
+</html>

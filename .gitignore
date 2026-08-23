@@ -1,0 +1,42 @@
+# Dependencies and package-manager caches
+node_modules/
+.pnpm-store/
+
+# Local environment and credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.pfx
+*.p12
+
+# Browser/session exports that may contain local progress or credentials
+*.localstorage.json
+localstorage-export*.json
+storage-state*.json
+auth-state*.json
+
+# Runtime and temporary files
+*.log
+*.pid
+*.tmp
+*.temp
+tmp/
+temp/
+
+# Test/build caches and generated reports
+coverage/
+test-results/
+playwright-report/
+.playwright/
+.pytest_cache/
+__pycache__/
+*.py[cod]
+
+# Editor and operating-system metadata
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+Desktop.ini

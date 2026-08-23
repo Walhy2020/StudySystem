@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <link rel="icon" href="data:," />
+    <title>马里奥学习系统 · 汉字</title>
+    <link rel="stylesheet" href="./styles.css?v=1.9" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <div class="boot-error" id="bootError" hidden></div>
+      <header class="topbar">
+        <div class="brand">
+          <h1>马里奥学习系统</h1>
+          <p id="appVersionLabel">版本加载中</p>
+        </div>
+        <nav class="module-tabs" aria-label="学习模块">
+          <span class="module-tab is-active" aria-current="page">汉字</span>
+          <a class="module-tab" href="./theme-learning.html">主题学习</a>
+          <a class="module-tab" href="./phonetics.html">音标</a>
+        </nav>
+        <div class="top-actions">
+          <a class="ghost-button bomb-entry" id="bombGameEntry" href="./bomb-game.html?v=1.0">炸弹迷宫</a>
+        </div>
+      </header>
+
+      <main class="workspace" id="hanziView">
+        <section class="stage">
+          <div class="map-visual">
+            <img src="./assets/adventure-map.svg?v=1.0" alt="识字冒险地图" />
+            <div class="map-actions" role="group" aria-label="汉字页操作">
+              <button class="ghost-button danger" id="resetProgress" type="button">重置汉字状态</button>
+            </div>
+            <div class="map-overlay">
+              <span id="kingdomLabel">王国 01</span>
+              <strong id="levelLabel">S01 · M1</strong>
+            </div>
+            <div class="map-economy">
+              <div class="star-counter" title="共享星星" aria-label="共享星星"><span aria-hidden="true">⭐</span><strong id="starCount">0</strong></div>
+            </div>
+            <button class="map-next-batch" id="nextBatch" type="button">下一批</button>
+          </div>
+
+          <section class="challenge" aria-live="polite">
+            <div class="task-status"><strong id="phaseLabel">等待开始</strong><span id="taskProgress"></span></div>
+            <div class="word-card">
+              <div class="hanzi-panel">
+                <div class="mastered-badge hidden" id="masteredBadge">完全认识</div>
+                <button class="hanzi" id="currentChar" type="button" aria-label="开始" data-content-kind="placeholder"><span class="hanzi-content">开始</span></button>
+                <div class="review-round-badge hidden" id="reviewRoundBadge"></div>
+              </div>
+              <div class="pinyin-line" id="pinyinLine"><span class="idle-copy">选择今日新字或复习汉字</span></div>
+            </div>
+            <div class="voice-row">
+              <button class="primary-button start-challenge-button" id="startDaily" type="button">今日新字</button>
+              <button class="primary-button start-challenge-button start-review-button" id="startReview" type="button">复习汉字</button>
+              <button class="primary-button icon-action sound-action hidden" id="speakCurrent" type="button" aria-label="朗读当前汉字" title="朗读当前汉字"><span aria-hidden="true">🔊</span></button>
+              <button class="plain-button icon-action correct-action hidden" id="markCorrect" type="button" aria-label="认识" title="认识"><span aria-hidden="true">√</span></button>
+              <button class="plain-button icon-action wrong-action hidden" id="markWrong" type="button" aria-label="不认识" title="不认识"><span aria-hidden="true">×</span></button>
+              <button class="plain-button icon-action mastery-action hidden" id="markMastered" type="button" aria-label="完全认识" title="完全认识"><span aria-hidden="true">★</span></button>
+            </div>
+            <p class="feedback" id="feedback" role="status"></p>
+          </section>
+        </section>
+
+        <aside class="side-panel">
+          <section class="panel-block library-panel">
+            <h2>字库状态</h2>
+            <div class="library-stats">
+              <div><span>已认识</span><strong id="knownCount">0</strong></div>
+              <div><span>完全认识</span><strong id="masteredCount">0</strong></div>
+              <div><span>错字库</span><strong id="wrongCount">0</strong></div>
+              <div><span>到期复习</span><strong id="dueCount">0</strong></div>
+              <div class="wide-stat"><span>总进度</span><strong id="progressCount">0/1600</strong></div>
+            </div>
+          </section>
+          <section class="panel-block today-new-panel">
+            <h2>今日新字</h2>
+            <div class="word-list" id="todayNewList"><span class="empty-list">尚未选择</span></div>
+            <button class="finish-new-button hidden" id="finishNewWords" type="button">今日新字学习完毕</button>
+          </section>
+          <section class="panel-block review-wrong-panel">
+            <h2>复习错字</h2>
+            <div class="word-list" id="reviewWrongList"><span class="empty-list">暂无错字</span></div>
+          </section>
+        </aside>
+      </main>
+    </div>
+
+    <script src="./data/characters.js?v=1.0"></script>
+    <script src="./data/pinyin-readings.js?v=1.0"></script>
+    <script type="module" src="./src/app.js?v=1.6"></script>
+  </body>
+</html>

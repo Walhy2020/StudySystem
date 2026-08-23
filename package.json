@@ -1,0 +1,11 @@
+{
+  "name": "mario-hanzi-refactor",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node --check src/constants.js && node --check src/state.js && node --check src/engine.js && node --check src/storage.js && node --check src/tts.js && node --check src/app.js && node --check data/phonetics.js && node --check data/phonetics-transcriptions.js && node --check src/phonetics-display.js && node --check src/phonetics-engine.js && node --check src/phonetics-storage.js && node --check src/phonetics-tts.js && node --check src/phonetics-app.js && node --check bomb-game.js && node --check theme-learning.js",
+    "test": "node --test tests/*.test.mjs",
+    "test:browser": "node tests/browser-acceptance.mjs && node tests/bomb-browser-acceptance.mjs && node tests/theme-browser-acceptance.mjs && node tests/phonetics-browser-acceptance.mjs"
+  }
+}

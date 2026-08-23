@@ -1,0 +1,274 @@
+:root {
+  --phonetic-font: "Cambria", "Charis SIL", "Doulos SIL", "Gentium Plus", "Times New Roman", "Segoe UI Symbol", serif;
+}
+
+.phonetics-map-reset {
+  position: absolute;
+  z-index: 2;
+  top: 18px;
+  left: 18px;
+  display: flex;
+  gap: 8px;
+}
+
+.phonetics-map-reset .ghost-button {
+  min-width: 0;
+  min-height: 42px;
+  border-color: rgba(255, 255, 255, 0.62);
+  padding: 0 12px;
+  color: #fff;
+  background: rgba(18, 35, 58, 0.76);
+  box-shadow: 0 8px 20px rgba(24, 34, 53, 0.18);
+  backdrop-filter: blur(6px);
+}
+
+.phonetics-map-reset .ghost-button:hover,
+.phonetics-map-reset .ghost-button:focus-visible {
+  border-color: #fff;
+  color: #fff;
+  background: rgba(18, 35, 58, 0.94);
+}
+
+.phonetics-map-reset .ghost-button.danger {
+  color: #ffe0dc;
+}
+
+.phonetic-symbol,
+.phonetic-detail-line,
+.phonetic-list .word-chip {
+  font-family: var(--phonetic-font);
+}
+
+.phonetic-symbol[data-content-kind="character"] {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  font-size: clamp(5.5rem, 12vw, 10.625rem);
+  letter-spacing: 0;
+}
+
+.phonetic-card-category {
+  position: absolute;
+  z-index: 3;
+  top: 9px;
+  left: 50%;
+  display: grid;
+  width: max-content;
+  max-width: calc(100% - 136px);
+  min-width: 0;
+  place-items: center;
+  padding: 0;
+  transform: translateX(-50%);
+  color: #1d4ed8;
+  font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+  font-size: clamp(0.84rem, 1.25vw, 1rem);
+  font-weight: 900;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.phonetic-symbol-stage {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  place-items: center;
+  padding: 0 42px;
+}
+
+.phonetic-symbol[data-content-kind="character"] .phonetic-symbol-stage {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  height: auto;
+  padding: 0;
+}
+
+.phonetic-symbol[data-content-kind="character"] .hanzi-content {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.phonetic-symbol[data-content-kind="placeholder"] {
+  position: relative;
+  padding: 0;
+}
+
+.phonetic-symbol[data-content-kind="placeholder"] .phonetic-symbol-stage {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  height: auto;
+  padding: 0;
+}
+
+.phonetic-state-label {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: block;
+  max-width: calc(100% - 28px);
+  max-height: calc(100% - 28px);
+  color: #4b5563;
+  font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+  font-size: clamp(3rem, 7vw, 6rem);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+}
+
+.phonetics-word-card .mastered-badge {
+  top: -8px;
+  right: -8px;
+  left: auto;
+  padding: 4px 6px;
+  font-size: 11px;
+}
+
+.phonetics-word-card .review-round-badge {
+  right: -8px;
+  bottom: -8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.phonetic-detail-line .phonetic-details {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  place-items: center;
+  max-width: 100%;
+  line-height: 1.35;
+}
+
+.phonetic-detail-line .phonetic-examples {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: center;
+  gap: clamp(0.7rem, 1.5vw, 1.5rem);
+  color: #374151;
+}
+
+.phonetic-example {
+  display: grid;
+  min-width: 0;
+  justify-items: center;
+  gap: clamp(0.25rem, 0.7vw, 0.6rem);
+  text-align: center;
+}
+
+.phonetic-example-word {
+  max-width: 100%;
+  color: #1d4ed8;
+  font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+  font-size: clamp(3rem, 5vw, 5.5rem);
+  font-weight: 800;
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+
+.phonetic-transcription {
+  display: block;
+  max-width: 100%;
+  font-style: normal;
+  font-size: clamp(1.75rem, 2.5vw, 2.75rem);
+  font-weight: 800;
+  line-height: 1.2;
+  color: #111827;
+  overflow-wrap: anywhere;
+}
+
+.phonetics-sr-only {
+  position: absolute !important;
+  width: 0 !important;
+  height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  clip-path: inset(100%) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+.phonetic-list .word-chip {
+  min-width: 5.5rem;
+  min-height: 4rem;
+  padding: 0.35rem 0.75rem;
+  font-size: clamp(2rem, 3vw, 3rem);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+@media (max-width: 520px) {
+  .phonetics-header-actions {
+    display: flex;
+  }
+
+  .phonetics-header-actions > * {
+    width: 100%;
+  }
+
+  .phonetics-map-reset {
+    top: 10px;
+    left: 10px;
+    gap: 5px;
+  }
+
+  .phonetics-map-reset .ghost-button {
+    min-height: 34px;
+    padding: 0 7px;
+    font-size: 12px;
+  }
+
+  .phonetic-symbol[data-content-kind="character"] {
+    font-size: clamp(4.4rem, 24vw, 8.5rem);
+  }
+
+  .phonetic-card-category {
+    top: 8px;
+    max-width: calc(100% - 116px);
+    font-size: 0.8rem;
+  }
+
+  .phonetic-symbol-stage {
+    padding: 0 38px;
+  }
+
+  .phonetic-detail-line {
+    min-height: 280px;
+  }
+
+  .phonetic-detail-line .phonetic-examples {
+    grid-template-columns: 1fr;
+    gap: 0.8rem;
+  }
+
+  .phonetic-example {
+    gap: 0.15rem;
+  }
+
+  .phonetic-example-word {
+    font-size: clamp(2.5rem, 10vw, 3.5rem);
+  }
+
+  .phonetic-transcription {
+    font-size: clamp(1.65rem, 7vw, 2.1rem);
+  }
+
+  .phonetic-list .word-chip {
+    min-width: 4.8rem;
+    min-height: 3.75rem;
+    padding: 0.3rem 0.6rem;
+    font-size: 2.25rem;
+  }
+}

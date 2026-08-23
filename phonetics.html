@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <link rel="icon" href="data:," />
+    <title>马里奥学习系统 · 音标</title>
+    <link rel="stylesheet" href="./styles.css?v=1.7" />
+    <link rel="stylesheet" href="./phonetics.css?v=1.9" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <div class="boot-error" id="bootError" hidden></div>
+      <header class="topbar phonetics-topbar">
+        <div class="brand"><h1>马里奥学习系统</h1><p id="appVersionLabel">版本加载中</p></div>
+        <nav class="module-tabs" aria-label="学习模块">
+          <a class="module-tab" href="./index.html">汉字</a>
+          <a class="module-tab" href="./theme-learning.html">主题学习</a>
+          <span class="module-tab is-active" aria-current="page">音标</span>
+        </nav>
+        <div class="top-actions phonetics-header-actions">
+          <a class="ghost-button bomb-entry" id="bombGameEntry" href="./bomb-game.html?v=1.0" aria-label="进入炸弹迷宫">炸弹迷宫</a>
+        </div>
+      </header>
+
+      <main class="workspace phonetics-view" id="phoneticsView">
+        <section class="stage">
+          <div class="map-visual">
+            <img src="./assets/adventure-map.svg?v=1.0" alt="音标学习地图" />
+            <div class="map-overlay"><span id="kingdomLabel">音标王国</span><strong id="levelLabel">DJ 48 音标</strong></div>
+            <div class="map-economy"><div class="star-counter" title="音标星星" aria-label="音标星星"><span aria-hidden="true">⭐</span><strong id="starCount">0</strong></div></div>
+            <div class="phonetics-map-reset">
+              <button class="ghost-button danger" id="resetPhonetics" type="button" aria-label="重置音标状态">重置音标状态</button>
+            </div>
+            <button class="map-next-batch" id="nextBatch" type="button">下一批</button>
+          </div>
+
+          <section class="challenge" aria-live="polite">
+            <div class="task-status"><strong id="phaseLabel">等待开始</strong><span id="taskProgress"></span></div>
+            <div class="word-card phonetics-word-card">
+              <div class="hanzi-panel">
+                <div class="mastered-badge hidden" id="masteredBadge">完全认识</div>
+                <button class="hanzi phonetic-symbol" id="currentChar" type="button" aria-label="开始" data-content-kind="placeholder">
+                  <span class="phonetic-card-category hidden" aria-hidden="true"></span>
+                  <span class="phonetic-symbol-stage"><span class="hanzi-content">开始</span></span>
+                </button>
+                <div class="review-round-badge hidden" id="reviewRoundBadge"></div>
+              </div>
+              <div class="pinyin-line phonetic-detail-line" id="pinyinLine"><span class="idle-copy">选择今日新音标或复习音标</span></div>
+            </div>
+            <div class="voice-row">
+              <button class="primary-button start-challenge-button" id="startDaily" type="button">今日新音标</button>
+              <button class="primary-button start-challenge-button start-review-button" id="startReview" type="button">复习音标</button>
+              <button class="primary-button icon-action sound-action hidden" id="speakCurrent" type="button" aria-label="朗读当前音标的示例词" title="朗读当前音标的示例词"><span aria-hidden="true">🔊</span></button>
+              <button class="plain-button icon-action correct-action hidden" id="markCorrect" type="button" aria-label="认识" title="认识"><span aria-hidden="true">√</span></button>
+              <button class="plain-button icon-action wrong-action hidden" id="markWrong" type="button" aria-label="不认识" title="不认识"><span aria-hidden="true">×</span></button>
+              <button class="plain-button icon-action mastery-action hidden" id="markMastered" type="button" aria-label="完全认识" title="完全认识"><span aria-hidden="true">★</span></button>
+            </div>
+            <span class="phonetics-sr-only" id="feedback" role="status" aria-live="polite"></span>
+          </section>
+        </section>
+
+        <aside class="side-panel">
+          <section class="panel-block library-panel">
+            <h2>音标状态</h2>
+            <div class="library-stats">
+              <div><span>已认识</span><strong id="knownCount">0</strong></div>
+              <div><span>完全认识</span><strong id="masteredCount">0</strong></div>
+              <div><span>错音标</span><strong id="wrongCount">0</strong></div>
+              <div><span>到期复习</span><strong id="dueCount">0</strong></div>
+              <div class="wide-stat"><span>总进度</span><strong id="progressCount">0/48</strong></div>
+            </div>
+          </section>
+          <section class="panel-block today-new-panel">
+            <h2>今日新音标</h2>
+            <div class="word-list phonetic-list" id="todayNewList"><span class="empty-list">尚未选择</span></div>
+            <button class="finish-new-button hidden" id="finishNewWords" type="button">今日新音标学习完毕</button>
+          </section>
+          <section class="panel-block review-wrong-panel">
+            <h2>复习错音标</h2>
+            <div class="word-list phonetic-list" id="reviewWrongList"><span class="empty-list">暂无错音标</span></div>
+          </section>
+        </aside>
+      </main>
+    </div>
+
+    <script src="./data/phonetics.js?v=1.0"></script>
+    <script src="./data/phonetics-transcriptions.js?v=1.0"></script>
+    <script type="module" src="./src/phonetics-app.js?v=1.6"></script>
+  </body>
+</html>

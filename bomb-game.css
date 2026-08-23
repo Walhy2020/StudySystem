@@ -1,0 +1,415 @@
+:root {
+  color-scheme: light;
+  font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+  background: #101924;
+  color: #f8fafc;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  background: #101924;
+}
+
+button,
+a {
+  font: inherit;
+}
+
+.bomb-game-app {
+  height: var(--bomb-viewport-height, 100dvh);
+  min-height: 0;
+  max-height: var(--bomb-viewport-height, 100dvh);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(68, 136, 204, 0.18), rgba(16, 25, 36, 0) 38%),
+    #101924;
+}
+
+.bomb-topbar {
+  flex: 0 0 auto;
+  height: auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "hud actions";
+  align-items: center;
+  gap: 16px;
+  padding: 10px 18px;
+  background: rgba(12, 20, 32, 0.92);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.24);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
+}
+
+.bomb-hud,
+.bomb-actions {
+  min-width: 0;
+}
+
+.bomb-hud {
+  grid-area: hud;
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  gap: 10px;
+}
+
+.hud-pill {
+  min-width: 0;
+  flex: 0 1 96px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #122033;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
+  font-size: 21px;
+  white-space: nowrap;
+}
+
+.hud-pill:nth-child(4) {
+  flex-basis: 160px;
+}
+
+.hud-pill strong {
+  min-width: 24px;
+  color: #0f172a;
+  font-size: 21px;
+  line-height: 1;
+}
+
+.moon-hud-icon {
+  position: relative;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+}
+
+.moon-hud-icon::before,
+.moon-hud-icon::after {
+  content: "";
+  position: absolute;
+  border-radius: 999px;
+}
+
+.moon-hud-icon::before {
+  inset: 2px;
+  background: #9ca3af;
+  border: 2px solid #4b5563;
+}
+
+.moon-hud-icon::after {
+  top: 1px;
+  right: 0;
+  width: 22px;
+  height: 28px;
+  background: #f8fafc;
+}
+
+.moon-hud-icon.is-lit::before {
+  background: #ffe04e;
+  border-color: #f59e0b;
+  box-shadow: 0 0 12px rgba(255, 224, 78, 0.85);
+}
+
+.bomb-actions {
+  grid-area: actions;
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+}
+
+.bomb-actions button,
+.bomb-actions a,
+.bomb-start-panel button {
+  height: 42px;
+  min-width: 74px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 18px;
+  border-radius: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.32);
+  background: #f8fafc;
+  color: #0f172a;
+  text-decoration: none;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.bomb-actions button:hover,
+.bomb-actions a:hover,
+.bomb-start-panel button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.24);
+}
+
+.bomb-stage {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  min-height: 0;
+}
+
+#bombCanvas {
+  width: var(--bomb-canvas-width, auto);
+  height: var(--bomb-canvas-height, auto);
+  max-width: 100%;
+  max-height: 100%;
+  aspect-ratio: 16 / 9;
+  display: block;
+  background: #18263a;
+  outline: none;
+}
+
+.bomb-message {
+  position: absolute;
+  left: 50%;
+  top: 18px;
+  transform: translateX(-50%);
+  min-width: 280px;
+  padding: 10px 22px;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.82);
+  border: 1px solid rgba(226, 232, 240, 0.18);
+  color: #f8fafc;
+  text-align: center;
+  font-size: 20px;
+  font-weight: 800;
+  pointer-events: none;
+}
+
+.bomb-message:empty {
+  display: none;
+}
+
+.bomb-start-layer {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(10, 15, 24, 0.62);
+}
+
+.bomb-start-layer.hidden {
+  display: none;
+}
+
+.bomb-start-panel {
+  width: min(380px, calc(100vw - 48px));
+  padding: 30px;
+  border-radius: 8px;
+  background: rgba(248, 250, 252, 0.96);
+  color: #0f172a;
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.34);
+  text-align: center;
+}
+
+.bomb-start-panel h2 {
+  margin: 0 0 18px;
+  font-size: 34px;
+  letter-spacing: 0;
+}
+
+.bomb-start-panel button {
+  min-width: 132px;
+  background: #16a34a;
+  color: #ffffff;
+  border-color: #15803d;
+}
+
+@media (max-width: 1400px) {
+  .bomb-topbar {
+    gap: 10px;
+    padding: 8px 12px;
+  }
+
+  .bomb-hud {
+    justify-content: flex-start;
+    gap: 8px;
+  }
+
+  .bomb-actions {
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  .hud-pill {
+    flex-basis: 82px;
+    height: 38px;
+    font-size: 18px;
+  }
+
+  .hud-pill:nth-child(4) {
+    flex-basis: 140px;
+  }
+
+  .hud-pill strong {
+    font-size: 18px;
+  }
+
+  .moon-hud-icon {
+    width: 26px;
+    height: 26px;
+    flex-basis: 26px;
+  }
+
+  .moon-hud-icon::after {
+    width: 19px;
+    height: 24px;
+  }
+
+  .bomb-actions button,
+  .bomb-actions a {
+    height: 40px;
+    min-width: 68px;
+    padding: 0 13px;
+  }
+
+}
+
+@media (max-width: 760px) {
+  .bomb-topbar {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "hud"
+      "actions";
+  }
+
+  .bomb-hud,
+  .bomb-actions {
+    justify-content: center;
+  }
+
+  .bomb-actions {
+    width: 100%;
+  }
+}
+
+@media (orientation: portrait) and (max-width: 1400px) {
+  .bomb-start-panel {
+    max-height: calc(100% - 24px);
+    padding: 22px;
+  }
+}
+
+@media (max-width: 480px) {
+  .bomb-topbar {
+    gap: 8px;
+    padding: 8px 12px;
+  }
+
+  .bomb-hud {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 6px;
+    width: 100%;
+  }
+
+  .hud-pill:nth-child(4) {
+    grid-column: span 2;
+    flex-basis: auto;
+  }
+
+  .hud-pill {
+    min-width: 0;
+    height: 34px;
+    gap: 3px;
+    padding: 0 3px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  .hud-pill strong {
+    min-width: 0;
+    font-size: 15px;
+  }
+
+  .bomb-actions {
+    gap: 6px;
+  }
+
+  .bomb-actions button,
+  .bomb-actions a {
+    min-width: 56px;
+    height: 36px;
+    padding: 0 8px;
+    font-size: 14px;
+  }
+
+  .bomb-message {
+    top: 8px;
+    min-width: min(280px, calc(100% - 24px));
+    padding: 8px 12px;
+    font-size: 16px;
+  }
+}
+
+@media (max-height: 600px) and (min-width: 700px) {
+  .bomb-topbar {
+    height: auto;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "hud actions";
+    gap: 8px;
+    padding: 8px 10px;
+  }
+
+  .bomb-hud {
+    flex-wrap: nowrap;
+    justify-content: center;
+    gap: 4px;
+  }
+
+  .hud-pill {
+    flex-basis: 72px;
+    height: 34px;
+    gap: 4px;
+    padding: 0 5px;
+    font-size: 14px;
+    white-space: nowrap;
+  }
+
+  .hud-pill:nth-child(4) {
+    flex-basis: 100px;
+  }
+
+  .hud-pill strong {
+    min-width: 0;
+    font-size: 15px;
+  }
+
+  .bomb-actions {
+    flex-wrap: nowrap;
+    gap: 6px;
+  }
+
+  .bomb-actions button,
+  .bomb-actions a {
+    min-width: 56px;
+    height: 36px;
+    padding: 0 8px;
+    font-size: 14px;
+  }
+}

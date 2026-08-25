@@ -51,15 +51,18 @@ In the ChatGPT/Codex desktop app, add the cloned repository as a local project a
 ### Theme learning
 
 - Entry: `theme-learning.html`.
-- Seven delivered themes, 46 words total: Body, Colors, Ordinals 1-10, and Classic Items I-IV.
+- Eleven delivered themes with 83 theme records: Body, Colors, Numbers 1-10, Numbers 11-19, Tens 10-100, Ordinals 1-10, Twinkle Twinkle Little Star, and Classic Items I-IV.
 - Theme word cards support IPA display and phoneme segmentation, manual sound playback, previous/next navigation, keyboard/touch interaction, learning, and practice.
+- The outer picker groups themes into four horizontal preview series: Basic Recognition, Counting World, Nursery Rhymes, and Classic Items. Individual reviewed themes keep their green checks, and a series turns green when all themes inside it are reviewed.
+- The Nursery Rhymes series currently contains Twinkle, Twinkle, Little Star: six lyric lines each place complete British IPA directly below the English line, eight core words remain clickable, and full-verse speech is manual rather than automatic.
+- Counting artwork is code-native and exact: 1-19 use the matching number of coin dots; 10-100 uses one to ten ten-frames, each containing exactly ten dots.
 - Project assets live under `assets/themes/` and have been checked against their mapped words/hotspots.
 
 ### Overall review
 
 - Entry: `review-learning.html`.
 - This is an independent top-level module, not a child page inside Theme Learning.
-- The learned-word library includes only words recorded as learned by theme sessions.
+- The learned-word library includes only words recorded as learned by theme sessions. It contains 81 unique English words after shared words such as `ten` and `star` are deduplicated across themes.
 - Each review round covers all learned words, with four image choices per question, wrong-answer retry, restart, refresh persistence, desktop and 390px layouts.
 
 ### Bomb maze
@@ -89,13 +92,14 @@ Git synchronizes source code and assets only. Browser `localStorage` progress, A
 
 ## Latest verification snapshot
 
-Verified on 2026-08-25 before this documentation-only update:
+Verified on 2026-08-25 after the Nursery Rhymes theme update:
 
 - `pnpm run check`: passed.
-- `pnpm test`: 57/57 passed.
+- `pnpm test`: 61/61 passed.
 - Microsoft Edge Hanzi acceptance: passed; fixed review batch 20; desktop and 390px had no horizontal overflow.
 - Microsoft Edge Phonetics acceptance: passed; 48-item layout coverage, all-non-mastered review, storage isolation, TTS, desktop and 390px passed.
-- Theme and overall-review Edge suites previously passed across desktop and 390px, including 46 mapped words and image choices.
+- Theme Microsoft Edge acceptance passed across desktop and 390px: 4 horizontal series, 11 themes, 83 exact learning targets, all completion checks, Twinkle lyric/IPA geometry, manual full-verse speech, and no horizontal overflow.
+- Overall-review Microsoft Edge acceptance passed with 83 stored theme records deduplicated to 81 unique library/review words, 81/81 questions, eight song-word artworks, exact counting artwork, and no desktop or 390px overflow.
 - New Hanzi and Phonetics backgrounds returned HTTP 200 and passed screenshot inspection.
 - No known unresolved product defect was recorded at handoff time.
 

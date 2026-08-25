@@ -1,5 +1,5 @@
 import { PHONETIC_STRESS_MARKS, splitPhonetic } from "./src/phonetic-segmenter.js?v=1.0";
-import { initializeThemeProgress } from "./src/theme-overview.js?v=1.1";
+import { initializeThemeProgress } from "./src/theme-overview.js?v=1.4";
 
 export { splitPhonetic };
 
@@ -19,6 +19,44 @@ export const COLOR_WORDS = Object.freeze([
   { id: "yellow", word: "yellow", phonetic: "/ˈjeləʊ/", chinese: "黄色", object: "coin", objectChinese: "金币", sentence: "The coin is yellow.", instruction: "Touch the yellow coin.", ariaLabel: "yellow coin 黄色金币" },
   { id: "black", word: "black", phonetic: "/blæk/", chinese: "黑色", object: "bomb", objectChinese: "炸弹", sentence: "The bomb is black.", instruction: "Touch the black bomb.", ariaLabel: "black bomb 黑色炸弹" },
   { id: "white", word: "white", phonetic: "/waɪt/", chinese: "白色", object: "cloud", objectChinese: "云朵", sentence: "The cloud is white.", instruction: "Touch the white cloud.", ariaLabel: "white cloud 白色云朵" }
+]);
+
+export const NUMBER_1_10_WORDS = Object.freeze([
+  { id: "one", word: "one", phonetic: "/wʌn/", chinese: "一", value: 1, sentence: "There is one coin.", ariaLabel: "1 one 一" },
+  { id: "two", word: "two", phonetic: "/tuː/", chinese: "二", value: 2, sentence: "There are two coins.", ariaLabel: "2 two 二" },
+  { id: "three", word: "three", phonetic: "/θriː/", chinese: "三", value: 3, sentence: "There are three coins.", ariaLabel: "3 three 三" },
+  { id: "four", word: "four", phonetic: "/fɔː/", chinese: "四", value: 4, sentence: "There are four coins.", ariaLabel: "4 four 四" },
+  { id: "five", word: "five", phonetic: "/faɪv/", chinese: "五", value: 5, sentence: "There are five coins.", ariaLabel: "5 five 五" },
+  { id: "six", word: "six", phonetic: "/sɪks/", chinese: "六", value: 6, sentence: "There are six coins.", ariaLabel: "6 six 六" },
+  { id: "seven", word: "seven", phonetic: "/ˈsevən/", chinese: "七", value: 7, sentence: "There are seven coins.", ariaLabel: "7 seven 七" },
+  { id: "eight", word: "eight", phonetic: "/eɪt/", chinese: "八", value: 8, sentence: "There are eight coins.", ariaLabel: "8 eight 八" },
+  { id: "nine", word: "nine", phonetic: "/naɪn/", chinese: "九", value: 9, sentence: "There are nine coins.", ariaLabel: "9 nine 九" },
+  { id: "ten", word: "ten", phonetic: "/ten/", chinese: "十", value: 10, sentence: "There are ten coins.", ariaLabel: "10 ten 十" }
+]);
+
+export const NUMBER_11_19_WORDS = Object.freeze([
+  { id: "eleven", word: "eleven", phonetic: "/ɪˈlevən/", chinese: "十一", value: 11, sentence: "There are eleven coins.", ariaLabel: "11 eleven 十一" },
+  { id: "twelve", word: "twelve", phonetic: "/twelv/", chinese: "十二", value: 12, sentence: "There are twelve coins.", ariaLabel: "12 twelve 十二" },
+  { id: "thirteen", word: "thirteen", phonetic: "/ˌθɜːˈtiːn/", chinese: "十三", value: 13, sentence: "There are thirteen coins.", ariaLabel: "13 thirteen 十三" },
+  { id: "fourteen", word: "fourteen", phonetic: "/ˌfɔːˈtiːn/", chinese: "十四", value: 14, sentence: "There are fourteen coins.", ariaLabel: "14 fourteen 十四" },
+  { id: "fifteen", word: "fifteen", phonetic: "/ˌfɪfˈtiːn/", chinese: "十五", value: 15, sentence: "There are fifteen coins.", ariaLabel: "15 fifteen 十五" },
+  { id: "sixteen", word: "sixteen", phonetic: "/ˌsɪksˈtiːn/", chinese: "十六", value: 16, sentence: "There are sixteen coins.", ariaLabel: "16 sixteen 十六" },
+  { id: "seventeen", word: "seventeen", phonetic: "/ˌsevənˈtiːn/", chinese: "十七", value: 17, sentence: "There are seventeen coins.", ariaLabel: "17 seventeen 十七" },
+  { id: "eighteen", word: "eighteen", phonetic: "/ˌeɪˈtiːn/", chinese: "十八", value: 18, sentence: "There are eighteen coins.", ariaLabel: "18 eighteen 十八" },
+  { id: "nineteen", word: "nineteen", phonetic: "/ˌnaɪnˈtiːn/", chinese: "十九", value: 19, sentence: "There are nineteen coins.", ariaLabel: "19 nineteen 十九" }
+]);
+
+export const TENS_WORDS = Object.freeze([
+  { id: "ten", word: "ten", phonetic: "/ten/", chinese: "十", value: 10, groups: 1, sentence: "Ten is one group of ten.", ariaLabel: "10 ten 十" },
+  { id: "twenty", word: "twenty", phonetic: "/ˈtwenti/", chinese: "二十", value: 20, groups: 2, sentence: "Twenty is two groups of ten.", ariaLabel: "20 twenty 二十" },
+  { id: "thirty", word: "thirty", phonetic: "/ˈθɜːti/", chinese: "三十", value: 30, groups: 3, sentence: "Thirty is three groups of ten.", ariaLabel: "30 thirty 三十" },
+  { id: "forty", word: "forty", phonetic: "/ˈfɔːti/", chinese: "四十", value: 40, groups: 4, sentence: "Forty is four groups of ten.", ariaLabel: "40 forty 四十" },
+  { id: "fifty", word: "fifty", phonetic: "/ˈfɪfti/", chinese: "五十", value: 50, groups: 5, sentence: "Fifty is five groups of ten.", ariaLabel: "50 fifty 五十" },
+  { id: "sixty", word: "sixty", phonetic: "/ˈsɪksti/", chinese: "六十", value: 60, groups: 6, sentence: "Sixty is six groups of ten.", ariaLabel: "60 sixty 六十" },
+  { id: "seventy", word: "seventy", phonetic: "/ˈsevənti/", chinese: "七十", value: 70, groups: 7, sentence: "Seventy is seven groups of ten.", ariaLabel: "70 seventy 七十" },
+  { id: "eighty", word: "eighty", phonetic: "/ˈeɪti/", chinese: "八十", value: 80, groups: 8, sentence: "Eighty is eight groups of ten.", ariaLabel: "80 eighty 八十" },
+  { id: "ninety", word: "ninety", phonetic: "/ˈnaɪnti/", chinese: "九十", value: 90, groups: 9, sentence: "Ninety is nine groups of ten.", ariaLabel: "90 ninety 九十" },
+  { id: "one-hundred", word: "one hundred", phonetic: "/wʌn ˈhʌndrəd/", chinese: "一百", value: 100, groups: 10, sentence: "One hundred is ten groups of ten.", ariaLabel: "100 one hundred 一百" }
 ]);
 
 export const ORDINAL_WORDS = Object.freeze([
@@ -67,6 +105,26 @@ export const CLASSIC_ITEMS_4_WORDS = Object.freeze([
   { id: "spring", word: "spring", phonetic: "/sprɪŋ/", chinese: "弹簧", sentence: "The spring can bounce.", instruction: "Touch the spring.", ariaLabel: "spring 弹簧" },
   { id: "egg", word: "egg", phonetic: "/eɡ/", chinese: "蛋", sentence: "This is an egg.", instruction: "Touch the egg.", ariaLabel: "egg 蛋" }
 ]);
+
+export const TWINKLE_WORDS = Object.freeze([
+  { id: "twinkle", word: "twinkle", phonetic: "/ˈtwɪŋkəl/", chinese: "闪烁", sentence: "Twinkle, twinkle, little star.", instruction: "Touch twinkle.", ariaLabel: "twinkle 闪烁" },
+  { id: "little", word: "little", phonetic: "/ˈlɪtəl/", chinese: "小的", sentence: "The little star is bright.", instruction: "Touch little.", ariaLabel: "little 小的" },
+  { id: "star", word: "star", phonetic: "/stɑː/", chinese: "星星", sentence: "The star shines at night.", instruction: "Touch the star.", ariaLabel: "star 星星" },
+  { id: "wonder", word: "wonder", phonetic: "/ˈwʌndə/", chinese: "想知道", sentence: "How I wonder what you are!", instruction: "Touch wonder.", ariaLabel: "wonder 想知道" },
+  { id: "world", word: "world", phonetic: "/wɜːld/", chinese: "世界", sentence: "Up above the world so high.", instruction: "Touch the world.", ariaLabel: "world 世界" },
+  { id: "high", word: "high", phonetic: "/haɪ/", chinese: "高高的", sentence: "The star is high in the sky.", instruction: "Touch high.", ariaLabel: "high 高高的" },
+  { id: "diamond", word: "diamond", phonetic: "/ˈdaɪəmənd/", chinese: "钻石", sentence: "Like a diamond in the sky.", instruction: "Touch the diamond.", ariaLabel: "diamond 钻石" },
+  { id: "sky", word: "sky", phonetic: "/skaɪ/", chinese: "天空", sentence: "The star is in the sky.", instruction: "Touch the sky.", ariaLabel: "sky 天空" }
+]);
+export const TWINKLE_LYRICS = Object.freeze([
+  Object.freeze({ text: "Twinkle, twinkle, little star,", phonetic: "/ˈtwɪŋkəl ˈtwɪŋkəl ˈlɪtəl stɑː/" }),
+  Object.freeze({ text: "How I wonder what you are!", phonetic: "/haʊ aɪ ˈwʌndə wɒt juː ɑː/" }),
+  Object.freeze({ text: "Up above the world so high,", phonetic: "/ʌp əˈbʌv ðə wɜːld səʊ haɪ/" }),
+  Object.freeze({ text: "Like a diamond in the sky.", phonetic: "/laɪk ə ˈdaɪəmənd ɪn ðə skaɪ/" }),
+  Object.freeze({ text: "Twinkle, twinkle, little star,", phonetic: "/ˈtwɪŋkəl ˈtwɪŋkəl ˈlɪtəl stɑː/" }),
+  Object.freeze({ text: "How I wonder what you are!", phonetic: "/haʊ aɪ ˈwʌndə wɒt juː ɑː/" })
+]);
+export const TWINKLE_SPOKEN_LYRICS = TWINKLE_LYRICS.map(({ text }) => text).join(" ");
 export const THEME_CONFIGS = Object.freeze({
   body: Object.freeze({
     id: "body", chineseTitle: "身体", englishTitle: "Body", words: THEME_WORDS,
@@ -88,15 +146,55 @@ export const THEME_CONFIGS = Object.freeze({
     completePrompt: "完成！六种颜色全部找对", completeTitle: "六种颜色全部找对！",
     completeText: "你完成了颜色 Colors 的听音点击练习。"
   }),
+  numbers1: Object.freeze({
+    id: "numbers1", chineseTitle: "数字 1–10", englishTitle: "Numbers 1–10", words: NUMBER_1_10_WORDS,
+    sceneId: "numbers1Scene", sceneLabel: "数字一到十数量互动卡",
+    learnPrompt: "点击数字卡，数一数对应的金币", practicePrompt: "听数字，点击正确数量卡",
+    learnPlaceholderTitle: "点一个数字卡", learnPlaceholderText: "数字、英语、音标和对应数量会显示在这里。",
+    retryLabel: (word) => word.ariaLabel,
+    instruction: (word) => "Touch number " + word.word + ".",
+    completePrompt: "完成！数字一到十全部找对", completeTitle: "数字 1–10 全部找对！",
+    completeText: "你完成了数字 1–10 Numbers 1–10 的听音点击练习。"
+  }),
+  numbersTeens: Object.freeze({
+    id: "numbersTeens", chineseTitle: "数字 11–19", englishTitle: "Numbers 11–19", words: NUMBER_11_19_WORDS,
+    sceneId: "numbersTeensScene", sceneLabel: "数字十一到十九数量互动卡",
+    learnPrompt: "点击数字卡，数一数十一到十九", practicePrompt: "听数字，点击正确数量卡",
+    learnPlaceholderTitle: "点一个数字卡", learnPlaceholderText: "数字、英语、音标和对应数量会显示在这里。",
+    retryLabel: (word) => word.ariaLabel,
+    instruction: (word) => "Touch number " + word.word + ".",
+    completePrompt: "完成！数字十一到十九全部找对", completeTitle: "数字 11–19 全部找对！",
+    completeText: "你完成了数字 11–19 Numbers 11–19 的听音点击练习。"
+  }),
+  tens: Object.freeze({
+    id: "tens", chineseTitle: "整十 10–100", englishTitle: "Tens 10–100", words: TENS_WORDS,
+    sceneId: "tensScene", sceneLabel: "十到一百整十数量互动卡",
+    learnPrompt: "点击整十数字卡，观察十个一组", practicePrompt: "听数字，点击正确的整十数量卡",
+    learnPlaceholderTitle: "点一个整十数字卡", learnPlaceholderText: "每个小方框代表十个，帮助理解十到一百。",
+    retryLabel: (word) => word.ariaLabel,
+    instruction: (word) => "Touch " + word.word + ".",
+    completePrompt: "完成！十到一百全部找对", completeTitle: "整十 10–100 全部找对！",
+    completeText: "你完成了整十 10–100 Tens 10–100 的听音点击练习。"
+  }),
   ordinals: Object.freeze({
-    id: "ordinals", chineseTitle: "第一到第十", englishTitle: "First–Tenth", words: ORDINAL_WORDS,
+    id: "ordinals", chineseTitle: "第1到第10", englishTitle: "First–Tenth", words: ORDINAL_WORDS,
     sceneId: "ordinalsScene", sceneLabel: "第一到第十序数词互动卡",
     learnPrompt: "点击序号卡，认识 first 到 tenth", practicePrompt: "听指令，点击正确序号",
     learnPlaceholderTitle: "点一个序号卡", learnPlaceholderText: "序数词、音标、中文和例句会显示在这里。",
     retryLabel: (word) => word.chinese + "（" + word.word + "）",
     instruction: (word) => "Touch the " + word.word + ".",
     completePrompt: "完成！十个序数词全部找对", completeTitle: "十个序数词全部找对！",
-    completeText: "你完成了第一到第十 First–Tenth 的听音点击练习。"
+    completeText: "你完成了第1到第10 First–Tenth 的听音点击练习。"
+  }),
+  twinkle: Object.freeze({
+    id: "twinkle", chineseTitle: "一闪一闪小星星", englishTitle: "Twinkle, Twinkle, Little Star", words: TWINKLE_WORDS,
+    sceneId: "twinkleScene", sceneLabel: "一闪一闪小星星歌词与夜空词汇互动场景",
+    learnPrompt: "读歌词，点击夜空中的核心单词", practicePrompt: "听指令，点击正确的童谣单词",
+    learnPlaceholderTitle: "点一个童谣单词", learnPlaceholderText: "单词、音标、中文和歌词例句会显示在这里。",
+    retryLabel: (word) => word.ariaLabel,
+    instruction: (word) => word.instruction,
+    completePrompt: "完成！八个童谣单词全部找对", completeTitle: "八个童谣单词全部找对！",
+    completeText: "你完成了 Twinkle, Twinkle, Little Star 的听音点击练习。"
   }),
   items1: Object.freeze({
     id: "items1", chineseTitle: "经典道具 I", englishTitle: "Classic Items I", words: CLASSIC_ITEMS_1_WORDS,
@@ -135,6 +233,13 @@ export const THEME_CONFIGS = Object.freeze({
     completePrompt: "完成！六个特殊装备全部找对", completeTitle: "六个特殊装备全部找对！",
     completeText: "你完成了经典道具 IV Classic Items IV 的听音点击练习。"
   })
+});
+
+export const THEME_SERIES = Object.freeze({
+  basics: Object.freeze({ id: "basics", title: "基础认知", description: "认识身体部位和常见颜色。", themeIds: Object.freeze(["body", "colors"]) }),
+  counting: Object.freeze({ id: "counting", title: "数字天地", description: "从 1 数到 100，并学习第1到第10。", themeIds: Object.freeze(["numbers1", "numbersTeens", "tens", "ordinals"]) }),
+  songs: Object.freeze({ id: "songs", title: "英文童谣", description: "跟着经典童谣学习歌词、音标和核心单词。", themeIds: Object.freeze(["twinkle"]) }),
+  items: Object.freeze({ id: "items", title: "经典道具", description: "分四个系列认识马里奥世界里的经典道具。", themeIds: Object.freeze(["items1", "items2", "items3", "items4"]) })
 });
 
 export function shuffledIds(words = THEME_WORDS, random = Math.random) {
@@ -200,10 +305,35 @@ export function speakEnglish(text, synthesis = globalThis.speechSynthesis, Utter
   }
 }
 
+export function countingVisualMarkup(word) {
+  if (word.groups) {
+    const frames = Array.from({ length: word.groups }, () =>
+      '<i class="ten-frame">' + '<b></b>'.repeat(10) + '</i>'
+    ).join("");
+    return '<span class="counting-visual counting-groups" data-groups="' + word.groups + '" aria-hidden="true">' + frames + '</span>';
+  }
+  return '<span class="counting-visual counting-units" data-count="' + word.value + '" aria-hidden="true">' +
+    '<i></i>'.repeat(word.value) + '</span>';
+}
+
+function renderCountingScenes() {
+  for (const themeId of ["numbers1", "numbersTeens", "tens"]) {
+    const config = THEME_CONFIGS[themeId];
+    const board = document.querySelector("#" + themeId + "Figure");
+    board.innerHTML = config.words.map((word) =>
+      '<button class="scene-target counting-target" type="button" data-target="' + word.id + '" aria-label="' + word.ariaLabel + '">' +
+      '<strong>' + word.value + '</strong><span class="counting-word">' + word.word + '</span>' +
+      countingVisualMarkup(word) + '</button>'
+    ).join("");
+  }
+}
+
 function initializePage() {
+  renderCountingScenes();
   const dom = Object.fromEntries([...document.querySelectorAll("[id]")].map((node) => [node.id, node]));
   const scenes = [...document.querySelectorAll(".theme-scene")];
   let activeThemeId = null;
+  let activeSeriesId = null;
   let session = null;
   let stage = "learn";
   let feedbackTimer = 0;
@@ -224,6 +354,76 @@ function initializePage() {
       target.classList.remove("is-selected", "is-correct", "is-wrong", "is-hint");
       target.setAttribute("aria-pressed", "false");
     });
+  }
+
+  function syncSeriesCards() {
+    document.querySelectorAll("[data-series-id]").forEach((button) => {
+      const series = THEME_SERIES[button.dataset.seriesId];
+      if (!series) return;
+      const reviewed = series.themeIds.filter((themeId) => progress.store.isThemeReviewed(themeId)).length;
+      const complete = reviewed === series.themeIds.length;
+      button.classList.toggle("is-complete", complete);
+      button.querySelector("[data-series-progress]").textContent = reviewed + "/" + series.themeIds.length + " 已复习";
+      button.setAttribute("aria-label", series.title + "，" + series.themeIds.length + "个主题，已复习" + reviewed + "个" + (complete ? "，全部复习完毕" : ""));
+    });
+  }
+  function showSeries(seriesId) {
+    const series = THEME_SERIES[seriesId];
+    if (!series) return;
+    activeSeriesId = seriesId;
+    dom.themeSeriesList.hidden = true;
+    dom.themeSeriesPanel.hidden = false;
+    dom.seriesTitle.textContent = series.title;
+    dom.seriesDescription.textContent = series.description;
+    document.querySelectorAll(".theme-card[data-series]").forEach((card) => {
+      card.hidden = card.dataset.series !== seriesId;
+    });
+    syncThemeCards();
+    document.querySelector('[data-series="' + seriesId + '"] [data-theme-id]')?.focus();
+  }
+  function returnToSeries() {
+    activeSeriesId = null;
+    dom.themeSeriesPanel.hidden = true;
+    dom.themeSeriesList.hidden = false;
+    syncSeriesCards();
+    document.querySelector("[data-series-id]")?.focus();
+  }
+
+  function syncThemeCards() {
+    document.querySelectorAll("[data-theme-id]").forEach((button) => {
+      const themeId = button.dataset.themeId;
+      const card = button.closest(".theme-card");
+      if (!card) return;
+      const reviewed = progress.store.isThemeReviewed(themeId);
+      card.classList.toggle("is-reviewed", reviewed);
+      card.setAttribute("aria-label", THEME_CONFIGS[themeId].chineseTitle + " " + THEME_CONFIGS[themeId].englishTitle + (reviewed ? "，复习完毕" : ""));
+      let badge = card.querySelector(".theme-reviewed-badge");
+      if (!badge) {
+        badge = document.createElement("span");
+        badge.className = "theme-reviewed-badge";
+        badge.setAttribute("aria-hidden", "true");
+        badge.textContent = "✓";
+        card.append(badge);
+      }
+      badge.hidden = !reviewed;
+    });
+    syncSeriesCards();
+  }
+  function updateLearningCompletion() {
+    if (!activeThemeId) return;
+    const config = activeConfig();
+    const learned = progress.store.isThemeLearned(activeThemeId);
+    dom.completeThemeLearning.disabled = learned;
+    dom.completeThemeLearning.classList.toggle("is-complete", learned);
+    dom.completeThemeLearning.textContent = learned ? "✓ 已学习完毕" : "学习完毕";
+    dom.themeLearningStatus.textContent = learned
+      ? "本主题 " + config.words.length + " 个单词已加入总词库。"
+      : "点击后，本主题全部 " + config.words.length + " 个单词会加入总词库。";
+  }
+  function completeThemeLearning() {
+    if (!activeThemeId) return;
+    progress.recordTheme(activeThemeId);
+    updateLearningCompletion();
   }
   function toggleCurrentPhonetic() {
     if (stage !== "learn") return false;
@@ -283,6 +483,9 @@ function initializePage() {
     dom.resultScore.textContent = session.correctCount + "/" + session.questions.length;
     dom.sessionProgress.textContent = "练习 " + session.questions.length + "/" + session.questions.length;
     dom.scenePrompt.textContent = config.completePrompt;
+    progress.markReviewed(activeThemeId);
+    updateLearningCompletion();
+    syncThemeCards();
   }
   function setStage(next) {
     if (!session) return;
@@ -319,7 +522,6 @@ function initializePage() {
     if (!targetNode) return;
     if (stage === "learn") {
       const word = session.learn(id);
-      window.dispatchEvent(new CustomEvent("theme-word-learned", { detail: { themeId: activeThemeId, wordId: word.id } }));
       targetNode.classList.add("is-selected");
       targetNode.setAttribute("aria-pressed", "true");
       renderWord(word);
@@ -340,7 +542,6 @@ function initializePage() {
       feedbackTimer = setTimeout(clearTargetStates, 900);
       return;
     }
-    window.dispatchEvent(new CustomEvent("theme-word-learned", { detail: { themeId: activeThemeId, wordId: result.target.id } }));
     targetNode.classList.add("is-correct");
     targetNode.setAttribute("aria-pressed", "true");
     dom.practiceFeedback.className = "practice-feedback is-success";
@@ -362,6 +563,7 @@ function initializePage() {
     clearTimeout(feedbackTimer);
     clearTimeout(advanceTimer);
     activeThemeId = themeId;
+    activeSeriesId = Object.values(THEME_SERIES).find((series) => series.themeIds.includes(themeId))?.id || activeSeriesId;
     session = new ThemeSession(config.words);
     dom.ttsNotice.hidden = true;
     dom.themePicker.hidden = true;
@@ -371,6 +573,7 @@ function initializePage() {
     scenes.forEach((scene) => { scene.hidden = scene.id !== config.sceneId; });
     renderLearnPlaceholder(config);
     setStage("learn");
+    updateLearningCompletion();
     dom.learnStage.focus();
   }
   function returnToPicker() {
@@ -381,9 +584,14 @@ function initializePage() {
     session = null;
     dom.learningView.hidden = true;
     dom.themePicker.hidden = false;
-    document.querySelector('[data-theme-id="body"]').focus();
+    syncThemeCards();
+    if (activeSeriesId) showSeries(activeSeriesId);
+    else returnToSeries();
   }
 
+  document.querySelectorAll("[data-series-id]").forEach((button) => {
+    button.addEventListener("click", () => showSeries(button.dataset.seriesId));
+  });
   document.querySelectorAll("[data-theme-id]").forEach((button) => {
     button.addEventListener("click", () => enterTheme(button.dataset.themeId));
   });
@@ -407,16 +615,21 @@ function initializePage() {
     if (target?.closest("button,a,input,select,textarea,[contenteditable='true']")) return;
     if (toggleCurrentPhonetic()) event.preventDefault();
   });  dom.backToThemes.addEventListener("click", returnToPicker);
+  dom.backToSeries.addEventListener("click", returnToSeries);
   dom.learnStage.addEventListener("click", () => setStage("learn"));
   dom.practiceStage.addEventListener("click", () => setStage("practice"));
   dom.playInstruction.addEventListener("click", speakInstruction);
   dom.restartRound.addEventListener("click", () => setStage("practice"));
+  dom.speakSongLyrics.addEventListener("click", () => speak(TWINKLE_SPOKEN_LYRICS));
 
   const progress = initializeThemeProgress({ configs: THEME_CONFIGS });
+  dom.completeThemeLearning.addEventListener("click", completeThemeLearning);
+  syncThemeCards();
   const api = {
     get activeThemeId() { return activeThemeId; },
     get session() { return session; },
-    enterTheme, returnToPicker, selectTarget, setStage, themes: THEME_CONFIGS, progress
+    get activeSeriesId() { return activeSeriesId; },
+    enterTheme, showSeries, returnToSeries, returnToPicker, selectTarget, setStage, completeThemeLearning, syncThemeCards, themes: THEME_CONFIGS, series: THEME_SERIES, progress
   };
   window.__THEME_LEARNING__ = api;
   window.__BODY_THEME__ = {

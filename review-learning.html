@@ -4,7 +4,7 @@
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="Cache-Control" content="no-cache,no-store,must-revalidate"><link rel="icon" href="data:,">
 <title>马里奥学习系统 · 总复习</title>
-<link rel="stylesheet" href="./theme-learning.css?v=2.2">
+<link rel="stylesheet" href="./theme-learning.css?v=3.0">
 </head>
 <body><div class="theme-shell">
 <header class="theme-topbar">
@@ -18,15 +18,15 @@
 </header>
 <main>
 <section class="review-module-intro" aria-labelledby="reviewModuleTitle">
-<div class="picker-copy"><span class="section-kicker">REVIEW CENTER</span><h2 id="reviewModuleTitle">复习所有学过的单词</h2><p>已学单词会从主题学习自动进入这里；可以逐词查看，也可以完成一轮全部复习。</p></div>
+<div class="picker-copy"><span class="section-kicker">REVIEW CENTER</span><h2 id="reviewModuleTitle">复习所有学过的单词</h2><p>在主题页点击“学习完毕”后，该主题全部单词会进入这里；可以逐词查看，也可以完成一轮全部复习。</p></div>
 <div class="overview-actions review-mode-switch" aria-label="总复习功能">
 <button class="overview-card review-overview-card" id="openTotalReview" type="button" aria-pressed="true"><span class="overview-icon" aria-hidden="true">★</span><span><small>综合练习</small><strong>总复习 <em>Review All</em></strong><b id="totalReviewCount">0 个已学</b></span></button>
-<button class="overview-card library-overview-card" id="openWordLibrary" type="button" aria-pressed="false"><span class="overview-icon" aria-hidden="true">▦</span><span><small>学习记录</small><strong>总单词库 <em>Word Library</em></strong><b id="wordLibraryCount">0/46</b></span></button>
+<button class="overview-card library-overview-card" id="openWordLibrary" type="button" aria-pressed="false"><span class="overview-icon" aria-hidden="true">▦</span><span><small>学习记录</small><strong>总单词库 <em>Word Library</em></strong><b id="wordLibraryCount">0/81</b></span></button>
 </div>
 </section>
 <section class="collection-view total-review-view" id="totalReviewView" aria-labelledby="totalReviewTitle">
 <header class="collection-head"><div><span class="section-kicker">REVIEW ALL</span><h2 id="totalReviewTitle">总复习</h2><p id="reviewHeaderCount">0 个已学单词</p></div></header>
-<div class="collection-empty" id="totalReviewEmpty"><span aria-hidden="true">★</span><h3>还没有可复习的单词</h3><p>先去主题学习中点击单词，再回来复习全部已学内容。</p><button class="primary-action" id="emptyReviewLibrary" type="button">查看总单词库</button></div>
+<div class="collection-empty" id="totalReviewEmpty"><span aria-hidden="true">★</span><h3>还没有可复习的单词</h3><p>先去主题学习中点击“学习完毕”，再回来复习该主题的全部单词。</p><button class="primary-action" id="emptyReviewLibrary" type="button">查看总单词库</button></div>
 <section class="total-review-panel" id="totalReviewPanel" hidden>
 <div class="review-question-card"><span class="round-progress" id="totalReviewProgress">第 1/1 题</span><h3 id="totalReviewWord">word</h3><button class="review-phonetic" id="totalReviewPhonetic" type="button" aria-expanded="false">/wɜːd/</button><div class="phoneme-breakdown review-phonemes" id="totalReviewPhonemes" hidden></div><button class="theme-sound-button review-sound" id="totalReviewSpeak" type="button" aria-label="朗读当前单词"><span aria-hidden="true">🔊</span></button><p>选择对应的配图</p></div>
 <div class="review-options" id="totalReviewOptions"></div>
@@ -35,10 +35,10 @@
 <section class="collection-empty total-review-result" id="totalReviewResult" hidden><span class="result-star" aria-hidden="true">★</span><h3>总复习完成！</h3><strong id="totalReviewResultScore">0/0</strong><p id="totalReviewResultText">已复习全部已学单词。</p><button class="primary-action" id="restartTotalReview" type="button">再来一轮</button></section>
 </section>
 <section class="collection-view word-library-view" id="wordLibraryView" hidden aria-labelledby="wordLibraryTitle">
-<header class="collection-head"><div><span class="section-kicker">WORD LIBRARY</span><h2 id="wordLibraryTitle">总单词库</h2><p id="librarySummary">已收录 0/46 个单词</p></div><button class="primary-action" id="startLibraryReview" type="button">开始总复习</button></header>
-<div class="collection-empty" id="libraryEmpty"><span aria-hidden="true">📚</span><h3>单词库还是空的</h3><p>进入主题学习，点击一个单词后，它和对应配图就会自动收录到这里。</p></div>
+<header class="collection-head"><div><span class="section-kicker">WORD LIBRARY</span><h2 id="wordLibraryTitle">总单词库</h2><p id="librarySummary">已收录 0/81 个单词</p></div><button class="primary-action" id="startLibraryReview" type="button">开始总复习</button></header>
+<div class="collection-empty" id="libraryEmpty"><span aria-hidden="true">📚</span><h3>单词库还是空的</h3><p>进入主题学习，点击“学习完毕”后，该主题全部单词和对应配图会收录到这里。</p></div>
 <div class="library-grid" id="libraryGrid" hidden></div>
 </section>
 </main>
-</div><script type="module" src="./review-learning.js?v=1.0"></script></body>
+</div><script type="module" src="./review-learning.js?v=1.3"></script></body>
 </html>

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { splitPhonetic } from "../theme-learning.js";
+import { NUMBER_1_10_WORDS, NUMBER_11_19_WORDS, TENS_WORDS, TWINKLE_LYRICS, TWINKLE_SPOKEN_LYRICS, TWINKLE_WORDS, splitPhonetic } from "../theme-learning.js";
 import { chromium } from "file:///C:/Users/St/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/index.mjs";
 
 const baseUrl = process.env.HANZI_BASE_URL || "http://127.0.0.1:53177/";
@@ -38,6 +38,55 @@ function watchPage(page) {
 
 async function assertNoOverflow(page) {
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth), true);
+}
+
+async function assertSeriesList(page, complete = false) {
+  assert.equal(await page.locator(".theme-series-cell").count(), 4);
+  const geometry = await page.locator(".theme-series-cell").evaluateAll((cells) => cells.map((cell) => {
+    const box = cell.getBoundingClientRect();
+    const preview = cell.querySelector(".series-preview").getBoundingClientRect();
+    return { left: box.left, right: box.right, top: box.top, bottom: box.bottom, width: box.width, height: box.height, previewWidth: preview.width, previewHeight: preview.height, complete: cell.classList.contains("is-complete") };
+  }));
+  assert.ok(geometry.every(({ width, height, previewWidth, previewHeight }) => width >= 300 && height >= 300 && previewWidth >= 290 && previewHeight >= 170), JSON.stringify(geometry));
+  assert.ok(geometry.every(({ top }) => Math.abs(top - geometry[0].top) <= 1), JSON.stringify(geometry));
+  for (let index = 0; index < geometry.length - 1; index += 1) assert.ok(geometry[index].right <= geometry[index + 1].left, JSON.stringify(geometry));
+  assert.equal(geometry.every(({ complete: value }) => value), complete);
+}
+async function openSeries(page, seriesId, action = "click") {
+  const target = page.locator('[data-series-id="' + seriesId + '"]');
+  if (action === "tap") await target.tap(); else await target.click();
+  assert.equal(await page.locator("#themeSeriesList").isHidden(), true);
+  assert.equal(await page.locator("#themeSeriesPanel").isVisible(), true);
+  assert.equal(await page.evaluate(() => window.__THEME_LEARNING__.activeSeriesId), seriesId);
+  const expected = { basics: 2, counting: 4, songs: 1, items: 4 }[seriesId];
+  assert.equal(await page.locator(".theme-card:visible").count(), expected);
+}
+
+async function assertReviewedCard(page, themeId, expected = true) {
+  const button = page.locator('[data-theme-id="' + themeId + '"]');
+  const card = button.locator("xpath=ancestor::article[contains(@class,'theme-card')]");
+  assert.equal(await card.evaluate((node) => node.classList.contains("is-reviewed")), expected);
+  assert.equal(await card.locator(".theme-reviewed-badge").isVisible(), expected);
+  assert.equal((await card.getAttribute("aria-label") || "").includes("复习完毕"), expected);
+}
+
+async function assertReviewedCardGeometry(page, expectedCount) {
+  const cards = await page.locator(".theme-card.is-reviewed:visible").evaluateAll((nodes) => nodes.map((card) => {
+    const badge = card.querySelector(".theme-reviewed-badge").getBoundingClientRect();
+    const cardBox = card.getBoundingClientRect();
+    const title = card.querySelector("h3").getBoundingClientRect();
+    const button = card.querySelector("[data-theme-id]").getBoundingClientRect();
+    const overlap = (left, right) => Math.max(0, Math.min(left.right, right.right) - Math.max(left.left, right.left)) *
+      Math.max(0, Math.min(left.bottom, right.bottom) - Math.max(left.top, right.top));
+    return {
+      badgeLarge: badge.width >= 60 && badge.height >= 60,
+      insideCard: badge.left >= cardBox.left && badge.top >= cardBox.top && badge.right <= cardBox.right && badge.bottom <= cardBox.bottom,
+      clearOfTitle: overlap(badge, title) <= 1,
+      clearOfButton: overlap(badge, button) <= 1
+    };
+  }));
+  assert.equal(cards.length, expectedCount);
+  assert.ok(cards.every((item) => Object.values(item).every(Boolean)), JSON.stringify(cards));
 }
 
 async function assertGeometry(page, themeId, ids, figureId) {
@@ -195,6 +244,52 @@ async function assertItemsScene(page, series = 1) {
   assert.ok(result.targets.every((target) => target.insideImage && target.centerHit), JSON.stringify(result.targets));
   assert.deepEqual(result.overlaps, []);
 }
+async function assertCountingVisual(page, themeId, words, figureId) {
+  const result = await page.evaluate(({ themeId, words, figureId }) => {
+    const figure = document.querySelector(figureId).getBoundingClientRect();
+    const targets = words.map((word) => {
+      const node = document.querySelector('[data-theme="' + themeId + '"] [data-target="' + word.id + '"]');
+      const box = node.getBoundingClientRect();
+      const units = node.querySelectorAll(".counting-units > i").length;
+      const groups = node.querySelectorAll(".ten-frame").length;
+      const groupDots = node.querySelectorAll(".ten-frame > b").length;
+      return {
+        id: word.id,
+        units,
+        groups,
+        groupDots,
+        expectedValue: word.value,
+        expectedGroups: word.groups || 0,
+        inside: box.left >= figure.left - 1 && box.top >= figure.top - 1 && box.right <= figure.right + 1 && box.bottom <= figure.bottom + 1,
+        noOverflow: node.scrollWidth <= node.clientWidth && node.scrollHeight <= node.clientHeight
+      };
+    });
+    const overlaps = [];
+    for (let left = 0; left < targets.length; left += 1) {
+      const a = document.querySelector('[data-theme="' + themeId + '"] [data-target="' + targets[left].id + '"]').getBoundingClientRect();
+      for (let right = left + 1; right < targets.length; right += 1) {
+        const b = document.querySelector('[data-theme="' + themeId + '"] [data-target="' + targets[right].id + '"]').getBoundingClientRect();
+        const area = Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left)) * Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
+        if (area > 1) overlaps.push(targets[left].id + ":" + targets[right].id);
+      }
+    }
+    return { targets, overlaps };
+  }, { themeId, words, figureId });
+  assert.deepEqual(result.overlaps, []);
+  for (const target of result.targets) {
+    assert.equal(target.inside, true, target.id);
+    assert.equal(target.noOverflow, true, target.id);
+    if (target.expectedGroups) {
+      assert.equal(target.groups, target.expectedGroups, target.id);
+      assert.equal(target.groupDots, target.expectedValue, target.id);
+      assert.equal(target.units, 0, target.id);
+    } else {
+      assert.equal(target.units, target.expectedValue, target.id);
+      assert.equal(target.groups, 0, target.id);
+    }
+  }
+}
+
 async function learnAll(page, themeId, expected, action = "click") {
   for (const [id, values] of Object.entries(expected)) {
     const locator = page.locator('[data-theme="' + themeId + '"] [data-target="' + id + '"]');
@@ -283,6 +378,13 @@ async function finishRound(page, themeId, ids, action = "click") {
   assert.equal((await page.locator("#resultScore").textContent()).trim(), ids.length + "/" + ids.length);
 }
 
+const countingExpected = (words) => Object.fromEntries(words.map((word) => [word.id, [word.word, word.phonetic, word.chinese, word.sentence]]));
+const countingSeries = [
+  { id: "numbers1", button: "#startNumbers1", figure: "#numbers1Figure", words: NUMBER_1_10_WORDS, expected: countingExpected(NUMBER_1_10_WORDS), instruction: /^Touch number (one|two|three|four|five|six|seven|eight|nine|ten)\.$/, completeTitle: "数字 1–10 全部找对！", screenshotDesktop: "tests/theme-numbers1-desktop.png", screenshotMobile: "tests/theme-numbers1-390.png" },
+  { id: "numbersTeens", button: "#startNumbersTeens", figure: "#numbersTeensFigure", words: NUMBER_11_19_WORDS, expected: countingExpected(NUMBER_11_19_WORDS), instruction: /^Touch number (eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen)\.$/, completeTitle: "数字 11–19 全部找对！", screenshotDesktop: "tests/theme-numbers-teens-desktop.png", screenshotMobile: "tests/theme-numbers-teens-390.png" },
+  { id: "tens", button: "#startTens", figure: "#tensFigure", words: TENS_WORDS, expected: countingExpected(TENS_WORDS), instruction: /^Touch (ten|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|one hundred)\.$/, completeTitle: "整十 10–100 全部找对！", screenshotDesktop: "tests/theme-tens-desktop.png", screenshotMobile: "tests/theme-tens-390.png" }
+];
+
 const bodyIds = ["head", "hand", "arm", "leg", "foot", "body"];
 const colorIds = ["red", "blue", "green", "yellow", "black", "white"];
 const ordinalIds = ["first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth", "ninth", "tenth"];
@@ -290,6 +392,7 @@ const itemIds = ["coin", "key", "crown", "treasure", "star", "moon"];
 const item2Ids = ["mushroom", "flower", "leaf", "feather", "bell", "acorn"];
 const item3Ids = ["banana", "shell", "bomb", "lightning", "horn", "ink"];
 const item4Ids = ["cap", "suit", "hammer", "boomerang", "spring", "egg"];
+const twinkleIds = TWINKLE_WORDS.map(({ id }) => id);
 const bodyExpected = {
   head: ["head", "/hed/", "头", "This is Mario's head."],
   hand: ["hand", "/hænd/", "手", "This is Mario's hand."],
@@ -335,11 +438,31 @@ const items3Expected = {
 const items4Expected = {
   cap: ["cap", "/kæp/", "帽子", "The cap is red."], suit: ["suit", "/suːt/", "套装", "This is a suit."], hammer: ["hammer", "/ˈhæmə/", "锤子", "The hammer is heavy."], boomerang: ["boomerang", "/ˈbuːməræŋ/", "回旋镖", "The boomerang comes back."], spring: ["spring", "/sprɪŋ/", "弹簧", "The spring can bounce."], egg: ["egg", "/eɡ/", "蛋", "This is an egg."]
 };
+const twinkleExpected = Object.fromEntries(TWINKLE_WORDS.map(({ id, word, phonetic, chinese, sentence }) => [id, [word, phonetic, chinese, sentence]]));
 const additionalItemSeries = [
   { series: 2, id: "items2", ids: item2Ids, expected: items2Expected, labels: { mushroom: "mushroom 蘑菇", flower: "flower 花", leaf: "leaf 叶子", feather: "feather 羽毛", bell: "bell 铃铛", acorn: "acorn 橡果" }, instructions: ["mushroom", "flower", "leaf", "feather", "bell", "acorn"], completeTitle: "六个能力道具全部找对！", screenshotDesktop: "tests/theme-items2-desktop.png", screenshotMobile: "tests/theme-items2-390.png" },
   { series: 3, id: "items3", ids: item3Ids, expected: items3Expected, labels: { banana: "banana 香蕉", shell: "shell 龟壳", bomb: "bomb 炸弹", lightning: "lightning 闪电", horn: "horn 喇叭", ink: "ink 墨水" }, instructions: ["banana", "shell", "bomb", "lightning", "horn", "ink"], completeTitle: "六个赛车道具全部找对！", screenshotDesktop: "tests/theme-items3-desktop.png", screenshotMobile: "tests/theme-items3-390.png" },
   { series: 4, id: "items4", ids: item4Ids, expected: items4Expected, labels: { cap: "cap 帽子", suit: "suit 套装", hammer: "hammer 锤子", boomerang: "boomerang 回旋镖", spring: "spring 弹簧", egg: "egg 蛋" }, instructions: ["cap", "suit", "hammer", "boomerang", "spring", "egg"], completeTitle: "六个特殊装备全部找对！", screenshotDesktop: "tests/theme-items4-desktop.png", screenshotMobile: "tests/theme-items4-390.png" }
 ];
+
+async function runCountingTheme(page, config, action = "click") {
+  if (action === "tap") await page.locator(config.button).tap(); else await page.locator(config.button).click();
+  const ids = config.words.map(({ id }) => id);
+  assert.equal(await page.evaluate(() => window.__THEME_LEARNING__.activeThemeId), config.id);
+  assert.equal((await page.locator("#sessionProgress").textContent()).trim(), "已认识 0/" + ids.length);
+  await page.locator(config.figure).scrollIntoViewIfNeeded();
+  await assertGeometry(page, config.id, ids, config.figure);
+  await assertCountingVisual(page, config.id, config.words, config.figure);
+  await learnAll(page, config.id, config.expected, action);
+  await assertWordNavigation(page, config.id, ids, action);
+  await page.screenshot({ path: action === "tap" ? config.screenshotMobile : config.screenshotDesktop, fullPage: true });
+  if (action === "tap") await page.locator("#practiceStage").tap(); else await page.locator("#practiceStage").click();
+  assert.match((await page.locator("#practiceInstruction").textContent()).trim(), config.instruction);
+  await finishRound(page, config.id, ids, action);
+  assert.equal((await page.locator("#resultTitle").textContent()).trim(), config.completeTitle);
+  if (action === "tap") await page.locator("#restartRound").tap(); else await page.locator("#restartRound").click();
+  assert.equal(new Set(await page.evaluate(() => window.__THEME_LEARNING__.session.questions)).size, ids.length);
+}
 
 async function runAdditionalItemSeries(page, config, action = "click") {
   const activate = page.locator("#startItems" + config.series);
@@ -360,6 +483,39 @@ async function runAdditionalItemSeries(page, config, action = "click") {
   if (action === "tap") await page.locator("#restartRound").tap(); else await page.locator("#restartRound").click();
   assert.equal(new Set(await page.evaluate(() => window.__THEME_LEARNING__.session.questions)).size, 6);
 }
+
+async function runTwinkleTheme(page, action = "click") {
+  const activate = page.locator("#startTwinkle");
+  const spokenBeforeEntry = await page.evaluate(() => window.__spoken.length);
+  if (action === "tap") await activate.tap(); else await activate.click();
+  assert.equal(await page.evaluate(() => window.__THEME_LEARNING__.activeThemeId), "twinkle");
+  assert.equal((await page.locator("#sessionProgress").textContent()).trim(), "已认识 0/8");
+  assert.equal(await page.evaluate(() => window.__spoken.length), spokenBeforeEntry);
+  await page.locator("#twinkleScene .song-night").scrollIntoViewIfNeeded();
+  await assertGeometry(page, "twinkle", twinkleIds, "#twinkleScene .song-night");
+  const lyrics = await page.locator(".song-lyric-line").evaluateAll((lines) => lines.map((line) => {
+    const text = line.querySelector(".song-lyric-text").getBoundingClientRect();
+    const ipa = line.querySelector(".song-lyric-ipa").getBoundingClientRect();
+    return { text: line.querySelector(".song-lyric-text").textContent.trim(), ipa: line.querySelector(".song-lyric-ipa").textContent.trim(), below: ipa.top >= text.bottom - 1, centered: Math.abs((text.left + text.right) / 2 - (ipa.left + ipa.right) / 2) <= 2, visible: text.width > 0 && text.height > 0 && ipa.width > 0 && ipa.height > 0 };
+  }));
+  assert.deepEqual(lyrics.map(({ text, ipa }) => ({ text, phonetic: ipa })), TWINKLE_LYRICS);
+  assert.ok(lyrics.every(({ below, centered, visible }) => below && centered && visible), JSON.stringify(lyrics));
+  const spokenBeforeLyrics = await page.evaluate(() => window.__spoken.length);
+  if (action === "tap") await page.locator("#speakSongLyrics").tap(); else await page.locator("#speakSongLyrics").click();
+  assert.equal(await page.evaluate(() => window.__spoken.at(-1)), TWINKLE_SPOKEN_LYRICS);
+  assert.equal(await page.evaluate(() => window.__spoken.length), spokenBeforeLyrics + 1);
+  await learnAll(page, "twinkle", twinkleExpected, action);
+  await assertWordNavigation(page, "twinkle", twinkleIds, action);
+  await page.screenshot({ path: action === "tap" ? "tests/theme-twinkle-390.png" : "tests/theme-twinkle-desktop.png", fullPage: true });
+  if (action === "tap") await page.locator("#practiceStage").tap(); else await page.locator("#practiceStage").click();
+  assert.match((await page.locator("#practiceInstruction").textContent()).trim(), /^Touch (twinkle|little|wonder|world|high|the star|the diamond|the sky).$/);
+  await finishRound(page, "twinkle", twinkleIds, action);
+  assert.equal((await page.locator("#resultTitle").textContent()).trim(), "八个童谣单词全部找对！");
+  if (action === "tap") await page.locator("#restartRound").tap(); else await page.locator("#restartRound").click();
+  assert.equal(new Set(await page.evaluate(() => window.__THEME_LEARNING__.session.questions)).size, 8);
+  await assertNoOverflow(page);
+}
+
 const desktopContext = await prepareContext({ viewport: { width: 1440, height: 1000 } });
 const page = await desktopContext.newPage();
 watchPage(page);
@@ -368,8 +524,14 @@ assert.ok((await page.locator(".module-tab").allTextContents()).some((item) => i
 assert.deepEqual(await page.locator(".top-actions > *").allTextContents().then((x) => x.map((v) => v.trim())), ["炸弹迷宫"]);
 await page.locator('.module-tab[href="./theme-learning.html"]').click();
 await page.waitForURL(/theme-learning\.html/);
-assert.deepEqual(await page.locator(".theme-card h3").allTextContents().then((items) => items.map((x) => x.replace(/\s+/g, " ").trim())), ["身体 Body", "颜色 Colors", "第一到第十 First–Tenth", "经典道具 I Classic Items I", "经典道具 II Classic Items II", "经典道具 III Classic Items III", "经典道具 IV Classic Items IV"]);
+assert.deepEqual(await page.locator(".theme-card h3").allTextContents().then((items) => items.map((x) => x.replace(/\s+/g, " ").trim())), ["身体 Body", "颜色 Colors", "数字 1–10 Numbers 1–10", "数字 11–19 Numbers 11–19", "整十 10–100 Tens 10–100", "第1到第10 First–Tenth", "一闪一闪小星星 Twinkle, Twinkle, Little Star", "经典道具 I Classic Items I", "经典道具 II Classic Items II", "经典道具 III Classic Items III", "经典道具 IV Classic Items IV"]);
+assert.equal(await page.locator(".theme-reviewed-badge").count(), 11);
+assert.equal(await page.locator(".theme-reviewed-badge:visible").count(), 0);
+assert.equal(await page.locator("#themeSeriesPanel").isHidden(), true);
+assert.equal(await page.locator("#themePicker > .picker-copy").count(), 0);
+await assertSeriesList(page);
 await assertNoOverflow(page);
+await openSeries(page, "basics");
 
 await page.click("#startTheme");
 assert.equal(await page.evaluate(() => window.__THEME_LEARNING__.activeThemeId), "body");
@@ -378,6 +540,17 @@ assert.equal(await page.locator("#practicePanel").isVisible(), false);
 await assertGeometry(page, "body", bodyIds, "#marioFigure");
 await assertBodyScene(page);
 await learnAll(page, "body", bodyExpected);
+assert.equal(await page.evaluate(() => localStorage.getItem("mario-theme-learned-v1")), null);
+assert.equal(await page.locator("#completeThemeLearning").isDisabled(), false);
+await page.click("#completeThemeLearning");
+assert.equal(await page.locator("#completeThemeLearning").isDisabled(), true);
+assert.equal((await page.locator("#completeThemeLearning").textContent()).trim(), "✓ 已学习完毕");
+assert.match((await page.locator("#themeLearningStatus").textContent()).trim(), /6 个单词已加入总词库/);
+const bodyLearnedState = await page.evaluate(() => JSON.parse(localStorage.getItem("mario-theme-learned-v1")));
+assert.equal(bodyLearnedState.version, 2);
+assert.equal(bodyLearnedState.learned.length, 6);
+assert.deepEqual(bodyLearnedState.learnedThemes, ["body"]);
+assert.deepEqual(bodyLearnedState.reviewedThemes, []);
 await assertWordNavigation(page, "body", bodyIds);
 await page.locator('[data-theme="body"] [data-target="head"]').focus();
 await page.keyboard.press("Enter");
@@ -388,11 +561,13 @@ assert.equal((await page.locator(".word-en").textContent()).trim(), "hand");
 await page.screenshot({ path: "tests/theme-body-desktop.png", fullPage: true });
 await page.click("#practiceStage");
 await finishRound(page, "body", bodyIds);
+assert.equal(await page.evaluate(() => window.__THEME_LEARNING__.progress.store.isThemeReviewed("body")), true);
 await page.click("#restartRound");
 assert.equal(new Set(await page.evaluate(() => window.__THEME_LEARNING__.session.questions)).size, 6);
 
 await page.click("#backToThemes");
 assert.equal(await page.locator("#themePicker").isVisible(), true);
+await assertReviewedCard(page, "body");
 await page.click("#startColors");
 assert.equal(await page.evaluate(() => window.__THEME_LEARNING__.activeThemeId), "colors");
 assert.equal((await page.locator("#sessionProgress").textContent()).trim(), "已认识 0/6");
@@ -425,6 +600,14 @@ await page.click("#restartRound");
 assert.equal(new Set(await page.evaluate(() => window.__THEME_LEARNING__.session.questions)).size, 6);
 
 await page.click("#backToThemes");
+await page.click("#backToSeries");
+await openSeries(page, "counting");
+for (let index = 0; index < countingSeries.length; index += 1) {
+  if (index > 0) await page.click("#backToThemes");
+  await runCountingTheme(page, countingSeries[index]);
+}
+
+await page.click("#backToThemes");
 await page.click("#startOrdinals");
 assert.equal(await page.evaluate(() => window.__THEME_LEARNING__.activeThemeId), "ordinals");
 assert.equal((await page.locator("#sessionProgress").textContent()).trim(), "已认识 0/10");
@@ -445,6 +628,12 @@ assert.equal((await page.locator("#resultTitle").textContent()).trim(), "十个�
 await page.click("#restartRound");
 assert.equal(new Set(await page.evaluate(() => window.__THEME_LEARNING__.session.questions)).size, 10);
 await page.click("#backToThemes");
+await page.click("#backToSeries");
+await openSeries(page, "songs");
+await runTwinkleTheme(page);
+await page.click("#backToThemes");
+await page.click("#backToSeries");
+await openSeries(page, "items");
 await page.click("#startItems1");
 assert.equal(await page.evaluate(() => window.__THEME_LEARNING__.activeThemeId), "items1");
 assert.equal((await page.locator("#sessionProgress").textContent()).trim(), "已认识 0/6");
@@ -473,17 +662,42 @@ for (const config of additionalItemSeries) {
   await runAdditionalItemSeries(page, config);
 }
 await page.click("#backToThemes");
+await page.click("#backToSeries");
+await openSeries(page, "basics");
 await page.click("#startTheme");
 assert.equal((await page.locator("#sessionProgress").textContent()).trim(), "已认识 0/6");
 await page.click("#backToThemes");
 await page.click("#startColors");
 assert.equal((await page.locator("#sessionProgress").textContent()).trim(), "已认识 0/6");
 await page.click("#backToThemes");
+await page.click("#backToSeries");
+await openSeries(page, "counting");
+for (const config of countingSeries) {
+  await page.locator(config.button).click();
+  assert.equal((await page.locator("#sessionProgress").textContent()).trim(), "已认识 0/" + config.words.length);
+  await page.click("#backToThemes");
+}
 await page.click("#startOrdinals");
 assert.equal((await page.locator("#sessionProgress").textContent()).trim(), "已认识 0/10");
 await page.click("#backToThemes");
+await page.click("#backToSeries");
+await openSeries(page, "items");
 await page.click("#startItems1");
 assert.equal((await page.locator("#sessionProgress").textContent()).trim(), "已认识 0/6");
+const completedThemeState = await page.evaluate(() => JSON.parse(localStorage.getItem("mario-theme-learned-v1")));
+assert.equal(completedThemeState.version, 2);
+assert.equal(completedThemeState.learned.length, 83);
+assert.equal(completedThemeState.learnedThemes.length, 11);
+assert.equal(completedThemeState.reviewedThemes.length, 11);
+await page.click("#backToThemes");
+assert.equal(await page.locator(".theme-card.is-reviewed").count(), 11);
+assert.equal(await page.locator(".theme-reviewed-badge:not([hidden])").count(), 11);
+assert.equal(await page.locator(".theme-reviewed-badge:visible").count(), 4);
+await assertReviewedCardGeometry(page, 4);
+await page.click("#backToSeries");
+await assertSeriesList(page, true);
+await assertNoOverflow(page);
+await page.screenshot({ path: "tests/theme-picker-complete-desktop.png", fullPage: true });
 assert.deepEqual(await page.evaluate((keys) => window.__storageMutations.filter((item) => keys.includes(item.key)), protectedKeys), []);
 await page.locator('.nav-link[href="./index.html"]').click();
 await page.waitForURL((url) => url.pathname.endsWith("/") || url.pathname.endsWith("/index.html"));
@@ -493,7 +707,9 @@ const mobileContext = await prepareContext({ viewport: { width: 390, height: 844
 const mobile = await mobileContext.newPage();
 watchPage(mobile);
 await mobile.goto(new URL("theme-learning.html", baseUrl).href);
+await assertSeriesList(mobile);
 await assertNoOverflow(mobile);
+await openSeries(mobile, "basics", "tap");
 await mobile.tap("#startColors");
 await assertNoOverflow(mobile);
 await mobile.locator("#colorsFigure").scrollIntoViewIfNeeded();
@@ -505,6 +721,13 @@ await mobile.screenshot({ path: "tests/theme-colors-390.png", fullPage: true });
 await mobile.tap("#practiceStage");
 await finishRound(mobile, "colors", colorIds, "tap");
 await mobile.tap("#backToThemes");
+await mobile.tap("#backToSeries");
+await openSeries(mobile, "counting", "tap");
+for (let index = 0; index < countingSeries.length; index += 1) {
+  if (index > 0) await mobile.tap("#backToThemes");
+  await runCountingTheme(mobile, countingSeries[index], "tap");
+}
+await mobile.tap("#backToThemes");
 await mobile.tap("#startOrdinals");
 await mobile.locator("#ordinalsFigure").scrollIntoViewIfNeeded();
 await assertGeometry(mobile, "ordinals", ordinalIds, "#ordinalsFigure");
@@ -514,6 +737,12 @@ await mobile.screenshot({ path: "tests/theme-ordinals-390.png", fullPage: true }
 await mobile.tap("#practiceStage");
 await finishRound(mobile, "ordinals", ordinalIds, "tap");
 await mobile.tap("#backToThemes");
+await mobile.tap("#backToSeries");
+await openSeries(mobile, "songs", "tap");
+await runTwinkleTheme(mobile, "tap");
+await mobile.tap("#backToThemes");
+await mobile.tap("#backToSeries");
+await openSeries(mobile, "items", "tap");
 await mobile.tap("#startItems1");
 await mobile.locator("#items1Figure").scrollIntoViewIfNeeded();
 await assertGeometry(mobile, "items1", itemIds, "#items1Figure");
@@ -527,7 +756,10 @@ for (const config of additionalItemSeries) {
   await mobile.tap("#backToThemes");
   await runAdditionalItemSeries(mobile, config, "tap");
 }
-await mobile.tap("#backToThemes");await mobile.tap("#startTheme");
+await mobile.tap("#backToThemes");
+await mobile.tap("#backToSeries");
+await openSeries(mobile, "basics", "tap");
+await mobile.tap("#startTheme");
 await mobile.locator("#marioFigure").scrollIntoViewIfNeeded();
 await assertGeometry(mobile, "body", bodyIds, "#marioFigure");
 await assertBodyScene(mobile);
@@ -536,6 +768,19 @@ await assertWordNavigation(mobile, "body", bodyIds, "tap");
 await mobile.screenshot({ path: "tests/theme-body-390.png", fullPage: true });
 await mobile.tap("#practiceStage");
 await finishRound(mobile, "body", bodyIds, "tap");
+const mobileCompletedState = await mobile.evaluate(() => JSON.parse(localStorage.getItem("mario-theme-learned-v1")));
+assert.equal(mobileCompletedState.learned.length, 83);
+assert.equal(mobileCompletedState.learnedThemes.length, 11);
+assert.equal(mobileCompletedState.reviewedThemes.length, 11);
+await mobile.tap("#backToThemes");
+assert.equal(await mobile.locator(".theme-card.is-reviewed").count(), 11);
+assert.equal(await mobile.locator(".theme-reviewed-badge:not([hidden])").count(), 11);
+assert.equal(await mobile.locator(".theme-reviewed-badge:visible").count(), 2);
+await assertReviewedCardGeometry(mobile, 2);
+await mobile.tap("#backToSeries");
+await assertSeriesList(mobile, true);
+await assertNoOverflow(mobile);
+await mobile.screenshot({ path: "tests/theme-picker-complete-390.png", fullPage: true });
 assert.deepEqual(await mobile.evaluate((keys) => window.__storageMutations.filter((item) => keys.includes(item.key)), protectedKeys), []);
 await mobileContext.close();
 
@@ -543,18 +788,19 @@ assert.deepEqual(pageErrors, []);
 assert.deepEqual(failedResponses, []);
 console.log(JSON.stringify({
   ok: true,
-  themes: ["body", "colors", "ordinals", "items1", "items2", "items3", "items4"],
-  words: 46,
-  rounds: { desktop: 7, mobile390: 7, uniqueQuestionsEach: { body: 6, colors: 6, ordinals: 10, items1: 6, items2: 6, items3: 6, items4: 6 }, wrongRetry: true, restart: true },
+  themes: ["body", "colors", "numbers1", "numbersTeens", "tens", "ordinals", "twinkle", "items1", "items2", "items3", "items4"],
+  words: 83,
+  rounds: { desktop: 11, mobile390: 11, uniqueQuestionsEach: { body: 6, colors: 6, numbers1: 10, numbersTeens: 9, tens: 10, ordinals: 10, twinkle: 8, items1: 6, items2: 6, items3: 6, items4: 6 }, wrongRetry: true, restart: true },
   ttsFallback: true,
+  completion: { learnedWords: 83, learnedThemes: 11, reviewedThemes: 11, greenChecks: 11, persisted: true },
   storageProtected: protectedKeys,
   overflow: { desktop: false, mobile390: false },
-  hotAreasAligned: { desktop: 46, mobile390: 46, colorsNonOverlapping: true, itemsNonOverlapping: true, centersHit: true },
+  hotAreasAligned: { desktop: 83, mobile390: 83, colorsNonOverlapping: true, itemsNonOverlapping: true, countingExact: true, centersHit: true },
   bodyAsset: { path: "assets/themes/body/body-character-anime-v2.png", httpStatus: 200, size: "1024x1536", alpha: true },
   colorsAsset: { path: "assets/themes/colors/colors-scene-v2.png", httpStatus: 200, size: "1536x1024" },
   itemsAsset: { path: "assets/themes/items/classic-items-1-scene-v1.png", httpStatus: 200, size: "1536x1024" },
   additionalItemsAssets: [2, 3, 4].map((series) => ({ path: "assets/themes/items/classic-items-" + series + "-scene-v1.png", httpStatus: 200, size: "1536x1024" })),
   input: ["mouse", "touch", "Enter", "Space"],
-  screenshots: ["tests/theme-body-desktop.png", "tests/theme-colors-desktop.png", "tests/theme-ordinals-desktop.png", "tests/theme-items1-desktop.png", "tests/theme-items2-desktop.png", "tests/theme-items3-desktop.png", "tests/theme-items4-desktop.png", "tests/theme-body-390.png", "tests/theme-colors-390.png", "tests/theme-ordinals-390.png", "tests/theme-items1-390.png", "tests/theme-items2-390.png", "tests/theme-items3-390.png", "tests/theme-items4-390.png"]
+  screenshots: ["tests/theme-picker-complete-desktop.png", "tests/theme-picker-complete-390.png", "tests/theme-body-desktop.png", "tests/theme-colors-desktop.png", "tests/theme-numbers1-desktop.png", "tests/theme-numbers-teens-desktop.png", "tests/theme-tens-desktop.png", "tests/theme-ordinals-desktop.png", "tests/theme-twinkle-desktop.png", "tests/theme-items1-desktop.png", "tests/theme-items2-desktop.png", "tests/theme-items3-desktop.png", "tests/theme-items4-desktop.png", "tests/theme-body-390.png", "tests/theme-colors-390.png", "tests/theme-numbers1-390.png", "tests/theme-numbers-teens-390.png", "tests/theme-tens-390.png", "tests/theme-ordinals-390.png", "tests/theme-twinkle-390.png", "tests/theme-items1-390.png", "tests/theme-items2-390.png", "tests/theme-items3-390.png", "tests/theme-items4-390.png"]
 }, null, 2));
 await browser.close();

@@ -4,6 +4,7 @@
 
 - `AGENTS.md`：长期开发规则、模块边界和验收要求
 - `PROJECT_HANDOFF.md`：当前交付状态、公司电脑初始化及接手步骤
+- `CODEX_COLLABORATION.md`：主会话、各模块子会话及跨电脑协作方式
 
 当前重构阶段包含：
 

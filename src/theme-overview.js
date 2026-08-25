@@ -1,5 +1,5 @@
 export const THEME_LEARNED_STORAGE_KEY = "mario-theme-learned-v1";
-export const THEME_LEARNED_SCHEMA_VERSION = 1;
+export const THEME_LEARNED_SCHEMA_VERSION = 2;
 
 const BODY_CROPS = Object.freeze({
   head: "245 20 534 520",
@@ -38,8 +38,18 @@ export function themeWordKey(themeId, wordId) {
 }
 
 function artFor(themeId, word, index) {
+  if (Number.isInteger(word.value)) {
+    return Object.freeze({
+      type: word.groups ? "count-groups" : "count-units",
+      value: word.value,
+      groups: word.groups || 0
+    });
+  }
   if (themeId === "ordinals") {
     return Object.freeze({ type: "ordinal", label: ORDINAL_LABELS[index] });
+  }
+  if (themeId === "twinkle") {
+    return Object.freeze({ type: "song-word", icon: Object.freeze(["✦", "★", "☆", "?", "◉", "↑", "◆", "☾"])[index] });
   }
   if (themeId === "body") {
     return Object.freeze({
@@ -81,6 +91,16 @@ export function buildThemeCatalog(configs) {
   ));
 }
 
+function uniqueByWord(entries) {
+  const seen = new Set();
+  return entries.filter((entry) => {
+    const word = entry.word.trim().toLowerCase();
+    if (seen.has(word)) return false;
+    seen.add(word);
+    return true;
+  });
+}
+
 function getDefaultStorage() {
   try {
     return typeof localStorage === "undefined" ? null : localStorage;
@@ -93,24 +113,60 @@ export class ThemeLearnedStore {
   constructor(catalog, storage = getDefaultStorage()) {
     this.catalog = catalog;
     this.byKey = new Map(catalog.map((entry) => [entry.key, entry]));
+    this.themeEntriesById = new Map();
+    catalog.forEach((entry) => {
+      if (!this.themeEntriesById.has(entry.themeId)) this.themeEntriesById.set(entry.themeId, []);
+      this.themeEntriesById.get(entry.themeId).push(entry);
+    });
     this.storage = storage;
     this.learned = new Set();
+    this.learnedThemes = new Set();
+    this.reviewedThemes = new Set();
     this.load();
   }
 
   load() {
     this.learned.clear();
+    this.learnedThemes.clear();
+    this.reviewedThemes.clear();
     if (!this.storage) return this.entries();
     try {
       const parsed = JSON.parse(this.storage.getItem(THEME_LEARNED_STORAGE_KEY) || "null");
-      if (!parsed || parsed.version !== THEME_LEARNED_SCHEMA_VERSION || !Array.isArray(parsed.learned)) return this.entries();
+      if (!parsed || ![1, THEME_LEARNED_SCHEMA_VERSION].includes(parsed.version) || !Array.isArray(parsed.learned)) return this.entries();
       parsed.learned.forEach((key) => {
         if (this.byKey.has(key)) this.learned.add(key);
       });
+      if (parsed.version === THEME_LEARNED_SCHEMA_VERSION) {
+        (Array.isArray(parsed.learnedThemes) ? parsed.learnedThemes : []).forEach((themeId) => {
+          if (this.themeEntriesById.has(themeId)) this.addWholeTheme(themeId);
+        });
+        (Array.isArray(parsed.reviewedThemes) ? parsed.reviewedThemes : []).forEach((themeId) => {
+          if (!this.themeEntriesById.has(themeId)) return;
+          this.addWholeTheme(themeId);
+          this.reviewedThemes.add(themeId);
+        });
+      }
+      this.syncLearnedThemes();
     } catch {
       this.learned.clear();
+      this.learnedThemes.clear();
+      this.reviewedThemes.clear();
     }
     return this.entries();
+  }
+
+  addWholeTheme(themeId) {
+    const entries = this.themeEntriesById.get(themeId);
+    if (!entries) return false;
+    entries.forEach((entry) => this.learned.add(entry.key));
+    this.learnedThemes.add(themeId);
+    return true;
+  }
+
+  syncLearnedThemes() {
+    for (const [themeId, entries] of this.themeEntriesById) {
+      if (entries.length > 0 && entries.every((entry) => this.learned.has(entry.key))) this.learnedThemes.add(themeId);
+    }
   }
 
   save() {
@@ -118,7 +174,9 @@ export class ThemeLearnedStore {
     try {
       this.storage.setItem(THEME_LEARNED_STORAGE_KEY, JSON.stringify({
         version: THEME_LEARNED_SCHEMA_VERSION,
-        learned: [...this.learned],
+        learned: this.catalog.filter((entry) => this.learned.has(entry.key)).map((entry) => entry.key),
+        learnedThemes: [...this.themeEntriesById.keys()].filter((themeId) => this.learnedThemes.has(themeId)),
+        reviewedThemes: [...this.themeEntriesById.keys()].filter((themeId) => this.reviewedThemes.has(themeId)),
         updatedAt: new Date().toISOString()
       }));
       return true;
@@ -135,16 +193,53 @@ export class ThemeLearnedStore {
     if (!this.byKey.has(key)) return false;
     const before = this.learned.size;
     this.learned.add(key);
-    if (this.learned.size !== before) this.save();
+    if (this.learned.size !== before) {
+      this.syncLearnedThemes();
+      this.save();
+    }
     return this.learned.size !== before;
   }
 
+  recordTheme(themeId) {
+    if (!this.themeEntriesById.has(themeId)) return false;
+    const before = this.learned.size;
+    const wasLearned = this.learnedThemes.has(themeId);
+    this.addWholeTheme(themeId);
+    const changed = this.learned.size !== before || !wasLearned;
+    if (changed) this.save();
+    return changed;
+  }
+
+  markReviewed(themeId) {
+    if (!this.themeEntriesById.has(themeId)) return false;
+    const beforeLearned = this.learned.size;
+    const wasLearned = this.learnedThemes.has(themeId);
+    const wasReviewed = this.reviewedThemes.has(themeId);
+    this.addWholeTheme(themeId);
+    this.reviewedThemes.add(themeId);
+    const changed = this.learned.size !== beforeLearned || !wasLearned || !wasReviewed;
+    if (changed) this.save();
+    return changed;
+  }
+
   entries() {
-    return this.catalog.filter((entry) => this.learned.has(entry.key));
+    return uniqueByWord(this.catalog.filter((entry) => this.learned.has(entry.key)));
+  }
+
+  uniqueCatalogEntries() {
+    return uniqueByWord(this.catalog);
   }
 
   has(themeId, wordId) {
     return this.learned.has(themeWordKey(themeId, wordId));
+  }
+
+  isThemeLearned(themeId) {
+    return this.learnedThemes.has(themeId);
+  }
+
+  isThemeReviewed(themeId) {
+    return this.reviewedThemes.has(themeId);
   }
 }
 
@@ -214,9 +309,22 @@ function escapeHtml(value) {
 
 function renderArt(entry, className = "word-art") {
   const label = entry.word + " " + entry.chinese + " 配图";
+  if (entry.art.type === "count-units" || entry.art.type === "count-groups") {
+    const visual = entry.art.type === "count-groups"
+      ? '<span class="counting-visual counting-groups" data-groups="' + entry.art.groups + '" aria-hidden="true">' +
+        Array.from({ length: entry.art.groups }, () => '<i class="ten-frame">' + '<b></b>'.repeat(10) + '</i>').join("") + '</span>'
+      : '<span class="counting-visual counting-units" data-count="' + entry.art.value + '" aria-hidden="true">' +
+        '<i></i>'.repeat(entry.art.value) + '</span>';
+    return '<div class="' + className + ' counting-word-art" role="img" aria-label="' + escapeHtml(label) + '"><strong>' +
+      entry.art.value + '</strong>' + visual + '</div>';
+  }
   if (entry.art.type === "ordinal") {
     return '<div class="' + className + ' ordinal-word-art" role="img" aria-label="' + escapeHtml(label) + '"><strong>' +
       escapeHtml(entry.art.label) + '</strong><span>' + escapeHtml(entry.word) + "</span></div>";
+  }
+  if (entry.art.type === "song-word") {
+    return '<div class="' + className + ' song-word-art" role="img" aria-label="' + escapeHtml(label) + '"><i aria-hidden="true">' +
+      escapeHtml(entry.art.icon) + '</i><strong>' + escapeHtml(entry.word) + "</strong></div>";
   }
   return '<svg class="' + className + '" role="img" aria-label="' + escapeHtml(label) + '" viewBox="' +
     entry.art.viewBox + '" preserveAspectRatio="xMidYMid meet"><image href="' + entry.art.src +
@@ -240,10 +348,22 @@ export function initializeThemeProgress({ configs }) {
   function record(themeId, wordId) {
     return store.record(themeId, wordId);
   }
+  function recordTheme(themeId) {
+    return store.recordTheme(themeId);
+  }
+  function markReviewed(themeId) {
+    return store.markReviewed(themeId);
+  }
   window.addEventListener("theme-word-learned", (event) => {
     if (event.detail?.themeId && event.detail?.wordId) record(event.detail.themeId, event.detail.wordId);
   });
-  const api = { catalog, store, record };
+  window.addEventListener("theme-learning-complete", (event) => {
+    if (event.detail?.themeId) recordTheme(event.detail.themeId);
+  });
+  window.addEventListener("theme-review-complete", (event) => {
+    if (event.detail?.themeId) markReviewed(event.detail.themeId);
+  });
+  const api = { catalog, store, record, recordTheme, markReviewed };
   window.__THEME_PROGRESS__ = api;
   return api;
 }
@@ -263,8 +383,9 @@ export function initializeThemeOverview({ configs, splitPhonetic, stressMarks, s
   function updateCounts() {
     const count = learnedEntries().length;
     dom.totalReviewCount.textContent = count + " 个已学";
-    dom.wordLibraryCount.textContent = count + "/" + catalog.length;
-    dom.librarySummary.textContent = "已收录 " + count + "/" + catalog.length + " 个单词";
+    const total = store.uniqueCatalogEntries().length;
+    dom.wordLibraryCount.textContent = count + "/" + total;
+    dom.librarySummary.textContent = "已收录 " + count + "/" + total + " 个单词";
     return count;
   }
 
@@ -408,6 +529,12 @@ export function initializeThemeOverview({ configs, splitPhonetic, stressMarks, s
     return changed;
   }
 
+  function recordTheme(themeId) {
+    const changed = store.recordTheme(themeId);
+    if (changed) updateCounts();
+    return changed;
+  }
+
   dom.openWordLibrary.addEventListener("click", openLibrary);
   dom.openTotalReview.addEventListener("click", openReview);
   dom.backFromLibrary?.addEventListener("click", showPicker);
@@ -434,6 +561,7 @@ export function initializeThemeOverview({ configs, splitPhonetic, stressMarks, s
     store,
     get reviewSession() { return reviewSession; },
     record,
+    recordTheme,
     openLibrary,
     openReview,
     showPicker,

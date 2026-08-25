@@ -4,6 +4,7 @@
 
 - This repository is the durable source of truth shared between computers.
 - Read `PROJECT_HANDOFF.md` before starting implementation work.
+- Read `CODEX_COLLABORATION.md` before coordinating or delegating multi-chat work.
 - Check `git status --short --branch` before pulling or editing. Preserve user changes and never discard unrelated work.
 - Use the repository root as the Codex local project's primary folder so this file is discovered automatically.
 - Keep separate chats focused on separate outcomes; place durable decisions here or in checked-in documentation instead of relying on chat history.

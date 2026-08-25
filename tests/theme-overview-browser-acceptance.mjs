@@ -59,22 +59,34 @@ async function assertNoOverflow(page) {
   ), true);
 }
 
-async function learnAllWords(page) {
-  const grouped = await page.evaluate(() => {
-    const result = {};
-    const source = window.__THEME_OVERVIEW__ || window.__THEME_PROGRESS__;
-    for (const entry of source.catalog) {
-      (result[entry.themeId] ||= []).push(entry.id);
-    }
-    return result;
-  });
-  for (const [themeId, ids] of Object.entries(grouped)) {
-    await page.click('[data-theme-id="' + themeId + '"]');
-    for (const id of ids) {
-      await page.click('[data-theme="' + themeId + '"] [data-target="' + id + '"]');
-    }
-    await page.click("#backToThemes");
-  }
+
+async function openThemeSeries(page, themeId) {
+  const seriesId = ["body", "colors"].includes(themeId)
+    ? "basics"
+    : ["numbers1", "numbersTeens", "tens", "ordinals"].includes(themeId)
+      ? "counting"
+      : themeId === "twinkle"
+        ? "songs"
+        : "items";
+  const activeSeriesId = await page.evaluate(() => window.__THEME_LEARNING__.activeSeriesId);
+  if (activeSeriesId === seriesId && await page.locator("#themeSeriesPanel").isVisible()) return;
+  if (await page.locator("#learningView").isVisible()) await page.click("#backToThemes");
+  if (await page.locator("#themeSeriesPanel").isVisible()) await page.click("#backToSeries");
+  await page.click('[data-series-id="' + seriesId + '"]');
+  assert.equal(await page.evaluate(() => window.__THEME_LEARNING__.activeSeriesId), seriesId);
+}
+
+async function completeTheme(page, themeId, expectedCount) {
+  await openThemeSeries(page, themeId);
+  await page.click('[data-theme-id="' + themeId + '"]');
+  assert.equal(await page.locator("#completeThemeLearning").isDisabled(), false);
+  await page.click("#completeThemeLearning");
+  assert.equal(await page.locator("#completeThemeLearning").isDisabled(), true);
+  assert.match((await page.locator("#themeLearningStatus").textContent()).trim(), /已加入总词库/);
+  const saved = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), learnedKey);
+  assert.equal(saved.version, 2);
+  assert.equal(saved.learned.length, expectedCount);
+  await page.click("#backToThemes");
 }
 
 async function assertLibrary(page, expectedCount) {
@@ -98,6 +110,13 @@ async function assertLibrary(page, expectedCount) {
         viewBox: art.getAttribute?.("viewBox") || null,
         ordinal: art.querySelector?.("strong")?.textContent.trim() || null,
         expectedOrdinal: entry.art.label || null,
+        songIcon: art.querySelector?.("i")?.textContent.trim() || null,
+        expectedSongIcon: entry.art.icon || null,
+        units: art.querySelectorAll?.(".counting-units > i").length || 0,
+        groups: art.querySelectorAll?.(".counting-groups .ten-frame").length || 0,
+        groupDots: art.querySelectorAll?.(".counting-groups .ten-frame > b").length || 0,
+        expectedValue: entry.art.value || null,
+        expectedGroups: entry.art.groups || null,
         visible: box.width >= 80 && box.height >= 80
       };
     });
@@ -116,8 +135,19 @@ async function assertLibrary(page, expectedCount) {
     if (card.artType === "image") {
       assert.equal(card.source, card.expectedSource, card.key);
       assert.equal(card.viewBox, card.expectedViewBox, card.key);
-    } else {
+    } else if (card.artType === "song-word") {
+      assert.equal(card.songIcon, card.expectedSongIcon, card.key);
+    } else if (card.artType === "ordinal") {
       assert.equal(card.ordinal, card.expectedOrdinal, card.key);
+    } else if (card.artType === "count-units") {
+      assert.equal(card.units, card.expectedValue, card.key);
+      assert.equal(card.groups, 0, card.key);
+    } else if (card.artType === "count-groups") {
+      assert.equal(card.groups, card.expectedGroups, card.key);
+      assert.equal(card.groupDots, card.expectedValue, card.key);
+      assert.equal(card.units, 0, card.key);
+    } else {
+      assert.fail("Unknown artwork type: " + card.artType);
     }
   }
   assert.deepEqual(Object.values(result.statuses), Object.values(result.statuses).map(() => 200));
@@ -133,10 +163,10 @@ async function assertLibrary(page, expectedCount) {
 
 async function finishTotalReview(page) {
   const total = await page.evaluate(() => window.__THEME_OVERVIEW__.reviewSession.questions.length);
-  assert.equal(total, 46);
+  assert.equal(total, 81);
   assert.equal(await page.evaluate(() =>
     new Set(window.__THEME_OVERVIEW__.reviewSession.questions).size
-  ), 46);
+  ), 81);
   for (let index = 0; index < total; index += 1) {
     const state = await page.evaluate(() => {
       const session = window.__THEME_OVERVIEW__.reviewSession;
@@ -165,7 +195,7 @@ async function finishTotalReview(page) {
       { word: state.word });
     }
   }
-  assert.equal((await page.locator("#totalReviewResultScore").textContent()).trim(), "46/46");
+  assert.equal((await page.locator("#totalReviewResultScore").textContent()).trim(), "81/81");
 }
 
 const desktopContext = await prepareContext({ viewport: { width: 1440, height: 1000 } });
@@ -175,7 +205,7 @@ await page.goto(new URL("review-learning.html", baseUrl).href);
 await assertNoOverflow(page);
 assert.deepEqual(await page.locator(".theme-nav .nav-link").allTextContents().then((items) => items.map((item) => item.trim())), ["汉字", "主题学习", "总复习", "音标"]);
 assert.equal((await page.locator("#totalReviewCount").textContent()).trim(), "0 个已学");
-assert.equal((await page.locator("#wordLibraryCount").textContent()).trim(), "0/46");
+assert.equal((await page.locator("#wordLibraryCount").textContent()).trim(), "0/81");
 assert.equal(await page.locator("#totalReviewEmpty").isVisible(), true);
 
 await page.click("#openWordLibrary");
@@ -189,24 +219,59 @@ assert.equal(await page.locator("#wordLibraryView").isVisible(), true);
 await page.locator('.theme-nav a[href="./theme-learning.html"]').click();
 await page.waitForURL(/theme-learning\.html/);
 assert.equal(await page.locator("#openTotalReview, #openWordLibrary, #totalReviewView, #wordLibraryView").count(), 0);
-await learnAllWords(page);
-const themeStorageMutations = await page.evaluate(() => window.__storageMutations);
-assert.deepEqual(themeStorageMutations.filter(({ key }) => protectedKeys.includes(key)), []);
-assert.ok(themeStorageMutations.filter(({ key }) => key === learnedKey).length >= 46);
+assert.equal(await page.locator(".theme-series-cell").count(), 4);
+await openThemeSeries(page, "body");
+
+await page.click("#startTheme");
+await page.click('[data-theme="body"] [data-target="head"]');
+assert.equal(await page.evaluate((key) => localStorage.getItem(key), learnedKey), null);
+await page.click("#completeThemeLearning");
+let saved = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), learnedKey);
+assert.equal(saved.version, 2);
+assert.equal(saved.learned.length, 6);
+assert.deepEqual(saved.learnedThemes, ["body"]);
+assert.deepEqual(saved.reviewedThemes, []);
+await page.click("#backToThemes");
+
 await page.locator('.theme-nav a[href="./review-learning.html"]').click();
 await page.waitForURL(/review-learning\.html/);
-assert.equal((await page.locator("#totalReviewCount").textContent()).trim(), "46 个已学");
-assert.equal((await page.locator("#wordLibraryCount").textContent()).trim(), "46/46");
-const saved = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), learnedKey);
-assert.equal(saved.version, 1);
-assert.equal(saved.learned.length, 46);
-assert.equal(new Set(saved.learned).size, 46);
+assert.equal((await page.locator("#totalReviewCount").textContent()).trim(), "6 个已学");
+assert.equal((await page.locator("#wordLibraryCount").textContent()).trim(), "6/81");
+await page.click("#openWordLibrary");
+assert.equal(await page.locator(".library-card").count(), 6);
+
+await page.locator('.theme-nav a[href="./theme-learning.html"]').click();
+await page.waitForURL(/theme-learning\.html/);
+await completeTheme(page, "ordinals", 16);
+await page.locator('.theme-nav a[href="./review-learning.html"]').click();
+await page.waitForURL(/review-learning\.html/);
+assert.equal((await page.locator("#totalReviewCount").textContent()).trim(), "16 个已学");
+assert.equal((await page.locator("#wordLibraryCount").textContent()).trim(), "16/81");
+
+await page.locator('.theme-nav a[href="./theme-learning.html"]').click();
+await page.waitForURL(/theme-learning\.html/);
+for (const [themeId, expectedCount] of [["numbers1", 26], ["numbersTeens", 35], ["tens", 45], ["colors", 51], ["twinkle", 59], ["items1", 65], ["items2", 71], ["items3", 77], ["items4", 83]]) {
+  await completeTheme(page, themeId, expectedCount);
+}
+const themeStorageMutations = await page.evaluate(() => window.__storageMutations);
+assert.deepEqual(themeStorageMutations.filter(({ key }) => protectedKeys.includes(key)), []);
+assert.equal(themeStorageMutations.filter(({ key }) => key === learnedKey).length, 9);
+await page.locator('.theme-nav a[href="./review-learning.html"]').click();
+await page.waitForURL(/review-learning\.html/);
+assert.equal((await page.locator("#totalReviewCount").textContent()).trim(), "81 个已学");
+assert.equal((await page.locator("#wordLibraryCount").textContent()).trim(), "81/81");
+saved = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), learnedKey);
+assert.equal(saved.version, 2);
+assert.equal(saved.learned.length, 83);
+assert.equal(new Set(saved.learned).size, 83);
+assert.equal(saved.learnedThemes.length, 11);
+assert.deepEqual(saved.reviewedThemes, []);
 assert.deepEqual(await page.evaluate((keys) =>
   window.__storageMutations.filter(({ key }) => keys.includes(key)),
 protectedKeys), []);
 
 await page.click("#openWordLibrary");
-await assertLibrary(page, 46);
+await assertLibrary(page, 81);
 await assertNoOverflow(page);
 const firstPhonetic = page.locator(".library-phonetic").first();
 await firstPhonetic.click();
@@ -221,7 +286,7 @@ assert.equal(await page.evaluate(() => window.__spoken.length), spokenBefore + 1
 await page.screenshot({ path: "tests/theme-library-desktop.png", fullPage: true });
 
 await page.reload();
-assert.equal((await page.locator("#wordLibraryCount").textContent()).trim(), "46/46");
+assert.equal((await page.locator("#wordLibraryCount").textContent()).trim(), "81/81");
 await page.click("#openWordLibrary");
 await page.click("#startLibraryReview");
 assert.equal(await page.locator("#totalReviewPanel").isVisible(), true);
@@ -237,7 +302,7 @@ await page.screenshot({ path: "tests/theme-review-complete-desktop.png", fullPag
 await page.click("#restartTotalReview");
 assert.equal(await page.evaluate(() =>
   new Set(window.__THEME_OVERVIEW__.reviewSession.questions).size
-), 46);
+), 81);
 await desktopContext.close();
 
 const mobileContext = await prepareContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
@@ -245,12 +310,12 @@ const mobile = await mobileContext.newPage();
 watchPage(mobile);
 await mobile.goto(new URL("review-learning.html", baseUrl).href);
 await mobile.evaluate(() => {
-  for (const entry of window.__THEME_OVERVIEW__.catalog) {
-    window.__THEME_OVERVIEW__.record(entry.themeId, entry.id);
+  for (const themeId of ["body", "colors", "numbers1", "numbersTeens", "tens", "ordinals", "twinkle", "items1", "items2", "items3", "items4"]) {
+    window.__THEME_OVERVIEW__.recordTheme(themeId);
   }
 });
 await mobile.tap("#openWordLibrary");
-await assertLibrary(mobile, 46);
+await assertLibrary(mobile, 81);
 await assertNoOverflow(mobile);
 const mobileGeometry = await mobile.locator(".library-card").evaluateAll((cards) => ({
   allInside: cards.every((card) => {
@@ -289,18 +354,19 @@ assert.deepEqual(await mobile.evaluate((keys) =>
 protectedKeys), []);
 assert.ok((await mobile.evaluate((key) =>
   window.__storageMutations.filter((item) => item.key === key).length,
-learnedKey)) >= 46);
+learnedKey)), 11);
 await mobileContext.close();
 
 assert.deepEqual(pageErrors, []);
 assert.deepEqual(failedResponses, []);
 console.log(JSON.stringify({
   ok: true,
-  learnedWords: 46,
-  libraryCards: { desktop: 46, mobile390: 46 },
-  review: { questions: 46, unique: 46, choicesPerQuestion: 4, wrongRetry: true, restart: true },
-  artwork: { mappedWords: 46, imageCrops: 36, ordinalCards: 10, assetsHttp200: 6 },
-  persistence: { key: learnedKey, refreshRestored: true, protectedKeysUnchanged: protectedKeys },
+  themeRecords: 83,
+  learnedWords: 81,
+  libraryCards: { desktop: 81, mobile390: 81 },
+  review: { questions: 81, unique: 81, choicesPerQuestion: 4, wrongRetry: true, restart: true },
+  artwork: { mappedThemeRecords: 83, uniqueLibraryWords: 81, songWordCards: 8, imageCrops: 35, ordinalCards: 10, countUnits: 19, countGroups: 9, assetsHttp200: 6 },
+  persistence: { key: learnedKey, schema: 2, themeCompletionWrites: 11, refreshRestored: true, protectedKeysUnchanged: protectedKeys },
   overflow: { desktop: false, mobile390: false },
   screenshots: [
     "tests/theme-library-desktop.png",

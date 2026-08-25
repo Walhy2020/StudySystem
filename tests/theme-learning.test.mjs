@@ -3,12 +3,25 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import {
   BodyThemeSession,
+  CLASSIC_ITEMS_1_WORDS,
+  CLASSIC_ITEMS_2_WORDS,
+  CLASSIC_ITEMS_3_WORDS,
+  CLASSIC_ITEMS_4_WORDS,
   COLOR_WORDS,
+  ORDINAL_WORDS,
   THEME_CONFIGS,
   THEME_WORDS,
   ThemeSession,
-  speakEnglish
+  speakEnglish,
+  splitPhonetic
 } from "../theme-learning.js";
+import {
+  THEME_LEARNED_STORAGE_KEY,
+  ThemeLearnedStore,
+  TotalReviewSession,
+  buildThemeCatalog,
+  themeWordKey
+} from "../src/theme-overview.js";
 
 test("身体主题六词数据保持准确、唯一且字段不变", () => {
   assert.deepEqual(THEME_WORDS, [
@@ -36,38 +49,141 @@ test("颜色主题六词的英音中、物体、例句、指令逐项准确", ()
   assert.equal(new Set(COLOR_WORDS.map(({ word }) => word)).size, 6);
 });
 
-test("通用会话认识去重、六题不重复、错误重试、完成并可重开", () => {
-  for (const words of [THEME_WORDS, COLOR_WORDS]) {
+test("经典道具 I 六词的英音中、例句和指令逐项准确", () => {
+  assert.deepEqual(CLASSIC_ITEMS_1_WORDS, [
+    { id: "coin", word: "coin", phonetic: "/kɔɪn/", chinese: "金币", sentence: "The coin is gold.", instruction: "Touch the coin.", ariaLabel: "coin 金币" },
+    { id: "key", word: "key", phonetic: "/kiː/", chinese: "钥匙", sentence: "This key opens the door.", instruction: "Touch the key.", ariaLabel: "key 钥匙" },
+    { id: "crown", word: "crown", phonetic: "/kraʊn/", chinese: "王冠", sentence: "The crown is royal.", instruction: "Touch the crown.", ariaLabel: "crown 王冠" },
+    { id: "treasure", word: "treasure", phonetic: "/ˈtreʒə/", chinese: "宝藏", sentence: "The treasure is in the chest.", instruction: "Touch the treasure chest.", ariaLabel: "treasure chest 宝箱" },
+    { id: "star", word: "star", phonetic: "/stɑː/", chinese: "星星", sentence: "The star is bright.", instruction: "Touch the star.", ariaLabel: "star 星星" },
+    { id: "moon", word: "moon", phonetic: "/muːn/", chinese: "月亮", sentence: "The moon shines at night.", instruction: "Touch the moon.", ariaLabel: "moon 月亮" }
+  ]);
+  assert.equal(CLASSIC_ITEMS_1_WORDS.length, 6);
+  assert.equal(new Set(CLASSIC_ITEMS_1_WORDS.map(({ id }) => id)).size, 6);
+  assert.equal(new Set(CLASSIC_ITEMS_1_WORDS.map(({ word }) => word)).size, 6);
+});
+test("经典道具 II 六词数据逐项准确", () => {
+  assert.deepEqual(CLASSIC_ITEMS_2_WORDS, [
+    { id: "mushroom", word: "mushroom", phonetic: "/ˈmʌʃruːm/", chinese: "蘑菇", sentence: "This is a mushroom.", instruction: "Touch the mushroom.", ariaLabel: "mushroom 蘑菇" },
+    { id: "flower", word: "flower", phonetic: "/ˈflaʊə/", chinese: "花", sentence: "The flower is bright.", instruction: "Touch the flower.", ariaLabel: "flower 花" },
+    { id: "leaf", word: "leaf", phonetic: "/liːf/", chinese: "叶子", sentence: "The leaf is green.", instruction: "Touch the leaf.", ariaLabel: "leaf 叶子" },
+    { id: "feather", word: "feather", phonetic: "/ˈfeðə/", chinese: "羽毛", sentence: "The feather is light.", instruction: "Touch the feather.", ariaLabel: "feather 羽毛" },
+    { id: "bell", word: "bell", phonetic: "/bel/", chinese: "铃铛", sentence: "The bell rings.", instruction: "Touch the bell.", ariaLabel: "bell 铃铛" },
+    { id: "acorn", word: "acorn", phonetic: "/ˈeɪkɔːn/", chinese: "橡果", sentence: "The acorn is small.", instruction: "Touch the acorn.", ariaLabel: "acorn 橡果" }
+  ]);
+});
+
+test("经典道具 III 六词数据逐项准确", () => {
+  assert.deepEqual(CLASSIC_ITEMS_3_WORDS, [
+    { id: "banana", word: "banana", phonetic: "/bəˈnɑːnə/", chinese: "香蕉", sentence: "This is a banana.", instruction: "Touch the banana.", ariaLabel: "banana 香蕉" },
+    { id: "shell", word: "shell", phonetic: "/ʃel/", chinese: "龟壳", sentence: "The shell is green.", instruction: "Touch the shell.", ariaLabel: "shell 龟壳" },
+    { id: "bomb", word: "bomb", phonetic: "/bɒm/", chinese: "炸弹", sentence: "The bomb is black.", instruction: "Touch the bomb.", ariaLabel: "bomb 炸弹" },
+    { id: "lightning", word: "lightning", phonetic: "/ˈlaɪtnɪŋ/", chinese: "闪电", sentence: "Lightning is fast.", instruction: "Touch the lightning.", ariaLabel: "lightning 闪电" },
+    { id: "horn", word: "horn", phonetic: "/hɔːn/", chinese: "喇叭", sentence: "The horn is loud.", instruction: "Touch the horn.", ariaLabel: "horn 喇叭" },
+    { id: "ink", word: "ink", phonetic: "/ɪŋk/", chinese: "墨水", sentence: "The ink is black.", instruction: "Touch the ink.", ariaLabel: "ink 墨水" }
+  ]);
+});
+
+test("经典道具 IV 六词数据逐项准确", () => {
+  assert.deepEqual(CLASSIC_ITEMS_4_WORDS, [
+    { id: "cap", word: "cap", phonetic: "/kæp/", chinese: "帽子", sentence: "The cap is red.", instruction: "Touch the cap.", ariaLabel: "cap 帽子" },
+    { id: "suit", word: "suit", phonetic: "/suːt/", chinese: "套装", sentence: "This is a suit.", instruction: "Touch the suit.", ariaLabel: "suit 套装" },
+    { id: "hammer", word: "hammer", phonetic: "/ˈhæmə/", chinese: "锤子", sentence: "The hammer is heavy.", instruction: "Touch the hammer.", ariaLabel: "hammer 锤子" },
+    { id: "boomerang", word: "boomerang", phonetic: "/ˈbuːməræŋ/", chinese: "回旋镖", sentence: "The boomerang comes back.", instruction: "Touch the boomerang.", ariaLabel: "boomerang 回旋镖" },
+    { id: "spring", word: "spring", phonetic: "/sprɪŋ/", chinese: "弹簧", sentence: "The spring can bounce.", instruction: "Touch the spring.", ariaLabel: "spring 弹簧" },
+    { id: "egg", word: "egg", phonetic: "/eɡ/", chinese: "蛋", sentence: "This is an egg.", instruction: "Touch the egg.", ariaLabel: "egg 蛋" }
+  ]);
+});
+test("第一到第十主题十个序数词的英音中和例句逐项准确", () => {
+  assert.deepEqual(ORDINAL_WORDS, [
+    { id: "first", word: "first", phonetic: "/fɜːst/", chinese: "第一", sentence: "This is the first." },
+    { id: "second", word: "second", phonetic: "/ˈsekənd/", chinese: "第二", sentence: "This is the second." },
+    { id: "third", word: "third", phonetic: "/θɜːd/", chinese: "第三", sentence: "This is the third." },
+    { id: "fourth", word: "fourth", phonetic: "/fɔːθ/", chinese: "第四", sentence: "This is the fourth." },
+    { id: "fifth", word: "fifth", phonetic: "/fɪfθ/", chinese: "第五", sentence: "This is the fifth." },
+    { id: "sixth", word: "sixth", phonetic: "/sɪksθ/", chinese: "第六", sentence: "This is the sixth." },
+    { id: "seventh", word: "seventh", phonetic: "/ˈsevənθ/", chinese: "第七", sentence: "This is the seventh." },
+    { id: "eighth", word: "eighth", phonetic: "/eɪtθ/", chinese: "第八", sentence: "This is the eighth." },
+    { id: "ninth", word: "ninth", phonetic: "/naɪnθ/", chinese: "第九", sentence: "This is the ninth." },
+    { id: "tenth", word: "tenth", phonetic: "/tenθ/", chinese: "第十", sentence: "This is the tenth." }
+  ]);
+  assert.equal(ORDINAL_WORDS.length, 10);
+  assert.equal(new Set(ORDINAL_WORDS.map(({ id }) => id)).size, 10);
+  assert.equal(new Set(ORDINAL_WORDS.map(({ word }) => word)).size, 10);
+});
+
+test("七个主题的46个整词音标按48音标口径准确拆解", () => {
+  const expected = {
+    head: ["h", "e", "d"], hand: ["h", "æ", "n", "d"], arm: ["ɑː", "m"], leg: ["l", "e", "ɡ"], foot: ["f", "ʊ", "t"], body: ["ˈ", "b", "ɒ", "d", "i"],
+    red: ["r", "e", "d"], blue: ["b", "l", "uː"], green: ["ɡ", "r", "iː", "n"], yellow: ["ˈ", "j", "e", "l", "əʊ"], black: ["b", "l", "æ", "k"], white: ["w", "aɪ", "t"],
+    coin: ["k", "ɔɪ", "n"], key: ["k", "iː"], crown: ["k", "r", "aʊ", "n"], treasure: ["ˈ", "tr", "e", "ʒ", "ə"], star: ["s", "t", "ɑː"], moon: ["m", "uː", "n"],
+    mushroom: ["ˈ", "m", "ʌ", "ʃ", "r", "uː", "m"], flower: ["ˈ", "f", "l", "aʊ", "ə"], leaf: ["l", "iː", "f"], feather: ["ˈ", "f", "e", "ð", "ə"], bell: ["b", "e", "l"], acorn: ["ˈ", "eɪ", "k", "ɔː", "n"],
+    banana: ["b", "ə", "ˈ", "n", "ɑː", "n", "ə"], shell: ["ʃ", "e", "l"], bomb: ["b", "ɒ", "m"], lightning: ["ˈ", "l", "aɪ", "t", "n", "ɪ", "ŋ"], horn: ["h", "ɔː", "n"], ink: ["ɪ", "ŋ", "k"],
+    cap: ["k", "æ", "p"], suit: ["s", "uː", "t"], hammer: ["ˈ", "h", "æ", "m", "ə"], boomerang: ["ˈ", "b", "uː", "m", "ə", "r", "æ", "ŋ"], spring: ["s", "p", "r", "ɪ", "ŋ"], egg: ["e", "ɡ"],    first: ["f", "ɜː", "s", "t"], second: ["ˈ", "s", "e", "k", "ə", "n", "d"], third: ["θ", "ɜː", "d"], fourth: ["f", "ɔː", "θ"], fifth: ["f", "ɪ", "f", "θ"], sixth: ["s", "ɪ", "k", "s", "θ"], seventh: ["ˈ", "s", "e", "v", "ə", "n", "θ"], eighth: ["eɪ", "t", "θ"], ninth: ["n", "aɪ", "n", "θ"], tenth: ["t", "e", "n", "θ"]
+  };
+  for (const word of [...THEME_WORDS, ...COLOR_WORDS, ...ORDINAL_WORDS, ...CLASSIC_ITEMS_1_WORDS, ...CLASSIC_ITEMS_2_WORDS, ...CLASSIC_ITEMS_3_WORDS, ...CLASSIC_ITEMS_4_WORDS]) {
+    assert.deepEqual(splitPhonetic(word.phonetic), expected[word.id], word.id);
+  }
+  for (const diphthong of ["eɪ", "aɪ", "ɔɪ", "əʊ", "aʊ", "ɪə", "eə", "ʊə"]) {
+    assert.deepEqual(splitPhonetic("/" + diphthong + "/"), [diphthong]);
+  }
+  assert.deepEqual(splitPhonetic("/i:/"), ["iː"]);
+  assert.deepEqual(splitPhonetic(null), []);
+});
+
+test("通用会话认识去重、每轮不重复、错误重试、完成并可重开", () => {
+  for (const words of [THEME_WORDS, COLOR_WORDS, ORDINAL_WORDS, CLASSIC_ITEMS_1_WORDS, CLASSIC_ITEMS_2_WORDS, CLASSIC_ITEMS_3_WORDS, CLASSIC_ITEMS_4_WORDS]) {
     const session = new ThemeSession(words, () => 0.37);
     session.learn(words[0].id); session.learn(words[0].id); session.learn(words[4].id);
     assert.equal(session.seen.size, 2);
-    assert.equal(new Set(session.questions).size, 6);
+    assert.equal(new Set(session.questions).size, words.length);
     const first = session.target();
     const wrong = words.find(({ id }) => id !== first.id).id;
     assert.equal(session.answer(wrong).status, "wrong");
     assert.equal(session.target().id, first.id);
     for (const id of [...session.questions]) assert.equal(session.answer(id).status, "correct");
     assert.equal(session.complete, true);
-    assert.equal(session.correctCount, 6);
+    assert.equal(session.correctCount, words.length);
     session.startRound();
     assert.equal(session.complete, false);
     assert.equal(session.correctCount, 0);
-    assert.equal(new Set(session.questions).size, 6);
+    assert.equal(new Set(session.questions).size, words.length);
   }
 });
 
-test("Body 兼容会话与 Colors 会话状态完全隔离", () => {
+test("七个主题会话状态完全隔离", () => {
   const body = new BodyThemeSession(() => 0.2);
   const colors = new ThemeSession(THEME_CONFIGS.colors.words, () => 0.8);
+  const ordinals = new ThemeSession(THEME_CONFIGS.ordinals.words, () => 0.5);
+  const items = new ThemeSession(THEME_CONFIGS.items1.words, () => 0.1);
+  const items2 = new ThemeSession(THEME_CONFIGS.items2.words, () => 0.2);
+  const items3 = new ThemeSession(THEME_CONFIGS.items3.words, () => 0.3);
+  const items4 = new ThemeSession(THEME_CONFIGS.items4.words, () => 0.4);
   body.learn("head");
   colors.learn("red");
+  ordinals.learn("first");
+  items.learn("coin");
+  items2.learn("mushroom");
+  items3.learn("banana");
+  items4.learn("cap");
   colors.answer(colors.target().id);
   assert.deepEqual([...body.seen], ["head"]);
   assert.deepEqual([...colors.seen], ["red"]);
   assert.equal(body.correctCount, 0);
   assert.equal(colors.correctCount, 1);
+  assert.deepEqual([...ordinals.seen], ["first"]);
+  assert.deepEqual([...items.seen], ["coin"]);
+  assert.deepEqual([...items2.seen], ["mushroom"]);
+  assert.deepEqual([...items3.seen], ["banana"]);
+  assert.deepEqual([...items4.seen], ["cap"]);
+  assert.equal(ordinals.correctCount, 0);
   body.startRound();
   assert.equal(colors.correctCount, 1);
+  assert.equal(ordinals.correctCount, 0);
+  assert.equal(items.correctCount, 0);
+  assert.equal(items2.correctCount, 0);
+  assert.equal(items3.correctCount, 0);
+  assert.equal(items4.correctCount, 0);
 });
 
 test("TTS 不可用或调用失败时不抛错并使用英式语言标签", () => {
@@ -81,24 +197,234 @@ test("TTS 不可用或调用失败时不抛错并使用英式语言标签", () =
   assert.equal(spoken.lang, "en-GB");
 });
 
-test("主题页两个卡片、十二个键盘热区、阶段隔离和 v1.1 引用齐全", async () => {
+test("总词库覆盖七主题46词且每个词都有唯一正确配图映射", () => {
+  const catalog = buildThemeCatalog(THEME_CONFIGS);
+  assert.equal(catalog.length, 46);
+  assert.equal(new Set(catalog.map(({ key }) => key)).size, 46);
+  assert.equal(catalog.filter(({ art }) => art.type === "image").length, 36);
+  assert.equal(catalog.filter(({ art }) => art.type === "ordinal").length, 10);
+  for (const entry of catalog) {
+    assert.equal(entry.key, themeWordKey(entry.themeId, entry.id));
+    if (entry.art.type === "ordinal") {
+      assert.match(entry.art.label, /^\d+(st|nd|rd|th)$/);
+      continue;
+    }
+    assert.match(entry.art.src, /^\.\/assets\/themes\/(body|colors|items)\//);
+    assert.ok(entry.art.width > 0 && entry.art.height > 0);
+    const crop = entry.art.viewBox.split(/\s+/).map(Number);
+    assert.equal(crop.length, 4);
+    assert.ok(crop.every((value) => Number.isFinite(value) && value >= 0));
+    assert.ok(crop[0] + crop[2] <= entry.art.width);
+    assert.ok(crop[1] + crop[3] <= entry.art.height);
+  }
+  for (const series of [1, 2, 3, 4]) {
+    const entries = catalog.filter(({ themeId }) => themeId === "items" + series);
+    assert.equal(entries.length, 6);
+    assert.ok(entries.every(({ art }) => art.src === "./assets/themes/items/classic-items-" + series + "-scene-v1.png"));
+  }
+});
+
+test("已学单词存储去重、过滤未知词并只写主题专属键", () => {
+  const catalog = buildThemeCatalog(THEME_CONFIGS);
+  const values = new Map();
+  const mutations = [];
+  const storage = {
+    getItem(key) { return values.get(key) ?? null; },
+    setItem(key, value) { mutations.push(key); values.set(key, value); }
+  };
+  const store = new ThemeLearnedStore(catalog, storage);
+  assert.equal(store.record("body", "head"), true);
+  assert.equal(store.record("body", "head"), false);
+  assert.equal(store.record("colors", "red"), true);
+  assert.equal(store.record("missing", "word"), false);
+  assert.deepEqual(store.entries().map(({ key }) => key), ["body:head", "colors:red"]);
+  assert.deepEqual(mutations, [THEME_LEARNED_STORAGE_KEY, THEME_LEARNED_STORAGE_KEY]);
+
+  values.set(THEME_LEARNED_STORAGE_KEY, JSON.stringify({
+    version: 1,
+    learned: ["body:head", "items4:egg", "unknown:value"]
+  }));
+  const restored = new ThemeLearnedStore(catalog, storage);
+  assert.deepEqual(restored.entries().map(({ key }) => key), ["body:head", "items4:egg"]);
+});
+
+test("总复习每轮覆盖全部已学词、图片选项唯一、答错重试并可重开", () => {
+  const words = buildThemeCatalog(THEME_CONFIGS).slice(0, 9);
+  const session = new TotalReviewSession(words, () => 0.37, 4);
+  assert.equal(session.questions.length, 9);
+  assert.equal(new Set(session.questions).size, 9);
+  while (!session.complete) {
+    const target = session.target();
+    const options = session.options();
+    assert.ok(options.some(({ key }) => key === target.key));
+    assert.equal(new Set(options.map(({ key }) => key)).size, options.length);
+    assert.ok(options.length >= 1 && options.length <= 4);
+    const wrong = options.find(({ key }) => key !== target.key);
+    if (wrong) {
+      assert.equal(session.answer(wrong.key).status, "wrong");
+      assert.equal(session.target().key, target.key);
+    }
+    assert.equal(session.answer(target.key).status, "correct");
+  }
+  assert.equal(session.correctCount, 9);
+  session.startRound();
+  assert.equal(session.complete, false);
+  assert.equal(session.correctCount, 0);
+  assert.equal(new Set(session.questions).size, 9);
+
+  const empty = new TotalReviewSession([], () => 0.5);
+  assert.equal(empty.complete, true);
+  assert.deepEqual(empty.options(), []);
+});
+
+test("主题页七个卡片、四十六个键盘热区、阶段隔离和缓存引用齐全", async () => {
   const html = await readFile(new URL("../theme-learning.html", import.meta.url), "utf8");
   assert.match(html, /data-theme-id="body"/);
   assert.match(html, /data-theme-id="colors"/);
+  assert.match(html, /data-theme-id="ordinals"/);
+  assert.match(html, /data-theme-id="items1"/);
+  assert.match(html, /data-theme-id="items2"/);
+  assert.match(html, /data-theme-id="items3"/);
+  assert.match(html, /data-theme-id="items4"/);
   for (const id of THEME_WORDS.map(({ id }) => id)) {
     assert.match(html, new RegExp('data-target="' + id + '" data-part="' + id + '" tabindex="0" role="button"'));
   }
   for (const item of COLOR_WORDS) {
     assert.match(html, new RegExp('data-target="' + item.id + '" tabindex="0" role="button" aria-label="' + item.ariaLabel + '"'));
   }
+  for (const item of ORDINAL_WORDS) {
+    assert.match(html, new RegExp('data-target="' + item.id + '" tabindex="0" role="button" aria-label="' + item.chinese + ' ' + item.word + '"'));
+  }
+  for (const item of CLASSIC_ITEMS_1_WORDS) {
+    assert.match(html, new RegExp('data-target="' + item.id + '" tabindex="0" role="button" aria-label="' + item.ariaLabel + '"'));
+  }
+  for (const item of [...CLASSIC_ITEMS_2_WORDS, ...CLASSIC_ITEMS_3_WORDS, ...CLASSIC_ITEMS_4_WORDS]) {
+    assert.match(html, new RegExp('data-target="' + item.id + '" tabindex="0" role="button" aria-label="' + item.ariaLabel + '"'));
+  }
   assert.match(html, /id="learnPanel"/);
   assert.match(html, /id="practicePanel" hidden/);
   assert.match(html, /id="backToThemes"/);
-  assert.match(html, /theme-learning\.css\?v=1\.1/);
-  assert.match(html, /theme-learning\.js\?v=1\.1/);
+  assert.match(html, /id="startOrdinals"/);
+  assert.match(html, /id="ordinalsScene"/);
+  assert.match(html, /id="startItems1"/);
+  assert.match(html, /id="items1Scene"/);
+  assert.match(html, /id="startItems2"/);
+  assert.match(html, /id="startItems3"/);
+  assert.match(html, /id="startItems4"/);
+  assert.match(html, /id="items2Scene"/);
+  assert.match(html, /id="items3Scene"/);
+  assert.match(html, /id="items4Scene"/);
+
+
+
+  assert.doesNotMatch(html, /id="openTotalReview"|id="openWordLibrary"|id="wordLibraryView"|id="totalReviewView"/);
+  assert.match(html, /href="\.\/review-learning\.html">总复习<\/a>/);
+  assert.match(html, /theme-learning\.css\?v=2\.2/);
+  assert.match(html, /theme-learning\.js\?v=2\.1/);
+  const script = await readFile(new URL("../theme-learning.js", import.meta.url), "utf8");
+  assert.match(script, /phonetic-segmenter\.js\?v=1\.0/);
+  assert.match(script, /theme-overview\.js\?v=1\.1/);
+  assert.match(script, /initializeThemeProgress/);
+  assert.match(script, /theme-word-learned/);
+  assert.match(script, /class="phonetic phonetic-toggle"/);
+  assert.match(script, /class="phoneme-breakdown"/);
+  assert.match(script, /aria-expanded="false"/);
+  assert.match(script, /class="primary-button icon-action sound-action theme-sound-button"/);
+  assert.match(script, /id="previousWord"/);
+  assert.match(script, /id="nextWord"/);
+  assert.match(script, /word-navigation">[\s\S]*?id="repeatWord"[\s\S]*?id="previousWord"[\s\S]*?id="nextWord"/);
+  assert.match(script, />Previous<\/button>/);
+  assert.match(script, />Next<\/button>/);
+  assert.doesNotMatch(script, /← 上一个|下一个 →|phoneticHint|点击音标拆解|收起音标拆解/);
+  assert.match(script, /toggleCurrentPhonetic/);
+  assert.doesNotMatch(script, /<small>/);
+  assert.doesNotMatch(script, />\/' \+ symbol \+ '\/<\/span>/);
+  const learnBranch = script.match(/if \(stage === "learn"\) \{([\s\S]*?)\n    \}\n    if \(session\.complete\)/)?.[1];
+  assert.ok(learnBranch);
+  assert.doesNotMatch(learnBranch, /speak\s*\(/);
+  assert.doesNotMatch(html, /WORD CARD/);
+  const css = await readFile(new URL("../theme-learning.css", import.meta.url), "utf8");
+  assert.match(css, /--phonetic-font:/);
+  assert.match(css, /\.theme-sound-button\{[^}]*width:76px[^}]*height:76px/);
+  assert.match(html, /href="\.\/assets\/themes\/body\/body-character-anime-v2\.png"/);
+  assert.match(html, /class="body-character-image"[^>]+pointer-events="none"/);
+  assert.match(html, /href="\.\/assets\/themes\/colors\/colors-scene-v2\.png"/);
+  assert.match(html, /class="color-scene-image"[^>]+pointer-events="none"/);
+  assert.match(html, /href="\.\/assets\/themes\/items\/classic-items-1-scene-v1\.png"/);
+  assert.match(html, /class="item-scene-image"[^>]+pointer-events="none"/);
+  for (const series of [2, 3, 4]) assert.match(html, new RegExp("classic-items-" + series + "-scene-v1\\.png"));
+  assert.doesNotMatch(html, /代码原生场景|代码绘制的红帽蓝裤角色原型/);
 });
 
-test("主题脚本不访问任何浏览器存储", async () => {
-  const script = await readFile(new URL("../theme-learning.js", import.meta.url), "utf8");
-  assert.doesNotMatch(script, /localStorage|sessionStorage|\.setItem\s*\(|\.removeItem\s*\(/);
+test("总复习是独立并列模块，主题页只记录学习进度", async () => {
+  const [themeHtml, reviewHtml, indexHtml, phoneticsHtml, reviewScript] = await Promise.all([
+    readFile(new URL("../theme-learning.html", import.meta.url), "utf8"),
+    readFile(new URL("../review-learning.html", import.meta.url), "utf8"),
+    readFile(new URL("../index.html", import.meta.url), "utf8"),
+    readFile(new URL("../phonetics.html", import.meta.url), "utf8"),
+    readFile(new URL("../review-learning.js", import.meta.url), "utf8")
+  ]);
+  assert.doesNotMatch(themeHtml, /id="openTotalReview"|id="openWordLibrary"|id="wordLibraryView"|id="totalReviewView"/);
+  assert.match(themeHtml, /href="\.\/review-learning\.html">总复习<\/a>/);
+  assert.match(indexHtml, /href="\.\/review-learning\.html">总复习<\/a>/);
+  assert.match(phoneticsHtml, /href="\.\/review-learning\.html">总复习<\/a>/);
+  assert.match(reviewHtml, /<title>马里奥学习系统 · 总复习<\/title>/);
+  assert.match(reviewHtml, /aria-current="page">总复习<\/span>/);
+  assert.match(reviewHtml, /id="openTotalReview"/);
+  assert.match(reviewHtml, /id="openWordLibrary"/);
+  assert.match(reviewHtml, /id="totalReviewView"/);
+  assert.match(reviewHtml, /id="wordLibraryView" hidden/);
+  assert.match(reviewHtml, /theme-learning\.css\?v=2\.2/);
+  assert.match(reviewHtml, /review-learning\.js\?v=1\.0/);
+  assert.match(reviewScript, /theme-learning\.js\?v=2\.1/);
+  assert.match(reviewScript, /theme-overview\.js\?v=1\.1/);
+  assert.match(reviewScript, /overview\.openReview\(\)/);
+});
+
+test("Body 场景素材为 1024x1536 透明 PNG", async () => {
+  const image = await readFile(new URL("../assets/themes/body/body-character-anime-v2.png", import.meta.url));
+  assert.deepEqual([...image.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10]);
+  assert.equal(image.subarray(12, 16).toString("ascii"), "IHDR");
+  assert.equal(image.readUInt32BE(16), 1024);
+  assert.equal(image.readUInt32BE(20), 1536);
+  assert.equal(image[25], 6);
+});
+
+test("Colors 场景素材为 1536x1024 PNG", async () => {
+  const image = await readFile(new URL("../assets/themes/colors/colors-scene-v2.png", import.meta.url));
+  assert.deepEqual([...image.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10]);
+  assert.equal(image.subarray(12, 16).toString("ascii"), "IHDR");
+  assert.equal(image.readUInt32BE(16), 1536);
+  assert.equal(image.readUInt32BE(20), 1024);
+});
+
+test("Classic Items I 场景素材为 1536x1024 PNG", async () => {
+  const image = await readFile(new URL("../assets/themes/items/classic-items-1-scene-v1.png", import.meta.url));
+  assert.deepEqual([...image.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10]);
+  assert.equal(image.subarray(12, 16).toString("ascii"), "IHDR");
+  assert.equal(image.readUInt32BE(16), 1536);
+  assert.equal(image.readUInt32BE(20), 1024);
+});
+for (const series of [2, 3, 4]) {
+  test("Classic Items " + series + " 场景素材为 1536x1024 PNG", async () => {
+    const image = await readFile(new URL("../assets/themes/items/classic-items-" + series + "-scene-v1.png", import.meta.url));
+    assert.deepEqual([...image.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10]);
+    assert.equal(image.readUInt32BE(16), 1536);
+    assert.equal(image.readUInt32BE(20), 1024);
+  });
+}
+test("主题模块只持久化新的已学词专属键", async () => {
+  const mainScript = await readFile(new URL("../theme-learning.js", import.meta.url), "utf8");
+  const overviewScript = await readFile(new URL("../src/theme-overview.js", import.meta.url), "utf8");
+  assert.doesNotMatch(mainScript, /localStorage|sessionStorage|\.setItem\s*\(|\.removeItem\s*\(/);
+  assert.match(overviewScript, /THEME_LEARNED_STORAGE_KEY = "mario-theme-learned-v1"/);
+  assert.match(overviewScript, /\.setItem\(THEME_LEARNED_STORAGE_KEY/);
+  for (const protectedKey of [
+    "mario-hanzi-refactor-v1",
+    "mario-literacy-desktop-mvp-v1",
+    "mario-bomb-game-progress-v1",
+    "mario-bomb-game-v1",
+    "mario-phonetics-v1",
+    "mario-theme-learning-v1"
+  ]) assert.doesNotMatch(overviewScript, new RegExp(protectedKey));
 });

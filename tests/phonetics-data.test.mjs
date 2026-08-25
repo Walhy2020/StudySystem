@@ -81,6 +81,8 @@ test("炸弹入口位于音标页 header，地图内只保留重置按钮，提�
   assert.doesNotMatch(map, /bombGameEntry/);
   assert.match(currentCard, /phonetic-card-category[\s\S]*phonetic-symbol-stage[\s\S]*hanzi-content/);
   assert.match(appSource, /phonetic-example-word[\s\S]*phonetic-transcription/);
+  assert.match(map, /assets\/backgrounds\/phonetics-sound-kingdom-v2\.png\?v=1\.0/);
+  assert.doesNotMatch(map, /adventure-map\.svg/);
   assert.match(appSource, /classList\.toggle\("phonetic-state-label", kind === "placeholder"\)/);
   assert.doesNotMatch(appSource, /class="phonetic-category"/);
   assert.doesNotMatch(appSource, /<small>/);

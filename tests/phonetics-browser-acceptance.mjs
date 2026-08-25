@@ -75,7 +75,7 @@ const pageErrors = [];
 page.on("pageerror", (error) => pageErrors.push(error.message));
 
 await page.goto(mainUrl);
-assert.deepEqual(await page.locator(".module-tabs .module-tab").allTextContents(), ["汉字", "主题学习", "音标"]);
+assert.deepEqual(await page.locator(".module-tabs .module-tab").allTextContents(), ["汉字", "主题学习", "总复习", "音标"]);
 assert.equal(await page.locator('.module-tabs a[href="./phonetics.html"]').isVisible(), true);
 assert.equal(await page.locator("header .top-actions #bombGameEntry").isVisible(), true);
 assert.equal(await page.locator('.module-tabs a[href*="bomb-game"]').count(), 0);
@@ -98,7 +98,7 @@ const assetStatuses = await page.evaluate(async () => {
     "./src/phonetics-app.js?v=1.6", "./src/phonetics-display.js?v=1.0",
     "./src/phonetics-engine.js?v=1.1", "./src/phonetics-storage.js?v=1.0",
     "./src/phonetics-tts.js?v=1.2", "./src/engine.js", "./src/storage.js",
-    "./assets/adventure-map.svg?v=1.0",
+    "./assets/backgrounds/phonetics-sound-kingdom-v2.png?v=1.0",
   ];
   return Object.fromEntries(await Promise.all(assets.map(async (asset) => {
     const response = await fetch(asset);
@@ -108,7 +108,7 @@ const assetStatuses = await page.evaluate(async () => {
 assert.ok(Object.values(assetStatuses).every((status) => status === 200), JSON.stringify(assetStatuses));
 assert.equal(await page.locator("#bootError").isHidden(), true);
 assert.equal(await page.locator('.module-tabs a[href="./index.html"]').isVisible(), true);
-assert.deepEqual(await page.locator(".module-tabs .module-tab").allTextContents(), ["汉字", "主题学习", "音标"]);
+assert.deepEqual(await page.locator(".module-tabs .module-tab").allTextContents(), ["汉字", "主题学习", "总复习", "音标"]);
 assert.equal(await page.locator("header .phonetics-header-actions #bombGameEntry").isVisible(), true);
 assert.equal(await page.locator("header #resetPhonetics").count(), 0);
 assert.equal(await page.locator(".map-visual #bombGameEntry").count(), 0);

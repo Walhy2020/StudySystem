@@ -1,0 +1,444 @@
+export const THEME_LEARNED_STORAGE_KEY = "mario-theme-learned-v1";
+export const THEME_LEARNED_SCHEMA_VERSION = 1;
+
+const BODY_CROPS = Object.freeze({
+  head: "245 20 534 520",
+  hand: "155 805 235 310",
+  arm: "165 585 285 360",
+  body: "285 485 475 500",
+  leg: "250 900 320 455",
+  foot: "135 1280 455 245"
+});
+const COLOR_CROPS = Object.freeze({
+  red: "75 120 475 390",
+  blue: "545 115 450 405",
+  green: "1025 115 430 425",
+  yellow: "90 490 440 430",
+  black: "535 470 470 475",
+  white: "970 485 505 385"
+});
+const ITEM_CROPS = Object.freeze([
+  "35 25 490 445",
+  "500 25 500 455",
+  "985 35 515 455",
+  "25 475 510 515",
+  "510 470 515 520",
+  "1000 465 510 525"
+]);
+const ORDINAL_LABELS = Object.freeze(["1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th"]);
+const ITEM_ASSETS = Object.freeze({
+  items1: "./assets/themes/items/classic-items-1-scene-v1.png",
+  items2: "./assets/themes/items/classic-items-2-scene-v1.png",
+  items3: "./assets/themes/items/classic-items-3-scene-v1.png",
+  items4: "./assets/themes/items/classic-items-4-scene-v1.png"
+});
+
+export function themeWordKey(themeId, wordId) {
+  return themeId + ":" + wordId;
+}
+
+function artFor(themeId, word, index) {
+  if (themeId === "ordinals") {
+    return Object.freeze({ type: "ordinal", label: ORDINAL_LABELS[index] });
+  }
+  if (themeId === "body") {
+    return Object.freeze({
+      type: "image",
+      src: "./assets/themes/body/body-character-anime-v2.png",
+      width: 1024,
+      height: 1536,
+      viewBox: BODY_CROPS[word.id]
+    });
+  }
+  if (themeId === "colors") {
+    return Object.freeze({
+      type: "image",
+      src: "./assets/themes/colors/colors-scene-v2.png",
+      width: 1536,
+      height: 1024,
+      viewBox: COLOR_CROPS[word.id]
+    });
+  }
+  return Object.freeze({
+    type: "image",
+    src: ITEM_ASSETS[themeId],
+    width: 1536,
+    height: 1024,
+    viewBox: ITEM_CROPS[index]
+  });
+}
+
+export function buildThemeCatalog(configs) {
+  return Object.freeze(Object.values(configs).flatMap((config) =>
+    config.words.map((word, index) => Object.freeze({
+      ...word,
+      key: themeWordKey(config.id, word.id),
+      themeId: config.id,
+      themeTitle: config.chineseTitle,
+      themeEnglishTitle: config.englishTitle,
+      art: artFor(config.id, word, index)
+    }))
+  ));
+}
+
+function getDefaultStorage() {
+  try {
+    return typeof localStorage === "undefined" ? null : localStorage;
+  } catch {
+    return null;
+  }
+}
+
+export class ThemeLearnedStore {
+  constructor(catalog, storage = getDefaultStorage()) {
+    this.catalog = catalog;
+    this.byKey = new Map(catalog.map((entry) => [entry.key, entry]));
+    this.storage = storage;
+    this.learned = new Set();
+    this.load();
+  }
+
+  load() {
+    this.learned.clear();
+    if (!this.storage) return this.entries();
+    try {
+      const parsed = JSON.parse(this.storage.getItem(THEME_LEARNED_STORAGE_KEY) || "null");
+      if (!parsed || parsed.version !== THEME_LEARNED_SCHEMA_VERSION || !Array.isArray(parsed.learned)) return this.entries();
+      parsed.learned.forEach((key) => {
+        if (this.byKey.has(key)) this.learned.add(key);
+      });
+    } catch {
+      this.learned.clear();
+    }
+    return this.entries();
+  }
+
+  save() {
+    if (!this.storage) return false;
+    try {
+      this.storage.setItem(THEME_LEARNED_STORAGE_KEY, JSON.stringify({
+        version: THEME_LEARNED_SCHEMA_VERSION,
+        learned: [...this.learned],
+        updatedAt: new Date().toISOString()
+      }));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  record(themeId, wordId) {
+    return this.recordKey(themeWordKey(themeId, wordId));
+  }
+
+  recordKey(key) {
+    if (!this.byKey.has(key)) return false;
+    const before = this.learned.size;
+    this.learned.add(key);
+    if (this.learned.size !== before) this.save();
+    return this.learned.size !== before;
+  }
+
+  entries() {
+    return this.catalog.filter((entry) => this.learned.has(entry.key));
+  }
+
+  has(themeId, wordId) {
+    return this.learned.has(themeWordKey(themeId, wordId));
+  }
+}
+
+function shuffle(items, random) {
+  const result = [...items];
+  for (let index = result.length - 1; index > 0; index -= 1) {
+    const other = Math.floor(random() * (index + 1));
+    [result[index], result[other]] = [result[other], result[index]];
+  }
+  return result;
+}
+
+export class TotalReviewSession {
+  constructor(words, random = Math.random, optionLimit = 4) {
+    this.words = [...words];
+    this.byKey = new Map(this.words.map((entry) => [entry.key, entry]));
+    this.random = random;
+    this.optionLimit = optionLimit;
+    this.startRound();
+  }
+
+  startRound() {
+    this.questions = shuffle(this.words.map((entry) => entry.key), this.random);
+    this.questionIndex = 0;
+    this.correctCount = 0;
+    this.complete = this.questions.length === 0;
+    this.optionKeys = this.complete ? [] : this.buildOptions();
+  }
+
+  target() {
+    return this.complete ? null : this.byKey.get(this.questions[this.questionIndex]) || null;
+  }
+
+  buildOptions() {
+    const target = this.byKey.get(this.questions[this.questionIndex]);
+    if (!target) return [];
+    const distractors = shuffle(this.words.filter((entry) => entry.key !== target.key), this.random)
+      .slice(0, Math.max(0, this.optionLimit - 1));
+    return shuffle([target, ...distractors], this.random).map((entry) => entry.key);
+  }
+
+  options() {
+    return this.optionKeys.map((key) => this.byKey.get(key)).filter(Boolean);
+  }
+
+  answer(key) {
+    const target = this.target();
+    if (!target) return { status: "complete", complete: true, target: null };
+    if (key !== target.key) return { status: "wrong", complete: false, target };
+    this.correctCount += 1;
+    this.questionIndex += 1;
+    this.complete = this.questionIndex === this.questions.length;
+    if (!this.complete) this.optionKeys = this.buildOptions();
+    return { status: "correct", complete: this.complete, target, next: this.target() };
+  }
+}
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+  })[character]);
+}
+
+function renderArt(entry, className = "word-art") {
+  const label = entry.word + " " + entry.chinese + " 配图";
+  if (entry.art.type === "ordinal") {
+    return '<div class="' + className + ' ordinal-word-art" role="img" aria-label="' + escapeHtml(label) + '"><strong>' +
+      escapeHtml(entry.art.label) + '</strong><span>' + escapeHtml(entry.word) + "</span></div>";
+  }
+  return '<svg class="' + className + '" role="img" aria-label="' + escapeHtml(label) + '" viewBox="' +
+    entry.art.viewBox + '" preserveAspectRatio="xMidYMid meet"><image href="' + entry.art.src +
+    '" x="0" y="0" width="' + entry.art.width + '" height="' + entry.art.height +
+    '" preserveAspectRatio="xMidYMid meet" pointer-events="none"/></svg>';
+}
+
+function phonemeMarkup(word, splitPhonetic, stressMarks) {
+  return splitPhonetic(word.phonetic).map((symbol) => {
+    const stressLabel = stressMarks[symbol];
+    const label = stressLabel ? ' aria-label="' + escapeHtml(stressLabel) + '" title="' + escapeHtml(stressLabel) + '"' : "";
+    return '<span class="phoneme-chip' + (stressLabel ? " phoneme-stress" : "") +
+      '" data-symbol="' + escapeHtml(symbol) + '"' + label + ">" + escapeHtml(symbol) + "</span>";
+  }).join("");
+}
+
+export function initializeThemeProgress({ configs }) {
+  if (typeof window === "undefined") return null;
+  const catalog = buildThemeCatalog(configs);
+  const store = new ThemeLearnedStore(catalog);
+  function record(themeId, wordId) {
+    return store.record(themeId, wordId);
+  }
+  window.addEventListener("theme-word-learned", (event) => {
+    if (event.detail?.themeId && event.detail?.wordId) record(event.detail.themeId, event.detail.wordId);
+  });
+  const api = { catalog, store, record };
+  window.__THEME_PROGRESS__ = api;
+  return api;
+}
+
+export function initializeThemeOverview({ configs, splitPhonetic, stressMarks, speakEnglish }) {
+  if (typeof document === "undefined") return null;
+  const catalog = buildThemeCatalog(configs);
+  const store = new ThemeLearnedStore(catalog);
+  const dom = Object.fromEntries([...document.querySelectorAll("[id]")].map((node) => [node.id, node]));
+  let reviewSession = null;
+  let reviewTimer = 0;
+
+  function learnedEntries() {
+    return store.entries();
+  }
+
+  function updateCounts() {
+    const count = learnedEntries().length;
+    dom.totalReviewCount.textContent = count + " 个已学";
+    dom.wordLibraryCount.textContent = count + "/" + catalog.length;
+    dom.librarySummary.textContent = "已收录 " + count + "/" + catalog.length + " 个单词";
+    return count;
+  }
+
+  function showPicker() {
+    clearTimeout(reviewTimer);
+    dom.wordLibraryView.hidden = true;
+    dom.totalReviewView.hidden = true;
+    if (dom.learningView) dom.learningView.hidden = true;
+    if (dom.themePicker) dom.themePicker.hidden = false;
+    updateCounts();
+    dom.openTotalReview.focus();
+  }
+
+  function renderLibrary() {
+    const entries = learnedEntries();
+    updateCounts();
+    dom.libraryEmpty.hidden = entries.length > 0;
+    dom.libraryGrid.hidden = entries.length === 0;
+    dom.startLibraryReview.disabled = entries.length === 0;
+    dom.libraryGrid.innerHTML = entries.map((entry) =>
+      '<article class="library-card" data-word-key="' + escapeHtml(entry.key) + '">' +
+      '<div class="library-art-wrap">' + renderArt(entry, "library-word-art") + "</div>" +
+      '<div class="library-card-copy"><span class="library-theme-label">' + escapeHtml(entry.themeTitle + " " + entry.themeEnglishTitle) + "</span>" +
+      '<h3>' + escapeHtml(entry.word) + "</h3>" +
+      '<button class="library-phonetic" type="button" aria-expanded="false" aria-label="拆分 ' + escapeHtml(entry.word) + " 的音标 " + escapeHtml(entry.phonetic) + '">' + escapeHtml(entry.phonetic) + "</button>" +
+      '<div class="library-phonemes phoneme-breakdown" hidden>' + phonemeMarkup(entry, splitPhonetic, stressMarks) + "</div>" +
+      '<strong class="library-translation">' + escapeHtml(entry.chinese) + "</strong>" +
+      '<p>' + escapeHtml(entry.sentence) + "</p>" +
+      '<button class="library-speak" type="button" aria-label="朗读 ' + escapeHtml(entry.word) + '"><span aria-hidden="true">🔊</span></button>' +
+      "</div></article>"
+    ).join("");
+
+    dom.libraryGrid.querySelectorAll(".library-phonetic").forEach((button) => {
+      button.addEventListener("click", () => {
+        const breakdown = button.nextElementSibling;
+        const expanded = button.getAttribute("aria-expanded") !== "true";
+        button.setAttribute("aria-expanded", String(expanded));
+        breakdown.hidden = !expanded;
+      });
+    });
+    dom.libraryGrid.querySelectorAll(".library-speak").forEach((button) => {
+      button.addEventListener("click", () => {
+        const entry = store.byKey.get(button.closest(".library-card").dataset.wordKey);
+        if (entry) speakEnglish(entry.word + ". " + entry.sentence);
+      });
+    });
+  }
+
+  function openLibrary() {
+    clearTimeout(reviewTimer);
+    dom.openWordLibrary.classList.add("is-active");
+    dom.openWordLibrary.setAttribute("aria-pressed", "true");
+    dom.openTotalReview.classList.remove("is-active");
+    dom.openTotalReview.setAttribute("aria-pressed", "false");
+    if (dom.themePicker) dom.themePicker.hidden = true;
+    if (dom.learningView) dom.learningView.hidden = true;
+    dom.totalReviewView.hidden = true;
+    dom.wordLibraryView.hidden = false;
+    renderLibrary();
+    (dom.backFromLibrary || dom.openWordLibrary).focus();
+  }
+
+  function renderReviewQuestion() {
+    const target = reviewSession.target();
+    if (!target) return finishReview();
+    dom.totalReviewProgress.textContent = "第 " + (reviewSession.questionIndex + 1) + "/" + reviewSession.questions.length + " 题";
+    dom.totalReviewWord.textContent = target.word;
+    dom.totalReviewPhonetic.textContent = target.phonetic;
+    dom.totalReviewPhonetic.setAttribute("aria-label", "拆分 " + target.word + " 的音标 " + target.phonetic);
+    dom.totalReviewPhonetic.setAttribute("aria-expanded", "false");
+    dom.totalReviewPhonemes.hidden = true;
+    dom.totalReviewPhonemes.innerHTML = phonemeMarkup(target, splitPhonetic, stressMarks);
+    dom.totalReviewSpeak.setAttribute("aria-label", "朗读 " + target.word);
+    dom.totalReviewFeedback.className = "total-review-feedback";
+    dom.totalReviewFeedback.textContent = "选择与 " + target.word + " 对应的配图。";
+    dom.totalReviewOptions.innerHTML = reviewSession.options().map((entry) =>
+      '<button class="review-option" type="button" data-review-key="' + escapeHtml(entry.key) +
+      '" aria-label="选择 ' + escapeHtml(entry.chinese) + ' 的配图">' +
+      renderArt(entry, "review-word-art") + "</button>"
+    ).join("");
+    dom.totalReviewOptions.querySelectorAll(".review-option").forEach((button) => {
+      button.addEventListener("click", () => answerReview(button.dataset.reviewKey, button));
+    });
+  }
+
+  function answerReview(key, button) {
+    if (!reviewSession || reviewSession.complete) return;
+    const result = reviewSession.answer(key);
+    if (result.status === "wrong") {
+      button.classList.add("is-wrong");
+      dom.totalReviewFeedback.className = "total-review-feedback is-error";
+      dom.totalReviewFeedback.textContent = "再看一看，选择 " + result.target.word + " 的正确配图。";
+      return;
+    }
+    dom.totalReviewOptions.querySelectorAll(".review-option").forEach((option) => { option.disabled = true; });
+    button.classList.add("is-correct");
+    dom.totalReviewFeedback.className = "total-review-feedback is-success";
+    dom.totalReviewFeedback.textContent = result.target.word + " · " + result.target.chinese;
+    reviewTimer = setTimeout(() => {
+      if (result.complete) finishReview();
+      else renderReviewQuestion();
+    }, 650);
+  }
+
+  function finishReview() {
+    clearTimeout(reviewTimer);
+    dom.totalReviewPanel.hidden = true;
+    dom.totalReviewEmpty.hidden = true;
+    dom.totalReviewResult.hidden = false;
+    dom.totalReviewResultScore.textContent = reviewSession.correctCount + "/" + reviewSession.questions.length;
+    dom.totalReviewResultText.textContent = "已复习全部 " + reviewSession.questions.length + " 个已学单词。";
+  }
+
+  function openReview() {
+    clearTimeout(reviewTimer);
+    dom.openTotalReview.classList.add("is-active");
+    dom.openTotalReview.setAttribute("aria-pressed", "true");
+    dom.openWordLibrary.classList.remove("is-active");
+    dom.openWordLibrary.setAttribute("aria-pressed", "false");
+    const entries = learnedEntries();
+    if (dom.themePicker) dom.themePicker.hidden = true;
+    if (dom.learningView) dom.learningView.hidden = true;
+    dom.wordLibraryView.hidden = true;
+    dom.totalReviewView.hidden = false;
+    dom.totalReviewResult.hidden = true;
+    dom.totalReviewEmpty.hidden = entries.length > 0;
+    dom.totalReviewPanel.hidden = entries.length === 0;
+    dom.reviewHeaderCount.textContent = entries.length + " 个已学单词";
+    if (entries.length > 0) {
+      reviewSession = new TotalReviewSession(entries);
+      renderReviewQuestion();
+    } else {
+      reviewSession = null;
+    }
+    (dom.backFromReview || dom.openTotalReview).focus();
+  }
+
+  function record(themeId, wordId) {
+    const changed = store.record(themeId, wordId);
+    if (changed) updateCounts();
+    return changed;
+  }
+
+  dom.openWordLibrary.addEventListener("click", openLibrary);
+  dom.openTotalReview.addEventListener("click", openReview);
+  dom.backFromLibrary?.addEventListener("click", showPicker);
+  dom.backFromReview?.addEventListener("click", showPicker);
+  dom.startLibraryReview.addEventListener("click", openReview);
+  dom.emptyReviewLibrary.addEventListener("click", openLibrary);
+  dom.restartTotalReview.addEventListener("click", openReview);
+  dom.totalReviewPhonetic.addEventListener("click", () => {
+    const expanded = dom.totalReviewPhonetic.getAttribute("aria-expanded") !== "true";
+    dom.totalReviewPhonetic.setAttribute("aria-expanded", String(expanded));
+    dom.totalReviewPhonemes.hidden = !expanded;
+  });
+  dom.totalReviewSpeak.addEventListener("click", () => {
+    const target = reviewSession?.target();
+    if (target) speakEnglish(target.word + ". " + target.sentence);
+  });
+  window.addEventListener("theme-word-learned", (event) => {
+    if (event.detail?.themeId && event.detail?.wordId) record(event.detail.themeId, event.detail.wordId);
+  });
+
+  updateCounts();
+  const api = {
+    catalog,
+    store,
+    get reviewSession() { return reviewSession; },
+    record,
+    openLibrary,
+    openReview,
+    showPicker,
+    renderLibrary
+  };
+  window.__THEME_OVERVIEW__ = api;
+  return api;
+}

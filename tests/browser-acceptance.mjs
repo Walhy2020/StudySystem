@@ -176,7 +176,7 @@ assert.equal(await page.locator("#importProgress").count(), 0);
 assert.equal(await page.locator("#importProgressFile").count(), 0);
 assert.equal(await page.locator("#resetProgress").isVisible(), true);
 assert.equal(await page.locator(".module-tabs #bombGameEntry, .module-tabs a[href=\"./bomb-game.html?v=1.0\"]").count(), 0);
-assert.deepEqual(await page.locator(".module-tabs .module-tab").allTextContents(), ["汉字", "主题学习", "音标"]);
+assert.deepEqual(await page.locator(".module-tabs .module-tab").allTextContents(), ["汉字", "主题学习", "总复习", "音标"]);
 assert.equal(await page.locator(".topbar .top-actions #bombGameEntry").isVisible(), true);
 assert.equal(await page.locator(".topbar #resetProgress").count(), 0);
 const bombEntry = page.locator(".topbar .top-actions #bombGameEntry");
@@ -453,7 +453,7 @@ console.log(JSON.stringify({
     mobileHorizontalGap: mobileGlyphBadge.horizontalGap,
     mobileVerticalGap: mobileGlyphBadge.verticalGap,
   },
-  moduleTabs: ["汉字", "主题学习", "音标"],
+  moduleTabs: ["汉字", "主题学习", "总复习", "音标"],
   headerActions: ["炸弹迷宫"],
   mapActions: ["重置汉字状态"],
   bombEntryPlacement: "header",

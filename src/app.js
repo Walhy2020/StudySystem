@@ -1,6 +1,6 @@
 import { HanziEngine } from "./engine.js";
 import { APP_VERSION, PHASE, REVIEW_INTERVAL_ROUNDS } from "./constants.js?v=1.4";
-import { HanziStorage, storageOptionsFromLocation } from "./storage.js";
+import { HanziStorage, storageOptionsFromLocation } from "./storage.js?v=1.1";
 import { speakChineseCharacter } from "./tts.js";
 
 const words = Array.isArray(window.MARIO_WORD_BANK) ? window.MARIO_WORD_BANK : [];
@@ -257,6 +257,33 @@ dom.resetProgress.addEventListener("click", () => {
   render();
 });
 
+dom.importLegacyProgress.addEventListener("click", () => {
+  dom.importLegacyProgressFile.value = "";
+  dom.importLegacyProgressFile.click();
+});
+
+dom.importLegacyProgressFile.addEventListener("change", async () => {
+  const file = dom.importLegacyProgressFile.files?.[0];
+  if (!file) return;
+  try {
+    if (file.size > 10 * 1024 * 1024) throw new Error("备份文件超过 10 MB，未导入。");
+    const payload = JSON.parse(await file.text());
+    const preview = storage.previewLegacyPayload(payload, engine.state);
+    if (!preview.ok) throw new Error(preview.reason);
+    const summary = `旧备份包含 ${preview.legacyCounts.records} 条记录、${preview.legacyCounts.mastered} 个完全认识、${preview.legacyCounts.stars} 颗星。\n\n导入后新系统将有 ${preview.mergedCounts.records} 条记录、${preview.mergedCounts.mastered} 个完全认识、${preview.mergedCounts.stars} 颗星。\n\n只读合并不会清空当前进度，确定导入吗？`;
+    if (!window.confirm(summary)) return;
+    const result = storage.importLegacyPayload(payload, engine.state);
+    if (!result.ok) throw new Error(result.reason);
+    engine = new HanziEngine(result.state, words);
+    feedbackText = `旧版进度已合并：${result.mergedCounts.records} 条记录，${result.mergedCounts.mastered} 个完全认识，${result.mergedCounts.stars} 颗星。`;
+    render();
+  } catch (error) {
+    feedbackText = `导入失败：${error instanceof Error ? error.message : "无法读取备份文件。"}`;
+    dom.feedback.textContent = feedbackText;
+  } finally {
+    dom.importLegacyProgressFile.value = "";
+  }
+});
 window.__HANZI_APP__ = {
   getState: () => structuredClone(engine.state),
   getStorageKey: () => storage.key,

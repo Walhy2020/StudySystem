@@ -1,6 +1,6 @@
 # StudySystem cross-device handoff
 
-Last updated: 2026-08-25
+Last updated: 2026-09-09
 Repository: `https://github.com/Walhy2020/StudySystem.git`
 Branch: `main`
 Baseline before this handoff document: `3a6815d`
@@ -48,6 +48,13 @@ In the ChatGPT/Codex desktop app, add the cloned repository as a local project a
 - Example words, full-word transcriptions, phoneme display, TTS, refresh restore, and isolated storage are implemented.
 - Current background: `assets/backgrounds/phonetics-sound-kingdom-v2.png`.
 
+### Book1
+
+- Entry: `book-learning.html`; authoritative data is isolated in `data/book1.js`.
+- Only legacy `opw1` was migrated: A-Z has 26 groups, 104 unique words, and 130 learning items including letter cards.
+- The module includes original word pictures, British IPA, Chinese meanings, manual speech, group navigation, learn/review actions, wrong items, and mastered stars.
+- Progress writes only `mario-book1-v1`. It may read `mario-literacy-english-v1` once to import `books.opw1`; Book2 data and state are ignored.
+
 ### Theme learning
 
 - Entry: `theme-learning.html`.
@@ -57,6 +64,13 @@ In the ChatGPT/Codex desktop app, add the cloned repository as a local project a
 - The Nursery Rhymes series currently contains Twinkle, Twinkle, Little Star: six lyric lines each place complete British IPA directly below the English line, eight core words remain clickable, and full-verse speech is manual rather than automatic.
 - Counting artwork is code-native and exact: 1-19 use the matching number of coin dots; 10-100 uses one to ten ten-frames, each containing exactly ten dots.
 - Project assets live under `assets/themes/` and have been checked against their mapped words/hotspots.
+
+### Scenario learning
+
+- Entry: `scenario-learning.html`; authoritative lesson data is isolated in `data/scenarios.js`.
+- Scenario 01 is First Meeting: six dialogue lines with complete British IPA and Chinese translations.
+- The module has line-by-line learning, Previous/Next navigation, manual-only speech, and three response-choice practice questions with wrong-answer retry.
+- Completing all three questions adds a green check to the scenario card. Progress writes only `mario-scenario-learning-v1` and is not included in the theme learned-word library.
 
 ### Overall review
 
@@ -76,14 +90,18 @@ In the ChatGPT/Codex desktop app, add the cloned repository as a local project a
 Top-level navigation order is:
 
 1. Hanzi
-2. Theme Learning
-3. Overall Review
-4. Phonetics
+2. Book1
+3. Theme Learning
+4. Scenario Learning
+5. Overall Review
+6. Phonetics
 
 Persistent browser keys:
 
 - `mario-hanzi-refactor-v1`
 - `mario-phonetics-v1`
+- `mario-book1-v1`
+- `mario-scenario-learning-v1`
 - `mario-bomb-game-progress-v1`
 - `mario-theme-learned-v1`
 - legacy migration source: `mario-literacy-desktop-mvp-v1`
@@ -101,6 +119,8 @@ Verified on 2026-08-25 after the Nursery Rhymes theme update:
 - Theme Microsoft Edge acceptance passed across desktop and 390px: 4 horizontal series, 11 themes, 83 exact learning targets, all completion checks, Twinkle lyric/IPA geometry, manual full-verse speech, and no horizontal overflow.
 - Overall-review Microsoft Edge acceptance passed with 83 stored theme records deduplicated to 81 unique library/review words, 81/81 questions, eight song-word artworks, exact counting artwork, and no desktop or 390px overflow.
 - New Hanzi and Phonetics backgrounds returned HTTP 200 and passed screenshot inspection.
+- Book1 migration verified on 2026-09-08: static checks passed, Node 70/70 passed, and Microsoft Edge passed at desktop and 390px with 104/104 images returning HTTP 200 and `opw1`-only legacy migration.
+- Scenario Learning verified on 2026-09-09: Node 75/75 passed; Microsoft Edge passed at desktop and 390px with six dialogue lines, three response questions, manual-only speech, refresh restore, completion persistence, isolated storage, and no horizontal overflow.
 - No known unresolved product defect was recorded at handoff time.
 
 ## Cross-computer cautions

@@ -12,6 +12,7 @@ const protectedKeys = [
   "mario-bomb-game-progress-v1",
   "mario-bomb-game-v1",
   "mario-phonetics-v1",
+  "mario-book1-v1",
   "mario-theme-learning-v1"
 ];
 
@@ -20,13 +21,31 @@ async function prepareContext(options) {
   await context.addInitScript(() => {
     window.__storageMutations = [];
     window.__spoken = [];
+    window.__speechEvents = [];
+    window.__speechTimer = 0;
+    window.__completeSpeech = (item) => {
+      window.__spoken.push(item.text);
+      window.__speechEvents.push({ type: "start", text: item.text });
+      clearTimeout(window.__speechTimer);
+      window.__speechTimer = setTimeout(() => {
+        window.__speechEvents.push({ type: "end", text: item.text });
+        item.onend?.();
+      }, 120);
+    };
     const originalSet = Storage.prototype.setItem;
     const originalRemove = Storage.prototype.removeItem;
     Storage.prototype.setItem = function(key, value) { window.__storageMutations.push({ operation: "set", key }); return originalSet.call(this, key, value); };
     Storage.prototype.removeItem = function(key) { window.__storageMutations.push({ operation: "remove", key }); return originalRemove.call(this, key); };
     class FakeUtterance { constructor(text) { this.text = text; } }
     Object.defineProperty(window, "SpeechSynthesisUtterance", { configurable: true, value: FakeUtterance });
-    Object.defineProperty(window, "speechSynthesis", { configurable: true, value: { cancel() {}, getVoices() { return []; }, addEventListener() {}, removeEventListener() {}, speak(item) { window.__spoken.push(item.text); } } });
+    Object.defineProperty(window, "speechSynthesis", { configurable: true, value: {
+      cancel() { clearTimeout(window.__speechTimer); window.__speechEvents.push({ type: "cancel" }); },
+      resume() {},
+      getVoices() { return []; },
+      addEventListener() {},
+      removeEventListener() {},
+      speak(item) { window.__completeSpeech(item); },
+    } });
   });
   return context;
 }
@@ -326,6 +345,7 @@ async function learnAll(page, themeId, expected, action = "click") {
     assert.equal(await repeat.getAttribute("aria-label"), "朗读 " + values[0] + " 和例句");
     const spokenBeforeRepeat = await page.evaluate(() => window.__spoken.length);
     if (action === "tap") await repeat.tap(); else await repeat.click();
+    await page.waitForFunction((before) => window.__spoken.length > before, spokenBeforeRepeat);
     assert.equal(await page.evaluate(() => window.__spoken.length), spokenBeforeRepeat + 1);
     assert.equal(await page.evaluate(() => window.__spoken.at(-1)), values[0] + ". " + values[3]);
   }
@@ -367,11 +387,19 @@ async function finishRound(page, themeId, ids, action = "click") {
   assert.equal(await page.evaluate(() => window.__THEME_LEARNING__.session.questionIndex), 0);
   for (let count = 0; count < ids.length; count += 1) {
     const target = await page.evaluate(() => window.__THEME_LEARNING__.session.target().id);
+    const sentence = await page.evaluate((id) => window.__THEME_LEARNING__.session.word(id).sentence, target);
+    const eventStart = await page.evaluate(() => window.__speechEvents.length);
     seenQuestions.push(target);
     const targetLocator = page.locator('[data-theme="' + themeId + '"] [data-target="' + target + '"]');
     if (action === "tap") await targetLocator.tap(); else await targetLocator.click();
     assert.match((await page.locator("#practiceFeedback").textContent()).trim(), /答对了/);
     await page.waitForTimeout(930);
+    const speechEvents = await page.evaluate((start) => window.__speechEvents.slice(start), eventStart);
+    const sentenceStart = speechEvents.findIndex((event) => event.type === "start" && event.text === sentence);
+    const sentenceEnd = speechEvents.findIndex((event) => event.type === "end" && event.text === sentence);
+    const nextStart = speechEvents.findIndex((event, index) => index > sentenceStart && event.type === "start" && event.text !== sentence);
+    assert.ok(sentenceStart >= 0 && sentenceEnd > sentenceStart, JSON.stringify(speechEvents));
+    if (nextStart >= 0) assert.ok(sentenceEnd < nextStart, JSON.stringify(speechEvents));
   }
   assert.equal(new Set(seenQuestions).size, ids.length);
   assert.equal(await page.locator("#resultPanel").isVisible(), true);
@@ -502,13 +530,14 @@ async function runTwinkleTheme(page, action = "click") {
   assert.ok(lyrics.every(({ below, centered, visible }) => below && centered && visible), JSON.stringify(lyrics));
   const spokenBeforeLyrics = await page.evaluate(() => window.__spoken.length);
   if (action === "tap") await page.locator("#speakSongLyrics").tap(); else await page.locator("#speakSongLyrics").click();
+  await page.waitForFunction((before) => window.__spoken.length > before, spokenBeforeLyrics);
   assert.equal(await page.evaluate(() => window.__spoken.at(-1)), TWINKLE_SPOKEN_LYRICS);
   assert.equal(await page.evaluate(() => window.__spoken.length), spokenBeforeLyrics + 1);
   await learnAll(page, "twinkle", twinkleExpected, action);
   await assertWordNavigation(page, "twinkle", twinkleIds, action);
   await page.screenshot({ path: action === "tap" ? "tests/theme-twinkle-390.png" : "tests/theme-twinkle-desktop.png", fullPage: true });
   if (action === "tap") await page.locator("#practiceStage").tap(); else await page.locator("#practiceStage").click();
-  assert.match((await page.locator("#practiceInstruction").textContent()).trim(), /^Touch (twinkle|little|wonder|world|high|the star|the diamond|the sky).$/);
+  assert.match((await page.locator("#practiceInstruction").textContent()).trim(), /^Touch (twinkle|little|wonder|high|the star|the world|the diamond|the sky).$/);
   await finishRound(page, "twinkle", twinkleIds, action);
   assert.equal((await page.locator("#resultTitle").textContent()).trim(), "八个童谣单词全部找对！");
   if (action === "tap") await page.locator("#restartRound").tap(); else await page.locator("#restartRound").click();
@@ -589,9 +618,10 @@ await page.locator('[data-theme="colors"] [data-target="white"]').click();
 assert.equal(await page.locator("#ttsNotice").isVisible(), false);
 assert.equal((await page.locator(".word-en").textContent()).trim(), "white");
 await page.locator("#repeatWord").click();
+await page.locator("#ttsNotice").waitFor({ state: "visible" });
 assert.equal(await page.locator("#ttsNotice").isVisible(), true);
 await page.screenshot({ path: "tests/theme-colors-desktop.png", fullPage: true });
-await page.evaluate(() => { window.speechSynthesis.speak = (item) => window.__spoken.push(item.text); });
+await page.evaluate(() => { window.speechSynthesis.speak = (item) => window.__completeSpeech(item); });
 await page.click("#practiceStage");
 assert.match((await page.locator("#practiceInstruction").textContent()).trim(), /^Touch the (red cap|blue block|green pipe|yellow coin|black bomb|white cloud)\.$/);
 await finishRound(page, "colors", colorIds);

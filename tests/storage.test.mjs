@@ -52,3 +52,92 @@ test("导出包含 schema、稳定 ID、字库数量和时间；导入拒绝无�
   assert.ok(payload.exportedAt);
   assert.equal(storage.previewPayload({ hello: "world" }).ok, false);
 });
+test("learning-word-bank 旧备份只读合并，不覆盖当前任务且关键进度不倒退", () => {
+  const memory = new MemoryStorage();
+  const storage = new HanziStorage(memory, words, { date: "2026-08-26" });
+  const current = storage.load();
+  Object.assign(current, {
+    records: {
+      "0001": { status: "learning", correctCount: 2, errorCount: 1, streak: 1 },
+      "0003": { status: "mastered", correctCount: 3, errorCount: 0 },
+    },
+    masteredIds: ["0003"],
+    recentWrongIds: ["0001"],
+    reviewRound: 9,
+    stars: 150,
+    dailyTaskStarted: true,
+    dailyTaskDone: false,
+    dailyPhase: "newLearning",
+    dailyNewIds: ["0004"],
+    dailyNewCorrectCounts: { "0004": 2 },
+    activeWordId: "0004",
+  });
+  storage.save(current);
+  const payload = {
+    backupType: "learning-word-bank",
+    wordCount: 1600,
+    state: {
+      records: {
+        "0001": { status: "known", correctCount: 4, errorCount: 0, streak: 3 },
+        "0002": { status: "mastered", correctCount: 3, errorCount: 2 },
+      },
+      masteredIds: ["0002"],
+      recentWrongIds: ["0002"],
+      reviewRound: 7,
+      stars: 117,
+      todayDate: "2026-08-26",
+      dailyTaskStarted: true,
+      dailyPhase: "review",
+      dailyReviewIds: ["0005"],
+      activeWordId: "0005",
+    },
+  };
+  const originalPayload = structuredClone(payload);
+  const preview = storage.previewLegacyPayload(payload, current);
+  assert.equal(preview.ok, true);
+  assert.deepEqual(preview.legacyCounts, {
+    records: 2, touched: 2, mastered: 1, wrong: 0, dailyNew: 0, dailyReview: 1,
+    reviewRound: 7, hp: 3, stars: 117,
+  });
+  const result = storage.importLegacyPayload(payload, current);
+  assert.equal(result.ok, true);
+  assert.deepEqual(payload, originalPayload);
+  assert.deepEqual(result.state.masteredIds.sort(), ["0002", "0003"]);
+  assert.equal(result.state.records["0001"].status, "known");
+  assert.equal(result.state.records["0001"].correctCount, 4);
+  assert.equal(result.state.records["0001"].errorCount, 1);
+  assert.equal(result.state.reviewRound, 9);
+  assert.equal(result.state.stars, 150);
+  assert.deepEqual(result.state.dailyNewIds, ["0004"]);
+  assert.equal(result.state.activeWordId, "0004");
+  assert.equal(result.state.migration.strategy, "read-only-file-merge");
+});
+
+test("旧备份重复导入幂等，无效文件不写入新系统", () => {
+  const memory = new MemoryStorage();
+  const storage = new HanziStorage(memory, words, { date: "2026-08-26" });
+  const current = storage.load();
+  const payload = {
+    backupType: "learning-word-bank",
+    wordCount: 1600,
+    state: {
+      records: {
+        "0001": { status: "known", correctCount: 3, errorCount: 1 },
+        "0002": { status: "mastered", correctCount: 3 },
+      },
+      masteredIds: ["0002"],
+      recentWrongIds: ["0001"],
+      reviewRound: 7,
+      stars: 117,
+    },
+  };
+  const first = storage.importLegacyPayload(payload, current);
+  const second = storage.importLegacyPayload(payload, first.state);
+  assert.deepEqual(migrationCounts(second.state), migrationCounts(first.state));
+  assert.equal(second.state.records["0001"].correctCount, 3);
+  assert.equal(second.state.records["0001"].errorCount, 1);
+  const beforeInvalid = memory.getItem(STORAGE_KEY);
+  const invalid = storage.importLegacyPayload({ hello: "world" }, second.state);
+  assert.equal(invalid.ok, false);
+  assert.equal(memory.getItem(STORAGE_KEY), beforeInvalid);
+});

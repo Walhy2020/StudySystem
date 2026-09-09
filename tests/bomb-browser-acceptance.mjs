@@ -130,6 +130,17 @@ assert.equal(new Set(initialTargetSummary.visibleInitialTargetIds).size, 5, "new
 assert.equal(initialTargetSummary.targetEntityCount, 5, "new level state contains five target entities");
 assert.equal(initialTargetSummary.renderedLearningCardCount, 5, "canvas renders all five initial target cards");
 assert.equal((await page.evaluate(() => window.__BOMB_GAME__.getState().hiddenWordCrates.length)), 0, "learning targets are not hidden behind brick placeholders");
+const concealedInitialQuestions = await page.evaluate(() => ({
+  activeQuestion: window.__BOMB_GAME__.getActiveLearningQuestion(),
+  promptTypes: window.__BOMB_GAME__.getState().powerUps
+    .filter((powerUp) => ["pinyin", "hanziPrompt"].includes(powerUp.type))
+    .map((powerUp) => powerUp.type),
+  choiceCount: window.__BOMB_GAME__.getState().powerUps
+    .filter((powerUp) => ["wordChoice", "pinyinChoice"].includes(powerUp.type)).length,
+}));
+assert.equal(concealedInitialQuestions.activeQuestion, null, "no question answer is exposed before a question card is touched");
+assert.deepEqual(concealedInitialQuestions.promptTypes, Array(5).fill("pinyin"), "first level begins with five concealed pinyin question cards");
+assert.equal(concealedInitialQuestions.choiceCount, 0, "answer choices appear only after a question is activated");
 
 const constants = await page.evaluate(() => window.__BOMB_GAME__.getConstants());
 assert.deepEqual({
@@ -169,7 +180,7 @@ const resourcePaths = [
   "index.html",
   "bomb-game.html",
   "bomb-game.css?v=1.1",
-  "bomb-game.js?v=1.3",
+  "bomb-game.js?v=1.4",
   "data/characters.js?v=1.0",
   "data/pinyin-readings.js?v=1.0",
   "assets/sprites/enemies-bosses.png",
@@ -517,6 +528,13 @@ for (let completed = 0; completed < 5; completed += 1) {
   await restoreBombSnapshot(beforePrompt);
   await page.waitForFunction(() => window.__BOMB_GAME__.getState().powerUps.some((powerUp) => powerUp.type === "wordChoice" && powerUp.correct));
 
+  if (completed === 0) {
+    const activeQuestion = await page.evaluate(() => window.__BOMB_GAME__.getActiveLearningQuestion());
+    assert.equal(activeQuestion.type, "pinyin-to-hanzi");
+    assert.equal(activeQuestion.options.length, 3, "pinyin question renders three Hanzi choices");
+    assert.equal(activeQuestion.options.filter((option) => option.correct).length, 1, "pinyin question has one correct Hanzi");
+    assert.ok(activeQuestion.prompt && activeQuestion.options.every((option) => option.value !== activeQuestion.prompt));
+  }
   const beforeChoice = await page.evaluate(() => window.__BOMB_GAME__.getState());
   const correctChoice = beforeChoice.powerUps.find((powerUp) => powerUp.type === "wordChoice" && powerUp.correct);
   assert.ok(correctChoice, "correct choice for target " + (completed + 1) + " is rendered");
@@ -570,6 +588,66 @@ assert.equal(new Set(nextLevelRestored.levelTargetIds).size, 5, "fresh next-leve
 assert.equal(nextLevelRestored.visibleInitialTargetIds.length, 5, "fresh next-level save restores five visible target cards");
 assert.equal(new Set(nextLevelRestored.visibleInitialTargetIds).size, 5, "fresh next-level save restores five different cards");
 assert.equal(nextLevelRestored.targetEntityCount, 5);
+
+const hanziQuestionSave = await page.evaluate(() => window.__BOMB_GAME__.getState());
+const hanziPrompt = hanziQuestionSave.powerUps.find((powerUp) => powerUp.type === "hanziPrompt");
+assert.ok(hanziPrompt, "second level begins with concealed Hanzi question cards");
+hanziQuestionSave.status = "playing";
+hanziQuestionSave.bombs = [];
+hanziQuestionSave.explosions = [];
+hanziQuestionSave.player = { ...hanziQuestionSave.player, gx: hanziPrompt.gx, gy: hanziPrompt.gy, move: null };
+await restoreBombSnapshot(hanziQuestionSave);
+await page.waitForFunction(() => window.__BOMB_GAME__.getActiveLearningQuestion()?.type === "hanzi-to-pinyin");
+const hanziQuestion = await page.evaluate(() => window.__BOMB_GAME__.getActiveLearningQuestion());
+assert.equal(hanziQuestion.type, "hanzi-to-pinyin");
+assert.ok(hanziQuestion.prompt, "Hanzi question exposes only the target Hanzi after activation");
+assert.equal(hanziQuestion.options.length, 3, "Hanzi question renders three complete pinyin choices");
+assert.equal(hanziQuestion.options.filter((option) => option.correct).length, 1, "Hanzi question has one correct pinyin");
+assert.equal(new Set(hanziQuestion.options.map((option) => option.value)).size, 3, "complete pinyin choices are distinct");
+assert.ok(hanziQuestion.options.every((option) => option.value !== hanziQuestion.prompt), "question and answers use separate Hanzi/pinyin forms");
+
+const beforePinyinAnswer = await page.evaluate(() => window.__BOMB_GAME__.getState());
+const correctPinyinChoice = beforePinyinAnswer.powerUps.find((powerUp) => powerUp.type === "pinyinChoice" && powerUp.correct);
+assert.ok(correctPinyinChoice, "the complete correct pinyin is present as one choice");
+const hpBeforeCorrectPinyin = beforePinyinAnswer.hp;
+beforePinyinAnswer.status = "playing";
+beforePinyinAnswer.player = { ...beforePinyinAnswer.player, gx: correctPinyinChoice.gx, gy: correctPinyinChoice.gy, move: null };
+await restoreBombSnapshot(beforePinyinAnswer);
+await page.waitForFunction((targetId) => window.__BOMB_GAME__.getState().moonWordIds.includes(targetId), correctPinyinChoice.targetWordId);
+const afterPinyinAnswer = await page.evaluate(() => window.__BOMB_GAME__.getState());
+assert.equal(afterPinyinAnswer.hp, hpBeforeCorrectPinyin, "correct pinyin choice does not cost health");
+assert.equal(await page.evaluate(() => window.__BOMB_GAME__.getActiveLearningQuestion()), null, "correct pinyin closes the active question");
+assert.equal(afterPinyinAnswer.powerUps.filter((powerUp) => powerUp.type === "pinyinChoice").length, 0, "all choices for the solved Hanzi are removed");
+
+const barrierSave = await page.evaluate(() => window.__BOMB_GAME__.getState());
+barrierSave.status = "playing";
+barrierSave.hp = 3;
+barrierSave.enemies = [];
+barrierSave.shells = [];
+barrierSave.powerUps = [];
+barrierSave.explosions = [];
+barrierSave.map = barrierSave.map.map((row) => row.slice());
+for (let gx = 2; gx <= 6; gx += 1) barrierSave.map[3][gx] = 0;
+barrierSave.map[3][4] = 2;
+barrierSave.player = { ...barrierSave.player, gx: 6, gy: 3, move: null, invulnerable: 0 };
+barrierSave.bombs = [
+  { gx: 3, gy: 3, time: 2, range: 5, ownerInside: false, exploded: false },
+  { gx: 2, gy: 3, time: 2, range: 5, ownerInside: false, exploded: false },
+];
+await restoreBombSnapshot(barrierSave);
+await page.waitForFunction(() => window.__BOMB_GAME__.getState().explosions.length === 2);
+await page.waitForTimeout(80);
+const barrierResult = await page.evaluate(() => ({
+  hp: window.__BOMB_GAME__.getState().hp,
+  blocked: window.__BOMB_GAME__.getState().explosions.some((explosion) => explosion.blockedCells?.some((cell) => cell.gx === 4 && cell.gy === 3)),
+  reachedBehindBrick: window.__BOMB_GAME__.getState().explosions.some((explosion) => explosion.cells.some((cell) => cell.gy === 3 && cell.gx > 4)),
+}));
+assert.equal(barrierResult.hp, 3, "the fly-star behind the brick is not damaged");
+assert.equal(barrierResult.blocked, true, "the destroyed brick remains a flame barrier for the active flame period");
+assert.equal(barrierResult.reachedBehindBrick, false, "a simultaneous second explosion cannot pass the just-destroyed brick");
+
+
+
 
 assert.deepEqual(pageErrors, []);
 assert.deepEqual(failedResponses, []);

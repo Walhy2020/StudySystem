@@ -467,7 +467,7 @@
   }
 
   function currentLearningModeLabel() {
-    return currentLearningMode() === LEARNING_MODES.pinyin ? "找汉字" : "拼拼音";
+    return currentLearningMode() === LEARNING_MODES.pinyin ? "找汉字" : "找拼音";
   }
 
   function resetActiveLearningTask() {
@@ -510,7 +510,7 @@
   }
 
   function isLearningPowerUp(powerUp) {
-    return ["pinyin", "hanziPrompt", "pinyinPart", "wordChoice"].includes(powerUp?.type);
+    return ["pinyin", "hanziPrompt", "pinyinChoice", "pinyinPart", "wordChoice"].includes(powerUp?.type);
   }
 
   function plainPinyinText(text) {
@@ -723,8 +723,9 @@
   }
 
   function rememberBombAppearance(type, data = {}) {
-    if (!["pinyin", "hanziPrompt", "pinyinPart", "wordChoice"].includes(type)) return;
-    const wordId = type === "wordChoice" ? data.wordId : (data.wordId || data.targetWordId);
+    if (!["pinyin", "hanziPrompt", "pinyinChoice", "pinyinPart", "wordChoice"].includes(type)) return;
+    const isChoice = type === "wordChoice" || type === "pinyinChoice";
+    const wordId = isChoice ? data.wordId : (data.wordId || data.targetWordId);
     const word = wordById(wordId);
     if (!word) return;
     const targetWordId = data.targetWordId || data.wordId || "";
@@ -752,11 +753,11 @@
       targetWordId: targetWord?.id || "",
       targetChar: targetWord?.char || "",
       targetPinyin: targetWord ? pinyinReadingsLabel(targetWord) : "",
-      role: type === "wordChoice" || type === "pinyinPart"
+      role: isChoice || type === "pinyinPart"
         ? (data.correct ? "target" : "distractor")
         : "target",
       pinyinOrder: type === "pinyinPart" ? Number(data.order) : null,
-      correct: type === "wordChoice" || type === "pinyinPart" ? data.correct === true : true,
+      correct: isChoice || type === "pinyinPart" ? data.correct === true : true,
     });
     if (history.length > 5000) history.splice(0, history.length - 5000);
     scheduleBombProgressSave();
@@ -1037,18 +1038,42 @@
     });
     state.hiddenWordCrates = new Map();
 
+    const mode = currentLearningMode();
+    const legacyPinyinTargetId = mode === LEARNING_MODES.hanzi
+      ? state.powerUps.find((powerUp) => powerUp.type === "pinyinPart")?.wordId || null
+      : null;
     state.powerUps = state.powerUps.filter((powerUp) => {
       if (!isLearningPowerUp(powerUp)) return true;
-      const targetId = powerUp.type === "wordChoice" ? powerUp.targetWordId : powerUp.wordId;
-      return pendingSet.has(targetId);
+      const targetId = powerUp.type === "wordChoice" || powerUp.type === "pinyinChoice"
+        ? powerUp.targetWordId
+        : powerUp.wordId;
+      if (!pendingSet.has(targetId) || powerUp.type === "pinyinPart") return false;
+      if (mode === LEARNING_MODES.pinyin) {
+        return powerUp.type !== "hanziPrompt" && powerUp.type !== "pinyinChoice";
+      }
+      return powerUp.type !== "pinyin" && powerUp.type !== "wordChoice";
     });
+
+    if (mode === LEARNING_MODES.pinyin) {
+      state.activeHanziWordId = null;
+    } else {
+      state.activePinyinWordId = null;
+    }
+    if (legacyPinyinTargetId && pendingSet.has(legacyPinyinTargetId)) {
+      state.activeHanziWordId = legacyPinyinTargetId;
+      state.activePinyinStep = 0;
+      state.activePinyinTotal = 0;
+      spawnPinyinChoices(legacyPinyinTargetId);
+    }
 
     const representedIds = new Set();
     uniqueIds(state.powerUps.filter((powerUp) => powerUp.type === "wordChoice").map((powerUp) => powerUp.targetWordId)).forEach((id) => representedIds.add(id));
-    uniqueIds(state.powerUps.filter((powerUp) => powerUp.type === "pinyinPart").map((powerUp) => powerUp.wordId)).forEach((id) => representedIds.add(id));
+    uniqueIds(state.powerUps.filter((powerUp) => powerUp.type === "pinyinChoice").map((powerUp) => powerUp.targetWordId)).forEach((id) => representedIds.add(id));
 
     state.powerUps = state.powerUps.filter((powerUp) => {
       if (powerUp.type !== "pinyin" && powerUp.type !== "hanziPrompt") return true;
+      const expectedType = mode === LEARNING_MODES.hanzi ? "hanziPrompt" : "pinyin";
+      if (powerUp.type !== expectedType) return false;
       if (!pendingSet.has(powerUp.wordId) || representedIds.has(powerUp.wordId)) return false;
       representedIds.add(powerUp.wordId);
       return true;
@@ -1168,7 +1193,7 @@
 
   function isAvailableLearningPowerUp(powerUp) {
     if (!isLearningPowerUp(powerUp)) return false;
-    if (powerUp.type === "wordChoice") {
+    if (powerUp.type === "wordChoice" || powerUp.type === "pinyinChoice") {
       return !isLevelWordComplete(powerUp.targetWordId);
     }
     return !isLevelWordComplete(powerUp.wordId);
@@ -1675,13 +1700,15 @@
     return choice ? choice.targetWordId : null;
   }
 
-  function activePinyinPartTargetId() {
-    const part = state.powerUps.find((powerUp) => powerUp.type === "pinyinPart");
-    return part ? part.wordId : null;
+  function activePinyinChoiceTargetId() {
+    const choice = state.powerUps.find((powerUp) => (
+      powerUp.type === "pinyinChoice" && !isLevelWordComplete(powerUp.targetWordId)
+    ));
+    return choice ? choice.targetWordId : null;
   }
 
   function activeLearningTargetId() {
-    return activeWordChoiceTargetId() || activePinyinPartTargetId() || state.activePinyinWordId || state.activeHanziWordId;
+    return activeWordChoiceTargetId() || activePinyinChoiceTargetId() || state.activePinyinWordId || state.activeHanziWordId;
   }
 
   function bombRunWords() {
@@ -1718,30 +1745,43 @@
     });
   }
 
-  function spawnPinyinPieces(targetWordId) {
+  function pinyinChoiceWordsForTarget(targetWordId) {
     const targetWord = wordById(targetWordId);
-    if (!targetWord) return;
-    const pieces = pinyinChallengePieces(targetWord);
-    const cells = randomOpenRewardCells(pieces.length, true);
-    state.activeHanziWordId = targetWordId;
-    state.activePinyinStep = 0;
-    let spawnedCorrect = 0;
-    pieces.forEach((piece, index) => {
-      const cell = cells[index];
-      if (!cell) return;
-      if (piece.correct) spawnedCorrect += 1;
-      spawnPowerUp("pinyinPart", cell.x, cell.y, {
-        wordId: targetWordId,
-        text: piece.text,
-        order: piece.order,
-        correct: piece.correct,
-      });
+    if (!targetWord) return [];
+    const labels = new Set([pinyinReadingsLabel(targetWord)]);
+    const distractors = [];
+    bombDistractorWordsForTarget(targetWordId).forEach((word) => {
+      const label = pinyinReadingsLabel(word);
+      if (!label || labels.has(label) || distractors.length >= 2) return;
+      labels.add(label);
+      distractors.push(word);
     });
-    state.activePinyinTotal = spawnedCorrect;
+    return [targetWord].concat(distractors).sort(() => Math.random() - 0.5);
   }
 
-  function clearPinyinPieces(targetWordId) {
-    state.powerUps = state.powerUps.filter((powerUp) => powerUp.type !== "pinyinPart" || powerUp.wordId !== targetWordId);
+  function spawnPinyinChoices(targetWordId) {
+    const targetWord = wordById(targetWordId);
+    if (!targetWord) return;
+    const choices = pinyinChoiceWordsForTarget(targetWordId);
+    const cells = randomOpenRewardCells(choices.length, true);
+    state.activeHanziWordId = targetWordId;
+    state.activePinyinStep = 0;
+    state.activePinyinTotal = 0;
+    choices.forEach((word, index) => {
+      const cell = cells[index];
+      if (!cell) return;
+      spawnPowerUp("pinyinChoice", cell.x, cell.y, {
+        wordId: word.id,
+        targetWordId,
+        correct: word.id === targetWordId,
+      });
+    });
+  }
+
+  function clearPinyinChoices(targetWordId) {
+    state.powerUps = state.powerUps.filter((powerUp) => (
+      powerUp.type !== "pinyinChoice" || powerUp.targetWordId !== targetWordId
+    ));
   }
 
   function respawnHanziPrompt(targetWordId) {
@@ -1818,7 +1858,8 @@
     let flameBoosts = 0;
     let collectedPinyin = null;
     let collectedHanziPrompt = null;
-    let collectedPinyinPart = null;
+    let collectedCorrectPinyin = null;
+    let collectedWrongPinyin = null;
     let collectedCorrectWord = null;
     let collectedWrongWord = null;
     let wrongWordTargetId = "";
@@ -1855,23 +1896,23 @@
         spawnParticles("pinyin", powerUp.gx, powerUp.gy);
         return false;
       }
-      if (powerUp.type === "pinyinPart") {
-        if (isLevelWordComplete(powerUp.wordId)) {
+      if (powerUp.type === "pinyinChoice") {
+        if (isLevelWordComplete(powerUp.targetWordId)) {
           return false;
         }
         if (powerUp.wrongLock) {
           return true;
         }
-        const expectedWordId = state.activeHanziWordId;
-        const isExpected = expectedWordId === powerUp.wordId && powerUp.correct && powerUp.order === state.activePinyinStep;
-        if (isExpected) {
-          collectedPinyinPart = { ...powerUp };
-          state.activePinyinStep += 1;
-          spawnParticles("pinyin", powerUp.gx, powerUp.gy);
+        const optionWord = wordById(powerUp.wordId);
+        if (powerUp.correct && state.activeHanziWordId === powerUp.targetWordId) {
+          collectedCorrectPinyin = { ...powerUp, optionWord };
+          completeLearningTarget(powerUp.targetWordId);
+          spawnParticles("moon", powerUp.gx, powerUp.gy);
           return false;
         }
-        wrongPinyinWordId = expectedWordId || powerUp.wordId;
-        wrongPinyinText = powerUp.text || "";
+        collectedWrongPinyin = { ...powerUp, optionWord };
+        wrongPinyinWordId = state.activeHanziWordId || powerUp.targetWordId;
+        wrongPinyinText = optionWord ? pinyinReadingsLabel(optionWord) : "";
         powerUp.wrongLock = true;
         spawnParticles("wrong", powerUp.gx, powerUp.gy);
         return true;
@@ -1912,9 +1953,9 @@
       spawnWordChoices(collectedPinyin.id);
       setMessage(`拼音 ${pinyinReadingsLabel(collectedPinyin)}：找到对应的字`);
     } else if (collectedHanziPrompt) {
-      spawnPinyinPieces(collectedHanziPrompt.id);
-      if (state.activePinyinTotal > 0) {
-        setMessage(`汉字 ${collectedHanziPrompt.char}：按顺序吃拼音`);
+      spawnPinyinChoices(collectedHanziPrompt.id);
+      if (activePinyinChoiceTargetId()) {
+        setMessage(`汉字 ${collectedHanziPrompt.char}：找到对应的拼音`);
       } else {
         resetActiveLearningTask();
         respawnHanziPrompt(collectedHanziPrompt.id);
@@ -1923,19 +1964,13 @@
     } else if (blockedLearning && messageTimer <= 0) {
       setMessage("先完成上一个学习任务", 1.2);
     }
-    if (collectedPinyinPart) {
-      const word = wordById(collectedPinyinPart.wordId);
-      if (state.activePinyinStep >= state.activePinyinTotal) {
-        completeLearningTarget(collectedPinyinPart.wordId);
-        state.retryWordIds = state.retryWordIds.filter((id) => id !== collectedPinyinPart.wordId);
-        clearPinyinPieces(collectedPinyinPart.wordId);
-        resetActiveLearningTask();
-        state.score += 20;
-        setMessage(`拼对 ${word ? word.char : ""}，获得月亮`);
-      } else {
-        const nextStep = state.activePinyinStep + 1;
-        setMessage(`对了，继续吃第 ${nextStep} 个拼音`, 1.2);
-      }
+    if (collectedCorrectPinyin) {
+      const targetWord = wordById(collectedCorrectPinyin.targetWordId);
+      state.retryWordIds = state.retryWordIds.filter((id) => id !== collectedCorrectPinyin.targetWordId);
+      clearPinyinChoices(collectedCorrectPinyin.targetWordId);
+      resetActiveLearningTask();
+      state.score += 20;
+      setMessage(targetWord ? pinyinReadingsLabel(targetWord) + "，获得月亮" : "答对了，获得月亮");
     }
     if (wrongPinyinWordId) {
       retryWordNextLevel(wrongPinyinWordId);
@@ -1960,7 +1995,7 @@
       setMessage(messages.join("  "));
       updateHud();
     }
-    if (collectedPinyin || collectedHanziPrompt || collectedPinyinPart || wrongPinyinWordId || collectedCorrectWord || collectedWrongWord) {
+    if (collectedPinyin || collectedHanziPrompt || collectedCorrectPinyin || collectedWrongPinyin || wrongPinyinWordId || collectedCorrectWord || collectedWrongWord) {
       updateHud();
       checkLevelComplete();
     }
@@ -2007,6 +2042,7 @@
         .map((powerUp) => coordKey(powerUp.gx, powerUp.gy))
     );
     const cells = [{ gx: bomb.gx, gy: bomb.gy }];
+    const blockedCells = [];
 
     Object.values(DIRS).forEach((dir) => {
       for (let step = 1; step <= bomb.range; step += 1) {
@@ -2014,7 +2050,13 @@
         const gy = bomb.gy + dir.y * step;
         if (!isInside(gx, gy) || state.map[gy][gx] === TILE_HARD) break;
         cells.push({ gx, gy });
+        const recentlyDestroyedCrate = state.explosions.some((explosion) => (
+          Array.isArray(explosion.blockedCells) &&
+          explosion.blockedCells.some((cell) => cell.gx === gx && cell.gy === gy)
+        ));
+        if (recentlyDestroyedCrate) break;
         if (state.map[gy][gx] === TILE_CRATE) {
+          blockedCells.push({ gx, gy });
           state.map[gy][gx] = TILE_FLOOR;
           maybeSpawnBrickPowerUp(gx, gy);
           spawnParticles("crate", gx, gy);
@@ -2024,7 +2066,7 @@
       }
     });
 
-    state.explosions.push({ cells, life: FLAME_TIME, maxLife: FLAME_TIME });
+    state.explosions.push({ cells, blockedCells, life: FLAME_TIME, maxLife: FLAME_TIME });
     destroyFireFlowersInCells(cells, visibleFireFlowerKeys);
     state.bombs.forEach((other) => {
       if (!other.exploded && cells.some((cell) => cell.gx === other.gx && cell.gy === other.gy)) {
@@ -2092,7 +2134,7 @@
       startTitle.textContent = "失败";
       overlayStartButton.textContent = "再来一局";
       startLayer.classList.remove("hidden");
-      setMessage("吃错拼音，失败", 3);
+      setMessage("选错拼音，失败", 3);
       return;
     }
     state.player.invulnerable = Math.max(state.player.invulnerable, 0.45);
@@ -2326,15 +2368,15 @@
         drawGuidedPowerUpGlow(center, bob);
       }
       if (powerUp.type === "pinyin") {
-        drawPinyinReward(center, powerUp, bob, Boolean(activeLearningTargetId()));
+        drawQuestionCard(center, bob, "拼音题", Boolean(activeLearningTargetId()));
         return;
       }
       if (powerUp.type === "hanziPrompt") {
-        drawWordChoice(center, powerUp, bob, Boolean(activeLearningTargetId()));
+        drawQuestionCard(center, bob, "汉字题", Boolean(activeLearningTargetId()));
         return;
       }
-      if (powerUp.type === "pinyinPart") {
-        drawPinyinPart(center, powerUp, bob);
+      if (powerUp.type === "pinyinChoice") {
+        drawPinyinReward(center, powerUp, bob);
         return;
       }
       if (powerUp.type === "wordChoice") {
@@ -2412,6 +2454,30 @@
     ctx.arcTo(x, y + height, x, y, r);
     ctx.arcTo(x, y, x + width, y, r);
     ctx.closePath();
+  }
+
+  function drawQuestionCard(center, bob, label, locked = false) {
+    ctx.save();
+    ctx.translate(center.x, center.y + bob);
+    ctx.fillStyle = "rgba(0, 0, 0, 0.24)";
+    ctx.beginPath();
+    ctx.ellipse(0, 20, 22, 6, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = locked ? 0.68 : 1;
+    ctx.fillStyle = locked ? "#e5e7eb" : "#fff7d6";
+    ctx.strokeStyle = locked ? "#9ca3af" : "#f59e0b";
+    ctx.lineWidth = 3;
+    roundRectPath(-34, -30, 68, 54, 9);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = locked ? "#6b7280" : "#172033";
+    ctx.font = "bold 28px Microsoft YaHei";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("?", 0, -7);
+    ctx.font = "bold 11px Microsoft YaHei";
+    ctx.fillText(label, 0, 13);
+    ctx.restore();
   }
 
   function drawPinyinReward(center, powerUp, bob, locked = false) {
@@ -2861,7 +2927,7 @@
     ctx.font = "bold 34px Microsoft YaHei";
     fitText(isHanziMode ? word.char : pinyinReadingsLabel(word), x + panelWidth / 2, y + 68, panelWidth - 14, isHanziMode ? 38 : 28, 13);
 
-    if (isHanziMode) {
+    if (isHanziMode && state.activePinyinTotal > 0) {
       ctx.fillStyle = "#bfdbfe";
       ctx.font = "bold 17px Microsoft YaHei";
       fitText(`${Math.min(state.activePinyinStep + 1, state.activePinyinTotal)}/${state.activePinyinTotal}`, x + panelWidth / 2, y + 98, panelWidth - 16, 17, 12);
@@ -2988,7 +3054,7 @@
         (powerUp.type === "pinyin" || powerUp.type === "hanziPrompt") && isAvailableLearningPowerUp(powerUp)
       ));
       const activeTargetIds = uniqueIds(state.powerUps
-        .filter((powerUp) => powerUp.type === "wordChoice" || powerUp.type === "pinyinPart")
+        .filter((powerUp) => powerUp.type === "wordChoice" || powerUp.type === "pinyinChoice")
         .map((powerUp) => powerUp.targetWordId || powerUp.wordId)
         .filter(Boolean));
       return {
@@ -3000,6 +3066,29 @@
         renderedLearningCardCount: lastRenderedLearningCardCount,
       };
     },
+    getActiveLearningQuestion: () => {
+      const pinyinWord = wordById(state.activePinyinWordId);
+      const hanziWord = wordById(state.activeHanziWordId);
+      const word = pinyinWord || hanziWord;
+      if (!word) return null;
+      const type = hanziWord ? "hanzi-to-pinyin" : "pinyin-to-hanzi";
+      const optionType = hanziWord ? "pinyinChoice" : "wordChoice";
+      const options = state.powerUps
+        .filter((powerUp) => powerUp.type === optionType)
+        .map((powerUp) => {
+          const optionWord = wordById(powerUp.wordId);
+          return {
+            value: hanziWord ? pinyinReadingsLabel(optionWord) : optionWord?.char || "",
+            correct: powerUp.correct === true,
+          };
+        });
+      return {
+        type,
+        prompt: hanziWord ? word.char : pinyinReadingsLabel(word),
+        options,
+      };
+    },
+
     getConstants: () => ({
       progressKey: BOMB_PROGRESS_KEY,
       progressVersion: BOMB_PROGRESS_VERSION,

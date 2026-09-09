@@ -170,13 +170,15 @@ assert.equal(await page.locator("#appVersionLabel").textContent(), `v${packageVe
 assert.equal(await page.locator(".hp-counter, #hpIcons, #repairHint").count(), 0);
 assert.equal(await page.locator(".star-counter").isVisible(), true);
 assert.equal(await page.locator("#starCount").isVisible(), true);
-assert.equal(await page.locator("text=Book").count(), 0);
+assert.equal(await page.locator("#englishPanel, #englishMode, [data-view=\"english\"]").count(), 0);
 assert.equal(await page.locator("#exportProgress").count(), 0);
-assert.equal(await page.locator("#importProgress").count(), 0);
-assert.equal(await page.locator("#importProgressFile").count(), 0);
+assert.equal(await page.locator("#importLegacyProgress").isVisible(), true);
+assert.equal(await page.locator("#importLegacyProgressFile").count(), 1);
+assert.equal(await page.locator("#importLegacyProgressFile").isHidden(), true);
+assert.equal(await page.locator("#importLegacyProgressFile").getAttribute("accept"), "application/json,.json");
 assert.equal(await page.locator("#resetProgress").isVisible(), true);
 assert.equal(await page.locator(".module-tabs #bombGameEntry, .module-tabs a[href=\"./bomb-game.html?v=1.0\"]").count(), 0);
-assert.deepEqual(await page.locator(".module-tabs .module-tab").allTextContents(), ["汉字", "主题学习", "总复习", "音标"]);
+assert.deepEqual(await page.locator(".module-tabs .module-tab").allTextContents(), ["汉字", "Book1", "主题学习", "情景模式", "总复习", "音标"]);
 assert.equal(await page.locator(".topbar .top-actions #bombGameEntry").isVisible(), true);
 assert.equal(await page.locator(".topbar #resetProgress").count(), 0);
 const bombEntry = page.locator(".topbar .top-actions #bombGameEntry");
@@ -196,6 +198,47 @@ for (const selector of ["#startDaily", "#startReview"]) {
 for (const selector of ["#speakCurrent", "#markCorrect", "#markWrong", "#markMastered"]) {
   assert.equal(await page.locator(selector).isVisible(), false, `${selector} should be hidden while idle`);
 }
+const syntheticLegacyBackup = {
+  backupType: "learning-word-bank",
+  wordCount: 1600,
+  state: {
+    records: {
+      "0001": { status: "known", correctCount: 4, errorCount: 1 },
+      "0002": { status: "mastered", correctCount: 3, errorCount: 0 },
+    },
+    masteredIds: ["0002"],
+    recentWrongIds: ["0001"],
+    reviewRound: 7,
+    stars: 117,
+  },
+};
+let importDialogText = "";
+page.once("dialog", async (dialog) => {
+  importDialogText = dialog.message();
+  await dialog.accept();
+});
+const legacyFileChooser = page.waitForEvent("filechooser");
+await page.click("#importLegacyProgress");
+const fileChooser = await legacyFileChooser;
+await fileChooser.setFiles({
+  name: "legacy-learning-word-bank.json",
+  mimeType: "application/json",
+  buffer: Buffer.from(JSON.stringify(syntheticLegacyBackup)),
+});
+await page.waitForFunction(() => document.querySelector("#feedback").textContent.includes("旧版进度已合并"));
+const importedState = await state();
+assert.equal(Object.keys(importedState.records).length, 2);
+assert.deepEqual(importedState.masteredIds, ["0002"]);
+assert.deepEqual(importedState.recentWrongIds, ["0001"]);
+assert.equal(importedState.reviewRound, 7);
+assert.equal(importedState.stars, 117);
+assert.equal(importedState.migration.strategy, "read-only-file-merge");
+assert.match(importDialogText, /2 条记录、1 个完全认识、117 颗星/);
+assert.match((await page.locator("#feedback").textContent()).trim(), /旧版进度已合并：2 条记录，1 个完全认识，117 颗星/);
+assert.equal((await page.locator("#masteredCount").textContent()).trim(), "1");
+assert.equal((await page.locator("#starCount").textContent()).trim(), "117");
+await resetTestKey();
+assert.equal(await page.locator("#importLegacyProgress").isVisible(), true);
 
 // Real-page pinyin rendering: 地 has one visible | separator; a single-reading word has none.
 await page.click("#startDaily");
@@ -388,7 +431,7 @@ assert.equal(await page.locator(".map-visual .map-actions #resetProgress").isVis
 const mobilePageActions = await pageActionGeometry("390px");
 const mobileIdleCard = await currentCharMetrics("placeholder", "开始");
 assert.equal(await page.locator("#reviewRoundBadge").isHidden(), true);
-for (const selector of ["#startDaily", "#startReview", "#resetProgress"]) {
+for (const selector of ["#startDaily", "#startReview", "#resetProgress", "#importLegacyProgress"]) {
   assert.equal(await page.locator(selector).isVisible(), true, `${selector} should be visible at 390px`);
 }
 for (const selector of ["#speakCurrent", "#markCorrect", "#markWrong", "#markMastered"]) {
@@ -453,7 +496,7 @@ console.log(JSON.stringify({
     mobileHorizontalGap: mobileGlyphBadge.horizontalGap,
     mobileVerticalGap: mobileGlyphBadge.verticalGap,
   },
-  moduleTabs: ["汉字", "主题学习", "总复习", "音标"],
+  moduleTabs: ["汉字", "Book1", "主题学习", "情景模式", "总复习", "音标"],
   headerActions: ["炸弹迷宫"],
   mapActions: ["重置汉字状态"],
   bombEntryPlacement: "header",

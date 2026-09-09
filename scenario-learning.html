@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta http-equiv="Cache-Control" content="no-cache,no-store,must-revalidate" />
+  <link rel="icon" href="data:," />
+  <title>马里奥学习系统 · 情景模式</title>
+  <link rel="stylesheet" href="./scenario-learning.css?v=1.1" />
+</head>
+<body>
+  <div class="scenario-shell">
+    <header class="scenario-topbar">
+      <div class="scenario-brand"><span>马里奥学习系统</span><h1>情景模式</h1></div>
+      <nav class="scenario-nav" aria-label="学习模块">
+        <a href="./index.html">汉字</a><a href="./book-learning.html">Book1</a><a href="./theme-learning.html">主题学习</a><span class="is-active" aria-current="page">情景模式</span><a href="./review-learning.html">总复习</a><a href="./phonetics.html">音标</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="scenario-picker" id="scenarioPicker" aria-labelledby="scenarioPickerTitle">
+        <div class="picker-heading"><span>SCENARIO ENGLISH</span><h2 id="scenarioPickerTitle">在小对话里学会开口</h2><p>先认识完整对话，再选择最合适的回应。</p></div>
+        <div class="scenario-list">
+          <article class="scenario-card" data-scenario-id="first-meeting">
+            <div class="scenario-preview" aria-hidden="true">
+              <div class="meeting-place"><i></i><i></i><span></span></div>
+              <div class="kid kid-mia"><b></b><i></i><span></span></div>
+              <div class="kid kid-leo"><b></b><i></i><span></span></div>
+              <div class="preview-bubble bubble-left">Hello!</div><div class="preview-bubble bubble-right">Hi!</div>
+            </div>
+            <div class="scenario-card-copy"><small>情景 01</small><h3>第一次见面 <em>First Meeting</em></h3><p>用 6 句短对话学习问候、自我介绍和礼貌回应。</p><button type="button" data-start-label>开始情景</button></div>
+            <span class="scenario-complete-badge" data-complete-badge hidden aria-label="已完成">✓</span>
+          </article>
+        </div>
+      </section>
+
+      <section class="scenario-learning-view" id="scenarioLearningView" hidden aria-labelledby="activeScenarioTitle">
+        <header class="learning-head">
+          <button class="back-button" id="backToScenarios" type="button">返回情景选择</button>
+          <div><span id="activeScenarioKicker">情景 01</span><h2 id="activeScenarioTitle">第一次见面 · First Meeting</h2></div>
+          <div class="stage-switch" aria-label="学习阶段"><button class="is-active" id="learnStage" type="button" aria-pressed="true">1 认识对话</button><button id="practiceStage" type="button" aria-pressed="false">2 情景练习</button></div>
+        </header>
+
+        <section class="dialogue-panel" id="dialoguePanel">
+          <div class="encounter-scene" aria-label="米娅和利奥第一次见面">
+            <div class="park-cloud cloud-one"></div><div class="park-cloud cloud-two"></div><div class="park-tree tree-one"></div><div class="park-tree tree-two"></div>
+            <div class="full-kid full-mia" aria-hidden="true"><span class="hair"></span><span class="head"></span><span class="body"></span><span class="arm left"></span><span class="arm right"></span><span class="leg left"></span><span class="leg right"></span></div>
+            <div class="full-kid full-leo" aria-hidden="true"><span class="hair"></span><span class="head"></span><span class="body"></span><span class="arm left"></span><span class="arm right"></span><span class="leg left"></span><span class="leg right"></span></div>
+          </div>
+          <div class="dialogue-workspace">
+            <div class="dialogue-card" aria-live="polite">
+              <span class="progress-pill" id="dialogueProgress">1/6</span><strong class="speaker-name" id="dialogueSpeaker">Mia</strong>
+              <p class="dialogue-english" id="dialogueEnglish">Hello! My name is Mia.</p><p class="dialogue-phonetic" id="dialoguePhonetic">/həˈləʊ maɪ neɪm ɪz ˈmiːə/</p><p class="dialogue-chinese" id="dialogueChinese">你好！我叫米娅。</p>
+              <div class="dialogue-actions"><button id="speakDialogue" class="sound-button" type="button" aria-label="朗读当前对话"><span aria-hidden="true">🔊</span></button><button id="previousLine" type="button">Previous</button><button id="nextLine" type="button">Next</button></div>
+            </div>
+            <div class="dialogue-line-list" id="dialogueLineList" aria-label="完整对话"></div>
+          </div>
+        </section>
+
+        <section class="practice-panel" id="practicePanel" hidden>
+          <div class="practice-question" aria-live="polite"><span class="progress-pill" id="practiceProgress">1/3</span><strong id="practiceSpeaker">Mia</strong><p id="practicePrompt">Hello! My name is Mia.</p><span id="practicePhonetic">/həˈləʊ maɪ neɪm ɪz ˈmiːə/</span><button class="sound-button" id="speakPractice" type="button" aria-label="朗读问题"><span aria-hidden="true">🔊</span></button></div>
+          <div><h3>你会怎么回应？</h3><div class="response-options" id="responseOptions"></div><p class="practice-feedback" id="practiceFeedback" role="status">选择最合适的回应。</p></div>
+        </section>
+
+        <section class="practice-result" id="practiceResult" hidden><span aria-hidden="true">✓</span><h3>第一次见面完成！</h3><strong id="practiceResultScore">3/3</strong><p>你已经会用英语完成一次简单的初次见面对话。</p><div><button id="restartPractice" type="button">再练一轮</button><button id="returnAfterComplete" type="button">返回情景选择</button></div></section>
+      </section>
+    </main>
+  </div>
+  <script type="module" src="./scenario-learning.js?v=1.0"></script>
+</body>
+</html>

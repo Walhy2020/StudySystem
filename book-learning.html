@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta http-equiv="Cache-Control" content="no-cache,no-store,must-revalidate" />
+  <link rel="icon" href="data:," />
+  <title>马里奥学习系统 · Book1</title>
+  <link rel="stylesheet" href="./book-learning.css?v=1.1" />
+</head>
+<body>
+  <div class="book-shell">
+    <header class="book-topbar">
+      <div class="book-brand"><span>马里奥学习系统</span><h1>Book1 字母启蒙</h1></div>
+      <nav class="book-nav" aria-label="学习模块">
+        <a href="./index.html">汉字</a>
+        <span class="is-active" aria-current="page">Book1</span>
+        <a href="./theme-learning.html">主题学习</a>
+        <a href="./scenario-learning.html">情景模式</a>
+        <a href="./review-learning.html">总复习</a>
+        <a href="./phonetics.html">音标</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="book-hero" aria-labelledby="bookTitle">
+        <div><span class="book-kicker">Oxford Phonics World 1</span><h2 id="bookTitle">从 A 学到 Z</h2><p>26 个字母组，每组学习一个字母和四个单词。</p></div>
+        <div class="book-summary"><strong id="learnedCount">0</strong><span>已学习 / 130</span></div>
+      </section>
+
+      <section class="letter-picker" aria-label="Book1 字母组">
+        <div class="letter-list" id="letterList"></div>
+      </section>
+
+      <section class="book-workspace">
+        <section class="book-stage" aria-live="polite">
+          <header class="group-heading">
+            <button id="previousGroup" type="button" aria-label="上一个字母组">Previous</button>
+            <div><span id="unitLabel">Unit 1 · Pages 4-11</span><h2 id="groupLabel">Aa</h2></div>
+            <button id="nextGroup" type="button" aria-label="下一个字母组">Next</button>
+          </header>
+
+          <div class="learning-card" id="learningCard" tabindex="0" role="button" aria-label="朗读当前学习项">
+            <div class="mastered-mark" id="masteredMark" hidden aria-label="完全认识">★</div>
+            <div class="book-picture" id="bookPicture"></div>
+            <div class="book-word-copy">
+              <span class="item-kind" id="itemKind">LETTER</span>
+              <strong id="currentWord">A</strong>
+              <span class="book-phonetic" id="currentPhonetic">/a/</span>
+              <span class="book-translation" id="currentTranslation">字母A</span>
+            </div>
+          </div>
+
+          <div class="book-actions" aria-label="Book1 学习操作">
+            <button class="start-action" id="startGroup" type="button">开始本组</button>
+            <button class="review-action" id="startReview" type="button">复习 Book1</button>
+            <button class="icon-action sound-action" id="speakWord" type="button" aria-label="朗读当前内容" title="朗读当前内容"><span aria-hidden="true">🔊</span></button>
+            <button class="icon-action correct-action" id="markCorrect" type="button" aria-label="认识" title="认识"><span aria-hidden="true">√</span></button>
+            <button class="icon-action wrong-action" id="markWrong" type="button" aria-label="不认识" title="不认识"><span aria-hidden="true">×</span></button>
+            <button class="icon-action mastery-action" id="markMastered" type="button" aria-label="完全认识" title="完全认识"><span aria-hidden="true">★</span></button>
+          </div>
+          <p class="book-feedback" id="bookFeedback" role="status">选择字母组，然后开始学习。</p>
+        </section>
+
+        <aside class="book-side">
+          <section class="book-panel">
+            <h2>本组内容</h2>
+            <div class="group-items" id="groupItems"></div>
+          </section>
+          <section class="book-panel">
+            <h2>Book1 进度</h2>
+            <div class="book-stats">
+              <div><span>已学习</span><strong id="progressLearned">0</strong></div>
+              <div><span>完全认识</span><strong id="progressMastered">0</strong></div>
+              <div><span>错词</span><strong id="progressWrong">0</strong></div>
+              <div><span>本轮</span><strong id="roundProgress">0/0</strong></div>
+            </div>
+            <p class="migration-note" id="migrationNote" hidden>已只读导入旧系统的 Book1 进度。</p>
+          </section>
+        </aside>
+      </section>
+    </main>
+  </div>
+  <script type="module" src="./book-learning.js?v=1.0"></script>
+</body>
+</html>

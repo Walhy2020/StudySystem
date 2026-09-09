@@ -31,6 +31,88 @@ export function migrationCounts(state) {
     stars: Number(state.stars) || 0,
   };
 }
+const STATUS_RANK = Object.freeze({ new: 0, wrong: 1, learning: 2, known: 3, mastered: 4 });
+const DAILY_STATE_FIELDS = Object.freeze([
+  "hp", "repairStreak", "todayDate", "dailyNewIds", "dailyNewCorrectCounts",
+  "dailyMixedDoneIds", "dailyReviewIds", "dailyReviewDate", "dailyReviewDoneIds",
+  "reviewWrongIds", "reviewWrongCorrectCounts", "dailyPhase", "dailyTaskStarted",
+  "dailyTaskDone", "activeWordId", "inlineReviewContext",
+]);
+
+function numericMax(left, right) {
+  return Math.max(Number(left) || 0, Number(right) || 0);
+}
+
+function cloneStateValue(value) {
+  if (Array.isArray(value)) return [...value];
+  if (value && typeof value === "object") return { ...value };
+  return value;
+}
+
+function mergeRecord(current = {}, legacy = {}) {
+  const currentRank = STATUS_RANK[current.status] ?? 0;
+  const legacyRank = STATUS_RANK[legacy.status] ?? 0;
+  const lastSeen = [current.lastSeen, legacy.lastSeen]
+    .filter((value) => typeof value === "string")
+    .sort()
+    .at(-1) || null;
+  return {
+    ...current,
+    ...legacy,
+    status: currentRank >= legacyRank ? current.status : legacy.status,
+    correctCount: numericMax(current.correctCount, legacy.correctCount),
+    errorCount: numericMax(current.errorCount, legacy.errorCount),
+    streak: numericMax(current.streak, legacy.streak),
+    lastSeen,
+    nextReview: numericMax(current.nextReview, legacy.nextReview),
+    nextReviewRound: numericMax(current.nextReviewRound, legacy.nextReviewRound),
+    intervalDays: numericMax(current.intervalDays, legacy.intervalDays),
+    reviewIntervalRounds: numericMax(current.reviewIntervalRounds, legacy.reviewIntervalRounds),
+    reviewStage: numericMax(current.reviewStage, legacy.reviewStage),
+    studyAppearanceCount: numericMax(current.studyAppearanceCount, legacy.studyAppearanceCount),
+    studyAppearanceKeys: [...new Set([
+      ...(current.studyAppearanceKeys || []),
+      ...(legacy.studyAppearanceKeys || []),
+    ])].slice(-80),
+  };
+}
+
+function mergeLegacyProgress(currentRaw, legacyRaw, words, date, importedAt = new Date().toISOString()) {
+  const current = normalizeState(currentRaw, words, date);
+  const legacy = migrateLegacyState(legacyRaw, words, date, importedAt);
+  const recordIds = new Set([...Object.keys(current.records), ...Object.keys(legacy.records)]);
+  const records = Object.fromEntries([...recordIds].map((id) => [
+    id,
+    mergeRecord(current.records[id], legacy.records[id]),
+  ]));
+  const masteredIds = [...new Set([...current.masteredIds, ...legacy.masteredIds])];
+  const masteredSet = new Set(masteredIds);
+  masteredIds.forEach((id) => {
+    records[id] = mergeRecord(records[id], { status: "mastered", correctCount: 3 });
+  });
+  const dailySource = current.dailyTaskStarted ? current : legacy;
+  const merged = {
+    ...current,
+    records,
+    masteredIds,
+    recentWrongIds: [...new Set([...current.recentWrongIds, ...legacy.recentWrongIds])]
+      .filter((id) => !masteredSet.has(id)).slice(0, 30),
+    reviewRound: numericMax(current.reviewRound, legacy.reviewRound),
+    rewardCount: numericMax(current.rewardCount, legacy.rewardCount),
+    stars: numericMax(current.stars, legacy.stars),
+    scanCursor: numericMax(current.scanCursor, legacy.scanCursor),
+    migration: {
+      sourceKey: LEGACY_STORAGE_KEY,
+      importedAt,
+      strategy: "read-only-file-merge",
+      previousSourceKey: current.migration?.sourceKey || null,
+    },
+  };
+  DAILY_STATE_FIELDS.forEach((field) => {
+    merged[field] = cloneStateValue(dailySource[field]);
+  });
+  return normalizeState(merged, words, date);
+}
 
 export class HanziStorage {
   constructor(storage, words, options = {}) {
@@ -82,6 +164,28 @@ export class HanziStorage {
     return validateBackupPayload(payload);
   }
 
+  previewLegacyPayload(payload, currentState) {
+    const validation = validateBackupPayload(payload);
+    if (!validation.ok) return validation;
+    const importedAt = new Date().toISOString();
+    const current = normalizeState(currentState, this.words, this.date);
+    const legacy = migrateLegacyState(validation.state, this.words, this.date, importedAt);
+    const state = mergeLegacyProgress(current, validation.state, this.words, this.date, importedAt);
+    return {
+      ...validation,
+      state,
+      currentCounts: migrationCounts(current),
+      legacyCounts: migrationCounts(legacy),
+      mergedCounts: migrationCounts(state),
+    };
+  }
+
+  importLegacyPayload(payload, currentState) {
+    const preview = this.previewLegacyPayload(payload, currentState);
+    if (!preview.ok) return preview;
+    const state = this.save(preview.state);
+    return { ...preview, state, mergedCounts: migrationCounts(state) };
+  }
   importPayload(payload) {
     const validation = validateBackupPayload(payload);
     if (!validation.ok) return validation;

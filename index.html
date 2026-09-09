@@ -6,7 +6,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <link rel="icon" href="data:," />
     <title>马里奥学习系统 · 汉字</title>
-    <link rel="stylesheet" href="./styles.css?v=1.9" />
+    <link rel="stylesheet" href="./styles.css?v=2.2" />
   </head>
   <body>
     <div class="app-shell">
@@ -18,7 +18,9 @@
         </div>
         <nav class="module-tabs" aria-label="学习模块">
           <span class="module-tab is-active" aria-current="page">汉字</span>
+          <a class="module-tab" href="./book-learning.html">Book1</a>
           <a class="module-tab" href="./theme-learning.html">主题学习</a>
+          <a class="module-tab" href="./scenario-learning.html">情景模式</a>
           <a class="module-tab" href="./review-learning.html">总复习</a>
           <a class="module-tab" href="./phonetics.html">音标</a>
         </nav>
@@ -76,6 +78,11 @@
               <div><span>到期复习</span><strong id="dueCount">0</strong></div>
               <div class="wide-stat"><span>总进度</span><strong id="progressCount">0/1600</strong></div>
             </div>
+            <div class="legacy-import">
+              <p>旧版进度可从“导出字库”备份只读合并，不会清空当前进度。</p>
+              <button class="legacy-import-button" id="importLegacyProgress" type="button">导入旧版汉字进度</button>
+              <input id="importLegacyProgressFile" type="file" accept="application/json,.json" hidden />
+            </div>
           </section>
           <section class="panel-block today-new-panel">
             <h2>今日新字</h2>
@@ -92,6 +99,6 @@
 
     <script src="./data/characters.js?v=1.0"></script>
     <script src="./data/pinyin-readings.js?v=1.0"></script>
-    <script type="module" src="./src/app.js?v=1.6"></script>
+    <script type="module" src="./src/app.js?v=1.7"></script>
   </body>
 </html>

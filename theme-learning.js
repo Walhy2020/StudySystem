@@ -1,5 +1,5 @@
 import { PHONETIC_STRESS_MARKS, splitPhonetic } from "./src/phonetic-segmenter.js?v=1.0";
-import { initializeThemeProgress } from "./src/theme-overview.js?v=1.4";
+import { initializeThemeProgress } from "./src/theme-overview.js?v=1.5";
 
 export { splitPhonetic };
 
@@ -305,6 +305,73 @@ export function speakEnglish(text, synthesis = globalThis.speechSynthesis, Utter
   }
 }
 
+export const THEME_SPEECH_RESTART_DELAY_MS = 60;
+
+export function createEnglishSpeaker(options = {}) {
+  const synthesis = options.synthesis ?? globalThis.speechSynthesis;
+  const Utterance = options.Utterance ?? globalThis.SpeechSynthesisUtterance;
+  const restartDelayMs = Math.max(0, Number(options.restartDelayMs ?? THEME_SPEECH_RESTART_DELAY_MS) || 0);
+  let pending = null;
+
+  function finish(job, reason) {
+    if (pending !== job) return;
+    clearTimeout(job.restartTimer);
+    clearTimeout(job.completionTimer);
+    pending = null;
+    if (reason === "ended" || reason === "timeout") job.onEnd?.(reason);
+    else job.onError?.(reason);
+  }
+
+  function cancel() {
+    if (pending) {
+      clearTimeout(pending.restartTimer);
+      clearTimeout(pending.completionTimer);
+      pending = null;
+    }
+    if (!synthesis || typeof synthesis.cancel !== "function") return false;
+    try {
+      synthesis.cancel();
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  function speak(text, callbacks = {}) {
+    const value = String(text || "").trim();
+    if (!value || !synthesis || typeof synthesis.speak !== "function" || typeof Utterance !== "function") return false;
+    cancel();
+    const job = {
+      restartTimer: 0,
+      completionTimer: 0,
+      onEnd: callbacks.onEnd,
+      onError: callbacks.onError,
+    };
+    pending = job;
+    job.restartTimer = setTimeout(() => {
+      if (pending !== job) return;
+      try {
+        const utterance = new Utterance(value);
+        utterance.lang = "en-GB";
+        utterance.rate = 0.86;
+        utterance.onend = () => finish(job, "ended");
+        utterance.onerror = () => finish(job, "error");
+        const words = value.split(/\s+/u).filter(Boolean).length;
+        const timeoutMs = Math.max(2500, Math.min(12000, Number(callbacks.timeoutMs) || words * 650 + 1000));
+        job.completionTimer = setTimeout(() => finish(job, "timeout"), timeoutMs);
+        synthesis.resume?.();
+        synthesis.speak(utterance);
+        callbacks.onStart?.(utterance);
+      } catch {
+        finish(job, "error");
+      }
+    }, restartDelayMs);
+    return true;
+  }
+
+  return Object.freeze({ speak, cancel });
+}
+
 export function countingVisualMarkup(word) {
   if (word.groups) {
     const frames = Array.from({ length: word.groups }, () =>
@@ -338,14 +405,18 @@ function initializePage() {
   let stage = "learn";
   let feedbackTimer = 0;
   let advanceTimer = 0;
+  const speaker = createEnglishSpeaker();
 
   const activeConfig = () => THEME_CONFIGS[activeThemeId];
   const activeTargets = () => activeThemeId
     ? [...document.querySelectorAll('[data-theme="' + activeThemeId + '"] .scene-target')]
     : [];
 
-  function speak(text) {
-    const ok = speakEnglish(text);
+  function speak(text, onEnd) {
+    const ok = speaker.speak(text, {
+      onEnd,
+      onError: () => { dom.ttsNotice.hidden = false; },
+    });
     if (!ok) dom.ttsNotice.hidden = false;
     return ok;
   }
@@ -492,6 +563,7 @@ function initializePage() {
     stage = next;
     clearTimeout(feedbackTimer);
     clearTimeout(advanceTimer);
+    speaker.cancel();
     clearTargetStates();
     const practice = next === "practice";
     const config = activeConfig();
@@ -516,6 +588,7 @@ function initializePage() {
     if (!session) return;
     clearTimeout(feedbackTimer);
     clearTimeout(advanceTimer);
+    speaker.cancel();
     clearTargetStates();
     const targets = activeTargets();
     const targetNode = targets.find((node) => node.dataset.target === id);
@@ -547,15 +620,19 @@ function initializePage() {
     dom.practiceFeedback.className = "practice-feedback is-success";
     dom.practiceFeedback.textContent = "答对了！" + result.target.sentence;
     dom.sessionProgress.textContent = "练习 " + session.correctCount + "/" + session.questions.length;
-    speak(result.target.sentence);
-    advanceTimer = setTimeout(() => {
-      clearTargetStates();
-      if (result.complete) finishRound();
-      else {
-        renderQuestion();
-        speakInstruction();
-      }
-    }, 900);
+    const advance = () => {
+      advanceTimer = setTimeout(() => {
+        clearTargetStates();
+        if (result.complete) finishRound();
+        else {
+          renderQuestion();
+          speakInstruction();
+        }
+      }, 350);
+    };
+    if (!speak(result.target.sentence, advance)) {
+      advanceTimer = setTimeout(advance, 900);
+    }
   }
   function enterTheme(themeId) {
     const config = THEME_CONFIGS[themeId];
@@ -578,6 +655,7 @@ function initializePage() {
   }
   function returnToPicker() {
     clearTimeout(feedbackTimer);
+    speaker.cancel();
     clearTimeout(advanceTimer);
     clearTargetStates();
     activeThemeId = null;

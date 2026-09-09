@@ -16,6 +16,7 @@ The application is a build-free local learning website served by `server.py`.
 - `index.html`, `styles.css`, `src/`, `data/`: Hanzi learning and review.
 - `phonetics.html`, `phonetics.css`, `src/phonetics-*`, `data/phonetics*`: 48-IPA module.
 - `theme-learning.html`, `theme-learning.css`, `theme-learning.js`: themed English learning.
+- `scenario-learning.html`, `scenario-learning.css`, `scenario-learning.js`, `data/scenarios.js`: short-dialogue scenario learning.
 - `review-learning.html`, `review-learning.js`, `src/theme-overview.js`: independent overall review and learned-word library.
 - `bomb-game.html`, `bomb-game.css`, `bomb-game.js`: independent bomb-maze game.
 - `assets/`: project-consumed images and sprites. Image-generation working outputs belong in ignored `output/`, not in page references.
@@ -48,8 +49,9 @@ The current browser scripts reference a Codex-bundled Playwright path under the 
 - Phonetics review includes every currently non-mastered IPA item on each entry, from 0 to 48. `mastered` is the only exclusion condition.
 - The overall review is a top-level module parallel to Hanzi, Theme Learning, and Phonetics. Do not move it back inside the theme page.
 - The learned-word library contains only words actually learned in theme sessions. Overall review covers all of those learned words.
+- Scenario learning is an independent top-level module. Its dialogue completion is not added to the theme learned-word library.
 - Keep the bomb game independent. Preserve native Enter/Space behavior when a link, button, form control, ARIA control, or other focusable element has focus.
-- Preserve the existing module navigation order: Hanzi, Theme Learning, Overall Review, Phonetics.
+- Preserve the existing module navigation order: Hanzi, Book1, Theme Learning, Scenario Learning, Overall Review, Phonetics.
 
 ## Storage boundaries
 
@@ -59,6 +61,7 @@ Browser progress is local to each browser profile and is not synchronized by Git
 - Phonetics writes `mario-phonetics-v1` only.
 - Bomb maze writes `mario-bomb-game-progress-v1` and only reads Hanzi sources needed for its learning pool.
 - Theme learning and overall review share only learned-word progress through `mario-theme-learned-v1`.
+- Scenario learning writes `mario-scenario-learning-v1` only.
 - Do not let one module reset, migrate, or overwrite another module's key.
 - Never commit browser storage exports, API keys, `.env` files, credentials, or authenticated browser state.
 
@@ -77,6 +80,6 @@ Browser progress is local to each browser profile and is not synchronized by Git
 
 - Primary branch and remote: `main` at `https://github.com/Walhy2020/StudySystem.git`.
 - Pull before new work when the worktree is clean. If it is not clean, inspect and preserve those changes first.
-- Commit and push only when the user explicitly authorizes it.
+- The user has granted standing authorization to commit and push completed, verified project changes to origin/main. Do so after required checks pass unless the user explicitly pauses or limits uploads. Exclude unrelated local files and credentials.
 - Before committing, exclude ignored/generated working files and inspect the staged diff.
 - After pushing, verify `git status --short --branch` shows local `main` synchronized with `origin/main`.

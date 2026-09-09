@@ -12,6 +12,7 @@ const protectedKeys = [
   "mario-hanzi-refactor-v1",
   "mario-bomb-game-v1",
   "mario-theme-learning-v1",
+  "mario-book1-v1",
   "mario-literacy-desktop-mvp-v1",
 ];
 
@@ -75,7 +76,7 @@ const pageErrors = [];
 page.on("pageerror", (error) => pageErrors.push(error.message));
 
 await page.goto(mainUrl);
-assert.deepEqual(await page.locator(".module-tabs .module-tab").allTextContents(), ["汉字", "主题学习", "总复习", "音标"]);
+assert.deepEqual(await page.locator(".module-tabs .module-tab").allTextContents(), ["汉字", "Book1", "主题学习", "情景模式", "总复习", "音标"]);
 assert.equal(await page.locator('.module-tabs a[href="./phonetics.html"]').isVisible(), true);
 assert.equal(await page.locator("header .top-actions #bombGameEntry").isVisible(), true);
 assert.equal(await page.locator('.module-tabs a[href*="bomb-game"]').count(), 0);
@@ -86,14 +87,14 @@ await page.evaluate(() => {
   localStorage.removeItem(key);
   for (const protectedKey of [
     "mario-hanzi-refactor-v1", "mario-bomb-game-v1",
-    "mario-theme-learning-v1", "mario-literacy-desktop-mvp-v1",
+    "mario-theme-learning-v1", "mario-book1-v1", "mario-literacy-desktop-mvp-v1",
   ]) localStorage.setItem(protectedKey, `sentinel:${protectedKey}`);
 });
 await page.reload();
 
 const assetStatuses = await page.evaluate(async () => {
   const assets = [
-    "./phonetics.html", "./styles.css?v=1.7", "./phonetics.css?v=1.9",
+    "./phonetics.html", "./styles.css?v=2.2", "./phonetics.css?v=1.9",
     "./data/phonetics.js?v=1.0", "./data/phonetics-transcriptions.js?v=1.0",
     "./src/phonetics-app.js?v=1.6", "./src/phonetics-display.js?v=1.0",
     "./src/phonetics-engine.js?v=1.1", "./src/phonetics-storage.js?v=1.0",
@@ -108,7 +109,7 @@ const assetStatuses = await page.evaluate(async () => {
 assert.ok(Object.values(assetStatuses).every((status) => status === 200), JSON.stringify(assetStatuses));
 assert.equal(await page.locator("#bootError").isHidden(), true);
 assert.equal(await page.locator('.module-tabs a[href="./index.html"]').isVisible(), true);
-assert.deepEqual(await page.locator(".module-tabs .module-tab").allTextContents(), ["汉字", "主题学习", "总复习", "音标"]);
+assert.deepEqual(await page.locator(".module-tabs .module-tab").allTextContents(), ["汉字", "Book1", "主题学习", "情景模式", "总复习", "音标"]);
 assert.equal(await page.locator("header .phonetics-header-actions #bombGameEntry").isVisible(), true);
 assert.equal(await page.locator("header #resetPhonetics").count(), 0);
 assert.equal(await page.locator(".map-visual #bombGameEntry").count(), 0);

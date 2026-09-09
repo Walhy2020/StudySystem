@@ -17,6 +17,7 @@ import {
   TWINKLE_WORDS,
   THEME_CONFIGS,
   THEME_WORDS,
+  createEnglishSpeaker,
   ThemeSession,
   countingVisualMarkup,
   speakEnglish,
@@ -255,6 +256,30 @@ test("TTS 不可用或调用失败时不抛错并使用英式语言标签", () =
   assert.equal(spoken.lang, "en-GB");
 });
 
+test("主题朗读延迟重启且只保留最后请求，结束回调后再推进", async () => {
+  class Utterance { constructor(text) { this.text = text; } }
+  const calls = [];
+  let cancelCount = 0;
+  let resumeCount = 0;
+  const synthesis = {
+    cancel() { cancelCount += 1; },
+    resume() { resumeCount += 1; },
+    speak(item) { calls.push(item); },
+  };
+  const speaker = createEnglishSpeaker({ synthesis, Utterance, restartDelayMs: 5 });
+  let firstEnded = 0;
+  let secondEnded = 0;
+  assert.equal(speaker.speak("first instruction", { onEnd: () => { firstEnded += 1; } }), true);
+  assert.equal(speaker.speak("The answer sentence is complete.", { onEnd: () => { secondEnded += 1; } }), true);
+  await new Promise((resolve) => setTimeout(resolve, 15));
+  assert.deepEqual(calls.map(({ text }) => text), ["The answer sentence is complete."]);
+  assert.equal(firstEnded, 0);
+  assert.ok(cancelCount >= 2);
+  assert.equal(resumeCount, 1);
+  calls[0].onend();
+  assert.equal(secondEnded, 1);
+  speaker.cancel();
+});
 test("总词库覆盖十一个主题81个唯一单词且数数配图无歧义", () => {
   const catalog = buildThemeCatalog(THEME_CONFIGS);
   assert.equal(catalog.length, 83);
@@ -467,11 +492,11 @@ test("主题页十一个卡片、八十三个互动目标、歌词音标、阶�
 
   assert.doesNotMatch(html, /id="openTotalReview"|id="openWordLibrary"|id="wordLibraryView"|id="totalReviewView"/);
   assert.match(html, /href="\.\/review-learning\.html">总复习<\/a>/);
-  assert.match(html, /theme-learning\.css\?v=3\.0/);
-  assert.match(html, /theme-learning\.js\?v=2\.5/);
+  assert.match(html, /theme-learning\.css\?v=3\.2/);
+  assert.match(html, /theme-learning\.js\?v=2\.7/);
   const script = await readFile(new URL("../theme-learning.js", import.meta.url), "utf8");
   assert.match(script, /phonetic-segmenter\.js\?v=1\.0/);
-  assert.match(script, /theme-overview\.js\?v=1\.4/);
+  assert.match(script, /theme-overview\.js\?v=1\.5/);
   assert.match(script, /function renderCountingScenes/);
   assert.match(script, /export const THEME_SERIES/);
   assert.match(script, /function showSeries/);
@@ -496,7 +521,7 @@ test("主题页十一个卡片、八十三个互动目标、歌词音标、阶�
   assert.match(script, /toggleCurrentPhonetic/);
   assert.doesNotMatch(script, /<small>/);
   assert.doesNotMatch(script, />\/' \+ symbol \+ '\/<\/span>/);
-  const learnBranch = script.match(/if \(stage === "learn"\) \{([\s\S]*?)\n    \}\n    if \(session\.complete\)/)?.[1];
+  const learnBranch = script.match(/if \(stage === "learn"\) \{([\s\S]*?)\r?\n    \}\r?\n    if \(session\.complete\)/)?.[1];
   assert.ok(learnBranch);
   assert.doesNotMatch(learnBranch, /speak\s*\(/);
   assert.doesNotMatch(html, /WORD CARD/);
@@ -545,11 +570,11 @@ test("总复习是独立并列模块，主题页只记录学习进度", async ()
   assert.match(reviewHtml, /id="openWordLibrary"/);
   assert.match(reviewHtml, /id="totalReviewView"/);
   assert.match(reviewHtml, /id="wordLibraryView" hidden/);
-  assert.match(reviewHtml, /theme-learning\.css\?v=3\.0/);
-  assert.match(reviewHtml, /review-learning\.js\?v=1\.3/);
+  assert.match(reviewHtml, /theme-learning\.css\?v=3\.2/);
+  assert.match(reviewHtml, /review-learning\.js\?v=1\.4/);
   assert.match(reviewHtml, /id="wordLibraryCount">0\/81<\/b>/);
-  assert.match(reviewScript, /theme-learning\.js\?v=2\.5/);
-  assert.match(reviewScript, /theme-overview\.js\?v=1\.4/);
+  assert.match(reviewScript, /theme-learning\.js\?v=2\.7/);
+  assert.match(reviewScript, /theme-overview\.js\?v=1\.5/);
   assert.match(reviewScript, /overview\.openReview\(\)/);
 });
 
@@ -585,6 +610,13 @@ for (const series of [2, 3, 4]) {
     assert.equal(image.readUInt32BE(20), 1024);
   });
 }
+test("总词库图片严格裁切到单词 viewBox，不显示相邻物体", async () => {
+  const overviewScript = await readFile(new URL("../src/theme-overview.js", import.meta.url), "utf8");
+  assert.match(overviewScript, /preserveAspectRatio="xMidYMid meet" overflow="hidden"><defs><clipPath/);
+  assert.match(overviewScript, /<rect x=/);
+  assert.match(overviewScript, /clip-path="url\(#/);
+  assert.doesNotMatch(overviewScript, /preserveAspectRatio="xMidYMid slice"/);
+});
 test("主题模块只持久化新的已学词专属键", async () => {
   const mainScript = await readFile(new URL("../theme-learning.js", import.meta.url), "utf8");
   const overviewScript = await readFile(new URL("../src/theme-overview.js", import.meta.url), "utf8");

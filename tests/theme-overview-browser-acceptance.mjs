@@ -12,6 +12,7 @@ const protectedKeys = [
   "mario-bomb-game-progress-v1",
   "mario-bomb-game-v1",
   "mario-phonetics-v1",
+  "mario-book1-v1",
   "mario-theme-learning-v1"
 ];
 const learnedKey = "mario-theme-learned-v1";
@@ -89,7 +90,14 @@ async function completeTheme(page, themeId, expectedCount) {
   await page.click("#backToThemes");
 }
 
-async function assertLibrary(page, expectedCount) {
+async function assertLibrary(page, expectedCount, expectedSources = [
+  "./assets/themes/body/body-character-anime-v2.png",
+  "./assets/themes/colors/colors-scene-v2.png",
+  "./assets/themes/items/classic-items-1-scene-v1.png",
+  "./assets/themes/items/classic-items-2-scene-v1.png",
+  "./assets/themes/items/classic-items-3-scene-v1.png",
+  "./assets/themes/items/classic-items-4-scene-v1.png"
+]) {
   assert.equal(await page.locator(".library-card").count(), expectedCount);
   const result = await page.evaluate(async () => {
     const catalog = new Map(window.__THEME_OVERVIEW__.catalog.map((entry) => [entry.key, entry]));
@@ -97,6 +105,8 @@ async function assertLibrary(page, expectedCount) {
       const entry = catalog.get(card.dataset.wordKey);
       const art = card.querySelector(".library-word-art");
       const image = art.querySelector?.("image") || null;
+      const clipPath = art.querySelector?.("clipPath") || null;
+      const clipRect = clipPath?.querySelector("rect") || null;
       const box = art.getBoundingClientRect();
       return {
         key: card.dataset.wordKey,
@@ -108,6 +118,11 @@ async function assertLibrary(page, expectedCount) {
         source: image?.getAttribute("href") || null,
         expectedViewBox: entry.art.viewBox || null,
         viewBox: art.getAttribute?.("viewBox") || null,
+        cropMode: art.getAttribute?.("preserveAspectRatio") || null,
+        overflow: art.getAttribute?.("overflow") || null,
+        clipId: clipPath?.id || null,
+        clipRect: clipRect ? ["x", "y", "width", "height"].map((name) => clipRect.getAttribute(name)).join(" ") : null,
+        clipReference: image?.getAttribute("clip-path") || null,
         ordinal: art.querySelector?.("strong")?.textContent.trim() || null,
         expectedOrdinal: entry.art.label || null,
         songIcon: art.querySelector?.("i")?.textContent.trim() || null,
@@ -135,6 +150,10 @@ async function assertLibrary(page, expectedCount) {
     if (card.artType === "image") {
       assert.equal(card.source, card.expectedSource, card.key);
       assert.equal(card.viewBox, card.expectedViewBox, card.key);
+      assert.equal(card.cropMode, "xMidYMid meet", card.key);
+      assert.equal(card.clipRect, card.expectedViewBox, card.key);
+      assert.equal(card.clipReference, "url(#" + card.clipId + ")", card.key);
+      assert.equal(card.overflow, "hidden", card.key);
     } else if (card.artType === "song-word") {
       assert.equal(card.songIcon, card.expectedSongIcon, card.key);
     } else if (card.artType === "ordinal") {
@@ -151,14 +170,7 @@ async function assertLibrary(page, expectedCount) {
     }
   }
   assert.deepEqual(Object.values(result.statuses), Object.values(result.statuses).map(() => 200));
-  assert.deepEqual(Object.keys(result.statuses).sort(), [
-    "./assets/themes/body/body-character-anime-v2.png",
-    "./assets/themes/colors/colors-scene-v2.png",
-    "./assets/themes/items/classic-items-1-scene-v1.png",
-    "./assets/themes/items/classic-items-2-scene-v1.png",
-    "./assets/themes/items/classic-items-3-scene-v1.png",
-    "./assets/themes/items/classic-items-4-scene-v1.png"
-  ]);
+  assert.deepEqual(Object.keys(result.statuses).sort(), expectedSources);
 }
 
 async function finishTotalReview(page) {
@@ -203,7 +215,7 @@ const page = await desktopContext.newPage();
 watchPage(page);
 await page.goto(new URL("review-learning.html", baseUrl).href);
 await assertNoOverflow(page);
-assert.deepEqual(await page.locator(".theme-nav .nav-link").allTextContents().then((items) => items.map((item) => item.trim())), ["汉字", "主题学习", "总复习", "音标"]);
+assert.deepEqual(await page.locator(".theme-nav .nav-link").allTextContents().then((items) => items.map((item) => item.trim())), ["汉字", "Book1", "主题学习", "情景模式", "总复习", "音标"]);
 assert.equal((await page.locator("#totalReviewCount").textContent()).trim(), "0 个已学");
 assert.equal((await page.locator("#wordLibraryCount").textContent()).trim(), "0/81");
 assert.equal(await page.locator("#totalReviewEmpty").isVisible(), true);
@@ -357,6 +369,20 @@ assert.ok((await mobile.evaluate((key) =>
 learnedKey)), 11);
 await mobileContext.close();
 
+const itemCropContext = await prepareContext({ viewport: { width: 1440, height: 1000 } });
+const itemCropPage = await itemCropContext.newPage();
+watchPage(itemCropPage);
+await itemCropPage.goto(new URL("review-learning.html", baseUrl).href);
+await itemCropPage.evaluate(() => window.__THEME_OVERVIEW__.recordTheme("items1"));
+await itemCropPage.click("#openWordLibrary");
+await assertLibrary(itemCropPage, 6, ["./assets/themes/items/classic-items-1-scene-v1.png"]);
+assert.match((await itemCropPage.locator('[data-word-key="items1:star"] .library-theme-label').textContent()).trim(), /经典道具 I/);
+await itemCropPage.locator('[data-word-key="items1:star"]').screenshot({ path: "tests/theme-library-star-desktop.png" });
+await itemCropPage.setViewportSize({ width: 390, height: 844 });
+await assertNoOverflow(itemCropPage);
+await itemCropPage.locator('[data-word-key="items1:star"]').screenshot({ path: "tests/theme-library-star-390.png" });
+await itemCropContext.close();
+
 assert.deepEqual(pageErrors, []);
 assert.deepEqual(failedResponses, []);
 console.log(JSON.stringify({
@@ -365,14 +391,16 @@ console.log(JSON.stringify({
   learnedWords: 81,
   libraryCards: { desktop: 81, mobile390: 81 },
   review: { questions: 81, unique: 81, choicesPerQuestion: 4, wrongRetry: true, restart: true },
-  artwork: { mappedThemeRecords: 83, uniqueLibraryWords: 81, songWordCards: 8, imageCrops: 35, ordinalCards: 10, countUnits: 19, countGroups: 9, assetsHttp200: 6 },
+  artwork: { mappedThemeRecords: 83, uniqueLibraryWords: 81, songWordCards: 8, imageCrops: 35, croppedToViewBox: true, ordinalCards: 10, countUnits: 19, countGroups: 9, assetsHttp200: 6 },
   persistence: { key: learnedKey, schema: 2, themeCompletionWrites: 11, refreshRestored: true, protectedKeysUnchanged: protectedKeys },
   overflow: { desktop: false, mobile390: false },
   screenshots: [
     "tests/theme-library-desktop.png",
+    "tests/theme-library-star-desktop.png",
     "tests/theme-review-desktop.png",
     "tests/theme-review-complete-desktop.png",
     "tests/theme-library-390.png",
+    "tests/theme-library-star-390.png",
     "tests/theme-review-390.png"
   ]
 }, null, 2));

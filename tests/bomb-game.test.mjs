@@ -34,7 +34,7 @@ const calculateLayout = new Function(
 
 assert.match(html, /<canvas id="bombCanvas" width="1280" height="720"/);
 assert.ok(html.includes('bomb-game.css?v=1.1'));
-assert.ok(html.includes('bomb-game.js?v=1.3'));
+assert.ok(html.includes('bomb-game.js?v=1.4'));
 assert.ok(html.includes('./data/characters.js?v=1.0'));
 assert.ok(html.includes('./data/pinyin-readings.js?v=1.0'));
 assert.ok(!html.includes("stable-url.js"));
@@ -45,7 +45,7 @@ assert.ok(!html.includes("<p>炸开砖块</p>"));
 assert.ok(html.includes('<h2 id="bombStartTitle">炸弹迷宫</h2>'));
 assert.ok(html.includes('<a href="./index.html">返回</a>'));
 assert.ok(index.includes('href="./bomb-game.html?v=1.0"'));
-assert.ok(index.includes('styles.css?v=1.9'));
+assert.ok(index.includes('styles.css?v=2.2'));
 assert.ok(!index.match(/<nav class="module-tabs"[\s\S]*?炸弹迷宫[\s\S]*?<\/nav>/));
 assert.ok(index.match(/<header class="topbar">[\s\S]*?<div class="top-actions">[\s\S]*?id="bombGameEntry"[\s\S]*?<\/div>[\s\S]*?<\/header>/));
 assert.ok(!index.match(/<header class="topbar">[\s\S]*?id="resetProgress"[\s\S]*?<\/header>/));
@@ -82,8 +82,19 @@ assert.ok(js.includes("uniqueWordIdsByCharacter(restoredIds.concat(availableIds)
 assert.ok(js.includes("getBoardTargetSummary: () =>"));
 assert.ok(js.includes("renderedLearningCardCount: lastRenderedLearningCardCount"));
 assert.ok(js.includes('return state.subLevel % 2 === 1 ? LEARNING_MODES.pinyin : LEARNING_MODES.hanzi;'));
+assert.ok(js.includes('return currentLearningMode() === LEARNING_MODES.pinyin ? "找汉字" : "找拼音";'));
+assert.ok(js.includes('spawnPowerUp("pinyinChoice"'));
+assert.ok(js.includes('"hanzi-to-pinyin"'));
+assert.ok(js.includes('"pinyin-to-hanzi"'));
+assert.ok(js.includes('drawQuestionCard(center, bob, "拼音题"'));
+assert.ok(js.includes('drawQuestionCard(center, bob, "汉字题"'));
+assert.ok(js.includes("getActiveLearningQuestion: () =>"));
 assert.ok(js.includes('retryWordNextLevel(wrongPinyinWordId);'));
 assert.ok(js.includes('retryWordNextLevel(wrongWordTargetId);'));
+assert.ok(js.includes("const blockedCells = [];"));
+assert.ok(js.includes("Array.isArray(explosion.blockedCells)"));
+assert.ok(js.includes("blockedCells.push({ gx, gy });"));
+assert.ok(js.includes("state.explosions.push({ cells, blockedCells"));
 
 assert.ok(js.includes('const HANZI_STORE_KEY = "mario-hanzi-refactor-v1";'));
 assert.ok(js.includes('const LEGACY_STORE_KEY = "mario-literacy-desktop-mvp-v1";'));

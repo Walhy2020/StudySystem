@@ -326,10 +326,12 @@ function renderArt(entry, className = "word-art") {
     return '<div class="' + className + ' song-word-art" role="img" aria-label="' + escapeHtml(label) + '"><i aria-hidden="true">' +
       escapeHtml(entry.art.icon) + '</i><strong>' + escapeHtml(entry.word) + "</strong></div>";
   }
+  const [cropX, cropY, cropWidth, cropHeight] = entry.art.viewBox.split(/\s+/);
+  const clipId = ("art-clip-" + entry.key + "-" + className).replace(/[^a-zA-Z0-9_-]/g, "-");
   return '<svg class="' + className + '" role="img" aria-label="' + escapeHtml(label) + '" viewBox="' +
-    entry.art.viewBox + '" preserveAspectRatio="xMidYMid meet"><image href="' + entry.art.src +
+    entry.art.viewBox + '" preserveAspectRatio="xMidYMid meet" overflow="hidden"><defs><clipPath id="' + clipId + '"><rect x="' + cropX + '" y="' + cropY + '" width="' + cropWidth + '" height="' + cropHeight + '"/></clipPath></defs><image href="' + entry.art.src +
     '" x="0" y="0" width="' + entry.art.width + '" height="' + entry.art.height +
-    '" preserveAspectRatio="xMidYMid meet" pointer-events="none"/></svg>';
+    '" preserveAspectRatio="xMidYMid meet" clip-path="url(#' + clipId + ')" pointer-events="none"/></svg>';
 }
 
 function phonemeMarkup(word, splitPhonetic, stressMarks) {

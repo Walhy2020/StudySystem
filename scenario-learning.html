@@ -6,7 +6,7 @@
   <meta http-equiv="Cache-Control" content="no-cache,no-store,must-revalidate" />
   <link rel="icon" href="data:," />
   <title>马里奥学习系统 · 情景模式</title>
-  <link rel="stylesheet" href="./scenario-learning.css?v=1.1" />
+  <link rel="stylesheet" href="./scenario-learning.css?v=1.2" />
 </head>
 <body>
   <div class="scenario-shell">
@@ -18,6 +18,28 @@
     </header>
 
     <main>
+      <div class="workshop-toolbar"><button id="openScenarioCreator" type="button">＋ 创建情景</button><button id="openScenarioWords" type="button">新单词 <span id="scenarioWordCount">0</span></button></div>
+      <section class="scenario-workshop" id="scenarioWorkshop" hidden aria-labelledby="workshopTitle">
+        <button id="closeWorkshop" class="back-button" type="button">返回情景选择</button>
+        <h2 id="workshopTitle">创建情景</h2>
+        <div id="scenarioCreator">
+          <form id="scenarioGenerateForm">
+            <label for="scenarioDialogueInput">一个情景的 2–12 句对话（每人一句一行，中英文均可）</label>
+            <textarea id="scenarioDialogueInput" rows="6" minlength="10" maxlength="3000" required placeholder="Mia: Hello! My name is Mia.&#10;Leo: Hi, Mia. I'm Leo.&#10;Mia: Nice to meet you.&#10;Leo: Nice to meet you, too."></textarea>
+            <p class="generation-notice">点击生成会将这段对话发送到 OpenAI，并产生 API 费用。使用 gpt-image-1.5 生成一张包含两个画面的情景图。请勿输入隐私信息。</p>
+            <button id="generateScenario" type="submit" disabled>生成配图与单词</button>
+          </form>
+          <p id="generationStatus" role="status">正在连接本地生成服务…</p>
+          <div id="generatedPreview" hidden></div>
+          <button id="saveGeneratedScenario" type="button" hidden>保存情景并收录新单词</button>
+        </div>
+        <div id="scenarioWordsView" hidden>
+          <p>已学过的词不重复加入。参考 Book1、主题学习和情景新单词的本浏览器记录。</p>
+          <label class="word-filter"><input id="showLearnedScenarioWords" type="checkbox" /> 同时显示已学单词</label>
+          <p id="scenarioWordsStatus" role="status"></p><div id="scenarioWordCards" class="scenario-word-grid"></div>
+        </div>
+        <div id="customScenarioLesson" hidden></div>
+      </section>
       <section class="scenario-picker" id="scenarioPicker" aria-labelledby="scenarioPickerTitle">
         <div class="picker-heading"><span>SCENARIO ENGLISH</span><h2 id="scenarioPickerTitle">在小对话里学会开口</h2><p>先认识完整对话，再选择最合适的回应。</p></div>
         <div class="scenario-list">
@@ -32,6 +54,7 @@
             <span class="scenario-complete-badge" data-complete-badge hidden aria-label="已完成">✓</span>
           </article>
         </div>
+        <div id="customScenarioList" class="custom-scenario-list"></div>
       </section>
 
       <section class="scenario-learning-view" id="scenarioLearningView" hidden aria-labelledby="activeScenarioTitle">
@@ -66,6 +89,6 @@
       </section>
     </main>
   </div>
-  <script type="module" src="./scenario-learning.js?v=1.0"></script>
+  <script type="module" src="./scenario-learning.js?v=1.1"></script>
 </body>
 </html>

@@ -1,4 +1,5 @@
 import { SCENARIOS, scenarioById, scenarioLineById } from "./data/scenarios.js?v=1.0";
+import { initializeScenarioWorkshop } from "./src/scenario-workshop.js?v=1.0";
 
 export { SCENARIOS };
 export const SCENARIO_STORAGE_KEY = "mario-scenario-learning-v1";
@@ -20,6 +21,7 @@ export function createScenarioState(source = {}) {
   return {
     version: SCENARIO_SCHEMA_VERSION,
     completedScenarioIds,
+    learnedWords: [...new Set((Array.isArray(source.learnedWords) ? source.learnedWords : []).filter((word) => typeof word === "string" && /^[a-z]+(?:'[a-z]+)*$/i.test(word)).map((word) => word.toLowerCase()))],
     activeScenarioId,
     lineIndex: Math.max(0, Math.min(Number(source.lineIndex) || 0, scenario.lines.length - 1)),
     stage,
@@ -142,6 +144,7 @@ function initializePage() {
   let practice = new ScenarioPracticeSession(scenario);
   let currentLineIndex = store.state.lineIndex;
   let stage = store.state.stage;
+  let practiceTimer = null;
 
   function syncPicker() {
     document.querySelectorAll("[data-scenario-id]").forEach((card) => {
@@ -219,10 +222,10 @@ function initializePage() {
     dom.practiceFeedback.className = "practice-feedback is-correct";
 
     if (result.status === "complete") {
-      setTimeout(finishPractice, 280);
+      practiceTimer = setTimeout(finishPractice, 280);
     } else {
       store.patch({ stage: "practice", questionIndex: practice.questionIndex });
-      setTimeout(renderPractice, 280);
+      practiceTimer = setTimeout(renderPractice, 280);
     }
   }
 
@@ -235,6 +238,7 @@ function initializePage() {
   }
 
   function setStage(nextStage, restore = false) {
+    clearTimeout(practiceTimer);
     speaker.cancel();
     stage = nextStage;
     const isPractice = stage === "practice";
@@ -269,7 +273,7 @@ function initializePage() {
     const id = card.dataset.scenarioId;
     enterScenario(id, !store.isComplete(id));
   }));
-  dom.backToScenarios.addEventListener("click", () => { speaker.cancel(); setView(false); syncPicker(); });
+  dom.backToScenarios.addEventListener("click", () => { clearTimeout(practiceTimer); speaker.cancel(); setView(false); syncPicker(); });
   dom.learnStage.addEventListener("click", () => setStage("learn"));
   dom.practiceStage.addEventListener("click", () => setStage("practice"));
   dom.previousLine.addEventListener("click", () => { if (currentLineIndex > 0) { currentLineIndex -= 1; renderDialogue(); } });
@@ -280,6 +284,7 @@ function initializePage() {
   dom.returnAfterComplete.addEventListener("click", () => { setView(false); syncPicker(); });
 
   syncPicker();
+  initializeScenarioWorkshop({ store, speaker, scenarios: SCENARIOS, onOpen() { clearTimeout(practiceTimer); speaker.cancel(); setView(false); syncPicker(); } });
   window.__SCENARIO_LEARNING__ = { store, get scenario() { return scenario; }, get practice() { return practice; }, enterScenario, setStage };
 }
 

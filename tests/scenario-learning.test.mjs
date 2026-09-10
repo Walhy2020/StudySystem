@@ -73,8 +73,8 @@ test("情景页面资源、两阶段、手动声音按钮和独立导航齐全",
     readFile(new URL("../scenario-learning.css", import.meta.url), "utf8"),
     readFile(new URL("../scenario-learning.js", import.meta.url), "utf8"),
   ]);
-  assert.match(html, /scenario-learning\.css\?v=1\.1/);
-  assert.match(html, /scenario-learning\.js\?v=1\.0/);
+  assert.match(html, /scenario-learning\.css\?v=1\.2/);
+  assert.match(html, /scenario-learning\.js\?v=1\.1/);
   assert.match(script, /scenarios\.js\?v=1\.0/);
   assert.match(html, /id="learnStage"/);
   assert.match(html, /id="practiceStage"/);

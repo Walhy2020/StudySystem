@@ -23,6 +23,8 @@ auth-state*.json
 
 # Image-generation working outputs (final web assets live under assets/)
 output/
+# Private, locally generated scenario drafts and saved lessons (not learning progress).
+.local-scenarios/
 *.tmp
 *.temp
 tmp/

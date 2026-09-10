@@ -62,7 +62,7 @@ Browser progress is local to each browser profile and is not synchronized by Git
 - Bomb maze writes `mario-bomb-game-progress-v1` and only reads Hanzi sources needed for its learning pool.
 - Theme learning and overall review share only learned-word progress through `mario-theme-learned-v1`.
 - Scenario learning writes `mario-scenario-learning-v1` only.
-- Scenario new-word matching may read Book1/theme progress, but writes its `learnedWords` only to the scenario key. Custom user-authored lessons/images stay in ignored `.local-scenarios/`; never commit that private directory. API keys remain server-side environment variables.
+- Scenario new-word matching may read Book1/theme progress, but writes its `learnedWords` only to the scenario key. New scenarios are authored in conversation using imagegen; do not add a web generation form or API unless explicitly requested. Final approved artwork lives in `assets/scenarios/`. Preserve and never commit any private legacy `.local-scenarios/` directory.
 - Do not let one module reset, migrate, or overwrite another module's key.
 - Never commit browser storage exports, API keys, `.env` files, credentials, or authenticated browser state.
 

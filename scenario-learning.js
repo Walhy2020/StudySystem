@@ -1,5 +1,5 @@
 import { SCENARIOS, scenarioById, scenarioLineById } from "./data/scenarios.js?v=1.0";
-import { initializeScenarioWorkshop } from "./src/scenario-workshop.js?v=1.0";
+import { initializeScenarioWorkshop } from "./src/scenario-workshop.js?v=1.1";
 
 export { SCENARIOS };
 export const SCENARIO_STORAGE_KEY = "mario-scenario-learning-v1";

@@ -71,10 +71,10 @@ In the ChatGPT/Codex desktop app, add the cloned repository as a local project a
 - Scenario 01 is First Meeting: six dialogue lines with complete British IPA and Chinese translations.
 - The module has line-by-line learning, Previous/Next navigation, manual-only speech, and three response-choice practice questions with wrong-answer retry.
 - Completing all three questions adds a green check to the scenario card. Progress writes only `mario-scenario-learning-v1` and is not included in the theme learned-word library.
-- Scenario workshop adds browser-entered dialogue generation and a New Words view. See `SCENARIO_WORKSHOP.md` for setup, data boundaries and validation details.
+- Scenario artwork and new lessons are now authored in conversation using the imagegen skill, not through a browser generator. See `SCENARIO_WORKSHOP.md` for the current workflow.
 - New-word matching reads Theme and Book1 learned records without writing them. Explicit word learning is stored as `learnedWords` under the existing scenario progress key; dialogue completion alone never marks vocabulary learned.
-- The local Python server now provides same-origin, loopback-only OpenAI generation endpoints. Custom lessons and image previews are private local data in ignored `.local-scenarios/`, not committed assets or browser progress. Restart `server.py` after updating the backend.
-- Live API smoke test on 2026-09-10 returned HTTP 401 (invalid/expired configured key). No successful live scenario illustration was produced in that run. Unit tests and Edge generation-flow tests use explicit fixtures; replace the local key to validate live generation.
+- First Meeting uses the approved built-in image_gen illustration `assets/scenarios/first-meeting-v1.png` (1254×1254 RGB PNG) in both its cover and study view; no code-drawn children remain in page markup.
+- The browser generation form and API backend were removed at the user's request. The page makes no generation API calls and needs no API Key; the independent New Words view and all browser learning progress are retained. Any private `.local-scenarios/` data remains untouched and ignored.
 
 ### Overall review
 

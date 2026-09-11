@@ -82,6 +82,8 @@ try {
       return {low,high,opacity:getComputedStyle(el).opacity};
     });
     assert.notEqual(pulse.low,pulse.high,"halo smoothly changes strength");
+    assert.ok(pulse.low.includes("rgb(255, 138, 0)"), pulse.low);
+    assert.ok(pulse.high.includes("rgb(255, 101, 0)") && pulse.high.includes("rgb(255, 149, 0)"), pulse.high);
     assert.equal(pulse.opacity,"1","only the halo pulses, not the character");
     await page.screenshot({path:"tests/scenario-playback-"+width+".png",fullPage:true});
     await page.locator("#actorLeo").evaluate(el=>el.getAnimations().forEach(a=>a.play()));

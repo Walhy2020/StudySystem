@@ -1,6 +1,6 @@
 # StudySystem cross-device handoff
 
-Last updated: 2026-09-10
+Last updated: 2026-09-11
 Repository: `https://github.com/Walhy2020/StudySystem.git`
 Branch: `main`
 Baseline before this handoff document: `3a6815d`
@@ -73,7 +73,8 @@ In the ChatGPT/Codex desktop app, add the cloned repository as a local project a
 - Completing all three questions adds a green check to the scenario card. Progress writes only `mario-scenario-learning-v1` and is not included in the theme learned-word library.
 - Scenario artwork and new lessons are now authored in conversation using the imagegen skill, not through a browser generator. See `SCENARIO_WORKSHOP.md` for the current workflow.
 - New-word matching reads Theme and Book1 learned records without writing them. Explicit word learning is stored as `learnedWords` under the existing scenario progress key; dialogue completion alone never marks vocabulary learned.
-- First Meeting uses the approved built-in image_gen illustration `assets/scenarios/first-meeting-v1.png` (1254×1254 RGB PNG) in both its cover and study view; no code-drawn children remain in page markup.
+- First Meeting keeps `assets/scenarios/first-meeting-v1.png` (1254×1254 RGB PNG) as its cover. The study view uses separate imagegen characters, locally cut out with user-approved rembg: `mia-sprite-v1.png` (560×1080 RGBA) and `leo-sprite-v1.png` (521×1080 RGBA).
+- Dialogue playback is user-started: Mia enters first, Leo enters after her first speech ends, and right-hand chat bubbles show English with British IPA beneath. Pause/replay/manual navigation cancel stale speech; playback completion does not mark words learned. Mobile stacks stage and conversation. `src/scenario-playback.js` controls speech-end-gated sequencing.
 - The browser generation form and API backend were removed at the user's request. The page makes no generation API calls and needs no API Key; the independent New Words view and all browser learning progress are retained. Any private `.local-scenarios/` data remains untouched and ignored.
 
 ### Overall review

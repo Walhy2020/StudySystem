@@ -73,8 +73,8 @@ test("情景页面资源、两阶段、手动声音按钮和独立导航齐全",
     readFile(new URL("../scenario-learning.css", import.meta.url), "utf8"),
     readFile(new URL("../scenario-learning.js", import.meta.url), "utf8"),
   ]);
-  assert.match(html, /scenario-learning\.css\?v=1\.3/);
-  assert.match(html, /scenario-learning\.js\?v=1\.2/);
+  assert.match(html, /scenario-learning\.css\?v=1\.4/);
+  assert.match(html, /scenario-learning\.js\?v=1\.3/);
   assert.match(script, /scenarios\.js\?v=1\.0/);
   assert.match(html, /id="learnStage"/);
   assert.match(html, /id="practiceStage"/);
@@ -95,7 +95,14 @@ test("情景使用内置imagegen正式PNG，无网页生成入口或API", async 
   assert.equal(png.subarray(0, 8).toString("hex"), "89504e470d0a1a0a");
   assert.equal(png.readUInt32BE(16), 1254);
   assert.equal(png.readUInt32BE(20), 1254);
-  assert.equal((html.match(/assets\/scenarios\/first-meeting-v1\.png/g) || []).length, 2);
+  assert.equal((html.match(/assets\/scenarios\/first-meeting-v1\.png/g) || []).length, 1);
+  for (const actor of ["mia", "leo"]) {
+    assert.ok(html.includes(`assets/scenarios/${actor}-sprite-v1.png`));
+    const sprite = await readFile(new URL(`../assets/scenarios/${actor}-sprite-v1.png`, import.meta.url));
+    assert.equal(sprite.subarray(0, 8).toString("hex"), "89504e470d0a1a0a");
+    assert.equal(sprite[25], 6, "RGBA PNG required");
+    assert.ok(sprite.readUInt32BE(20) > 500);
+  }
   assert.doesNotMatch(html, /openScenarioCreator|scenarioGenerateForm|generationStatus|class="full-kid|class="kid /);
   assert.doesNotMatch(workshop, /fetch\(|OPENAI_API_KEY|\/api\/scenarios/);
   assert.doesNotMatch(server, /ScenarioService|OPENAI_API_KEY|urlopen|def do_POST/);

@@ -33,7 +33,10 @@ try {
     await checkImage(".scene-preview img");
     await page.screenshot({ path: `tests/scenario-cover-${width}.png`, fullPage: true });
     await page.locator("[data-start-label]").click();
-    await checkImage(".scene-illustration img");
+    for (const id of ["actorMia", "actorLeo"]) {
+      await page.locator(`#${id}`).evaluate((img) => img.decode());
+      assert.equal(await page.locator(`#${id}`).evaluate((img) => img.naturalHeight > 500 && getComputedStyle(img).objectFit === "contain"), true);
+    }
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     await page.screenshot({ path: `tests/scenario-art-${width}.png`, fullPage: true });
     await page.locator("#openScenarioWords").click();

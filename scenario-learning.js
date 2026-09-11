@@ -1,5 +1,6 @@
 import { SCENARIOS, scenarioById, scenarioLineById } from "./data/scenarios.js?v=1.0";
 import { initializeScenarioWorkshop } from "./src/scenario-workshop.js?v=1.1";
+import { createDialoguePlayback } from "./src/scenario-playback.js?v=1.0";
 
 export { SCENARIOS };
 export const SCENARIO_STORAGE_KEY = "mario-scenario-learning-v1";
@@ -106,9 +107,13 @@ export class ScenarioPracticeSession {
 
 export function createScenarioSpeaker({ synthesis, Utterance, delay = 60 } = {}) {
   let timer = null;
+  let generation = 0;
+  let watchdog = null;
   return {
-    speak(text) {
+    speak(text, { onEnd, onError } = {}) {
       if (!synthesis || !Utterance || !text) return false;
+      const current = ++generation;
+      clearTimeout(watchdog);
       if (timer) clearTimeout(timer);
       try { synthesis.cancel(); } catch { return false; }
       timer = setTimeout(() => {
@@ -116,12 +121,23 @@ export function createScenarioSpeaker({ synthesis, Utterance, delay = 60 } = {})
         try {
           const utterance = new Utterance(text);
           utterance.lang = "en-GB";
+          const voices = synthesis.getVoices?.() || [];
+          utterance.voice = voices.find((voice) => voice.lang === "en-GB") || voices.find((voice) => /^en[-_]/i.test(voice.lang)) || null;
+          let settled = false;
+          const settle = (callback) => {
+            if (current !== generation || settled) return;
+            settled = true; clearTimeout(watchdog); callback?.();
+          };
+          utterance.onend = () => settle(onEnd);
+          utterance.onerror = () => settle(onError);
+          if (onError) watchdog = setTimeout(() => settle(onError), 45000);
           synthesis.speak(utterance);
-        } catch {}
+        } catch { clearTimeout(watchdog); if (current === generation) onError?.(); }
       }, delay);
       return true;
     },
     cancel() {
+      generation += 1; clearTimeout(watchdog);
       if (timer) clearTimeout(timer);
       timer = null;
       try { synthesis?.cancel?.(); } catch {}
@@ -145,6 +161,24 @@ function initializePage() {
   let currentLineIndex = store.state.lineIndex;
   let stage = store.state.stage;
   let practiceTimer = null;
+  let playbackPhase = "manual";
+  const playback = createDialoguePlayback({
+    count: () => scenario.lines.length,
+    show(index, phase) { currentLineIndex = index; playbackPhase = phase; renderDialogue(); },
+    speak: (index, onEnd, onError) => speaker.speak(scenario.lines[index].text, { onEnd, onError }),
+    cancelSpeech: () => speaker.cancel(),
+    arrivalMs: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 650,
+    status(value) {
+      dom.playDialogue.textContent = value === "playing" ? "暂停" : value === "paused" ? "继续播放" : "播放对话";
+      dom.playDialogue.setAttribute("aria-pressed", String(value === "playing"));
+      dom.playbackStatus.textContent = { playing: "正在播放", paused: "已暂停，继续时重读当前句", complete: "对话播放完毕", unavailable: "语音未能完成，可点击声音按钮重试或用 Next 继续" }[value] || "";
+      if (value !== "playing") {
+        dom.actorStage.classList.remove("is-speaking");
+        dom.currentBubble.classList.remove("is-arriving");
+      }
+    },
+  });
+  function stopPlayback() { playback.stop(); playbackPhase = "manual"; dom.playDialogue.textContent = "播放对话"; dom.playDialogue.setAttribute("aria-pressed", "false"); dom.actorStage.classList.remove("is-speaking"); dom.playbackStatus.textContent = ""; }
 
   function syncPicker() {
     document.querySelectorAll("[data-scenario-id]").forEach((card) => {
@@ -167,14 +201,25 @@ function initializePage() {
     dom.dialogueEnglish.textContent = line.text;
     dom.dialoguePhonetic.textContent = line.phonetic;
     dom.dialogueChinese.textContent = line.chinese;
+    dom.actorMia.classList.add("is-present");
+    dom.actorLeo.classList.toggle("is-present", currentLineIndex >= 1);
+    dom.actorMia.setAttribute("aria-hidden", "false");
+    dom.actorLeo.setAttribute("aria-hidden", String(currentLineIndex < 1));
+    dom.actorStage.dataset.speaker = line.speaker;
+    dom.actorStage.classList.toggle("is-speaking", playbackPhase === "speaking");
+    dom.currentBubble.dataset.speaker = line.speaker;
+    dom.currentBubble.classList.toggle("is-arriving", playbackPhase === "arriving");
     dom.speakDialogue.setAttribute("aria-label", `朗读：${line.text}`);
     dom.previousLine.disabled = currentLineIndex === 0;
     dom.nextLine.disabled = currentLineIndex === scenario.lines.length - 1;
     document.querySelectorAll(".dialogue-line-button").forEach((button, index) => {
       button.classList.toggle("is-active", index === currentLineIndex);
       button.setAttribute("aria-current", index === currentLineIndex ? "true" : "false");
+      button.hidden = index >= currentLineIndex;
     });
     store.patch({ activeScenarioId: scenario.id, lineIndex: currentLineIndex, stage: "learn" });
+    const workspace = dom.currentBubble.closest(".dialogue-workspace");
+    requestAnimationFrame(() => { workspace.scrollTop = workspace.scrollHeight; });
   }
 
   function renderLineList() {
@@ -184,7 +229,7 @@ function initializePage() {
       </button>`).join("");
     dom.dialogueLineList.querySelectorAll("[data-line-index]").forEach((button) => {
       button.addEventListener("click", () => {
-        currentLineIndex = Number(button.dataset.lineIndex);
+        stopPlayback(); currentLineIndex = Number(button.dataset.lineIndex);
         renderDialogue();
       });
     });
@@ -238,6 +283,7 @@ function initializePage() {
   }
 
   function setStage(nextStage, restore = false) {
+    stopPlayback();
     clearTimeout(practiceTimer);
     speaker.cancel();
     stage = nextStage;
@@ -273,18 +319,37 @@ function initializePage() {
     const id = card.dataset.scenarioId;
     enterScenario(id, !store.isComplete(id));
   }));
-  dom.backToScenarios.addEventListener("click", () => { clearTimeout(practiceTimer); speaker.cancel(); setView(false); syncPicker(); });
+  dom.backToScenarios.addEventListener("click", () => { stopPlayback(); clearTimeout(practiceTimer); speaker.cancel(); setView(false); syncPicker(); });
   dom.learnStage.addEventListener("click", () => setStage("learn"));
   dom.practiceStage.addEventListener("click", () => setStage("practice"));
-  dom.previousLine.addEventListener("click", () => { if (currentLineIndex > 0) { currentLineIndex -= 1; renderDialogue(); } });
-  dom.nextLine.addEventListener("click", () => { if (currentLineIndex < scenario.lines.length - 1) { currentLineIndex += 1; renderDialogue(); } });
-  dom.speakDialogue.addEventListener("click", () => speaker.speak(scenario.lines[currentLineIndex].text));
+  dom.previousLine.addEventListener("click", () => { stopPlayback(); if (currentLineIndex > 0) { currentLineIndex -= 1; renderDialogue(); } });
+  dom.nextLine.addEventListener("click", () => { stopPlayback(); if (currentLineIndex < scenario.lines.length - 1) { currentLineIndex += 1; renderDialogue(); } });
+  dom.speakDialogue.addEventListener("click", () => { stopPlayback(); renderDialogue(); speaker.speak(scenario.lines[currentLineIndex].text); });
+  function resetActorEntrance() {
+    for (const actor of [dom.actorMia, dom.actorLeo]) {
+      actor.style.transition = "none";
+      actor.classList.remove("is-present");
+    }
+    void dom.actorStage.offsetWidth;
+    for (const actor of [dom.actorMia, dom.actorLeo]) actor.style.removeProperty("transition");
+  }
+  dom.playDialogue.addEventListener("click", () => {
+    if (playback.running) { playback.pause(); return; }
+    if (currentLineIndex === 0) resetActorEntrance();
+    playback.play(currentLineIndex);
+  });
+  dom.replayDialogue.addEventListener("click", () => {
+    stopPlayback(); resetActorEntrance();
+    playback.play(0);
+  });
+  document.addEventListener("visibilitychange", () => { if (document.hidden && playback.running) playback.pause(); });
+  window.addEventListener("pagehide", stopPlayback);
   dom.speakPractice.addEventListener("click", () => speaker.speak(practice.question()?.prompt.text));
   dom.restartPractice.addEventListener("click", () => setStage("practice"));
   dom.returnAfterComplete.addEventListener("click", () => { setView(false); syncPicker(); });
 
   syncPicker();
-  initializeScenarioWorkshop({ store, speaker, scenarios: SCENARIOS, onOpen() { clearTimeout(practiceTimer); speaker.cancel(); setView(false); syncPicker(); } });
+  initializeScenarioWorkshop({ store, speaker, scenarios: SCENARIOS, onOpen() { stopPlayback(); clearTimeout(practiceTimer); speaker.cancel(); setView(false); syncPicker(); } });
   window.__SCENARIO_LEARNING__ = { store, get scenario() { return scenario; }, get practice() { return practice; }, enterScenario, setStage };
 }
 

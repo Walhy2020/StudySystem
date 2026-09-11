@@ -55,7 +55,7 @@ assert.equal(await page.locator("#dialogueEnglish").textContent(), "Hi, Mia. I'm
 await page.locator("#previousLine").focus();
 await page.keyboard.press("Space");
 assert.equal(await page.locator("#dialogueEnglish").textContent(), "Hello! My name is Mia.");
-await page.locator('[data-line-index="4"]').click();
+for (let i = 0; i < 4; i++) await page.locator('#nextLine').click();
 assert.equal(await page.locator("#dialogueEnglish").textContent(), "How are you?");
 await page.reload();
 await page.locator("[data-start-label]").click();
@@ -99,7 +99,7 @@ await mobile.goto(new URL("scenario-learning.html?test=scenario-mobile", baseUrl
 assert.equal(await mobile.locator(".scenario-nav > *").count(), 6);
 assert.equal(await noOverflow(mobile), true);
 await mobile.locator("[data-start-label]").tap();
-await mobile.locator('[data-line-index="1"]').tap();
+await mobile.locator('#nextLine').tap();
 assert.equal(await mobile.locator("#dialogueEnglish").textContent(), "Hi, Mia. I'm Leo.");
 await mobile.locator("#speakDialogue").tap();
 await mobile.waitForTimeout(85);

@@ -38,7 +38,7 @@ try {
       assert.ok(effects.every(x=>x.outline!=="dashed"));
       const glowing=effects.filter(x=>x.animation==="actor-glow");
       assert.deepEqual(glowing.map(x=>x.id),speaking?[index%2?"actorLeo":"actorMia"]:[]);
-      if(speaking){assert.equal(glowing[0].duration,"1s");assert.equal(glowing[0].iterations,"2");assert.equal(glowing[0].easing,"ease-in-out");assert.equal((glowing[0].filter.match(/drop-shadow/g)||[]).length,2);}
+      if(speaking){assert.equal(glowing[0].duration,"1s");assert.equal(glowing[0].iterations,"3");assert.equal(glowing[0].easing,"ease-in-out");assert.equal((glowing[0].filter.match(/drop-shadow/g)||[]).length,2);}
     }
     assert.equal(await present("actorMia"),true);assert.equal(await present("actorLeo"),false);
     assert.equal(await count(),0);
@@ -89,9 +89,9 @@ try {
     await page.locator("#actorLeo").evaluate(el=>el.getAnimations().forEach(a=>a.play()));
     await page.waitForFunction(()=>document.querySelector("#actorLeo").getAnimations().every(a=>a.playState==="finished"));
     const settled=await page.locator("#actorLeo").evaluate(el=>getComputedStyle(el).filter);
-    assert.equal(settled,pulse.low,"after two cycles the halo stays steady");
+    assert.equal(settled,pulse.low,"after three cycles the halo stays steady");
     await page.waitForTimeout(600);
-    assert.equal(await page.locator("#actorLeo").evaluate(el=>getComputedStyle(el).filter),settled,"no third cycle");
+    assert.equal(await page.locator("#actorLeo").evaluate(el=>getComputedStyle(el).filter),settled,"no fourth cycle");
     assert.equal(await count(),4,"halo ending must not advance dialogue");
     await page.locator("#pauseDialogue").click();await finish();
     await page.waitForTimeout(500);await single(1,false);

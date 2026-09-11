@@ -31,13 +31,14 @@ try {
       assert.equal(await page.locator("#dialogueProgress").textContent(),(index+1)+"/6");
       assert.equal(await page.locator(".chat-bubble:visible").count(),1);
       assert.equal(await page.locator(".dialogue-line-button, #dialogueLineList").count(),0);
-      const outlines=await page.locator(".scene-actor").evaluateAll(actors=>actors.map(el=>{
+      const effects=await page.locator(".scene-actor").evaluateAll(actors=>actors.map(el=>{
         const s=getComputedStyle(el);
-        return {id:el.id,style:s.outlineStyle,width:parseFloat(s.outlineWidth),filter:s.filter};
+        return {id:el.id,outline:s.outlineStyle,animation:s.animationName,duration:s.animationDuration,easing:s.animationTimingFunction,filter:s.filter};
       }));
-      const dashed=outlines.filter(x=>x.style==="dashed");
-      assert.deepEqual(dashed.map(x=>x.id),speaking?[index%2?"actorLeo":"actorMia"]:[]);
-      if(speaking){assert.equal(dashed[0].width,4);assert.equal(dashed[0].filter,"none");}
+      assert.ok(effects.every(x=>x.outline!=="dashed"));
+      const glowing=effects.filter(x=>x.animation==="actor-glow");
+      assert.deepEqual(glowing.map(x=>x.id),speaking?[index%2?"actorLeo":"actorMia"]:[]);
+      if(speaking){assert.equal(glowing[0].duration,"2.8s");assert.equal(glowing[0].easing,"ease-in-out");assert.equal((glowing[0].filter.match(/drop-shadow/g)||[]).length,2);}
     }
     assert.equal(await present("actorMia"),true);assert.equal(await present("actorLeo"),false);
     assert.equal(await count(),0);
@@ -72,7 +73,18 @@ try {
         })};
     });
     assert.deepEqual(geometry,{ipaBelow:true,noOverflow:true,fits:true});
+    const pulse=await page.locator("#actorLeo").evaluate(el=>{
+      const animation=el.getAnimations().find(a=>a.animationName==="actor-glow");
+      animation.pause();animation.currentTime=0;
+      const low=getComputedStyle(el).filter;
+      animation.currentTime=1400;
+      const high=getComputedStyle(el).filter;
+      return {low,high,opacity:getComputedStyle(el).opacity};
+    });
+    assert.notEqual(pulse.low,pulse.high,"halo smoothly changes strength");
+    assert.equal(pulse.opacity,"1","only the halo pulses, not the character");
     await page.screenshot({path:"tests/scenario-playback-"+width+".png",fullPage:true});
+    await page.locator("#actorLeo").evaluate(el=>el.getAnimations().forEach(a=>a.play()));
     await page.locator("#pauseDialogue").click();await finish();
     await page.waitForTimeout(500);await single(1,false);
     assert.equal(await count(),4);
@@ -96,7 +108,7 @@ try {
     await page.locator("#openScenarioWords").click();await finish();
     const exited=await count();await page.waitForTimeout(500);assert.equal(await count(),exited);
     assert.ok((await page.evaluate(()=>window.__writes)).every(k=>k==="mario-scenario-learning-v1:test:playback-"+width));
-    results.push({width,manualReplay:true,manualNext:true,continuousFromStart:true,singleBubble:true,dashedSpeaker:true,ipaBelow:true,noOverflow:true,storageIsolated:true});
+    results.push({width,manualReplay:true,manualNext:true,continuousFromStart:true,singleBubble:true,brightBreathingGlow:true,ipaBelow:true,noOverflow:true,storageIsolated:true});
     await context.close();
   }
   const fallback=await browser.newContext({viewport:{width:390,height:960},reducedMotion:"reduce"});
@@ -108,6 +120,19 @@ try {
   await p.locator("#nextLine").click();
   assert.equal(await p.locator("#dialogueProgress").textContent(),"2/6");
   await fallback.close();
+  const reduced=await browser.newContext({viewport:{width:390,height:960},reducedMotion:"reduce"});
+  await reduced.addInitScript(()=>{
+    Object.defineProperty(window,"SpeechSynthesisUtterance",{value:class {constructor(text){this.text=text;}}});
+    Object.defineProperty(window,"speechSynthesis",{value:{cancel(){},speak(){}}});
+  });
+  const quiet=await reduced.newPage();
+  await quiet.goto(new URL("scenario-learning.html?test=glow-reduced",base).href);
+  await quiet.locator("[data-start-label]").click();await quiet.locator("#replayDialogue").click();
+  await quiet.waitForFunction(()=>document.querySelector("#actorStage").classList.contains("is-speaking"));
+  const steady=await quiet.locator("#actorMia").evaluate(el=>({animation:getComputedStyle(el).animationName,filter:getComputedStyle(el).filter}));
+  assert.equal(steady.animation,"none");
+  assert.equal((steady.filter.match(/drop-shadow/g)||[]).length,2);
+  await reduced.close();
   assert.deepEqual(errors,[]);
   console.log(JSON.stringify({ok:true,surface:"Microsoft Edge",results},null,2));
 } finally {await browser.close();}

@@ -33,12 +33,12 @@ try {
       assert.equal(await page.locator(".dialogue-line-button, #dialogueLineList").count(),0);
       const effects=await page.locator(".scene-actor").evaluateAll(actors=>actors.map(el=>{
         const s=getComputedStyle(el);
-        return {id:el.id,outline:s.outlineStyle,animation:s.animationName,duration:s.animationDuration,easing:s.animationTimingFunction,filter:s.filter};
+        return {id:el.id,outline:s.outlineStyle,animation:s.animationName,duration:s.animationDuration,iterations:s.animationIterationCount,easing:s.animationTimingFunction,filter:s.filter};
       }));
       assert.ok(effects.every(x=>x.outline!=="dashed"));
       const glowing=effects.filter(x=>x.animation==="actor-glow");
       assert.deepEqual(glowing.map(x=>x.id),speaking?[index%2?"actorLeo":"actorMia"]:[]);
-      if(speaking){assert.equal(glowing[0].duration,"2.8s");assert.equal(glowing[0].easing,"ease-in-out");assert.equal((glowing[0].filter.match(/drop-shadow/g)||[]).length,2);}
+      if(speaking){assert.equal(glowing[0].duration,"1s");assert.equal(glowing[0].iterations,"2");assert.equal(glowing[0].easing,"ease-in-out");assert.equal((glowing[0].filter.match(/drop-shadow/g)||[]).length,2);}
     }
     assert.equal(await present("actorMia"),true);assert.equal(await present("actorLeo"),false);
     assert.equal(await count(),0);
@@ -77,7 +77,7 @@ try {
       const animation=el.getAnimations().find(a=>a.animationName==="actor-glow");
       animation.pause();animation.currentTime=0;
       const low=getComputedStyle(el).filter;
-      animation.currentTime=1400;
+      animation.currentTime=500;
       const high=getComputedStyle(el).filter;
       return {low,high,opacity:getComputedStyle(el).opacity};
     });
@@ -87,6 +87,12 @@ try {
     assert.equal(pulse.opacity,"1","only the halo pulses, not the character");
     await page.screenshot({path:"tests/scenario-playback-"+width+".png",fullPage:true});
     await page.locator("#actorLeo").evaluate(el=>el.getAnimations().forEach(a=>a.play()));
+    await page.waitForFunction(()=>document.querySelector("#actorLeo").getAnimations().every(a=>a.playState==="finished"));
+    const settled=await page.locator("#actorLeo").evaluate(el=>getComputedStyle(el).filter);
+    assert.equal(settled,pulse.low,"after two cycles the halo stays steady");
+    await page.waitForTimeout(600);
+    assert.equal(await page.locator("#actorLeo").evaluate(el=>getComputedStyle(el).filter),settled,"no third cycle");
+    assert.equal(await count(),4,"halo ending must not advance dialogue");
     await page.locator("#pauseDialogue").click();await finish();
     await page.waitForTimeout(500);await single(1,false);
     assert.equal(await count(),4);

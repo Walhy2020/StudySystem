@@ -73,13 +73,13 @@ test("情景页面资源、两阶段、手动声音按钮和独立导航齐全",
     readFile(new URL("../scenario-learning.css", import.meta.url), "utf8"),
     readFile(new URL("../scenario-learning.js", import.meta.url), "utf8"),
   ]);
-  assert.match(html, /scenario-learning\.css\?v=1\.7/);
+  assert.match(html, /scenario-learning\.css\?v=1\.8/);
   assert.match(html, /scenario-learning\.js\?v=1\.4/);
   assert.match(script, /scenario-playback\.js\?v=1\.1/);
   assert.doesNotMatch(html, /id="playDialogue"|id="dialogueLineList"/);
   assert.match(html, /id="continuousDialogue"/);
   assert.match(html, /id="replayDialogue"/);
-  assert.match(css, /animation:actor-glow 2\.8s ease-in-out infinite/);
+  assert.match(css, /animation:actor-glow 1s ease-in-out 2/);
   assert.match(css, /drop-shadow\(0 0 4px #ff6500\) drop-shadow\(0 0 16px #ff9500\)/);
   assert.doesNotMatch(css, /#fff7ae|#fffbd6/);
   assert.doesNotMatch(css, /outline:4px dashed/);

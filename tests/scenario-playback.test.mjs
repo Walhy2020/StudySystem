@@ -4,6 +4,26 @@ import { createDialoguePlayback } from "../src/scenario-playback.js";
 import { createScenarioSpeaker } from "../scenario-learning.js";
 const wait = (ms = 20) => new Promise((resolve) => setTimeout(resolve, ms));
 
+test("single-line replay waits for manual next; continuous playback can restart from zero", async () => {
+  const calls = [], statuses = [];
+  const playback = createDialoguePlayback({ count: () => 2, arrivalMs: 1, gapMs: 1,
+    show() {}, cancelSpeech() {}, status: value => statuses.push(value),
+    speak(index, end) { calls.push({ index, end }); return true; } });
+  try {
+    playback.play(0, { continuous: false }); await wait();
+    calls[0].end(); await wait(80);
+    assert.equal(calls.length, 1); assert.equal(playback.index, 0);
+    assert.equal(statuses.at(-1), "line-complete");
+    playback.play(1, { continuous: false }); await wait();
+    calls[1].end(); await wait();
+    assert.equal(calls.length, 2); assert.equal(playback.running, false);
+    playback.play(0, { continuous: true }); await wait();
+    assert.equal(calls[2].index, 0); calls[2].end(); await wait();
+    assert.equal(calls[3].index, 1); calls[3].end();
+    assert.equal(statuses.at(-1), "complete");
+  } finally { playback.stop(); }
+});
+
 test("dialogue advances only on speech end; pause invalidates callbacks", async () => {
   const shown = [], utterances = [], statuses = [];
   const playback = createDialoguePlayback({ count: () => 2, arrivalMs: 1, gapMs: 1,

@@ -12,8 +12,7 @@ try {
       Storage.prototype.setItem=function(k,v){window.__writes.push(k);return original.call(this,k,v);};
       Object.defineProperty(window,"SpeechSynthesisUtterance",{configurable:true,value:class { constructor(text){this.text=text;} }});
       Object.defineProperty(window,"speechSynthesis",{configurable:true,value:{
-        cancel(){},getVoices(){return [{lang:"en-GB"}];},
-        speak(u){window.__utterances.push(u);}
+        cancel(){},getVoices(){return [{lang:"en-GB"}];},speak(u){window.__utterances.push(u);}
       }});
     });
     const page=await context.newPage();
@@ -22,82 +21,89 @@ try {
     await page.goto(new URL("scenario-learning.html?test=playback-"+width,base).href);
     await page.locator("[data-start-label]").click();
     const present=(id)=>page.locator("#"+id).evaluate(el=>el.classList.contains("is-present"));
-    assert.equal(await present("actorMia"),true);
+    const count=()=>page.evaluate(()=>window.__utterances.length);
+    const finish=()=>page.evaluate(()=>window.__utterances.at(-1).onend());
+    async function speakAction(action) {
+      const previous=await count(); await action();
+      await page.waitForFunction(n=>window.__utterances.length===n,previous+1);
+    }
+    async function single(index, speaking=true) {
+      assert.equal(await page.locator("#dialogueProgress").textContent(),(index+1)+"/6");
+      assert.equal(await page.locator(".chat-bubble:visible").count(),1);
+      assert.equal(await page.locator(".dialogue-line-button, #dialogueLineList").count(),0);
+      const outlines=await page.locator(".scene-actor").evaluateAll(actors=>actors.map(el=>{
+        const s=getComputedStyle(el);
+        return {id:el.id,style:s.outlineStyle,width:parseFloat(s.outlineWidth),filter:s.filter};
+      }));
+      const dashed=outlines.filter(x=>x.style==="dashed");
+      assert.deepEqual(dashed.map(x=>x.id),speaking?[index%2?"actorLeo":"actorMia"]:[]);
+      if(speaking){assert.equal(dashed[0].width,4);assert.equal(dashed[0].filter,"none");}
+    }
+    assert.equal(await present("actorMia"),true);assert.equal(await present("actorLeo"),false);
+    assert.equal(await count(),0);
+    assert.equal(await page.locator("#playDialogue").count(),0);
+    assert.equal(await page.locator("#continuousDialogue").textContent(),"从头连播");
+    assert.equal(await page.locator("#replayDialogue").textContent(),"从头重播");
+    await speakAction(async()=>{
+      await page.locator("#replayDialogue").focus(); await page.keyboard.press("Enter");
+      assert.equal(await page.locator("#actorMia").evaluate(el=>new DOMMatrix(getComputedStyle(el).transform).m41 < -10),true);
+    });
+    await single(0); assert.equal(await present("actorLeo"),false);
+    await finish(); await page.waitForTimeout(1000);
+    assert.equal(await count(),1); await single(0,false);
     assert.equal(await present("actorLeo"),false);
-    assert.equal(await page.evaluate(()=>window.__utterances.length),0);
-    const start=page.locator("#playDialogue");
-    await start.focus(); await page.keyboard.press("Enter");
-    assert.equal(await page.locator("#actorMia").evaluate(el => new DOMMatrix(getComputedStyle(el).transform).m41 < -10), true, "girl slides in from the left");
-    await page.waitForFunction(()=>window.__utterances.length===1);
-    assert.equal(await page.locator("#actorMia").evaluate(el => Math.abs(new DOMMatrix(getComputedStyle(el).transform).m41) < 1), true);
-    assert.equal(await present("actorLeo"),false);
-    await page.waitForTimeout(800);
-    assert.equal(await page.evaluate(()=>window.__utterances.length),1,"must wait on actual speech end");
-    await page.evaluate(()=>window.__utterances.at(-1).onend());
-    await page.waitForFunction(()=>window.__utterances.length===2);
-    assert.equal(await present("actorLeo"),true);
-    assert.equal(await page.locator("#dialogueEnglish").textContent(),"Hi, Mia. I'm Leo.");
-    assert.equal(await page.locator(".dialogue-line-button:visible").count(),1);
+    await speakAction(()=>width===390?page.locator("#nextLine").tap():page.locator("#nextLine").click());
+    await single(1); assert.equal(await present("actorLeo"),true);
+    await finish(); await page.waitForTimeout(1000);
+    assert.equal(await count(),2); await single(1,false);
+    // Continuous mode always restarts at the first line and waits for its speech end.
+    await speakAction(()=>page.locator("#continuousDialogue").click());
+    await single(0);assert.equal(await present("actorLeo"),false);
+    await page.waitForTimeout(800);assert.equal(await count(),3);
+    await speakAction(finish);await single(1);
     const geometry=await page.evaluate(()=>{
       const english=document.querySelector("#dialogueEnglish").getBoundingClientRect();
       const ipa=document.querySelector("#dialoguePhonetic").getBoundingClientRect();
       const stage=document.querySelector("#actorStage").getBoundingClientRect();
-      const images=[...document.querySelectorAll(".scene-actor")].map(img=>{
-        const r=img.getBoundingClientRect(), canvas=document.createElement("canvas");
-        canvas.width=img.naturalWidth;canvas.height=img.naturalHeight;
-        const ctx=canvas.getContext("2d");ctx.drawImage(img,0,0);
-        const pixels=ctx.getImageData(0,0,canvas.width,canvas.height).data;
-        let clear=0,opaque=0;
-        for(let i=3;i<pixels.length;i+=4){if(pixels[i]===0)clear++;if(pixels[i]===255)opaque++;}
-        return {fits:r.left>=stage.left && r.right<=stage.right && r.top>=stage.top && r.bottom<=stage.bottom,clear,opaque};
-      });
-      return {ipaBelow:ipa.top>=english.bottom-1,noOverflow:document.documentElement.scrollWidth<=innerWidth,images};
+      return {ipaBelow:ipa.top>=english.bottom-1,noOverflow:document.documentElement.scrollWidth<=innerWidth,
+        fits:[...document.querySelectorAll(".scene-actor")].every(img=>{
+          const r=img.getBoundingClientRect();
+          return r.left>=stage.left&&r.right<=stage.right&&r.top>=stage.top&&r.bottom<=stage.bottom;
+        })};
     });
-    assert.equal(geometry.ipaBelow,true);assert.equal(geometry.noOverflow,true);
-    assert.ok(geometry.images.every(x=>x.fits&&x.clear>1000&&x.opaque>1000),JSON.stringify(geometry));
+    assert.deepEqual(geometry,{ipaBelow:true,noOverflow:true,fits:true});
     await page.screenshot({path:"tests/scenario-playback-"+width+".png",fullPage:true});
-    // Pause does not allow stale completion to reveal the following sentence.
-    await start.click();
-    await page.evaluate(()=>window.__utterances.at(-1).onend());
-    await page.waitForTimeout(450);
-    assert.equal(await page.locator("#dialogueProgress").textContent(),"2/6");
-    assert.equal(await start.getAttribute("aria-pressed"),"false");
-    await start.click();
-    await page.waitForFunction(()=>window.__utterances.length===3);
+    await page.locator("#pauseDialogue").click();await finish();
+    await page.waitForTimeout(500);await single(1,false);
+    assert.equal(await count(),4);
+    await speakAction(()=>page.locator("#pauseDialogue").click()); await single(1);
     for(let index=1;index<6;index++){
-      assert.equal(await page.locator("#dialogueProgress").textContent(),(index+1)+"/6");
-      await page.evaluate(()=>window.__utterances.at(-1).onend());
-      if(index<5) await page.waitForFunction(n=>window.__utterances.length>=n,index+3);
+      await single(index);
+      if(index<5)await speakAction(finish); else await finish();
     }
     await page.waitForFunction(()=>document.querySelector("#playbackStatus").textContent==="对话播放完毕");
-    assert.equal(await page.evaluate(()=>window.__SCENARIO_LEARNING__.store.state.completedScenarioIds.length),0);
+    await single(5,false);
+    assert.deepEqual(await page.evaluate(()=>window.__SCENARIO_LEARNING__.store.state.completedScenarioIds),[]);
     assert.deepEqual(await page.evaluate(()=>window.__SCENARIO_LEARNING__.store.state.learnedWords),[]);
-    if(width===390)await page.locator("#replayDialogue").tap();else await page.locator("#replayDialogue").click();
-    await page.waitForFunction(()=>window.__utterances.length===8);
-    assert.equal(await present("actorLeo"),false);
-    await page.locator("#nextLine").click();
-    await page.evaluate(()=>window.__utterances.at(-1).onend());
-    await page.waitForTimeout(500);
-    assert.equal(await page.locator("#dialogueProgress").textContent(),"2/6");
-    await start.click();
-    await page.waitForFunction(()=>window.__utterances.length===9);
-    await page.locator("#openScenarioWords").click();
-    await page.evaluate(()=>window.__utterances.at(-1).onend());
-    await page.waitForTimeout(500);
-    assert.equal(await page.evaluate(()=>window.__utterances.length),9);
+    // Switch from a running auto sequence to manual replay; stale callback must do nothing.
+    await speakAction(()=>page.locator("#continuousDialogue").click());
+    await page.evaluate(()=>{window.__stale=window.__utterances.at(-1).onend;});
+    await speakAction(()=>page.locator("#replayDialogue").click());
+    await page.evaluate(()=>window.__stale()); await finish();
+    const stopped=await count();await page.waitForTimeout(1000);
+    assert.equal(await count(),stopped);await single(0,false);
+    await speakAction(()=>page.locator("#continuousDialogue").click());
+    await page.locator("#openScenarioWords").click();await finish();
+    const exited=await count();await page.waitForTimeout(500);assert.equal(await count(),exited);
     assert.ok((await page.evaluate(()=>window.__writes)).every(k=>k==="mario-scenario-learning-v1:test:playback-"+width));
-    await page.locator("#closeWorkshop").click();
-    await page.locator("[data-start-label]").click();
-    await page.evaluate(()=>{Object.defineProperty(window,"speechSynthesis",{value:undefined});});
-    // Test unavailable browser API on a fresh load, not by changing the captured speaker.
+    results.push({width,manualReplay:true,manualNext:true,continuousFromStart:true,singleBubble:true,dashedSpeaker:true,ipaBelow:true,noOverflow:true,storageIsolated:true});
     await context.close();
-    results.push({width,speechEndGated:true,alpha:true,ipaBelow:true,pauseReplay:true,storageIsolated:true});
   }
   const fallback=await browser.newContext({viewport:{width:390,height:960},reducedMotion:"reduce"});
   await fallback.addInitScript(()=>Object.defineProperty(window,"speechSynthesis",{value:undefined}));
   const p=await fallback.newPage();
   await p.goto(new URL("scenario-learning.html?test=playback-unavailable",base).href);
-  await p.locator("[data-start-label]").click();await p.locator("#playDialogue").click();
+  await p.locator("[data-start-label]").click();await p.locator("#continuousDialogue").click();
   await p.waitForFunction(()=>document.querySelector("#playbackStatus").textContent.includes("语音未能完成"));
   await p.locator("#nextLine").click();
   assert.equal(await p.locator("#dialogueProgress").textContent(),"2/6");

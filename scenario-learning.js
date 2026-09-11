@@ -1,6 +1,6 @@
 import { SCENARIOS, scenarioById, scenarioLineById } from "./data/scenarios.js?v=1.0";
 import { initializeScenarioWorkshop } from "./src/scenario-workshop.js?v=1.1";
-import { createDialoguePlayback } from "./src/scenario-playback.js?v=1.0";
+import { createDialoguePlayback } from "./src/scenario-playback.js?v=1.1";
 
 export { SCENARIOS };
 export const SCENARIO_STORAGE_KEY = "mario-scenario-learning-v1";
@@ -162,6 +162,7 @@ function initializePage() {
   let stage = store.state.stage;
   let practiceTimer = null;
   let playbackPhase = "manual";
+  let continuousMode = false;
   const playback = createDialoguePlayback({
     count: () => scenario.lines.length,
     show(index, phase) { currentLineIndex = index; playbackPhase = phase; renderDialogue(); },
@@ -169,16 +170,22 @@ function initializePage() {
     cancelSpeech: () => speaker.cancel(),
     arrivalMs: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 650,
     status(value) {
-      dom.playDialogue.textContent = value === "playing" ? "暂停" : value === "paused" ? "继续播放" : "播放对话";
-      dom.playDialogue.setAttribute("aria-pressed", String(value === "playing"));
-      dom.playbackStatus.textContent = { playing: "正在播放", paused: "已暂停，继续时重读当前句", complete: "对话播放完毕", unavailable: "语音未能完成，可点击声音按钮重试或用 Next 继续" }[value] || "";
+      dom.pauseDialogue.hidden = !["playing", "paused"].includes(value);
+      dom.pauseDialogue.textContent = value === "paused" ? "继续" : "暂停";
+      dom.pauseDialogue.setAttribute("aria-pressed", String(value === "paused"));
+      dom.playbackStatus.textContent = { playing: continuousMode ? "正在连播" : "正在朗读当前句", paused: "已暂停，继续时重读当前句", "line-complete": currentLineIndex + 1 < scenario.lines.length ? "点击 Next 播放下一句" : "本句播放完毕", complete: "对话播放完毕", unavailable: "语音未能完成，可点击声音按钮重试或用 Next 继续" }[value] || "";
       if (value !== "playing") {
         dom.actorStage.classList.remove("is-speaking");
         dom.currentBubble.classList.remove("is-arriving");
       }
     },
   });
-  function stopPlayback() { playback.stop(); playbackPhase = "manual"; dom.playDialogue.textContent = "播放对话"; dom.playDialogue.setAttribute("aria-pressed", "false"); dom.actorStage.classList.remove("is-speaking"); dom.playbackStatus.textContent = ""; }
+  function stopPlayback() { playback.stop(); playbackPhase = "manual"; dom.pauseDialogue.hidden = true; dom.pauseDialogue.setAttribute("aria-pressed", "false"); dom.actorStage.classList.remove("is-speaking"); dom.currentBubble.classList.remove("is-arriving"); dom.playbackStatus.textContent = ""; }
+  function playLine(index, continuous = false) {
+    stopPlayback();
+    continuousMode = continuous;
+    playback.play(index, { continuous });
+  }
 
   function syncPicker() {
     document.querySelectorAll("[data-scenario-id]").forEach((card) => {
@@ -212,27 +219,7 @@ function initializePage() {
     dom.speakDialogue.setAttribute("aria-label", `朗读：${line.text}`);
     dom.previousLine.disabled = currentLineIndex === 0;
     dom.nextLine.disabled = currentLineIndex === scenario.lines.length - 1;
-    document.querySelectorAll(".dialogue-line-button").forEach((button, index) => {
-      button.classList.toggle("is-active", index === currentLineIndex);
-      button.setAttribute("aria-current", index === currentLineIndex ? "true" : "false");
-      button.hidden = index >= currentLineIndex;
-    });
     store.patch({ activeScenarioId: scenario.id, lineIndex: currentLineIndex, stage: "learn" });
-    const workspace = dom.currentBubble.closest(".dialogue-workspace");
-    requestAnimationFrame(() => { workspace.scrollTop = workspace.scrollHeight; });
-  }
-
-  function renderLineList() {
-    dom.dialogueLineList.innerHTML = scenario.lines.map((line, index) => `
-      <button class="dialogue-line-button" type="button" data-line-index="${index}">
-        <span>${line.speaker}</span><strong>${line.text}</strong><small>${line.phonetic}</small>
-      </button>`).join("");
-    dom.dialogueLineList.querySelectorAll("[data-line-index]").forEach((button) => {
-      button.addEventListener("click", () => {
-        stopPlayback(); currentLineIndex = Number(button.dataset.lineIndex);
-        renderDialogue();
-      });
-    });
   }
 
   function renderPractice() {
@@ -310,7 +297,6 @@ function initializePage() {
     currentLineIndex = restore ? store.state.lineIndex : 0;
     dom.activeScenarioKicker.textContent = `情景 ${String(scenario.number).padStart(2, "0")}`;
     dom.activeScenarioTitle.textContent = `${scenario.chineseTitle} · ${scenario.englishTitle}`;
-    renderLineList();
     setView(true);
     setStage(restore ? store.state.stage : "learn", restore);
   }
@@ -322,9 +308,9 @@ function initializePage() {
   dom.backToScenarios.addEventListener("click", () => { stopPlayback(); clearTimeout(practiceTimer); speaker.cancel(); setView(false); syncPicker(); });
   dom.learnStage.addEventListener("click", () => setStage("learn"));
   dom.practiceStage.addEventListener("click", () => setStage("practice"));
-  dom.previousLine.addEventListener("click", () => { stopPlayback(); if (currentLineIndex > 0) { currentLineIndex -= 1; renderDialogue(); } });
-  dom.nextLine.addEventListener("click", () => { stopPlayback(); if (currentLineIndex < scenario.lines.length - 1) { currentLineIndex += 1; renderDialogue(); } });
-  dom.speakDialogue.addEventListener("click", () => { stopPlayback(); renderDialogue(); speaker.speak(scenario.lines[currentLineIndex].text); });
+  dom.previousLine.addEventListener("click", () => { if (currentLineIndex > 0) playLine(currentLineIndex - 1); });
+  dom.nextLine.addEventListener("click", () => { if (currentLineIndex < scenario.lines.length - 1) playLine(currentLineIndex + 1); });
+  dom.speakDialogue.addEventListener("click", () => playLine(currentLineIndex));
   function resetActorEntrance() {
     for (const actor of [dom.actorMia, dom.actorLeo]) {
       actor.style.transition = "none";
@@ -333,14 +319,17 @@ function initializePage() {
     void dom.actorStage.offsetWidth;
     for (const actor of [dom.actorMia, dom.actorLeo]) actor.style.removeProperty("transition");
   }
-  dom.playDialogue.addEventListener("click", () => {
+  dom.pauseDialogue.addEventListener("click", () => {
     if (playback.running) { playback.pause(); return; }
-    if (currentLineIndex === 0) resetActorEntrance();
-    playback.play(currentLineIndex);
+    playback.play(currentLineIndex, { continuous: continuousMode });
   });
   dom.replayDialogue.addEventListener("click", () => {
     stopPlayback(); resetActorEntrance();
-    playback.play(0);
+    playLine(0);
+  });
+  dom.continuousDialogue.addEventListener("click", () => {
+    stopPlayback(); resetActorEntrance();
+    playLine(0, true);
   });
   document.addEventListener("visibilitychange", () => { if (document.hidden && playback.running) playback.pause(); });
   window.addEventListener("pagehide", stopPlayback);

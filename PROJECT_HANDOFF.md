@@ -1,6 +1,6 @@
 # StudySystem cross-device handoff
 
-Last updated: 2026-09-11
+Last updated: 2026-09-12
 Repository: `https://github.com/Walhy2020/StudySystem.git`
 Branch: `main`
 Baseline before this handoff document: `3a6815d`
@@ -69,11 +69,13 @@ In the ChatGPT/Codex desktop app, add the cloned repository as a local project a
 
 - Entry: `scenario-learning.html`; authoritative lesson data is isolated in `data/scenarios.js`.
 - Scenario 01 is First Meeting: six dialogue lines with complete British IPA and Chinese translations.
-- The module has line-by-line learning, Previous/Next navigation, manual-only speech, and three response-choice practice questions with wrong-answer retry.
-- Completing all three questions adds a green check to the scenario card. Progress writes only `mario-scenario-learning-v1` and is not included in the theme learned-word library.
+- Scenario 02 is What Is It?: eight classroom dialogue lines covering a pen, yellow pencils, a red marker, and green erasers, with complete British IPA, Chinese translations, and four response-choice questions.
+- The two delivered scenarios contain 14 dialogue lines and seven practice questions in total. The module has line-by-line learning, Previous/Next navigation, manual-only speech, and wrong-answer retry.
+- Completing every question in one scenario adds a green check only to that scenario card. Schema 2 stores each scenario's line, stage, and question independently under `scenarioProgress`, while preserving the top-level compatibility aliases and migrating the previous single-scenario state. Progress writes only `mario-scenario-learning-v1` and is not included in the theme learned-word library.
 - Scenario artwork and new lessons are now authored in conversation using the imagegen skill, not through a browser generator. See `SCENARIO_WORKSHOP.md` for the current workflow.
 - New-word matching reads Theme and Book1 learned records without writing them. Explicit word learning is stored as `learnedWords` under the existing scenario progress key; dialogue completion alone never marks vocabulary learned.
 - First Meeting keeps `assets/scenarios/first-meeting-v1.png` (1254×1254 RGB PNG) as its cover. The study view uses separate imagegen characters, locally cut out with user-approved rembg: `mia-sprite-v1.png` (560×1080 RGBA) and `leo-sprite-v1.png` (521×1080 RGBA).
+- What Is It? uses `assets/scenarios/what-is-it-classroom-v1.png` (1254×1254 RGB PNG) as both its card artwork and classroom stage. It shows exactly one blue pen, three yellow pencils, one red marker, and three green erasers; Mia and Leo remain separate side overlays so the central stationery stays visible.
 - Dialogue playback is user-started. “从头重播” reads only the first line and waits for manual Next; “从头连播” restarts at line one and advances on speech-end events. Mia enters first and Leo on line two. A saturated orange-gold contour halo with a tighter blur marks the speaking actor, breathing for three 1-second cycles, then staying steady until speech ends (steady with reduced motion); the right pane shows only the current sentence with British IPA beneath. Pause/navigation/mode switching invalidate stale callbacks; playback completion does not mark words learned. Mobile stacks stage and conversation. `src/scenario-playback.js` controls both modes.
 - The browser generation form and API backend were removed at the user's request. The page makes no generation API calls and needs no API Key; the independent New Words view and all browser learning progress are retained. Any private `.local-scenarios/` data remains untouched and ignored.
 
@@ -125,12 +127,12 @@ Verified on 2026-08-25 after the Nursery Rhymes theme update:
 - Overall-review Microsoft Edge acceptance passed with 83 stored theme records deduplicated to 81 unique library/review words, 81/81 questions, eight song-word artworks, exact counting artwork, and no desktop or 390px overflow.
 - New Hanzi and Phonetics backgrounds returned HTTP 200 and passed screenshot inspection.
 - Book1 migration verified on 2026-09-08: static checks passed, Node 70/70 passed, and Microsoft Edge passed at desktop and 390px with 104/104 images returning HTTP 200 and `opw1`-only legacy migration.
-- Scenario Learning verified on 2026-09-09: Node 75/75 passed; Microsoft Edge passed at desktop and 390px with six dialogue lines, three response questions, manual-only speech, refresh restore, completion persistence, isolated storage, and no horizontal overflow.
+- Scenario Learning verified on 2026-09-12: Node 85/85 passed; Microsoft Edge passed at desktop and 390px with two independent scenarios, 14 dialogue lines, seven response questions, 29 deduplicated words, manual-only speech, schema-1 migration, per-scenario refresh restore, independent completion, isolated storage, classroom artwork HTTP 200, clear central stationery, and no horizontal overflow.
 - No known unresolved product defect was recorded at handoff time.
 
 ## Cross-computer cautions
 
-- The acceptance scripts currently import Playwright from a local Codex runtime path. On another Windows account, confirm or deliberately make that dependency portable before relying on `pnpm run test:browser`.
+- The three Scenario acceptance scripts resolve Playwright from the current Windows profile. Other acceptance scripts may still import it from a local Codex runtime path; on another Windows account, confirm or deliberately make that dependency portable before relying on `pnpm run test:browser`.
 - Do not copy `.env`, API keys, browser profiles, cookies, or storage-state files through Git.
 - If learning progress must move between computers, use a separately reviewed export/import workflow; do not commit progress data to this repository.
 - If port 5177 is occupied, choose another isolated port. Do not stop a server that was not started by the current task.

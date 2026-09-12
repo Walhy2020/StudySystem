@@ -6,7 +6,7 @@
   <meta http-equiv="Cache-Control" content="no-cache,no-store,must-revalidate" />
   <link rel="icon" href="data:," />
   <title>马里奥学习系统 · 情景模式</title>
-  <link rel="stylesheet" href="./scenario-learning.css?v=1.9" />
+  <link rel="stylesheet" href="./scenario-learning.css?v=2.0" />
 </head>
 <body>
   <div class="scenario-shell">
@@ -36,6 +36,13 @@
               <img src="./assets/scenarios/first-meeting-v1.png" width="1254" height="1254" alt="米娅和利奥在公园初次见面，微笑挥手问好" />
             </div>
             <div class="scenario-card-copy"><small>情景 01</small><h3>第一次见面 <em>First Meeting</em></h3><p>用 6 句短对话学习问候、自我介绍和礼貌回应。</p><button type="button" data-start-label>开始情景</button></div>
+            <span class="scenario-complete-badge" data-complete-badge hidden aria-label="已完成">✓</span>
+          </article>
+          <article class="scenario-card" data-scenario-id="what-is-it">
+            <div class="scenario-preview scene-preview">
+              <img src="./assets/scenarios/what-is-it-classroom-v1.png?v=1.0" width="1254" height="1254" alt="明亮教室的桌上摆着一支蓝色笔、三支黄色铅笔、一支红色马克笔和三块绿色橡皮" />
+            </div>
+            <div class="scenario-card-copy"><small>情景 02</small><h3>这是什么？ <em>What Is It?</em></h3><p>用 8 句短对话辨认文具，练习单数、复数和颜色表达。</p><button type="button" data-start-label>开始情景</button></div>
             <span class="scenario-complete-badge" data-complete-badge hidden aria-label="已完成">✓</span>
           </article>
         </div>
@@ -69,10 +76,10 @@
           <div><h3>你会怎么回应？</h3><div class="response-options" id="responseOptions"></div><p class="practice-feedback" id="practiceFeedback" role="status">选择最合适的回应。</p></div>
         </section>
 
-        <section class="practice-result" id="practiceResult" hidden><span aria-hidden="true">✓</span><h3>第一次见面完成！</h3><strong id="practiceResultScore">3/3</strong><p>你已经会用英语完成一次简单的初次见面对话。</p><div><button id="restartPractice" type="button">再练一轮</button><button id="returnAfterComplete" type="button">返回情景选择</button></div></section>
+        <section class="practice-result" id="practiceResult" hidden><span aria-hidden="true">✓</span><h3 id="practiceResultTitle">第一次见面完成！</h3><strong id="practiceResultScore">3/3</strong><p id="practiceResultText">你已经会用英语完成一次简单的初次见面对话。</p><div><button id="restartPractice" type="button">再练一轮</button><button id="returnAfterComplete" type="button">返回情景选择</button></div></section>
       </section>
     </main>
   </div>
-  <script type="module" src="./scenario-learning.js?v=1.4"></script>
+  <script type="module" src="./scenario-learning.js?v=1.5"></script>
 </body>
 </html>

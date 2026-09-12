@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { FIRST_MEETING_LINES, FIRST_MEETING_PRACTICE, SCENARIOS } from "../data/scenarios.js";
+import { FIRST_MEETING_LINES, FIRST_MEETING_PRACTICE, WHAT_IS_IT_LINES, WHAT_IS_IT_PRACTICE, SCENARIOS } from "../data/scenarios.js";
 import { SCENARIO_SCHEMA_VERSION, SCENARIO_STORAGE_KEY, ScenarioPracticeSession, ScenarioStore, createScenarioSpeaker, scenarioStorageKeyFromLocation } from "../scenario-learning.js";
 
 class MemoryStorage {
@@ -10,8 +10,8 @@ class MemoryStorage {
   setItem(key, value) { this.writes.push(key); this.values.set(key, String(value)); }
 }
 
-test("第一次见面包含六句准确对话、完整英式音标和中文", () => {
-  assert.equal(SCENARIOS.length, 1);
+test("两个情景包含准确对话、完整英式音标和中文", () => {
+  assert.equal(SCENARIOS.length, 2);
   assert.deepEqual(FIRST_MEETING_LINES, [
     { id: "mia-intro", speaker: "Mia", text: "Hello! My name is Mia.", phonetic: "/həˈləʊ maɪ neɪm ɪz ˈmiːə/", chinese: "你好！我叫米娅。" },
     { id: "leo-intro", speaker: "Leo", text: "Hi, Mia. I'm Leo.", phonetic: "/haɪ ˈmiːə aɪm ˈliːəʊ/", chinese: "嗨，米娅。我叫利奥。" },
@@ -20,27 +20,41 @@ test("第一次见面包含六句准确对话、完整英式音标和中文", ()
     { id: "mia-how", speaker: "Mia", text: "How are you?", phonetic: "/haʊ ɑː juː/", chinese: "你好吗？" },
     { id: "leo-fine", speaker: "Leo", text: "I'm fine, thank you.", phonetic: "/aɪm faɪn θæŋk juː/", chinese: "我很好，谢谢你。" },
   ]);
+  assert.deepEqual(WHAT_IS_IT_LINES, [
+    { id: "classroom-look", speaker: "Mia", text: "Look, Leo. What is it?", phonetic: "/lʊk ˈliːəʊ wɒt ɪz ɪt/", chinese: "看，利奥。这是什么？" },
+    { id: "classroom-pen", speaker: "Leo", text: "It's a pen.", phonetic: "/ɪts ə pen/", chinese: "它是一支笔。" },
+    { id: "classroom-what-pencils", speaker: "Mia", text: "What are they?", phonetic: "/wɒt ɑː ðeɪ/", chinese: "它们是什么？" },
+    { id: "classroom-pencils", speaker: "Leo", text: "They're yellow pencils.", phonetic: "/ðeə ˈjeləʊ ˈpensəlz/", chinese: "它们是黄色的铅笔。" },
+    { id: "classroom-what-marker", speaker: "Mia", text: "And what is it?", phonetic: "/ænd wɒt ɪz ɪt/", chinese: "那这个是什么？" },
+    { id: "classroom-marker", speaker: "Leo", text: "It's a red marker.", phonetic: "/ɪts ə red ˈmɑːkə/", chinese: "它是一支红色的马克笔。" },
+    { id: "classroom-what-erasers", speaker: "Mia", text: "And what are they?", phonetic: "/ænd wɒt ɑː ðeɪ/", chinese: "那它们是什么？" },
+    { id: "classroom-erasers", speaker: "Leo", text: "They're green erasers.", phonetic: "/ðeə ɡriːn ɪˈreɪzəz/", chinese: "它们是绿色的橡皮。" },
+  ]);
   assert.ok(FIRST_MEETING_LINES.every((line) => line.phonetic.startsWith("/") && line.phonetic.endsWith("/") && line.chinese));
+  assert.ok(WHAT_IS_IT_LINES.every((line) => line.phonetic.startsWith("/") && line.phonetic.endsWith("/") && line.chinese));
 });
 
-test("三组回应练习不重复，答错停留、答对推进并完成", () => {
+test("两个情景的回应练习不重复，答错停留、答对推进并完成", () => {
   assert.equal(FIRST_MEETING_PRACTICE.length, 3);
-  assert.equal(new Set(FIRST_MEETING_PRACTICE.map(({ id }) => id)).size, 3);
-  const session = new ScenarioPracticeSession(SCENARIOS[0]);
-  while (!session.complete) {
-    const question = session.question();
-    assert.equal(question.options.length, 3);
-    assert.equal(new Set(question.options.map(({ id }) => id)).size, 3);
-    const wrong = question.options.find(({ id }) => id !== question.answerId);
-    const index = session.questionIndex;
-    assert.equal(session.answer(wrong.id).status, "wrong");
-    assert.equal(session.questionIndex, index);
-    session.answer(question.answerId);
+  assert.equal(WHAT_IS_IT_PRACTICE.length, 4);
+  for (const scenario of SCENARIOS) {
+    assert.equal(new Set(scenario.practice.map(({ id }) => id)).size, scenario.practice.length);
+    const session = new ScenarioPracticeSession(scenario);
+    while (!session.complete) {
+      const question = session.question();
+      assert.equal(question.options.length, 3);
+      assert.equal(new Set(question.options.map(({ id }) => id)).size, 3);
+      const wrong = question.options.find(({ id }) => id !== question.answerId);
+      const index = session.questionIndex;
+      assert.equal(session.answer(wrong.id).status, "wrong");
+      assert.equal(session.questionIndex, index);
+      session.answer(question.answerId);
+    }
+    assert.equal(session.correctCount, scenario.practice.length);
+    session.restart();
+    assert.equal(session.questionIndex, 0);
+    assert.equal(session.complete, false);
   }
-  assert.equal(session.correctCount, 3);
-  session.restart();
-  assert.equal(session.questionIndex, 0);
-  assert.equal(session.complete, false);
 });
 
 test("情景完成状态只写独立存储键并能恢复", () => {
@@ -48,12 +62,31 @@ test("情景完成状态只写独立存储键并能恢复", () => {
   const store = new ScenarioStore(memory);
   assert.equal(store.complete("first-meeting"), true);
   assert.equal(store.complete("first-meeting"), false);
-  assert.deepEqual(memory.writes, [SCENARIO_STORAGE_KEY, SCENARIO_STORAGE_KEY]);
+  assert.equal(store.complete("what-is-it"), true);
+  assert.deepEqual(memory.writes, [SCENARIO_STORAGE_KEY, SCENARIO_STORAGE_KEY, SCENARIO_STORAGE_KEY]);
   const restored = new ScenarioStore(memory);
   assert.equal(restored.state.version, SCENARIO_SCHEMA_VERSION);
   assert.equal(restored.isComplete("first-meeting"), true);
+  assert.equal(restored.isComplete("what-is-it"), true);
   assert.equal(scenarioStorageKeyFromLocation({ search: "?test=abc" }), `${SCENARIO_STORAGE_KEY}:test:abc`);
   for (const key of memory.writes) assert.equal(key, SCENARIO_STORAGE_KEY);
+});
+
+test("两个情景独立保存位置，旧版顶层进度迁移到当时活动情景", () => {
+  const memory = new MemoryStorage({
+    [SCENARIO_STORAGE_KEY]: JSON.stringify({ version: 1, activeScenarioId: "first-meeting", lineIndex: 4, stage: "practice", questionIndex: 1 }),
+  });
+  const store = new ScenarioStore(memory);
+  assert.deepEqual(store.progress("first-meeting"), { lineIndex: 4, stage: "practice", questionIndex: 1 });
+  assert.deepEqual(store.progress("what-is-it"), { lineIndex: 0, stage: "learn", questionIndex: 0 });
+  store.patch({ activeScenarioId: "what-is-it", lineIndex: 6, stage: "practice", questionIndex: 2 });
+  assert.deepEqual(store.progress("what-is-it"), { lineIndex: 6, stage: "practice", questionIndex: 2 });
+  store.patch({ activeScenarioId: "first-meeting" });
+  assert.equal(store.state.lineIndex, 4);
+  assert.equal(store.state.stage, "practice");
+  assert.equal(store.state.questionIndex, 1);
+  const restored = new ScenarioStore(memory);
+  assert.deepEqual(restored.progress("what-is-it"), { lineIndex: 6, stage: "practice", questionIndex: 2 });
 });
 
 test("情景朗读只在手动调用后延迟播放并使用英式语言", async () => {
@@ -73,8 +106,8 @@ test("情景页面资源、两阶段、手动声音按钮和独立导航齐全",
     readFile(new URL("../scenario-learning.css", import.meta.url), "utf8"),
     readFile(new URL("../scenario-learning.js", import.meta.url), "utf8"),
   ]);
-  assert.match(html, /scenario-learning\.css\?v=1\.9/);
-  assert.match(html, /scenario-learning\.js\?v=1\.4/);
+  assert.match(html, /scenario-learning\.css\?v=2\.0/);
+  assert.match(html, /scenario-learning\.js\?v=1\.5/);
   assert.match(script, /scenario-playback\.js\?v=1\.1/);
   assert.doesNotMatch(html, /id="playDialogue"|id="dialogueLineList"/);
   assert.match(html, /id="continuousDialogue"/);
@@ -83,19 +116,21 @@ test("情景页面资源、两阶段、手动声音按钮和独立导航齐全",
   assert.match(css, /drop-shadow\(0 0 4px #ff6500\) drop-shadow\(0 0 16px #ff9500\)/);
   assert.doesNotMatch(css, /#fff7ae|#fffbd6/);
   assert.doesNotMatch(css, /outline:4px dashed/);
-  assert.match(script, /scenarios\.js\?v=1\.0/);
+  assert.match(script, /scenarios\.js\?v=1\.1/);
   assert.match(html, /id="learnStage"/);
   assert.match(html, /id="practiceStage"/);
   assert.match(html, /id="speakDialogue"/);
   assert.match(html, /id="speakPractice"/);
   assert.match(html, /data-scenario-id="first-meeting"/);
+  assert.match(html, /data-scenario-id="what-is-it"/);
   assert.match(css, /grid-template-columns:repeat\(6/);
   assert.doesNotMatch(script, /mario-theme-learned-v1|mario-book1-v1|mario-hanzi-refactor-v1|mario-phonetics-v1|mario-bomb-game-progress-v1/);
 });
 
 test("情景使用内置imagegen正式PNG，无网页生成入口或API", async () => {
-  const [png, html, workshop, server] = await Promise.all([
+  const [png, classroomPng, html, workshop, server] = await Promise.all([
     readFile(new URL("../assets/scenarios/first-meeting-v1.png", import.meta.url)),
+    readFile(new URL("../assets/scenarios/what-is-it-classroom-v1.png", import.meta.url)),
     readFile(new URL("../scenario-learning.html", import.meta.url), "utf8"),
     readFile(new URL("../src/scenario-workshop.js", import.meta.url), "utf8"),
     readFile(new URL("../server.py", import.meta.url), "utf8"),
@@ -103,7 +138,11 @@ test("情景使用内置imagegen正式PNG，无网页生成入口或API", async 
   assert.equal(png.subarray(0, 8).toString("hex"), "89504e470d0a1a0a");
   assert.equal(png.readUInt32BE(16), 1254);
   assert.equal(png.readUInt32BE(20), 1254);
+  assert.equal(classroomPng.subarray(0, 8).toString("hex"), "89504e470d0a1a0a");
+  assert.equal(classroomPng.readUInt32BE(16), 1254);
+  assert.equal(classroomPng.readUInt32BE(20), 1254);
   assert.equal((html.match(/assets\/scenarios\/first-meeting-v1\.png/g) || []).length, 1);
+  assert.equal((html.match(/assets\/scenarios\/what-is-it-classroom-v1\.png/g) || []).length, 1);
   for (const actor of ["mia", "leo"]) {
     assert.ok(html.includes(`assets/scenarios/${actor}-sprite-v1.png`));
     const sprite = await readFile(new URL(`../assets/scenarios/${actor}-sprite-v1.png`, import.meta.url));

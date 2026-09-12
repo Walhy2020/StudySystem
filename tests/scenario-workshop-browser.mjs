@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
-import { chromium } from "file:///C:/Users/St/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/index.mjs";
+import { homedir } from "node:os";
+import { join } from "node:path";
+import { pathToFileURL } from "node:url";
+const { chromium } = await import(pathToFileURL(join(homedir(), ".cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/index.mjs")));
 const base = process.env.HANZI_BASE_URL || "http://127.0.0.1:53177/";
 const browser = await chromium.launch({ headless: true, executablePath: "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe" });
 const errors = [], apiCalls = [], results = [];
@@ -30,9 +33,10 @@ try {
       });
       assert.deepEqual(actual, { w: 1254, h: 1254, fit: "contain", full: true });
     }
-    await checkImage(".scene-preview img");
+    assert.equal(await page.locator(".scene-preview img").count(), 2);
+    for (let index = 0; index < 2; index += 1) await checkImage(`.scene-preview img >> nth=${index}`);
     await page.screenshot({ path: `tests/scenario-cover-${width}.png`, fullPage: true });
-    await page.locator("[data-start-label]").click();
+    await page.locator('[data-scenario-id="first-meeting"] [data-start-label]').click();
     for (const id of ["actorMia", "actorLeo"]) {
       await page.locator(`#${id}`).evaluate((img) => img.decode());
       assert.equal(await page.locator(`#${id}`).evaluate((img) => img.naturalHeight > 500 && getComputedStyle(img).objectFit === "contain"), true);
@@ -40,22 +44,23 @@ try {
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     await page.screenshot({ path: `tests/scenario-art-${width}.png`, fullPage: true });
     await page.locator("#openScenarioWords").click();
-    assert.equal(await page.locator(".scenario-word-card").count(), 16);
+    assert.equal(await page.locator(".scenario-word-card").count(), 29);
+    assert.match(await page.locator('[data-word="marker"] .word-source').textContent(), /这是什么/);
     assert.equal(await page.evaluate(() => window.__spoken.length), 0);
     await page.locator('[data-word="hello"] button').first().click();
     await page.waitForTimeout(100);
     assert.deepEqual(await page.evaluate(() => window.__spoken), ["hello"]);
     await page.locator('[data-word="hello"] button').last().focus();
     await page.keyboard.press("Enter");
-    assert.equal(await page.locator(".scenario-word-card").count(), 15);
+    assert.equal(await page.locator(".scenario-word-card").count(), 28);
     await page.reload();
     await page.locator("#openScenarioWords").click();
-    assert.equal(await page.locator(".scenario-word-card").count(), 15);
+    assert.equal(await page.locator(".scenario-word-card").count(), 28);
     await page.locator("#showLearnedScenarioWords").check();
     assert.equal(await page.locator('[data-word="hello"]').count(), 1);
     await page.locator('[data-word="hello"] button').last().click();
     await page.locator("#showLearnedScenarioWords").uncheck();
-    assert.equal(await page.locator(".scenario-word-card").count(), 16);
+    assert.equal(await page.locator(".scenario-word-card").count(), 29);
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     assert.ok((await page.evaluate(() => window.__writes)).every((key) => key === `mario-scenario-learning-v1:test:workshop-${width}`));
     await page.screenshot({ path: `tests/scenario-words-${width}.png`, fullPage: true });

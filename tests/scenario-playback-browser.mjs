@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
-import { chromium } from "file:///C:/Users/St/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/index.mjs";
+import { homedir } from "node:os";
+import { join } from "node:path";
+import { pathToFileURL } from "node:url";
+const { chromium } = await import(pathToFileURL(join(homedir(), ".cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/index.mjs")));
 const base = process.env.HANZI_BASE_URL || "http://127.0.0.1:53177/";
 const browser = await chromium.launch({ headless:true, executablePath:"C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe" });
 const errors=[], results=[];
@@ -19,7 +22,7 @@ try {
     page.on("pageerror",e=>errors.push(e.message));
     page.on("response",r=>{if(r.status()>=400)errors.push(r.status()+" "+r.url());});
     await page.goto(new URL("scenario-learning.html?test=playback-"+width,base).href);
-    await page.locator("[data-start-label]").click();
+    await page.locator('[data-scenario-id="first-meeting"] [data-start-label]').click();
     const present=(id)=>page.locator("#"+id).evaluate(el=>el.classList.contains("is-present"));
     const count=()=>page.evaluate(()=>window.__utterances.length);
     const finish=()=>page.evaluate(()=>window.__utterances.at(-1).onend());
@@ -123,7 +126,7 @@ try {
   await fallback.addInitScript(()=>Object.defineProperty(window,"speechSynthesis",{value:undefined}));
   const p=await fallback.newPage();
   await p.goto(new URL("scenario-learning.html?test=playback-unavailable",base).href);
-  await p.locator("[data-start-label]").click();await p.locator("#continuousDialogue").click();
+  await p.locator('[data-scenario-id="first-meeting"] [data-start-label]').click();await p.locator("#continuousDialogue").click();
   await p.waitForFunction(()=>document.querySelector("#playbackStatus").textContent.includes("语音未能完成"));
   await p.locator("#nextLine").click();
   assert.equal(await p.locator("#dialogueProgress").textContent(),"2/6");
@@ -135,7 +138,7 @@ try {
   });
   const quiet=await reduced.newPage();
   await quiet.goto(new URL("scenario-learning.html?test=glow-reduced",base).href);
-  await quiet.locator("[data-start-label]").click();await quiet.locator("#replayDialogue").click();
+  await quiet.locator('[data-scenario-id="first-meeting"] [data-start-label]').click();await quiet.locator("#replayDialogue").click();
   await quiet.waitForFunction(()=>document.querySelector("#actorStage").classList.contains("is-speaking"));
   const steady=await quiet.locator("#actorMia").evaluate(el=>({animation:getComputedStyle(el).animationName,filter:getComputedStyle(el).filter}));
   assert.equal(steady.animation,"none");

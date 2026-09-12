@@ -1,10 +1,10 @@
-import { SCENARIOS, scenarioById, scenarioLineById } from "./data/scenarios.js?v=1.0";
+import { SCENARIOS, scenarioById, scenarioLineById } from "./data/scenarios.js?v=1.1";
 import { initializeScenarioWorkshop } from "./src/scenario-workshop.js?v=1.1";
 import { createDialoguePlayback } from "./src/scenario-playback.js?v=1.1";
 
 export { SCENARIOS };
 export const SCENARIO_STORAGE_KEY = "mario-scenario-learning-v1";
-export const SCENARIO_SCHEMA_VERSION = 1;
+export const SCENARIO_SCHEMA_VERSION = 2;
 
 function safeParse(value) {
   try { return JSON.parse(value); } catch { return null; }
@@ -17,16 +17,39 @@ function validScenarioId(id) {
 export function createScenarioState(source = {}) {
   const completedScenarioIds = [...new Set(Array.isArray(source.completedScenarioIds) ? source.completedScenarioIds : [])].filter(validScenarioId);
   const activeScenarioId = validScenarioId(source.activeScenarioId) ? source.activeScenarioId : SCENARIOS[0].id;
-  const scenario = scenarioById(activeScenarioId);
-  const stage = source.stage === "practice" ? "practice" : "learn";
+  const rawProgress = source.scenarioProgress && typeof source.scenarioProgress === "object" ? source.scenarioProgress : {};
+  const scenarioProgress = Object.fromEntries(SCENARIOS.map((scenario) => {
+    const candidate = rawProgress[scenario.id] && typeof rawProgress[scenario.id] === "object" ? rawProgress[scenario.id] : {};
+    const stage = candidate.stage === "practice" ? "practice" : "learn";
+    return [scenario.id, {
+      lineIndex: Math.max(0, Math.min(Number(candidate.lineIndex) || 0, scenario.lines.length - 1)),
+      stage,
+      questionIndex: stage === "practice" ? Math.max(0, Math.min(Number(candidate.questionIndex) || 0, scenario.practice.length - 1)) : 0,
+    }];
+  }));
+  const activeScenario = scenarioById(activeScenarioId);
+  const activeSource = {
+    ...scenarioProgress[activeScenarioId],
+    lineIndex: source.lineIndex ?? scenarioProgress[activeScenarioId].lineIndex,
+    stage: source.stage ?? scenarioProgress[activeScenarioId].stage,
+    questionIndex: source.questionIndex ?? scenarioProgress[activeScenarioId].questionIndex,
+  };
+  const activeStage = activeSource.stage === "practice" ? "practice" : "learn";
+  scenarioProgress[activeScenarioId] = {
+    lineIndex: Math.max(0, Math.min(Number(activeSource.lineIndex) || 0, activeScenario.lines.length - 1)),
+    stage: activeStage,
+    questionIndex: activeStage === "practice" ? Math.max(0, Math.min(Number(activeSource.questionIndex) || 0, activeScenario.practice.length - 1)) : 0,
+  };
+  const activeProgress = scenarioProgress[activeScenarioId];
   return {
     version: SCENARIO_SCHEMA_VERSION,
     completedScenarioIds,
     learnedWords: [...new Set((Array.isArray(source.learnedWords) ? source.learnedWords : []).filter((word) => typeof word === "string" && /^[a-z]+(?:'[a-z]+)*$/i.test(word)).map((word) => word.toLowerCase()))],
     activeScenarioId,
-    lineIndex: Math.max(0, Math.min(Number(source.lineIndex) || 0, scenario.lines.length - 1)),
-    stage,
-    questionIndex: stage === "practice" ? Math.max(0, Math.min(Number(source.questionIndex) || 0, scenario.practice.length - 1)) : 0,
+    scenarioProgress,
+    lineIndex: activeProgress.lineIndex,
+    stage: activeProgress.stage,
+    questionIndex: activeProgress.questionIndex,
   };
 }
 
@@ -45,8 +68,26 @@ export class ScenarioStore {
   }
 
   patch(values) {
-    this.state = createScenarioState({ ...this.state, ...values });
+    const activeScenarioId = validScenarioId(values.activeScenarioId)
+      ? values.activeScenarioId
+      : this.state.activeScenarioId;
+    const saved = this.state.scenarioProgress?.[activeScenarioId]
+      || { lineIndex: 0, stage: "learn", questionIndex: 0 };
+    const switching = activeScenarioId !== this.state.activeScenarioId;
+    this.state = createScenarioState({
+      ...this.state,
+      ...values,
+      activeScenarioId,
+      lineIndex: values.lineIndex ?? (switching ? saved.lineIndex : this.state.lineIndex),
+      stage: values.stage ?? (switching ? saved.stage : this.state.stage),
+      questionIndex: values.questionIndex ?? (switching ? saved.questionIndex : this.state.questionIndex),
+    });
     return this.save();
+  }
+
+  progress(scenarioId) {
+    return this.state.scenarioProgress?.[scenarioId]
+      || { lineIndex: 0, stage: "learn", questionIndex: 0 };
   }
 
   complete(scenarioId) {
@@ -188,7 +229,7 @@ function initializePage() {
   }
 
   function syncPicker() {
-    document.querySelectorAll("[data-scenario-id]").forEach((card) => {
+    document.querySelectorAll(".scenario-card[data-scenario-id]").forEach((card) => {
       const complete = store.isComplete(card.dataset.scenarioId);
       card.classList.toggle("is-complete", complete);
       card.querySelector("[data-complete-badge]").hidden = !complete;
@@ -213,6 +254,7 @@ function initializePage() {
     dom.actorMia.setAttribute("aria-hidden", "false");
     dom.actorLeo.setAttribute("aria-hidden", String(currentLineIndex < 1));
     dom.actorStage.dataset.speaker = line.speaker;
+    dom.actorStage.dataset.scenarioId = scenario.id;
     dom.actorStage.classList.toggle("is-speaking", playbackPhase === "speaking");
     dom.currentBubble.dataset.speaker = line.speaker;
     dom.currentBubble.classList.toggle("is-arriving", playbackPhase === "arriving");
@@ -265,7 +307,9 @@ function initializePage() {
     store.complete(scenario.id);
     dom.practicePanel.hidden = true;
     dom.practiceResult.hidden = false;
+    dom.practiceResultTitle.textContent = scenario.completionTitle || `${scenario.chineseTitle}完成！`;
     dom.practiceResultScore.textContent = `${scenario.practice.length}/${scenario.practice.length}`;
+    dom.practiceResultText.textContent = scenario.completionText || `你已经完成“${scenario.chineseTitle}”情景练习。`;
     syncPicker();
   }
 
@@ -294,14 +338,23 @@ function initializePage() {
   function enterScenario(id, restore = false) {
     scenario = scenarioById(id) || SCENARIOS[0];
     practice = new ScenarioPracticeSession(scenario);
-    currentLineIndex = restore ? store.state.lineIndex : 0;
+    const saved = store.progress(scenario.id);
+    currentLineIndex = restore ? saved.lineIndex : 0;
+    const nextStage = restore ? saved.stage : "learn";
+    const questionIndex = restore ? saved.questionIndex : 0;
+    store.patch({
+      activeScenarioId: scenario.id,
+      lineIndex: currentLineIndex,
+      stage: nextStage,
+      questionIndex,
+    });
     dom.activeScenarioKicker.textContent = `情景 ${String(scenario.number).padStart(2, "0")}`;
     dom.activeScenarioTitle.textContent = `${scenario.chineseTitle} · ${scenario.englishTitle}`;
     setView(true);
-    setStage(restore ? store.state.stage : "learn", restore);
+    setStage(nextStage, restore);
   }
 
-  document.querySelectorAll("[data-scenario-id]").forEach((card) => card.querySelector("button").addEventListener("click", () => {
+  document.querySelectorAll(".scenario-card[data-scenario-id]").forEach((card) => card.querySelector("button").addEventListener("click", () => {
     const id = card.dataset.scenarioId;
     enterScenario(id, !store.isComplete(id));
   }));

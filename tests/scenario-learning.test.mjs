@@ -102,16 +102,18 @@ test("情景页面资源、三个阶段、手动声音按钮和独立导航齐�
     readFile(new URL("../scenario-learning.css", import.meta.url), "utf8"),
     readFile(new URL("../scenario-learning.js", import.meta.url), "utf8"),
   ]);
-  assert.match(html, /scenario-learning\.css\?v=2\.1/);
+  assert.match(html, /scenario-learning\.css\?v=2\.2/);
   assert.match(html, /scenario-learning\.js\?v=1\.7/);
   assert.match(script, /scenario-playback\.js\?v=1\.1/);
   assert.doesNotMatch(html, /id="playDialogue"|id="dialogueLineList"/);
   assert.match(html, /id="continuousDialogue"/);
   assert.match(html, /id="replayDialogue"/);
-  assert.match(css, /animation:actor-glow 1s ease-in-out 3/);
-  assert.match(css, /drop-shadow\(0 0 4px #ff6500\) drop-shadow\(0 0 16px #ff9500\)/);
+  assert.match(css, /animation:actor-dash-breathe 1s ease-in-out 3/);
+  assert.match(css, /border:4px dashed #ff8a00/);
+  assert.match(html, /id="miaFocusRing" class="actor-focus-ring actor-mia-focus"/);
+  assert.match(html, /id="leoFocusRing" class="actor-focus-ring actor-leo-focus"/);
   assert.doesNotMatch(css, /#fff7ae|#fffbd6/);
-  assert.doesNotMatch(css, /outline:4px dashed/);
+  assert.doesNotMatch(css, /animation:actor-glow|drop-shadow\(0 0 4px #ff6500\)/);
   assert.match(script, /scenarios\.js\?v=1\.2/);
   assert.match(html, /id="learnStage"/);
   assert.match(html, /id="practiceStage"/);

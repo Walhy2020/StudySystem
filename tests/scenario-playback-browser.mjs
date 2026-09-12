@@ -66,10 +66,9 @@ try {
     await page.waitForTimeout(800);assert.equal(await count(),3);
     await speakAction(finish);await single(1);
     const geometry=await page.evaluate(()=>{
-      const english=document.querySelector("#dialogueEnglish").getBoundingClientRect();
-      const ipa=document.querySelector("#dialoguePhonetic").getBoundingClientRect();
       const stage=document.querySelector("#actorStage").getBoundingClientRect();
-      return {ipaBelow:ipa.top>=english.bottom-1,noOverflow:document.documentElement.scrollWidth<=innerWidth,
+      const aligned=[...document.querySelectorAll("#dialogueAligned .aligned-word")];
+      return {ipaBelow:aligned.every((word)=>word.querySelector("small").getBoundingClientRect().top>=word.querySelector("strong").getBoundingClientRect().bottom-1),noOverflow:document.documentElement.scrollWidth<=innerWidth,
         fits:[...document.querySelectorAll(".scene-actor")].every(img=>{
           const r=img.getBoundingClientRect();
           return r.left>=stage.left&&r.right<=stage.right&&r.top>=stage.top&&r.bottom<=stage.bottom;
@@ -116,7 +115,7 @@ try {
     const stopped=await count();await page.waitForTimeout(1000);
     assert.equal(await count(),stopped);await single(0,false);
     await speakAction(()=>page.locator("#continuousDialogue").click());
-    await page.locator("#openScenarioWords").click();await finish();
+    await page.locator("#wordsStage").click();await finish();
     const exited=await count();await page.waitForTimeout(500);assert.equal(await count(),exited);
     assert.ok((await page.evaluate(()=>window.__writes)).every(k=>k==="mario-scenario-learning-v1:test:playback-"+width));
     results.push({width,manualReplay:true,manualNext:true,continuousFromStart:true,singleBubble:true,brightBreathingGlow:true,ipaBelow:true,noOverflow:true,storageIsolated:true});

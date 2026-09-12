@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
+import { homedir } from "node:os";
+import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 import { NUMBER_1_10_WORDS, NUMBER_11_19_WORDS, TENS_WORDS, TWINKLE_LYRICS, TWINKLE_SPOKEN_LYRICS, TWINKLE_WORDS, splitPhonetic } from "../theme-learning.js";
-import { chromium } from "file:///C:/Users/St/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/index.mjs";
+const { chromium } = await import(pathToFileURL(join(homedir(), ".cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/index.mjs")));
 
 const baseUrl = process.env.HANZI_BASE_URL || "http://127.0.0.1:53177/";
 const browser = await chromium.launch({ headless: true, executablePath: "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe" });

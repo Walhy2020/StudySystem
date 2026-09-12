@@ -1,4 +1,4 @@
-import { collectScenarioVocabulary, knownScenarioWords, normalizeWord } from "./scenario-vocabulary.js?v=1.0";
+import { collectScenarioVocabulary, knownScenarioWords, normalizeWord } from "./scenario-vocabulary.js?v=1.2";
 
 const el = (tag, text, className) => {
   const node = document.createElement(tag);
@@ -14,8 +14,8 @@ const button = (text, action, label) => {
   return node;
 };
 
-// Authoring and imagegen happen in the conversation; the page only learns words.
-export function initializeScenarioWorkshop({ store, speaker, scenarios, onOpen }) {
+// Authoring and imagegen happen in the conversation; this view only learns the active scenario's words.
+export function initializeScenarioWords({ store, speaker, getScenario }) {
   const dom = Object.fromEntries([...document.querySelectorAll("[id]")].map((node) => [node.id, node]));
   const suffix = store.key.slice("mario-scenario-learning-v1".length);
   function markLearned(word, learned) {
@@ -23,15 +23,18 @@ export function initializeScenarioWorkshop({ store, speaker, scenarios, onOpen }
       const source = JSON.parse(localStorage.getItem(store.key) || "{}");
       const values = new Set(Array.isArray(source.learnedWords) ? source.learnedWords : []);
       if (learned) values.add(normalizeWord(word)); else values.delete(normalizeWord(word));
-      store.patch({ ...source, learnedWords: [...values] });
+      store.patch({ learnedWords: [...values] });
       renderWords();
     } catch { dom.scenarioWordsStatus.textContent = "保存学习状态失败，请检查浏览器存储权限后重试。"; }
   }
   function renderWords() {
-    const words = collectScenarioVocabulary(scenarios, knownScenarioWords(window.localStorage, store.state.learnedWords, suffix));
+    const scenario = getScenario();
+    const words = collectScenarioVocabulary([scenario], knownScenarioWords(window.localStorage, store.state.learnedWords, suffix));
     const pending = words.filter((word) => !word.learned);
     dom.scenarioWordCount.textContent = pending.length;
-    dom.scenarioWordsStatus.textContent = pending.length ? `${pending.length} 个新单词 · ${words.length - pending.length} 个已学` : "目前没有新单词。新增情景后会自动检查。";
+    dom.scenarioWordsTitle.textContent = `${scenario.chineseTitle} · 新单词`;
+    dom.scenarioWordsIntro.textContent = `这里只显示“${scenario.chineseTitle}”当前情景中的单词，不与其他情景合并。`;
+    dom.scenarioWordsStatus.textContent = pending.length ? `${pending.length} 个新单词 · ${words.length - pending.length} 个已学` : "当前情景的单词都已经学过了。";
     dom.scenarioWordCards.replaceChildren();
     for (const word of dom.showLearnedScenarioWords.checked ? words : pending) {
       const card = el("article", undefined, "scenario-word-card");
@@ -47,17 +50,6 @@ export function initializeScenarioWorkshop({ store, speaker, scenarios, onOpen }
       dom.scenarioWordCards.append(card);
     }
   }
-  dom.openScenarioWords.addEventListener("click", () => {
-    onOpen();
-    dom.scenarioPicker.hidden = true;
-    dom.scenarioWorkshop.hidden = false;
-    renderWords();
-  });
-  dom.closeWorkshop.addEventListener("click", () => {
-    speaker.cancel();
-    dom.scenarioWorkshop.hidden = true;
-    dom.scenarioPicker.hidden = false;
-  });
   dom.showLearnedScenarioWords.addEventListener("change", renderWords);
   window.addEventListener("storage", () => {
     try {
@@ -67,4 +59,5 @@ export function initializeScenarioWorkshop({ store, speaker, scenarios, onOpen }
     renderWords();
   });
   renderWords();
+  return { render: renderWords };
 }

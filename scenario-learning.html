@@ -6,7 +6,7 @@
   <meta http-equiv="Cache-Control" content="no-cache,no-store,must-revalidate" />
   <link rel="icon" href="data:," />
   <title>马里奥学习系统 · 情景模式</title>
-  <link rel="stylesheet" href="./scenario-learning.css?v=2.0" />
+  <link rel="stylesheet" href="./scenario-learning.css?v=2.1" />
 </head>
 <body>
   <div class="scenario-shell">
@@ -18,16 +18,6 @@
     </header>
 
     <main>
-      <div class="workshop-toolbar"><button id="openScenarioWords" type="button">新单词 <span id="scenarioWordCount">0</span></button></div>
-      <section class="scenario-workshop" id="scenarioWorkshop" hidden aria-labelledby="workshopTitle">
-        <button id="closeWorkshop" class="back-button" type="button">返回情景选择</button>
-        <h2 id="workshopTitle">新单词</h2>
-        <div id="scenarioWordsView">
-          <p>已学过的词不重复加入。参考 Book1、主题学习和情景新单词的本浏览器记录。</p>
-          <label class="word-filter"><input id="showLearnedScenarioWords" type="checkbox" /> 同时显示已学单词</label>
-          <p id="scenarioWordsStatus" role="status"></p><div id="scenarioWordCards" class="scenario-word-grid"></div>
-        </div>
-      </section>
       <section class="scenario-picker" id="scenarioPicker" aria-labelledby="scenarioPickerTitle">
         <div class="picker-heading"><span>SCENARIO ENGLISH</span><h2 id="scenarioPickerTitle">在小对话里学会开口</h2><p>先认识完整对话，再选择最合适的回应。</p></div>
         <div class="scenario-list">
@@ -42,7 +32,7 @@
             <div class="scenario-preview scene-preview">
               <img src="./assets/scenarios/what-is-it-classroom-v1.png?v=1.0" width="1254" height="1254" alt="明亮教室的桌上摆着一支蓝色笔、三支黄色铅笔、一支红色马克笔和三块绿色橡皮" />
             </div>
-            <div class="scenario-card-copy"><small>情景 02</small><h3>这是什么？ <em>What Is It?</em></h3><p>用 8 句短对话辨认文具，练习单数、复数和颜色表达。</p><button type="button" data-start-label>开始情景</button></div>
+            <div class="scenario-card-copy"><small>情景 02</small><h3>这是什么？ <em>What Is It?</em></h3><p>用 14 句连续故事辨认文具，练习颜色判断和纠正表达。</p><button type="button" data-start-label>开始情景</button></div>
             <span class="scenario-complete-badge" data-complete-badge hidden aria-label="已完成">✓</span>
           </article>
         </div>
@@ -52,11 +42,12 @@
         <header class="learning-head">
           <button class="back-button" id="backToScenarios" type="button">返回情景选择</button>
           <div><span id="activeScenarioKicker">情景 01</span><h2 id="activeScenarioTitle">第一次见面 · First Meeting</h2></div>
-          <div class="stage-switch" aria-label="学习阶段"><button class="is-active" id="learnStage" type="button" aria-pressed="true">1 认识对话</button><button id="practiceStage" type="button" aria-pressed="false">2 情景练习</button></div>
+          <div class="stage-switch" aria-label="学习阶段"><button class="is-active" id="learnStage" type="button" aria-pressed="true">1 认识对话</button><button id="practiceStage" type="button" aria-pressed="false">2 情景练习</button><button id="wordsStage" type="button" aria-pressed="false">3 新单词 <span id="scenarioWordCount">0</span></button></div>
         </header>
 
         <section class="dialogue-panel" id="dialoguePanel">
           <div class="encounter-scene actor-stage" id="actorStage" aria-label="分步情景舞台">
+            <div class="scenario-object-focus" id="scenarioObjectFocus" hidden aria-live="polite"><img id="scenarioObjectImage" alt="" /></div>
             <img id="actorMia" class="scene-actor actor-mia" src="./assets/scenarios/mia-sprite-v1.png" alt="Mia 微笑挥手" aria-hidden="true" />
             <img id="actorLeo" class="scene-actor actor-leo" src="./assets/scenarios/leo-sprite-v1.png" alt="Leo 微笑挥手" aria-hidden="true" />
           </div>
@@ -65,21 +56,28 @@
             <p id="playbackStatus" role="status"></p>
             <div class="dialogue-card chat-bubble" id="currentBubble" aria-live="polite">
               <span class="progress-pill" id="dialogueProgress">1/6</span><strong class="speaker-name" id="dialogueSpeaker">Mia</strong>
-              <p class="dialogue-english" id="dialogueEnglish">Hello! My name is Mia.</p><p class="dialogue-phonetic" id="dialoguePhonetic">/həˈləʊ maɪ neɪm ɪz ˈmiːə/</p><p class="dialogue-chinese" id="dialogueChinese">你好！我叫米娅。</p>
+              <div class="aligned-sentence" id="dialogueAligned" aria-label="Hello! My name is Mia."></div><p id="dialogueEnglish" hidden>Hello! My name is Mia.</p><p id="dialoguePhonetic" hidden>/həˈləʊ maɪ neɪm ɪz ˈmiːə/</p><p class="dialogue-chinese" id="dialogueChinese">你好！我叫米娅。</p>
               <div class="dialogue-actions"><button id="speakDialogue" class="sound-button" type="button" aria-label="朗读当前对话"><span aria-hidden="true">🔊</span></button><button id="previousLine" type="button">Previous</button><button id="nextLine" type="button">Next</button></div>
             </div>
           </div>
         </section>
 
         <section class="practice-panel" id="practicePanel" hidden>
-          <div class="practice-question" aria-live="polite"><span class="progress-pill" id="practiceProgress">1/3</span><strong id="practiceSpeaker">Mia</strong><p id="practicePrompt">Hello! My name is Mia.</p><span id="practicePhonetic">/həˈləʊ maɪ neɪm ɪz ˈmiːə/</span><button class="sound-button" id="speakPractice" type="button" aria-label="朗读问题"><span aria-hidden="true">🔊</span></button></div>
+          <div class="practice-question" aria-live="polite"><span class="progress-pill" id="practiceProgress">1/3</span><strong id="practiceSpeaker">Mia</strong><div class="aligned-sentence" id="practiceAligned" aria-label="Hello! My name is Mia."></div><p id="practicePrompt" hidden>Hello! My name is Mia.</p><span id="practicePhonetic" hidden>/həˈləʊ maɪ neɪm ɪz ˈmiːə/</span><button class="sound-button" id="speakPractice" type="button" aria-label="朗读问题"><span aria-hidden="true">🔊</span></button></div>
           <div><h3>你会怎么回应？</h3><div class="response-options" id="responseOptions"></div><p class="practice-feedback" id="practiceFeedback" role="status">选择最合适的回应。</p></div>
         </section>
 
         <section class="practice-result" id="practiceResult" hidden><span aria-hidden="true">✓</span><h3 id="practiceResultTitle">第一次见面完成！</h3><strong id="practiceResultScore">3/3</strong><p id="practiceResultText">你已经会用英语完成一次简单的初次见面对话。</p><div><button id="restartPractice" type="button">再练一轮</button><button id="returnAfterComplete" type="button">返回情景选择</button></div></section>
+
+        <section class="scenario-words-panel" id="scenarioWordsPanel" hidden aria-labelledby="scenarioWordsTitle">
+          <h3 id="scenarioWordsTitle">当前情景 · 新单词</h3>
+          <p id="scenarioWordsIntro">这里只显示当前情景中的单词。</p>
+          <label class="word-filter"><input id="showLearnedScenarioWords" type="checkbox" /> 同时显示已学单词</label>
+          <p id="scenarioWordsStatus" role="status"></p><div id="scenarioWordCards" class="scenario-word-grid"></div>
+        </section>
       </section>
     </main>
   </div>
-  <script type="module" src="./scenario-learning.js?v=1.5"></script>
+  <script type="module" src="./scenario-learning.js?v=1.7"></script>
 </body>
 </html>

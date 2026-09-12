@@ -10,33 +10,27 @@ class MemoryStorage {
   setItem(key, value) { this.writes.push(key); this.values.set(key, String(value)); }
 }
 
-test("两个情景包含准确对话、完整英式音标和中文", () => {
+test("两个情景包含准确对话、逐词英式音标和中文", () => {
   assert.equal(SCENARIOS.length, 2);
-  assert.deepEqual(FIRST_MEETING_LINES, [
-    { id: "mia-intro", speaker: "Mia", text: "Hello! My name is Mia.", phonetic: "/həˈləʊ maɪ neɪm ɪz ˈmiːə/", chinese: "你好！我叫米娅。" },
-    { id: "leo-intro", speaker: "Leo", text: "Hi, Mia. I'm Leo.", phonetic: "/haɪ ˈmiːə aɪm ˈliːəʊ/", chinese: "嗨，米娅。我叫利奥。" },
-    { id: "mia-nice", speaker: "Mia", text: "Nice to meet you.", phonetic: "/naɪs tə miːt juː/", chinese: "很高兴认识你。" },
-    { id: "leo-nice", speaker: "Leo", text: "Nice to meet you, too.", phonetic: "/naɪs tə miːt juː tuː/", chinese: "我也很高兴认识你。" },
-    { id: "mia-how", speaker: "Mia", text: "How are you?", phonetic: "/haʊ ɑː juː/", chinese: "你好吗？" },
-    { id: "leo-fine", speaker: "Leo", text: "I'm fine, thank you.", phonetic: "/aɪm faɪn θæŋk juː/", chinese: "我很好，谢谢你。" },
-  ]);
-  assert.deepEqual(WHAT_IS_IT_LINES, [
-    { id: "classroom-look", speaker: "Mia", text: "Look, Leo. What is it?", phonetic: "/lʊk ˈliːəʊ wɒt ɪz ɪt/", chinese: "看，利奥。这是什么？" },
-    { id: "classroom-pen", speaker: "Leo", text: "It's a pen.", phonetic: "/ɪts ə pen/", chinese: "它是一支笔。" },
-    { id: "classroom-what-pencils", speaker: "Mia", text: "What are they?", phonetic: "/wɒt ɑː ðeɪ/", chinese: "它们是什么？" },
-    { id: "classroom-pencils", speaker: "Leo", text: "They're yellow pencils.", phonetic: "/ðeə ˈjeləʊ ˈpensəlz/", chinese: "它们是黄色的铅笔。" },
-    { id: "classroom-what-marker", speaker: "Mia", text: "And what is it?", phonetic: "/ænd wɒt ɪz ɪt/", chinese: "那这个是什么？" },
-    { id: "classroom-marker", speaker: "Leo", text: "It's a red marker.", phonetic: "/ɪts ə red ˈmɑːkə/", chinese: "它是一支红色的马克笔。" },
-    { id: "classroom-what-erasers", speaker: "Mia", text: "And what are they?", phonetic: "/ænd wɒt ɑː ðeɪ/", chinese: "那它们是什么？" },
-    { id: "classroom-erasers", speaker: "Leo", text: "They're green erasers.", phonetic: "/ðeə ɡriːn ɪˈreɪzəz/", chinese: "它们是绿色的橡皮。" },
+  assert.equal(FIRST_MEETING_LINES.length, 6);
+  assert.equal(WHAT_IS_IT_LINES.length, 14);
+  assert.deepEqual(WHAT_IS_IT_LINES.slice(-3).map(({ text }) => text), [
+    "They're red.",
+    "Red? No, Leo. They're green erasers.",
+    "No, look! They're red erasers.",
   ]);
   assert.ok(FIRST_MEETING_LINES.every((line) => line.phonetic.startsWith("/") && line.phonetic.endsWith("/") && line.chinese));
   assert.ok(WHAT_IS_IT_LINES.every((line) => line.phonetic.startsWith("/") && line.phonetic.endsWith("/") && line.chinese));
+  for (const item of SCENARIOS.flatMap((scenario) => scenario.lines)) {
+    assert.equal(item.tokens.map(({ text }) => text).join(" "), item.text);
+    assert.ok(item.tokens.every(({ phonetic }) => phonetic.startsWith("/") && phonetic.endsWith("/")));
+    assert.equal(item.tokens.map(({ phonetic }) => phonetic.slice(1, -1)).join(" "), item.phonetic.slice(1, -1));
+  }
 });
 
 test("两个情景的回应练习不重复，答错停留、答对推进并完成", () => {
   assert.equal(FIRST_MEETING_PRACTICE.length, 3);
-  assert.equal(WHAT_IS_IT_PRACTICE.length, 4);
+  assert.equal(WHAT_IS_IT_PRACTICE.length, 5);
   for (const scenario of SCENARIOS) {
     assert.equal(new Set(scenario.practice.map(({ id }) => id)).size, scenario.practice.length);
     const session = new ScenarioPracticeSession(scenario);
@@ -87,6 +81,8 @@ test("两个情景独立保存位置，旧版顶层进度迁移到当时活动�
   assert.equal(store.state.questionIndex, 1);
   const restored = new ScenarioStore(memory);
   assert.deepEqual(restored.progress("what-is-it"), { lineIndex: 6, stage: "practice", questionIndex: 2 });
+  store.patch({ activeScenarioId: "what-is-it", stage: "words" });
+  assert.deepEqual(store.progress("what-is-it"), { lineIndex: 6, stage: "words", questionIndex: 0 });
 });
 
 test("情景朗读只在手动调用后延迟播放并使用英式语言", async () => {
@@ -100,14 +96,14 @@ test("情景朗读只在手动调用后延迟播放并使用英式语言", async
   assert.equal(createScenarioSpeaker({}).speak("Hello!"), false);
 });
 
-test("情景页面资源、两阶段、手动声音按钮和独立导航齐全", async () => {
+test("情景页面资源、三个阶段、手动声音按钮和独立导航齐全", async () => {
   const [html, css, script] = await Promise.all([
     readFile(new URL("../scenario-learning.html", import.meta.url), "utf8"),
     readFile(new URL("../scenario-learning.css", import.meta.url), "utf8"),
     readFile(new URL("../scenario-learning.js", import.meta.url), "utf8"),
   ]);
-  assert.match(html, /scenario-learning\.css\?v=2\.0/);
-  assert.match(html, /scenario-learning\.js\?v=1\.5/);
+  assert.match(html, /scenario-learning\.css\?v=2\.1/);
+  assert.match(html, /scenario-learning\.js\?v=1\.7/);
   assert.match(script, /scenario-playback\.js\?v=1\.1/);
   assert.doesNotMatch(html, /id="playDialogue"|id="dialogueLineList"/);
   assert.match(html, /id="continuousDialogue"/);
@@ -116,9 +112,13 @@ test("情景页面资源、两阶段、手动声音按钮和独立导航齐全",
   assert.match(css, /drop-shadow\(0 0 4px #ff6500\) drop-shadow\(0 0 16px #ff9500\)/);
   assert.doesNotMatch(css, /#fff7ae|#fffbd6/);
   assert.doesNotMatch(css, /outline:4px dashed/);
-  assert.match(script, /scenarios\.js\?v=1\.1/);
+  assert.match(script, /scenarios\.js\?v=1\.2/);
   assert.match(html, /id="learnStage"/);
   assert.match(html, /id="practiceStage"/);
+  assert.match(html, /id="wordsStage"/);
+  assert.match(html, /id="scenarioObjectFocus"/);
+  assert.match(html, /id="dialogueAligned"/);
+  assert.match(html, /id="practiceAligned"/);
   assert.match(html, /id="speakDialogue"/);
   assert.match(html, /id="speakPractice"/);
   assert.match(html, /data-scenario-id="first-meeting"/);
@@ -127,7 +127,7 @@ test("情景页面资源、两阶段、手动声音按钮和独立导航齐全",
   assert.doesNotMatch(script, /mario-theme-learned-v1|mario-book1-v1|mario-hanzi-refactor-v1|mario-phonetics-v1|mario-bomb-game-progress-v1/);
 });
 
-test("情景使用内置imagegen正式PNG，无网页生成入口或API", async () => {
+test("情景使用内置imagegen正式PNG和独立文具强调图，无网页生成入口或API", async () => {
   const [png, classroomPng, html, workshop, server] = await Promise.all([
     readFile(new URL("../assets/scenarios/first-meeting-v1.png", import.meta.url)),
     readFile(new URL("../assets/scenarios/what-is-it-classroom-v1.png", import.meta.url)),
@@ -149,6 +149,12 @@ test("情景使用内置imagegen正式PNG，无网页生成入口或API", async 
     assert.equal(sprite.subarray(0, 8).toString("hex"), "89504e470d0a1a0a");
     assert.equal(sprite[25], 6, "RGBA PNG required");
     assert.ok(sprite.readUInt32BE(20) > 500);
+  }
+  for (const name of ["pen", "yellow-pencils", "red-marker", "green-erasers", "red-erasers"]) {
+    const asset = await readFile(new URL(`../assets/scenarios/focus-${name}-v1.png`, import.meta.url));
+    assert.equal(asset.subarray(0, 8).toString("hex"), "89504e470d0a1a0a");
+    assert.equal(asset[25], 6, `${name} must be RGBA PNG`);
+    assert.ok(asset.readUInt32BE(16) >= 512 && asset.readUInt32BE(20) >= 512);
   }
   assert.doesNotMatch(html, /openScenarioCreator|scenarioGenerateForm|generationStatus|class="full-kid|class="kid /);
   assert.doesNotMatch(workshop, /fetch\(|OPENAI_API_KEY|\/api\/scenarios/);

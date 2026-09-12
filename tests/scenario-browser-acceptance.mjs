@@ -94,28 +94,36 @@ assert.equal(await page.locator(".scenario-card.is-complete").count(), 1, "compl
 await page.locator('[data-scenario-id="what-is-it"] [data-start-label]').click();
 assert.equal(await page.locator("#activeScenarioTitle").textContent(), "这是什么？ · What Is It?");
 assert.equal(await page.locator("#dialogueEnglish").textContent(), "Look, Leo. What is it?");
-assert.equal(await page.locator("#dialogueProgress").textContent(), "1/8");
+assert.equal(await page.locator("#dialogueProgress").textContent(), "1/14");
+assert.equal(await page.locator("#scenarioObjectImage").getAttribute("alt"), "一支蓝色笔");
+assert.equal(await page.locator("#scenarioObjectFocus").isVisible(), true);
+assert.equal(await page.locator("#dialogueAligned .aligned-word").count(), 5);
+assert.deepEqual(await page.locator("#dialogueAligned .aligned-word").evaluateAll((words) => words.map((word) => [word.querySelector("strong").textContent, word.querySelector("small").textContent])), [
+  ["Look,", "/lʊk/"], ["Leo.", "/ˈliːəʊ/"], ["What", "/wɒt/"], ["is", "/ɪz/"], ["it?", "/ɪt/"],
+]);
 await page.locator("#nextLine").click();
 await page.locator("#nextLine").click();
-assert.equal(await page.locator("#dialogueEnglish").textContent(), "What are they?");
+assert.equal(await page.locator("#dialogueEnglish").textContent(), "Look! What are they?");
+assert.equal(await page.locator("#scenarioObjectImage").getAttribute("alt"), "三支黄色铅笔");
 await page.locator("#backToScenarios").click();
 await page.locator('[data-scenario-id="first-meeting"] [data-start-label]').click();
 assert.equal(await page.locator("#dialogueProgress").textContent(), "1/6", "completed first scenario restarts independently");
 await page.locator("#backToScenarios").click();
 await page.locator('[data-scenario-id="what-is-it"] [data-start-label]').click();
-assert.equal(await page.locator("#dialogueProgress").textContent(), "3/8", "second scenario restores its own line");
+assert.equal(await page.locator("#dialogueProgress").textContent(), "3/14", "second scenario restores its own line");
 await page.reload();
 await page.locator('[data-scenario-id="what-is-it"] [data-start-label]').click();
-assert.equal(await page.locator("#dialogueProgress").textContent(), "3/8", "second scenario line persists after refresh");
+assert.equal(await page.locator("#dialogueProgress").textContent(), "3/14", "second scenario line persists after refresh");
 await page.locator("#practiceStage").click();
-assert.equal(await page.locator("#practiceProgress").textContent(), "1/4");
-for (const answerId of ["classroom-pen", "classroom-pencils", "classroom-marker", "classroom-erasers"]) {
+assert.equal(await page.locator("#practiceProgress").textContent(), "1/5");
+assert.equal(await page.locator("#practiceAligned .aligned-word").count(), 5);
+for (const answerId of ["classroom-pen", "classroom-pencils", "classroom-marker", "classroom-erasers", "classroom-green-correction"]) {
   await page.locator(`[data-answer-id="${answerId}"]`).click();
   await page.waitForTimeout(360);
 }
 assert.equal(await page.locator("#practiceResult").isVisible(), true);
 assert.equal(await page.locator("#practiceResultTitle").textContent(), "这是什么？完成！");
-assert.equal(await page.locator("#practiceResultScore").textContent(), "4/4");
+assert.equal(await page.locator("#practiceResultScore").textContent(), "5/5");
 assert.match(await page.locator("#practiceResultText").textContent(), /文具/);
 await page.locator("#returnAfterComplete").click();
 assert.equal(await page.locator(".scenario-card.is-complete").count(), 2);
@@ -133,6 +141,7 @@ assert.equal(await noOverflow(mobile), true);
 await mobile.locator('[data-scenario-id="what-is-it"] [data-start-label]').tap();
 await mobile.locator('#nextLine').tap();
 assert.equal(await mobile.locator("#dialogueEnglish").textContent(), "It's a pen.");
+assert.equal(await mobile.locator("#scenarioObjectImage").getAttribute("alt"), "一支蓝色笔");
 await mobile.locator("#speakDialogue").tap();
 await mobile.waitForFunction(() => window.__spoken.length >= 1);
 assert.deepEqual(await mobile.evaluate(() => window.__spoken.at(-1)), { text: "It's a pen.", lang: "en-GB" });
@@ -150,7 +159,44 @@ assert.match(mobileStage.background, /what-is-it-classroom-v1\.png/);
 assert.ok(mobileStage.centerGap >= 0.35, JSON.stringify(mobileStage));
 await mobile.screenshot({ path: "tests/scenario-390.png", fullPage: true });
 
+const focusContext = await makeContext({ width: 1440, height: 1000 });
+const focusPage = await focusContext.newPage();
+watch(focusPage);
+await focusPage.goto(new URL("scenario-learning.html?test=scenario-focus-objects", baseUrl).href);
+await focusPage.locator('[data-scenario-id="what-is-it"] [data-start-label]').click();
+const focusLabels = [
+  "一支蓝色笔", "一支蓝色笔",
+  "三支黄色铅笔", "三支黄色铅笔", "三支黄色铅笔",
+  "一支红色马克笔", "一支红色马克笔", "一支红色马克笔",
+  "三块绿色橡皮", "三块绿色橡皮", "三块绿色橡皮", "三块绿色橡皮", "三块绿色橡皮",
+  "三块红色橡皮",
+];
+for (let index = 0; index < focusLabels.length; index += 1) {
+  assert.equal(await focusPage.locator("#scenarioObjectImage").getAttribute("alt"), focusLabels[index]);
+  await focusPage.locator("#scenarioObjectImage").evaluate((image) => image.decode());
+  const focusGeometry = await focusPage.locator("#scenarioObjectFocus").evaluate((focus) => {
+    const stage = document.querySelector("#actorStage").getBoundingClientRect();
+    const box = focus.getBoundingClientRect();
+    const image = focus.querySelector("img");
+    return {
+      naturalWidth: image.naturalWidth,
+      naturalHeight: image.naturalHeight,
+      white: getComputedStyle(focus).backgroundColor === "rgb(255, 255, 255)",
+      centered: Math.abs((box.left + box.width / 2) - (stage.left + stage.width / 2)) <= 2,
+      onBlackboard: box.top >= stage.top && box.bottom <= stage.top + stage.height * 0.42,
+    };
+  });
+  assert.ok(focusGeometry.naturalWidth >= 512 && focusGeometry.naturalHeight >= 512, JSON.stringify(focusGeometry));
+  assert.deepEqual({ white: focusGeometry.white, centered: focusGeometry.centered, onBlackboard: focusGeometry.onBlackboard }, { white: true, centered: true, onBlackboard: true });
+  if (index === 12 || index === 13) {
+    await focusPage.waitForTimeout(720);
+    await focusPage.screenshot({ path: `tests/scenario-focus-${index + 1}.png`, fullPage: true });
+  }
+  if (index < focusLabels.length - 1) await focusPage.locator("#nextLine").click();
+}
+await focusContext.close();
+
 assert.deepEqual(errors, []);
 assert.deepEqual(failedResponses, []);
-console.log(JSON.stringify({ ok: true, scenarios: 2, lines: 14, practiceQuestions: 7, desktopOverflow: false, mobileOverflow: false, storage: "isolated", classroomCenterClear: true }, null, 2));
+console.log(JSON.stringify({ ok: true, scenarios: 2, lines: 20, practiceQuestions: 8, desktopOverflow: false, mobileOverflow: false, storage: "isolated", classroomCenterClear: true, alignedIpa: true, focusedObjects: true }, null, 2));
 await browser.close();

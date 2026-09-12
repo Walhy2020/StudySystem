@@ -1,3 +1,5 @@
+import { buildTotalWordCatalog, buildTotalWordLibrary } from "./total-word-library.js?v=1.0";
+
 export const THEME_LEARNED_STORAGE_KEY = "mario-theme-learned-v1";
 export const THEME_LEARNED_SCHEMA_VERSION = 2;
 
@@ -309,6 +311,14 @@ function escapeHtml(value) {
 
 function renderArt(entry, className = "word-art") {
   const label = entry.word + " " + entry.chinese + " 配图";
+  if (entry.art.type === "image-url") {
+    return '<img class="' + className + ' library-source-image" src="' + escapeHtml(entry.art.src) +
+      '" alt="' + escapeHtml(entry.art.alt || label) + '" />';
+  }
+  if (entry.art.type === "meaning") {
+    return '<div class="' + className + ' meaning-word-art" role="img" aria-label="' + escapeHtml(entry.word + " 的中文释义：" + entry.chinese) + '"><strong>' +
+      escapeHtml(entry.art.label || entry.chinese) + "</strong></div>";
+  }
   if (entry.art.type === "count-units" || entry.art.type === "count-groups") {
     const visual = entry.art.type === "count-groups"
       ? '<span class="counting-visual counting-groups" data-groups="' + entry.art.groups + '" aria-hidden="true">' +
@@ -374,18 +384,22 @@ export function initializeThemeOverview({ configs, splitPhonetic, stressMarks, s
   if (typeof document === "undefined") return null;
   const catalog = buildThemeCatalog(configs);
   const store = new ThemeLearnedStore(catalog);
+  const totalCatalog = buildTotalWordCatalog(catalog);
   const dom = Object.fromEntries([...document.querySelectorAll("[id]")].map((node) => [node.id, node]));
   let reviewSession = null;
   let reviewTimer = 0;
+  let libraryByKey = new Map();
 
   function learnedEntries() {
-    return store.entries();
+    const entries = buildTotalWordLibrary(catalog, store.storage);
+    libraryByKey = new Map(entries.map((entry) => [entry.key, entry]));
+    return entries;
   }
 
   function updateCounts() {
     const count = learnedEntries().length;
     dom.totalReviewCount.textContent = count + " 个已学";
-    const total = store.uniqueCatalogEntries().length;
+    const total = totalCatalog.length;
     dom.wordLibraryCount.textContent = count + "/" + total;
     dom.librarySummary.textContent = "已收录 " + count + "/" + total + " 个单词";
     return count;
@@ -410,7 +424,7 @@ export function initializeThemeOverview({ configs, splitPhonetic, stressMarks, s
     dom.libraryGrid.innerHTML = entries.map((entry) =>
       '<article class="library-card" data-word-key="' + escapeHtml(entry.key) + '">' +
       '<div class="library-art-wrap">' + renderArt(entry, "library-word-art") + "</div>" +
-      '<div class="library-card-copy"><span class="library-theme-label">' + escapeHtml(entry.themeTitle + " " + entry.themeEnglishTitle) + "</span>" +
+      '<div class="library-card-copy"><span class="library-theme-label">' + escapeHtml(entry.sourceLabel) + "</span>" +
       '<h3>' + escapeHtml(entry.word) + "</h3>" +
       '<button class="library-phonetic" type="button" aria-expanded="false" aria-label="拆分 ' + escapeHtml(entry.word) + " 的音标 " + escapeHtml(entry.phonetic) + '">' + escapeHtml(entry.phonetic) + "</button>" +
       '<div class="library-phonemes phoneme-breakdown" hidden>' + phonemeMarkup(entry, splitPhonetic, stressMarks) + "</div>" +
@@ -430,7 +444,7 @@ export function initializeThemeOverview({ configs, splitPhonetic, stressMarks, s
     });
     dom.libraryGrid.querySelectorAll(".library-speak").forEach((button) => {
       button.addEventListener("click", () => {
-        const entry = store.byKey.get(button.closest(".library-card").dataset.wordKey);
+        const entry = libraryByKey.get(button.closest(".library-card").dataset.wordKey);
         if (entry) speakEnglish(entry.word + ". " + entry.sentence);
       });
     });
@@ -462,10 +476,10 @@ export function initializeThemeOverview({ configs, splitPhonetic, stressMarks, s
     dom.totalReviewPhonemes.innerHTML = phonemeMarkup(target, splitPhonetic, stressMarks);
     dom.totalReviewSpeak.setAttribute("aria-label", "朗读 " + target.word);
     dom.totalReviewFeedback.className = "total-review-feedback";
-    dom.totalReviewFeedback.textContent = "选择与 " + target.word + " 对应的配图。";
+    dom.totalReviewFeedback.textContent = "选择与 " + target.word + " 对应的图片或中文释义。";
     dom.totalReviewOptions.innerHTML = reviewSession.options().map((entry) =>
       '<button class="review-option" type="button" data-review-key="' + escapeHtml(entry.key) +
-      '" aria-label="选择 ' + escapeHtml(entry.chinese) + ' 的配图">' +
+      '" aria-label="选择 ' + escapeHtml(entry.chinese) + '">' +
       renderArt(entry, "review-word-art") + "</button>"
     ).join("");
     dom.totalReviewOptions.querySelectorAll(".review-option").forEach((button) => {
@@ -479,7 +493,7 @@ export function initializeThemeOverview({ configs, splitPhonetic, stressMarks, s
     if (result.status === "wrong") {
       button.classList.add("is-wrong");
       dom.totalReviewFeedback.className = "total-review-feedback is-error";
-      dom.totalReviewFeedback.textContent = "再看一看，选择 " + result.target.word + " 的正确配图。";
+      dom.totalReviewFeedback.textContent = "再看一看，选择 " + result.target.word + " 的正确图片或中文释义。";
       return;
     }
     dom.totalReviewOptions.querySelectorAll(".review-option").forEach((option) => { option.disabled = true; });
@@ -560,6 +574,7 @@ export function initializeThemeOverview({ configs, splitPhonetic, stressMarks, s
   updateCounts();
   const api = {
     catalog,
+    totalCatalog,
     store,
     get reviewSession() { return reviewSession; },
     record,

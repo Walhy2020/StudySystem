@@ -48,7 +48,7 @@ The current browser scripts reference a Codex-bundled Playwright path under the 
 - Hanzi normal review stays fixed at most 20 items per day. Do not apply the phonetics full-review rule to Hanzi.
 - Phonetics review includes every currently non-mastered IPA item on each entry, from 0 to 48. `mastered` is the only exclusion condition.
 - The overall review is a top-level module parallel to Hanzi, Theme Learning, and Phonetics. Do not move it back inside the theme page.
-- The learned-word library contains only words actually learned in theme sessions. Overall review covers all of those learned words.
+- The total word library aggregates words actually learned in Book1, Theme Learning, and Scenario Learning, deduplicated by normalized English spelling. Overall review covers all of those learned words.
 - Scenario learning is an independent top-level module. Its dialogue completion is not added to the theme learned-word library.
 - Keep the bomb game independent. Preserve native Enter/Space behavior when a link, button, form control, ARIA control, or other focusable element has focus.
 - Preserve the existing module navigation order: Hanzi, Book1, Theme Learning, Scenario Learning, Overall Review, Phonetics.
@@ -60,9 +60,9 @@ Browser progress is local to each browser profile and is not synchronized by Git
 - Hanzi writes `mario-hanzi-refactor-v1`; legacy `mario-literacy-desktop-mvp-v1` is migration input.
 - Phonetics writes `mario-phonetics-v1` only.
 - Bomb maze writes `mario-bomb-game-progress-v1` and only reads Hanzi sources needed for its learning pool.
-- Theme learning and overall review share only learned-word progress through `mario-theme-learned-v1`.
+- Theme learning writes learned-word progress through `mario-theme-learned-v1`; overall review reads it together with Book1 and Scenario Learning progress through the shared read-only total-word-library aggregator.
 - Scenario learning writes `mario-scenario-learning-v1` only.
-- Scenario new-word matching may read Book1/theme progress, but writes its `learnedWords` only to the scenario key. New scenarios are authored in conversation using imagegen; do not add a web generation form or API unless explicitly requested. Final approved artwork lives in `assets/scenarios/`. Preserve and never commit any private legacy `.local-scenarios/` directory.
+- Scenario new-word matching reads the same total word library used by overall review, but writes its `learnedWords` only to the scenario key. New scenarios are authored in conversation using imagegen; do not add a web generation form or API unless explicitly requested. Final approved artwork lives in `assets/scenarios/`. Preserve and never commit any private legacy `.local-scenarios/` directory.
 - Do not let one module reset, migrate, or overwrite another module's key.
 - Never commit browser storage exports, API keys, `.env` files, credentials, or authenticated browser state.
 

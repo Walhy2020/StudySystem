@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
-import { chromium } from "file:///C:/Users/St/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/index.mjs";
+import { homedir } from "node:os";
+import { join } from "node:path";
+import { pathToFileURL } from "node:url";
+const { chromium } = await import(pathToFileURL(join(homedir(), ".cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/index.mjs")));
 
 const baseUrl = process.env.HANZI_BASE_URL || "http://127.0.0.1:53177/";
 const browser = await chromium.launch({
@@ -100,7 +103,7 @@ async function assertLibrary(page, expectedCount, expectedSources = [
 ]) {
   assert.equal(await page.locator(".library-card").count(), expectedCount);
   const result = await page.evaluate(async () => {
-    const catalog = new Map(window.__THEME_OVERVIEW__.catalog.map((entry) => [entry.key, entry]));
+    const catalog = new Map(window.__THEME_OVERVIEW__.totalCatalog.map((entry) => [entry.key, entry]));
     const cards = [...document.querySelectorAll(".library-card")].map((card) => {
       const entry = catalog.get(card.dataset.wordKey);
       const art = card.querySelector(".library-word-art");
@@ -143,7 +146,7 @@ async function assertLibrary(page, expectedCount, expectedSources = [
   assert.equal(new Set(result.cards.map(({ key }) => key)).size, expectedCount);
   for (const card of result.cards) {
     assert.equal(card.visible, true, card.key);
-    const entry = await page.evaluate((key) => window.__THEME_OVERVIEW__.catalog.find((item) => item.key === key), card.key);
+    const entry = await page.evaluate((key) => window.__THEME_OVERVIEW__.totalCatalog.find((item) => item.key === key), card.key);
     assert.equal(card.word, entry.word);
     assert.equal(card.phonetic, entry.phonetic);
     assert.equal(card.chinese, entry.chinese);
@@ -217,7 +220,7 @@ await page.goto(new URL("review-learning.html", baseUrl).href);
 await assertNoOverflow(page);
 assert.deepEqual(await page.locator(".theme-nav .nav-link").allTextContents().then((items) => items.map((item) => item.trim())), ["汉字", "Book1", "主题学习", "情景模式", "总复习", "音标"]);
 assert.equal((await page.locator("#totalReviewCount").textContent()).trim(), "0 个已学");
-assert.equal((await page.locator("#wordLibraryCount").textContent()).trim(), "0/81");
+assert.equal((await page.locator("#wordLibraryCount").textContent()).trim(), "0/208");
 assert.equal(await page.locator("#totalReviewEmpty").isVisible(), true);
 
 await page.click("#openWordLibrary");
@@ -248,7 +251,7 @@ await page.click("#backToThemes");
 await page.locator('.theme-nav a[href="./review-learning.html"]').click();
 await page.waitForURL(/review-learning\.html/);
 assert.equal((await page.locator("#totalReviewCount").textContent()).trim(), "6 个已学");
-assert.equal((await page.locator("#wordLibraryCount").textContent()).trim(), "6/81");
+assert.equal((await page.locator("#wordLibraryCount").textContent()).trim(), "6/208");
 await page.click("#openWordLibrary");
 assert.equal(await page.locator(".library-card").count(), 6);
 
@@ -258,7 +261,7 @@ await completeTheme(page, "ordinals", 16);
 await page.locator('.theme-nav a[href="./review-learning.html"]').click();
 await page.waitForURL(/review-learning\.html/);
 assert.equal((await page.locator("#totalReviewCount").textContent()).trim(), "16 个已学");
-assert.equal((await page.locator("#wordLibraryCount").textContent()).trim(), "16/81");
+assert.equal((await page.locator("#wordLibraryCount").textContent()).trim(), "16/208");
 
 await page.locator('.theme-nav a[href="./theme-learning.html"]').click();
 await page.waitForURL(/theme-learning\.html/);
@@ -271,7 +274,7 @@ assert.equal(themeStorageMutations.filter(({ key }) => key === learnedKey).lengt
 await page.locator('.theme-nav a[href="./review-learning.html"]').click();
 await page.waitForURL(/review-learning\.html/);
 assert.equal((await page.locator("#totalReviewCount").textContent()).trim(), "81 个已学");
-assert.equal((await page.locator("#wordLibraryCount").textContent()).trim(), "81/81");
+assert.equal((await page.locator("#wordLibraryCount").textContent()).trim(), "81/208");
 saved = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), learnedKey);
 assert.equal(saved.version, 2);
 assert.equal(saved.learned.length, 83);
@@ -298,7 +301,7 @@ assert.equal(await page.evaluate(() => window.__spoken.length), spokenBefore + 1
 await page.screenshot({ path: "tests/theme-library-desktop.png", fullPage: true });
 
 await page.reload();
-assert.equal((await page.locator("#wordLibraryCount").textContent()).trim(), "81/81");
+assert.equal((await page.locator("#wordLibraryCount").textContent()).trim(), "81/208");
 await page.click("#openWordLibrary");
 await page.click("#startLibraryReview");
 assert.equal(await page.locator("#totalReviewPanel").isVisible(), true);
@@ -376,12 +379,44 @@ await itemCropPage.goto(new URL("review-learning.html", baseUrl).href);
 await itemCropPage.evaluate(() => window.__THEME_OVERVIEW__.recordTheme("items1"));
 await itemCropPage.click("#openWordLibrary");
 await assertLibrary(itemCropPage, 6, ["./assets/themes/items/classic-items-1-scene-v1.png"]);
-assert.match((await itemCropPage.locator('[data-word-key="items1:star"] .library-theme-label').textContent()).trim(), /经典道具 I/);
-await itemCropPage.locator('[data-word-key="items1:star"]').screenshot({ path: "tests/theme-library-star-desktop.png" });
+assert.match((await itemCropPage.locator('[data-word-key="total:star"] .library-theme-label').textContent()).trim(), /经典道具 I/);
+await itemCropPage.locator('[data-word-key="total:star"]').screenshot({ path: "tests/theme-library-star-desktop.png" });
 await itemCropPage.setViewportSize({ width: 390, height: 844 });
 await assertNoOverflow(itemCropPage);
-await itemCropPage.locator('[data-word-key="items1:star"]').screenshot({ path: "tests/theme-library-star-390.png" });
+await itemCropPage.locator('[data-word-key="total:star"]').screenshot({ path: "tests/theme-library-star-390.png" });
 await itemCropContext.close();
+
+const combinedContext = await prepareContext({ viewport: { width: 1440, height: 1000 } });
+const combinedPage = await combinedContext.newPage();
+watchPage(combinedPage);
+await combinedPage.goto(new URL("review-learning.html", baseUrl).href);
+await combinedPage.evaluate(() => {
+  localStorage.clear();
+  localStorage.setItem("mario-theme-learned-v1", JSON.stringify({ version: 2, learned: ["body:head", "colors:red"] }));
+  localStorage.setItem("mario-book1-v1", JSON.stringify({ learnedIds: ["opw1:word-apple"], masteredIds: ["opw1:word-pen"] }));
+  localStorage.setItem("mario-scenario-learning-v1", JSON.stringify({ learnedWords: ["look", "pen", "red"] }));
+});
+await combinedPage.reload();
+assert.equal((await combinedPage.locator("#totalReviewCount").textContent()).trim(), "5 个已学");
+assert.equal((await combinedPage.locator("#wordLibraryCount").textContent()).trim(), "5/208");
+await combinedPage.click("#openWordLibrary");
+assert.equal(await combinedPage.locator(".library-card").count(), 5);
+assert.match(await combinedPage.locator('[data-word-key="total:pen"] .library-theme-label').textContent(), /Book1.*情景模式/);
+assert.match(await combinedPage.locator('[data-word-key="total:red"] .library-theme-label').textContent(), /主题学习.*情景模式/);
+assert.equal(await combinedPage.locator('[data-word-key="total:look"] .meaning-word-art').count(), 1);
+const appleImage = combinedPage.locator('[data-word-key="total:apple"] .library-source-image');
+await appleImage.evaluate((image) => image.decode());
+assert.ok(await appleImage.evaluate((image) => image.naturalWidth > 0 && image.naturalHeight > 0));
+await combinedPage.screenshot({ path: "tests/total-word-library-desktop.png", fullPage: true });
+await combinedPage.click("#openTotalReview");
+assert.equal(await combinedPage.evaluate(() => window.__THEME_OVERVIEW__.reviewSession.questions.length), 5);
+assert.equal(await combinedPage.locator(".review-option").count(), 4);
+await combinedPage.setViewportSize({ width: 390, height: 844 });
+await assertNoOverflow(combinedPage);
+await combinedPage.click("#openWordLibrary");
+await combinedPage.screenshot({ path: "tests/total-word-library-390.png", fullPage: true });
+assert.deepEqual(await combinedPage.evaluate(() => window.__storageMutations), []);
+await combinedContext.close();
 
 assert.deepEqual(pageErrors, []);
 assert.deepEqual(failedResponses, []);
@@ -392,6 +427,7 @@ console.log(JSON.stringify({
   libraryCards: { desktop: 81, mobile390: 81 },
   review: { questions: 81, unique: 81, choicesPerQuestion: 4, wrongRetry: true, restart: true },
   artwork: { mappedThemeRecords: 83, uniqueLibraryWords: 81, songWordCards: 8, imageCrops: 35, croppedToViewBox: true, ordinalCards: 10, countUnits: 19, countGroups: 9, assetsHttp200: 6 },
+  unifiedLibrary: { catalogWords: 208, learnedFromBookThemeScenario: 5, deduplicated: true },
   persistence: { key: learnedKey, schema: 2, themeCompletionWrites: 11, refreshRestored: true, protectedKeysUnchanged: protectedKeys },
   overflow: { desktop: false, mobile390: false },
   screenshots: [

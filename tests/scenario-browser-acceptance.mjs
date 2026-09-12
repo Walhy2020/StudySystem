@@ -145,6 +145,11 @@ assert.equal(await mobile.locator("#scenarioObjectImage").getAttribute("alt"), "
 await mobile.locator("#speakDialogue").tap();
 await mobile.waitForFunction(() => window.__spoken.length >= 1);
 assert.deepEqual(await mobile.evaluate(() => window.__spoken.at(-1)), { text: "It's a pen.", lang: "en-GB" });
+const mobileObjectBreathing = await mobile.locator("#scenarioObjectFocus").evaluate((focus) => {
+  const style = getComputedStyle(focus);
+  return { animation: style.animationName, duration: style.animationDuration, iterations: style.animationIterationCount };
+});
+assert.deepEqual(mobileObjectBreathing, { animation: "object-focus-breathe", duration: "1s", iterations: "3" });
 assert.equal(await noOverflow(mobile), true);
 const mobileStage = await mobile.locator("#actorStage").evaluate((stage) => {
   const stageBox = stage.getBoundingClientRect();
@@ -164,6 +169,24 @@ const focusPage = await focusContext.newPage();
 watch(focusPage);
 await focusPage.goto(new URL("scenario-learning.html?test=scenario-focus-objects", baseUrl).href);
 await focusPage.locator('[data-scenario-id="what-is-it"] [data-start-label]').click();
+await focusPage.locator("#speakDialogue").click();
+await focusPage.waitForFunction(() => document.querySelector("#scenarioObjectFocus").classList.contains("is-breathing"));
+const objectBreathing = await focusPage.locator("#scenarioObjectFocus").evaluate((focus) => {
+  const animation = focus.getAnimations().find((item) => item.animationName === "object-focus-breathe");
+  animation.pause();
+  animation.currentTime = 0;
+  const smallWidth = focus.getBoundingClientRect().width;
+  animation.currentTime = 500;
+  const largeWidth = focus.getBoundingClientRect().width;
+  const style = getComputedStyle(focus);
+  const result = { smallWidth, largeWidth, duration: style.animationDuration, iterations: style.animationIterationCount, easing: style.animationTimingFunction };
+  animation.play();
+  return result;
+});
+assert.equal(objectBreathing.duration, "1s");
+assert.equal(objectBreathing.iterations, "3");
+assert.equal(objectBreathing.easing, "ease-in-out");
+assert.ok(objectBreathing.largeWidth > objectBreathing.smallWidth * 1.1, JSON.stringify(objectBreathing));
 const focusLabels = [
   "一支蓝色笔", "一支蓝色笔",
   "三支黄色铅笔", "三支黄色铅笔", "三支黄色铅笔",
@@ -198,5 +221,5 @@ await focusContext.close();
 
 assert.deepEqual(errors, []);
 assert.deepEqual(failedResponses, []);
-console.log(JSON.stringify({ ok: true, scenarios: 2, lines: 20, practiceQuestions: 8, desktopOverflow: false, mobileOverflow: false, storage: "isolated", classroomCenterClear: true, alignedIpa: true, focusedObjects: true }, null, 2));
+console.log(JSON.stringify({ ok: true, scenarios: 2, lines: 20, practiceQuestions: 8, desktopOverflow: false, mobileOverflow: false, storage: "isolated", classroomCenterClear: true, alignedIpa: true, focusedObjects: true, focusedObjectBreathing: "3 cycles" }, null, 2));
 await browser.close();

@@ -238,7 +238,7 @@ function initializePage() {
       }
     },
   });
-  function stopPlayback() { playback.stop(); playbackPhase = "manual"; dom.pauseDialogue.hidden = true; dom.pauseDialogue.setAttribute("aria-pressed", "false"); dom.actorStage.classList.remove("is-speaking"); dom.currentBubble.classList.remove("is-arriving"); dom.playbackStatus.textContent = ""; }
+  function stopPlayback() { playback.stop(); playbackPhase = "manual"; dom.pauseDialogue.hidden = true; dom.pauseDialogue.setAttribute("aria-pressed", "false"); dom.actorStage.classList.remove("is-speaking"); dom.scenarioObjectFocus.classList.remove("is-breathing"); dom.currentBubble.classList.remove("is-arriving"); dom.playbackStatus.textContent = ""; }
   function playLine(index, continuous = false) {
     stopPlayback();
     continuousMode = continuous;
@@ -275,10 +275,15 @@ function initializePage() {
     dom.actorStage.dataset.scenarioId = scenario.id;
     const focusObject = line.focusObject && scenario.focusObjects?.[line.focusObject];
     dom.scenarioObjectFocus.hidden = !focusObject;
+    if (!focusObject || playbackPhase !== "finished") dom.scenarioObjectFocus.classList.remove("is-breathing");
     if (focusObject) {
       dom.scenarioObjectImage.src = focusObject.image;
       dom.scenarioObjectImage.alt = focusObject.label;
       dom.scenarioObjectFocus.setAttribute("aria-label", `重点物品：${focusObject.label}`);
+      if (playbackPhase === "speaking") {
+        void dom.scenarioObjectFocus.offsetWidth;
+        dom.scenarioObjectFocus.classList.add("is-breathing");
+      }
     } else {
       dom.scenarioObjectImage.removeAttribute("src");
       dom.scenarioObjectImage.alt = "";

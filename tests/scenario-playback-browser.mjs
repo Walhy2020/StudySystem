@@ -34,14 +34,14 @@ try {
       assert.equal(await page.locator("#dialogueProgress").textContent(),(index+1)+"/6");
       assert.equal(await page.locator(".chat-bubble:visible").count(),1);
       assert.equal(await page.locator(".dialogue-line-button, #dialogueLineList").count(),0);
-      const effects=await page.locator(".actor-focus-ring").evaluateAll(rings=>rings.map(el=>{
+      const effects=await page.locator(".scene-actor").evaluateAll(actors=>actors.map(el=>{
         const s=getComputedStyle(el);
-        return {id:el.id,border:s.borderTopStyle,borderWidth:s.borderTopWidth,animation:s.animationName,duration:s.animationDuration,iterations:s.animationIterationCount,easing:s.animationTimingFunction,opacity:s.opacity};
+        return {id:el.id,outline:s.outlineStyle,animation:s.animationName,duration:s.animationDuration,iterations:s.animationIterationCount,easing:s.animationTimingFunction,filter:s.filter};
       }));
-      const breathing=effects.filter(x=>x.animation==="actor-dash-breathe");
-      assert.deepEqual(breathing.map(x=>x.id),speaking?[index%2?"leoFocusRing":"miaFocusRing"]:[]);
-      if(speaking){assert.equal(breathing[0].border,"dashed");assert.equal(breathing[0].borderWidth,"4px");assert.equal(breathing[0].duration,"1s");assert.equal(breathing[0].iterations,"3");assert.equal(breathing[0].easing,"ease-in-out");}
-      else assert.ok(effects.every(x=>x.opacity==="0"));
+      assert.ok(effects.every(x=>x.outline!=="dashed"));
+      const glowing=effects.filter(x=>x.animation==="actor-glow");
+      assert.deepEqual(glowing.map(x=>x.id),speaking?[index%2?"actorLeo":"actorMia"]:[]);
+      if(speaking){assert.equal(glowing[0].duration,"1s");assert.equal(glowing[0].iterations,"3");assert.equal(glowing[0].easing,"ease-in-out");assert.equal((glowing[0].filter.match(/drop-shadow/g)||[]).length,2);}
     }
     assert.equal(await present("actorMia"),true);assert.equal(await present("actorLeo"),false);
     assert.equal(await count(),0);
@@ -75,26 +75,26 @@ try {
         })};
     });
     assert.deepEqual(geometry,{ipaBelow:true,noOverflow:true,fits:true});
-    const pulse=await page.locator("#leoFocusRing").evaluate(el=>{
-      const animation=el.getAnimations().find(a=>a.animationName==="actor-dash-breathe");
+    const pulse=await page.locator("#actorLeo").evaluate(el=>{
+      const animation=el.getAnimations().find(a=>a.animationName==="actor-glow");
       animation.pause();animation.currentTime=0;
-      const low={opacity:getComputedStyle(el).opacity,transform:getComputedStyle(el).transform,color:getComputedStyle(el).borderTopColor};
+      const low=getComputedStyle(el).filter;
       animation.currentTime=500;
-      const high={opacity:getComputedStyle(el).opacity,transform:getComputedStyle(el).transform,color:getComputedStyle(el).borderTopColor};
-      return {low,high};
+      const high=getComputedStyle(el).filter;
+      return {low,high,opacity:getComputedStyle(el).opacity};
     });
-    assert.notDeepEqual(pulse.low,pulse.high,"dashed ring smoothly changes size and strength");
-    assert.equal(pulse.low.color,"rgb(255, 154, 31)");
-    assert.equal(pulse.high.color,"rgb(255, 101, 0)");
-    assert.equal(await page.locator("#actorLeo").evaluate(el=>getComputedStyle(el).opacity),"1","only the dashed ring pulses, not the character");
+    assert.notEqual(pulse.low,pulse.high,"halo smoothly changes strength");
+    assert.ok(pulse.low.includes("rgb(255, 138, 0)"), pulse.low);
+    assert.ok(pulse.high.includes("rgb(255, 101, 0)") && pulse.high.includes("rgb(255, 149, 0)"), pulse.high);
+    assert.equal(pulse.opacity,"1","only the halo pulses, not the character");
     await page.screenshot({path:"tests/scenario-playback-"+width+".png",fullPage:true});
-    await page.locator("#leoFocusRing").evaluate(el=>el.getAnimations().forEach(a=>a.play()));
-    await page.waitForFunction(()=>document.querySelector("#leoFocusRing").getAnimations().every(a=>a.playState==="finished"));
-    const settled=await page.locator("#leoFocusRing").evaluate(el=>({opacity:getComputedStyle(el).opacity,transform:getComputedStyle(el).transform,color:getComputedStyle(el).borderTopColor}));
-    assert.deepEqual(settled,{opacity:"0.78",transform:"matrix(1, 0, 0, 1, 0, 0)",color:"rgb(255, 138, 0)"},"after three cycles the dashed ring stays steady");
+    await page.locator("#actorLeo").evaluate(el=>el.getAnimations().forEach(a=>a.play()));
+    await page.waitForFunction(()=>document.querySelector("#actorLeo").getAnimations().every(a=>a.playState==="finished"));
+    const settled=await page.locator("#actorLeo").evaluate(el=>getComputedStyle(el).filter);
+    assert.equal(settled,pulse.low,"after three cycles the halo stays steady");
     await page.waitForTimeout(600);
-    assert.deepEqual(await page.locator("#leoFocusRing").evaluate(el=>({opacity:getComputedStyle(el).opacity,transform:getComputedStyle(el).transform,color:getComputedStyle(el).borderTopColor})),settled,"no fourth cycle");
-    assert.equal(await count(),4,"dashed-ring ending must not advance dialogue");
+    assert.equal(await page.locator("#actorLeo").evaluate(el=>getComputedStyle(el).filter),settled,"no fourth cycle");
+    assert.equal(await count(),4,"halo ending must not advance dialogue");
     await page.locator("#pauseDialogue").click();await finish();
     await page.waitForTimeout(500);await single(1,false);
     assert.equal(await count(),4);
@@ -118,7 +118,7 @@ try {
     await page.locator("#wordsStage").click();await finish();
     const exited=await count();await page.waitForTimeout(500);assert.equal(await count(),exited);
     assert.ok((await page.evaluate(()=>window.__writes)).every(k=>k==="mario-scenario-learning-v1:test:playback-"+width));
-    results.push({width,manualReplay:true,manualNext:true,continuousFromStart:true,singleBubble:true,dashedBreathingRing:true,ipaBelow:true,noOverflow:true,storageIsolated:true});
+    results.push({width,manualReplay:true,manualNext:true,continuousFromStart:true,singleBubble:true,brightBreathingGlow:true,ipaBelow:true,noOverflow:true,storageIsolated:true});
     await context.close();
   }
   const fallback=await browser.newContext({viewport:{width:390,height:960},reducedMotion:"reduce"});
@@ -136,13 +136,12 @@ try {
     Object.defineProperty(window,"speechSynthesis",{value:{cancel(){},speak(){}}});
   });
   const quiet=await reduced.newPage();
-  await quiet.goto(new URL("scenario-learning.html?test=dashed-ring-reduced",base).href);
+  await quiet.goto(new URL("scenario-learning.html?test=glow-reduced",base).href);
   await quiet.locator('[data-scenario-id="first-meeting"] [data-start-label]').click();await quiet.locator("#replayDialogue").click();
   await quiet.waitForFunction(()=>document.querySelector("#actorStage").classList.contains("is-speaking"));
-  const steady=await quiet.locator("#miaFocusRing").evaluate(el=>({animation:getComputedStyle(el).animationName,border:getComputedStyle(el).borderTopStyle,opacity:getComputedStyle(el).opacity}));
+  const steady=await quiet.locator("#actorMia").evaluate(el=>({animation:getComputedStyle(el).animationName,filter:getComputedStyle(el).filter}));
   assert.equal(steady.animation,"none");
-  assert.equal(steady.border,"dashed");
-  assert.equal(steady.opacity,"0.78");
+  assert.equal((steady.filter.match(/drop-shadow/g)||[]).length,2);
   await reduced.close();
   assert.deepEqual(errors,[]);
   console.log(JSON.stringify({ok:true,surface:"Microsoft Edge",results},null,2));

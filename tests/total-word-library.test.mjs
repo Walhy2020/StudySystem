@@ -19,11 +19,12 @@ const themeCatalog = buildThemeCatalog(THEME_CONFIGS);
 
 test("总单词目录合并 Book1、主题和情景并按英文去重", () => {
   const catalog = buildTotalWordCatalog(themeCatalog);
-  assert.equal(catalog.length, 208);
-  assert.equal(new Set(catalog.map(({ word }) => word)).size, 208);
+  assert.equal(catalog.length, 215);
+  assert.equal(new Set(catalog.map(({ word }) => word)).size, 215);
   assert.equal(catalog.some(({ word }) => word === "apple"), true);
   assert.equal(catalog.some(({ word }) => word === "head"), true);
   assert.equal(catalog.some(({ word }) => word === "look"), true);
+  assert.equal(catalog.some(({ word }) => word === "schoolbag"), true);
 });
 
 test("总单词库只汇总三个模块实际学过的词并保留来源", () => {

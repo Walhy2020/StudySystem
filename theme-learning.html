@@ -2,7 +2,7 @@
 <html lang="zh-CN"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="Cache-Control" content="no-cache,no-store,must-revalidate"><link rel="icon" href="data:,">
-<title>马里奥学习系统 · 主题学习</title><link rel="stylesheet" href="./theme-learning.css?v=3.3">
+<title>马里奥学习系统 · 主题学习</title><link rel="stylesheet" href="./theme-learning.css?v=3.4">
 </head><body><div class="theme-shell">
 <header class="theme-topbar"><div class="theme-brand"><span class="eyebrow">马里奥学习系统</span><h1>主题学习</h1></div>
 <nav class="theme-nav" aria-label="学习模块"><a class="nav-link" href="./index.html">汉字</a><a class="nav-link" href="./book-learning.html">Book1</a><span class="nav-link is-active" aria-current="page">主题学习</span><a class="nav-link" href="./scenario-learning.html">情景模式</a><a class="nav-link" href="./review-learning.html">总复习</a><a class="nav-link" href="./phonetics.html">音标</a></nav></header>
@@ -14,6 +14,7 @@
 
 <button class="theme-series-cell songs-series-cell" type="button" data-series-id="songs" aria-label="英文童谣，1个主题"><span class="series-preview songs-series-preview" aria-hidden="true"><i class="song-preview-moon"></i><b>★</b><i></i><i></i><i></i><i></i><i></i></span><span class="series-cell-copy"><small>1 个主题</small><strong>英文童谣</strong><em>Nursery Rhymes</em><span data-series-progress>0/1 已复习</span></span><span class="series-arrow" aria-hidden="true">›</span></button>
 <button class="theme-series-cell items-series-cell" type="button" data-series-id="items" aria-label="经典道具，4个主题"><span class="series-preview items-series-preview" aria-hidden="true"><img src="./assets/themes/items/classic-items-1-scene-v1.png" alt=""></span><span class="series-cell-copy"><small>4 个主题</small><strong>经典道具</strong><em>Classic Items I–IV</em><span data-series-progress>0/4 已复习</span></span><span class="series-arrow" aria-hidden="true">›</span></button>
+<button class="theme-series-cell classroom-series-cell" type="button" data-series-id="classroom" aria-label="教室用品，1个主题"><span class="series-preview classroom-series-preview" aria-hidden="true"><img src="./assets/themes/classroom/classroom-things-scene-v1.png" alt=""></span><span class="series-cell-copy"><small>1 个主题</small><strong>教室用品</strong><em>Classroom Things</em><span data-series-progress>0/1 已复习</span></span><span class="series-arrow" aria-hidden="true">›</span></button>
 </div>
 <section class="theme-series-panel" id="themeSeriesPanel" aria-labelledby="seriesTitle" hidden>
 <div class="series-panel-heading"><button class="back-series" id="backToSeries" type="button">返回主题系列</button><div><span class="section-kicker">选择一个小主题</span><h2 id="seriesTitle">基础认知</h2><p id="seriesDescription">认识身体部位和常见颜色。</p></div></div>
@@ -41,6 +42,8 @@
 <div class="theme-card-copy"><span class="theme-number">主题 09</span><h3>经典道具 III <em>Classic Items III</em></h3><p>认识香蕉、龟壳、炸弹、闪电、喇叭和墨水。</p><button class="primary-action" id="startItems3" data-theme-id="items3" type="button">开始主题</button></div></article>
 <article class="theme-card items-card items4-card" data-series="items"><div class="theme-card-art items-card-art" aria-hidden="true"><img src="./assets/themes/items/classic-items-4-scene-v1.png" alt=""><strong>ITEMS IV</strong></div>
 <div class="theme-card-copy"><span class="theme-number">主题 10</span><h3>经典道具 IV <em>Classic Items IV</em></h3><p>认识帽子、套装、锤子、回旋镖、弹簧和蛋。</p><button class="primary-action" id="startItems4" data-theme-id="items4" type="button">开始主题</button></div></article>
+<article class="theme-card items-card classroom-card" data-series="classroom"><div class="theme-card-art items-card-art classroom-card-art" aria-hidden="true"><img src="./assets/themes/classroom/classroom-things-scene-v1.png" alt=""><strong>CLASSROOM</strong></div>
+<div class="theme-card-copy"><span class="theme-number">主题 12</span><h3>教室用品 <em>Classroom Things</em></h3><p>认识铅笔、钢笔、橡皮、尺子、书、书包、桌子和椅子。</p><button class="primary-action" id="startClassroom" data-theme-id="classroom" type="button">开始主题</button></div></article>
 </div></section></section>
 <section class="learning-view" id="learningView" hidden aria-labelledby="stageTitle">
 <div class="learning-head"><div class="learning-heading"><button class="back-themes" id="backToThemes" type="button">← 返回主题选择</button><span class="section-kicker" id="activeThemeKicker">身体 Body</span><h2 id="stageTitle">第一部分 · 认识单词</h2></div>
@@ -129,6 +132,18 @@
 <g class="scene-target item-target" data-target="spring" tabindex="0" role="button" aria-label="spring 弹簧"><rect class="item-hitbox" x="535" y="500" width="465" height="450" rx="110"/><rect class="target-outline" x="535" y="500" width="465" height="450" rx="110"/></g>
 <g class="scene-target item-target" data-target="egg" tabindex="0" role="button" aria-label="egg 蛋"><rect class="item-hitbox" x="1025" y="490" width="455" height="465" rx="115"/><rect class="target-outline" x="1025" y="490" width="455" height="465" rx="115"/></g>
 </svg><p class="scene-note">点击帽子、套装、锤子、回旋镖、弹簧或蛋，认识经典道具第四系列。</p></div>
+<div class="theme-scene" id="classroomScene" data-theme="classroom" hidden>
+<svg class="scene-figure items-figure classroom-figure" id="classroomFigure" viewBox="0 0 1536 1024" role="group" aria-label="可互动的教室用品场景">
+<image class="item-scene-image" href="./assets/themes/classroom/classroom-things-scene-v1.png" x="0" y="0" width="1536" height="1024" preserveAspectRatio="xMidYMid meet" pointer-events="none"/>
+<g class="scene-target item-target" data-target="pencil" tabindex="0" role="button" aria-label="pencil 铅笔"><rect class="item-hitbox" x="70" y="100" width="350" height="380" rx="50"/><rect class="target-outline" x="70" y="100" width="350" height="380" rx="50"/></g>
+<g class="scene-target item-target" data-target="pen" tabindex="0" role="button" aria-label="pen 钢笔"><rect class="item-hitbox" x="430" y="100" width="330" height="380" rx="50"/><rect class="target-outline" x="430" y="100" width="330" height="380" rx="50"/></g>
+<g class="scene-target item-target" data-target="eraser" tabindex="0" role="button" aria-label="eraser 橡皮"><rect class="item-hitbox" x="780" y="100" width="330" height="380" rx="50"/><rect class="target-outline" x="780" y="100" width="330" height="380" rx="50"/></g>
+<g class="scene-target item-target" data-target="ruler" tabindex="0" role="button" aria-label="ruler 尺子"><rect class="item-hitbox" x="1125" y="100" width="335" height="380" rx="50"/><rect class="target-outline" x="1125" y="100" width="335" height="380" rx="50"/></g>
+<g class="scene-target item-target" data-target="book" tabindex="0" role="button" aria-label="book 书"><rect class="item-hitbox" x="70" y="490" width="350" height="395" rx="50"/><rect class="target-outline" x="70" y="490" width="350" height="395" rx="50"/></g>
+<g class="scene-target item-target" data-target="schoolbag" tabindex="0" role="button" aria-label="schoolbag 书包"><rect class="item-hitbox" x="430" y="490" width="330" height="395" rx="50"/><rect class="target-outline" x="430" y="490" width="330" height="395" rx="50"/></g>
+<g class="scene-target item-target" data-target="table" tabindex="0" role="button" aria-label="table 桌子"><rect class="item-hitbox" x="780" y="490" width="330" height="395" rx="50"/><rect class="target-outline" x="780" y="490" width="330" height="395" rx="50"/></g>
+<g class="scene-target item-target" data-target="chair" tabindex="0" role="button" aria-label="chair 椅子"><rect class="item-hitbox" x="1125" y="490" width="335" height="395" rx="50"/><rect class="target-outline" x="1125" y="490" width="335" height="395" rx="50"/></g>
+</svg><p class="scene-note">点击铅笔、钢笔、橡皮、尺子、书、书包、桌子或椅子，认识八个常见教室用品。</p></div>
 
 <div class="theme-scene song-scene" id="twinkleScene" data-theme="twinkle" hidden>
 <div class="song-night" role="group" aria-label="可互动的一闪一闪小星星夜空场景">
@@ -159,4 +174,4 @@
 <section class="info-panel result-panel" id="resultPanel" hidden><span class="result-star" aria-hidden="true">★</span><span class="card-label">ROUND COMPLETE</span><h3 id="resultTitle">六个目标全部找对！</h3><p id="resultText">你完成了听音点击练习。</p><strong id="resultScore">6/6</strong><button class="primary-action" id="restartRound" type="button">再来一轮</button></section>
 </div><p class="tts-notice" id="ttsNotice" role="status" hidden>当前浏览器无法朗读，但仍可继续点击学习。</p>
 </section>
-</main></div><script type="module" src="./theme-learning.js?v=2.8"></script></body></html>
+</main></div><script type="module" src="./theme-learning.js?v=2.9"></script></body></html>

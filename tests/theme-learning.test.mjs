@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import {
   BodyThemeSession,
+  CLASSROOM_WORDS,
   CLASSIC_ITEMS_1_WORDS,
   CLASSIC_ITEMS_2_WORDS,
   CLASSIC_ITEMS_3_WORDS,
@@ -145,6 +146,19 @@ test("经典道具 IV 六词数据逐项准确", () => {
   ]);
 });
 
+test("教室用品八词数据逐项准确", () => {
+  assert.deepEqual(CLASSROOM_WORDS, [
+    { id: "pencil", word: "pencil", phonetic: "/ˈpensəl/", chinese: "铅笔", sentence: "This is a pencil.", instruction: "Touch the pencil.", ariaLabel: "pencil 铅笔" },
+    { id: "pen", word: "pen", phonetic: "/pen/", chinese: "钢笔", sentence: "This is a pen.", instruction: "Touch the pen.", ariaLabel: "pen 钢笔" },
+    { id: "eraser", word: "eraser", phonetic: "/ɪˈreɪzə/", chinese: "橡皮", sentence: "This is an eraser.", instruction: "Touch the eraser.", ariaLabel: "eraser 橡皮" },
+    { id: "ruler", word: "ruler", phonetic: "/ˈruːlə/", chinese: "尺子", sentence: "This is a ruler.", instruction: "Touch the ruler.", ariaLabel: "ruler 尺子" },
+    { id: "book", word: "book", phonetic: "/bʊk/", chinese: "书", sentence: "This is a book.", instruction: "Touch the book.", ariaLabel: "book 书" },
+    { id: "schoolbag", word: "schoolbag", phonetic: "/ˈskuːlbæɡ/", chinese: "书包", sentence: "This is a schoolbag.", instruction: "Touch the schoolbag.", ariaLabel: "schoolbag 书包" },
+    { id: "table", word: "table", phonetic: "/ˈteɪbəl/", chinese: "桌子", sentence: "This is a table.", instruction: "Touch the table.", ariaLabel: "table 桌子" },
+    { id: "chair", word: "chair", phonetic: "/tʃeə/", chinese: "椅子", sentence: "This is a chair.", instruction: "Touch the chair.", ariaLabel: "chair 椅子" }
+  ]);
+});
+
 test("一闪一闪小星星八词与六行歌词音标逐项准确", () => {
   assert.deepEqual(TWINKLE_WORDS.map(({ word, phonetic, chinese }) => [word, phonetic, chinese]), [
     ["twinkle", "/ˈtwɪŋkəl/", "闪烁"], ["little", "/ˈlɪtəl/", "小的"],
@@ -182,7 +196,7 @@ test("第1到第10主题十个序数词的英音中和例句逐项准确", () =>
   assert.equal(new Set(ORDINAL_WORDS.map(({ word }) => word)).size, 10);
 });
 
-test("十一个主题的83个主题词音标按48音标口径准确拆解", () => {
+test("十二个主题的91个主题词音标按48音标口径准确拆解", () => {
   const expected = {
     head: ["h", "e", "d"], hand: ["h", "æ", "n", "d"], arm: ["ɑː", "m"], leg: ["l", "e", "ɡ"], foot: ["f", "ʊ", "t"], body: ["ˈ", "b", "ɒ", "d", "i"],
     red: ["r", "e", "d"], blue: ["b", "l", "uː"], green: ["ɡ", "r", "iː", "n"], yellow: ["ˈ", "j", "e", "l", "əʊ"], black: ["b", "l", "æ", "k"], white: ["w", "aɪ", "t"],
@@ -193,9 +207,11 @@ test("十一个主题的83个主题词音标按48音标口径准确拆解", () =
     mushroom: ["ˈ", "m", "ʌ", "ʃ", "r", "uː", "m"], flower: ["ˈ", "f", "l", "aʊ", "ə"], leaf: ["l", "iː", "f"], feather: ["ˈ", "f", "e", "ð", "ə"], bell: ["b", "e", "l"], acorn: ["ˈ", "eɪ", "k", "ɔː", "n"],
     banana: ["b", "ə", "ˈ", "n", "ɑː", "n", "ə"], shell: ["ʃ", "e", "l"], bomb: ["b", "ɒ", "m"], lightning: ["ˈ", "l", "aɪ", "t", "n", "ɪ", "ŋ"], horn: ["h", "ɔː", "n"], ink: ["ɪ", "ŋ", "k"],
     twinkle: ["ˈ", "t", "w", "ɪ", "ŋ", "k", "ə", "l"], little: ["ˈ", "l", "ɪ", "t", "ə", "l"], wonder: ["ˈ", "w", "ʌ", "n", "d", "ə"], world: ["w", "ɜː", "l", "d"], high: ["h", "aɪ"], diamond: ["ˈ", "d", "aɪ", "ə", "m", "ə", "n", "d"], sky: ["s", "k", "aɪ"],
-    cap: ["k", "æ", "p"], suit: ["s", "uː", "t"], hammer: ["ˈ", "h", "æ", "m", "ə"], boomerang: ["ˈ", "b", "uː", "m", "ə", "r", "æ", "ŋ"], spring: ["s", "p", "r", "ɪ", "ŋ"], egg: ["e", "ɡ"],    first: ["f", "ɜː", "s", "t"], second: ["ˈ", "s", "e", "k", "ə", "n", "d"], third: ["θ", "ɜː", "d"], fourth: ["f", "ɔː", "θ"], fifth: ["f", "ɪ", "f", "θ"], sixth: ["s", "ɪ", "k", "s", "θ"], seventh: ["ˈ", "s", "e", "v", "ə", "n", "θ"], eighth: ["eɪ", "t", "θ"], ninth: ["n", "aɪ", "n", "θ"], tenth: ["t", "e", "n", "θ"]
+    cap: ["k", "æ", "p"], suit: ["s", "uː", "t"], hammer: ["ˈ", "h", "æ", "m", "ə"], boomerang: ["ˈ", "b", "uː", "m", "ə", "r", "æ", "ŋ"], spring: ["s", "p", "r", "ɪ", "ŋ"], egg: ["e", "ɡ"],
+    pencil: ["ˈ", "p", "e", "n", "s", "ə", "l"], pen: ["p", "e", "n"], eraser: ["ɪ", "ˈ", "r", "eɪ", "z", "ə"], ruler: ["ˈ", "r", "uː", "l", "ə"], book: ["b", "ʊ", "k"], schoolbag: ["ˈ", "s", "k", "uː", "l", "b", "æ", "ɡ"], table: ["ˈ", "t", "eɪ", "b", "ə", "l"], chair: ["tʃ", "eə"],
+    first: ["f", "ɜː", "s", "t"], second: ["ˈ", "s", "e", "k", "ə", "n", "d"], third: ["θ", "ɜː", "d"], fourth: ["f", "ɔː", "θ"], fifth: ["f", "ɪ", "f", "θ"], sixth: ["s", "ɪ", "k", "s", "θ"], seventh: ["ˈ", "s", "e", "v", "ə", "n", "θ"], eighth: ["eɪ", "t", "θ"], ninth: ["n", "aɪ", "n", "θ"], tenth: ["t", "e", "n", "θ"]
   };
-  for (const word of [...THEME_WORDS, ...COLOR_WORDS, ...NUMBER_1_10_WORDS, ...NUMBER_11_19_WORDS, ...TENS_WORDS, ...ORDINAL_WORDS, ...CLASSIC_ITEMS_1_WORDS, ...CLASSIC_ITEMS_2_WORDS, ...CLASSIC_ITEMS_3_WORDS, ...CLASSIC_ITEMS_4_WORDS, ...TWINKLE_WORDS]) {
+  for (const word of [...THEME_WORDS, ...COLOR_WORDS, ...NUMBER_1_10_WORDS, ...NUMBER_11_19_WORDS, ...TENS_WORDS, ...ORDINAL_WORDS, ...CLASSIC_ITEMS_1_WORDS, ...CLASSIC_ITEMS_2_WORDS, ...CLASSIC_ITEMS_3_WORDS, ...CLASSIC_ITEMS_4_WORDS, ...CLASSROOM_WORDS, ...TWINKLE_WORDS]) {
     assert.deepEqual(splitPhonetic(word.phonetic), expected[word.id], word.id);
   }
   for (const diphthong of ["eɪ", "aɪ", "ɔɪ", "əʊ", "aʊ", "ɪə", "eə", "ʊə"]) {
@@ -206,7 +222,7 @@ test("十一个主题的83个主题词音标按48音标口径准确拆解", () =
 });
 
 test("通用会话认识去重、每轮不重复、错误重试、完成并可重开", () => {
-  for (const words of [THEME_WORDS, COLOR_WORDS, NUMBER_1_10_WORDS, NUMBER_11_19_WORDS, TENS_WORDS, ORDINAL_WORDS, CLASSIC_ITEMS_1_WORDS, CLASSIC_ITEMS_2_WORDS, CLASSIC_ITEMS_3_WORDS, CLASSIC_ITEMS_4_WORDS, TWINKLE_WORDS]) {
+  for (const words of [THEME_WORDS, COLOR_WORDS, NUMBER_1_10_WORDS, NUMBER_11_19_WORDS, TENS_WORDS, ORDINAL_WORDS, CLASSIC_ITEMS_1_WORDS, CLASSIC_ITEMS_2_WORDS, CLASSIC_ITEMS_3_WORDS, CLASSIC_ITEMS_4_WORDS, CLASSROOM_WORDS, TWINKLE_WORDS]) {
     const session = new ThemeSession(words, () => 0.37);
     session.learn(words[0].id); session.learn(words[0].id); session.learn(words[4].id);
     assert.equal(session.seen.size, 2);
@@ -225,7 +241,7 @@ test("通用会话认识去重、每轮不重复、错误重试、完成并可�
   }
 });
 
-test("十一个主题会话状态完全隔离", () => {
+test("十二个主题会话状态完全隔离", () => {
   const sessions = new Map(Object.entries(THEME_CONFIGS).map(([themeId, config], index) => [
     themeId,
     new ThemeSession(config.words, () => (index + 1) / 20)
@@ -280,13 +296,13 @@ test("主题朗读延迟重启且只保留最后请求，结束回调后再推�
   assert.equal(secondEnded, 1);
   speaker.cancel();
 });
-test("总词库覆盖十一个主题81个唯一单词且数数配图无歧义", () => {
+test("总词库覆盖十二个主题89个唯一单词且数数配图无歧义", () => {
   const catalog = buildThemeCatalog(THEME_CONFIGS);
-  assert.equal(catalog.length, 83);
-  assert.equal(new Set(catalog.map(({ key }) => key)).size, 83);
-  assert.equal(new Set(catalog.map(({ word }) => word.toLowerCase())).size, 81);
+  assert.equal(catalog.length, 91);
+  assert.equal(new Set(catalog.map(({ key }) => key)).size, 91);
+  assert.equal(new Set(catalog.map(({ word }) => word.toLowerCase())).size, 89);
   assert.equal(catalog.filter(({ word }) => word === "ten").length, 2);
-  assert.equal(catalog.filter(({ art }) => art.type === "image").length, 36);
+  assert.equal(catalog.filter(({ art }) => art.type === "image").length, 44);
   assert.equal(catalog.filter(({ art }) => art.type === "song-word").length, 8);
   assert.equal(catalog.filter(({ art }) => art.type === "ordinal").length, 10);
   assert.equal(catalog.filter(({ art }) => art.type === "count-units").length, 19);
@@ -311,7 +327,7 @@ test("总词库覆盖十一个主题81个唯一单词且数数配图无歧义", 
       assert.ok(entry.art.groups >= 1 && entry.art.groups <= 10);
       continue;
     }
-    assert.match(entry.art.src, /^\.\/assets\/themes\/(body|colors|items)\//);
+    assert.match(entry.art.src, /^\.\/assets\/themes\/(body|colors|items|classroom)\//);
     assert.ok(entry.art.width > 0 && entry.art.height > 0);
     const crop = entry.art.viewBox.split(/\s+/).map(Number);
     assert.equal(crop.length, 4);
@@ -324,11 +340,14 @@ test("总词库覆盖十一个主题81个唯一单词且数数配图无歧义", 
     assert.equal(entries.length, 6);
     assert.ok(entries.every(({ art }) => art.src === "./assets/themes/items/classic-items-" + series + "-scene-v1.png"));
   }
+  const classroomEntries = catalog.filter(({ themeId }) => themeId === "classroom");
+  assert.equal(classroomEntries.length, 8);
+  assert.ok(classroomEntries.every(({ art }) => art.src === "./assets/themes/classroom/classroom-things-scene-v1.png"));
   const store = new ThemeLearnedStore(catalog, null);
   for (const themeId of Object.keys(THEME_CONFIGS)) store.recordTheme(themeId);
-  assert.equal(store.entries().length, 81);
+  assert.equal(store.entries().length, 89);
   assert.equal(store.entries().filter(({ word }) => word === "ten").length, 1);
-  assert.equal(store.uniqueCatalogEntries().length, 81);
+  assert.equal(store.uniqueCatalogEntries().length, 89);
 });
 test("学习完毕整批入库，复习完毕单独记录并保持幂等", () => {
   const catalog = buildThemeCatalog(THEME_CONFIGS);
@@ -417,7 +436,7 @@ test("总复习每轮覆盖全部已学词、图片选项唯一、答错重试�
   assert.deepEqual(empty.options(), []);
 });
 
-test("主题页十一个卡片、八十三个互动目标、歌词音标、阶段隔离和缓存引用齐全", async () => {
+test("主题页十二个卡片、九十一个互动目标、歌词音标、阶段隔离和缓存引用齐全", async () => {
   const html = await readFile(new URL("../theme-learning.html", import.meta.url), "utf8");
   assert.match(html, /data-theme-id="body"/);
   assert.match(html, /data-theme-id="colors"/);
@@ -425,12 +444,13 @@ test("主题页十一个卡片、八十三个互动目标、歌词音标、阶�
   assert.match(html, /data-theme-id="numbersTeens"/);
   assert.match(html, /data-theme-id="tens"/);
   assert.match(html, /data-theme-id="ordinals"/);
-  assert.equal((html.match(/data-theme-id=/g) || []).length, 11);
+  assert.equal((html.match(/data-theme-id=/g) || []).length, 12);
   assert.match(html, /data-theme-id="items1"/);
   assert.match(html, /data-theme-id="items2"/);
   assert.match(html, /data-theme-id="items3"/);
   assert.match(html, /data-theme-id="items4"/);
   assert.match(html, /data-theme-id="twinkle"/);
+  assert.match(html, /data-theme-id="classroom"/);
   for (const id of THEME_WORDS.map(({ id }) => id)) {
     assert.match(html, new RegExp('data-target="' + id + '" data-part="' + id + '" tabindex="0" role="button"'));
   }
@@ -446,14 +466,18 @@ test("主题页十一个卡片、八十三个互动目标、歌词音标、阶�
   for (const item of [...CLASSIC_ITEMS_2_WORDS, ...CLASSIC_ITEMS_3_WORDS, ...CLASSIC_ITEMS_4_WORDS]) {
     assert.match(html, new RegExp('data-target="' + item.id + '" tabindex="0" role="button" aria-label="' + item.ariaLabel + '"'));
   }
+  for (const item of CLASSROOM_WORDS) {
+    assert.match(html, new RegExp('data-target="' + item.id + '" tabindex="0" role="button" aria-label="' + item.ariaLabel + '"'));
+  }
   assert.match(html, /id="learnPanel"/);
   assert.match(html, /id="practicePanel" hidden/);
   assert.match(html, /id="backToThemes"/);
-  assert.equal((html.match(/data-series-id=/g) || []).length, 4);
+  assert.equal((html.match(/data-series-id=/g) || []).length, 5);
   assert.match(html, /data-series-id="basics"/);
   assert.match(html, /data-series-id="counting"/);
   assert.match(html, /data-series-id="items"/);
   assert.match(html, /data-series-id="songs"/);
+  assert.match(html, /data-series-id="classroom"/);
   assert.match(html, /id="themeSeriesList"/);
   assert.doesNotMatch(html, /id="pickerTitle"|选择一个主题系列|今天想认识什么|先选择一个系列/);
   assert.match(html, /id="themeSeriesPanel"/);
@@ -462,6 +486,7 @@ test("主题页十一个卡片、八十三个互动目标、歌词音标、阶�
   assert.equal((html.match(/data-series="counting"/g) || []).length, 4);
   assert.equal((html.match(/data-series="items"/g) || []).length, 4);
   assert.equal((html.match(/data-series="songs"/g) || []).length, 1);
+  assert.equal((html.match(/data-series="classroom"/g) || []).length, 1);
   assert.match(html, /id="startNumbers1"/);
   assert.match(html, /id="startNumbersTeens"/);
   assert.match(html, /id="startTens"/);
@@ -478,6 +503,8 @@ test("主题页十一个卡片、八十三个互动目标、歌词音标、阶�
   assert.match(html, /id="items2Scene"/);
   assert.match(html, /id="items3Scene"/);
   assert.match(html, /id="items4Scene"/);
+  assert.match(html, /id="startClassroom"/);
+  assert.match(html, /id="classroomScene"/);
   assert.match(html, /id="startTwinkle"/);
   assert.match(html, /id="twinkleScene"/);
   assert.equal((html.match(/class="scene-target song-word-target"/g) || []).length, 8);
@@ -492,11 +519,11 @@ test("主题页十一个卡片、八十三个互动目标、歌词音标、阶�
 
   assert.doesNotMatch(html, /id="openTotalReview"|id="openWordLibrary"|id="wordLibraryView"|id="totalReviewView"/);
   assert.match(html, /href="\.\/review-learning\.html">总复习<\/a>/);
-  assert.match(html, /theme-learning\.css\?v=3\.3/);
-  assert.match(html, /theme-learning\.js\?v=2\.8/);
+  assert.match(html, /theme-learning\.css\?v=3\.4/);
+  assert.match(html, /theme-learning\.js\?v=2\.9/);
   const script = await readFile(new URL("../theme-learning.js", import.meta.url), "utf8");
   assert.match(script, /phonetic-segmenter\.js\?v=1\.0/);
-  assert.match(script, /theme-overview\.js\?v=1\.6/);
+  assert.match(script, /theme-overview\.js\?v=1\.7/);
   assert.match(script, /function renderCountingScenes/);
   assert.match(script, /export const THEME_SERIES/);
   assert.match(script, /function showSeries/);
@@ -549,6 +576,7 @@ test("主题页十一个卡片、八十三个互动目标、歌词音标、阶�
   assert.match(html, /href="\.\/assets\/themes\/items\/classic-items-1-scene-v1\.png"/);
   assert.match(html, /class="item-scene-image"[^>]+pointer-events="none"/);
   for (const series of [2, 3, 4]) assert.match(html, new RegExp("classic-items-" + series + "-scene-v1\\.png"));
+  assert.match(html, /assets\/themes\/classroom\/classroom-things-scene-v1\.png/);
   assert.doesNotMatch(html, /代码原生场景|代码绘制的红帽蓝裤角色原型/);
 });
 
@@ -570,11 +598,11 @@ test("总复习是独立并列模块，主题页只记录学习进度", async ()
   assert.match(reviewHtml, /id="openWordLibrary"/);
   assert.match(reviewHtml, /id="totalReviewView"/);
   assert.match(reviewHtml, /id="wordLibraryView" hidden/);
-  assert.match(reviewHtml, /theme-learning\.css\?v=3\.3/);
-  assert.match(reviewHtml, /review-learning\.js\?v=1\.5/);
-  assert.match(reviewHtml, /id="wordLibraryCount">0\/208<\/b>/);
-  assert.match(reviewScript, /theme-learning\.js\?v=2\.8/);
-  assert.match(reviewScript, /theme-overview\.js\?v=1\.6/);
+  assert.match(reviewHtml, /theme-learning\.css\?v=3\.4/);
+  assert.match(reviewHtml, /review-learning\.js\?v=1\.6/);
+  assert.match(reviewHtml, /id="wordLibraryCount">0\/215<\/b>/);
+  assert.match(reviewScript, /theme-learning\.js\?v=2\.9/);
+  assert.match(reviewScript, /theme-overview\.js\?v=1\.7/);
   assert.match(reviewScript, /overview\.openReview\(\)/);
 });
 
@@ -610,6 +638,12 @@ for (const series of [2, 3, 4]) {
     assert.equal(image.readUInt32BE(20), 1024);
   });
 }
+test("Classroom Things 场景素材为 1536x1024 PNG", async () => {
+  const image = await readFile(new URL("../assets/themes/classroom/classroom-things-scene-v1.png", import.meta.url));
+  assert.deepEqual([...image.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10]);
+  assert.equal(image.readUInt32BE(16), 1536);
+  assert.equal(image.readUInt32BE(20), 1024);
+});
 test("总词库图片严格裁切到单词 viewBox，不显示相邻物体", async () => {
   const overviewScript = await readFile(new URL("../src/theme-overview.js", import.meta.url), "utf8");
   assert.match(overviewScript, /preserveAspectRatio="xMidYMid meet" overflow="hidden"><defs><clipPath/);

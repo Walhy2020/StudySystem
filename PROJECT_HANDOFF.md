@@ -1,6 +1,6 @@
 # StudySystem cross-device handoff
 
-Last updated: 2026-09-12
+Last updated: 2026-09-14
 Repository: `https://github.com/Walhy2020/StudySystem.git`
 Branch: `main`
 Baseline before this handoff document: `3a6815d`
@@ -59,12 +59,13 @@ In the ChatGPT/Codex desktop app, add the cloned repository as a local project a
 ### Theme learning
 
 - Entry: `theme-learning.html`.
-- Eleven delivered themes with 83 theme records: Body, Colors, Numbers 1-10, Numbers 11-19, Tens 10-100, Ordinals 1-10, Twinkle Twinkle Little Star, and Classic Items I-IV.
+- Twelve delivered themes with 91 theme records: Body, Colors, Numbers 1-10, Numbers 11-19, Tens 10-100, Ordinals 1-10, Twinkle Twinkle Little Star, Classic Items I-IV, and Classroom Things.
 - Theme word cards support IPA display and phoneme segmentation, manual sound playback, previous/next navigation, keyboard/touch interaction, learning, and practice.
-- The outer picker groups themes into four horizontal preview series: Basic Recognition, Counting World, Nursery Rhymes, and Classic Items. Individual reviewed themes keep their green checks, and a series turns green when all themes inside it are reviewed.
+- The outer picker groups themes into five horizontal preview series: Basic Recognition, Counting World, Nursery Rhymes, Classic Items, and Classroom Things. Individual reviewed themes keep their green checks, and a series turns green when all themes inside it are reviewed.
 - The Nursery Rhymes series currently contains Twinkle, Twinkle, Little Star: six lyric lines each place complete British IPA directly below the English line, eight core words remain clickable, and full-verse speech is manual rather than automatic.
 - Counting artwork is code-native and exact: 1-19 use the matching number of coin dots; 10-100 uses one to ten ten-frames, each containing exactly ten dots.
 - Project assets live under `assets/themes/` and have been checked against their mapped words/hotspots.
+- Classroom Things teaches pencil, pen, eraser, ruler, book, schoolbag, table, and chair using `assets/themes/classroom/classroom-things-scene-v1.png`. The 4×2 scene has eight independent non-overlapping hotspots and supplies per-word cropped artwork to the shared word library.
 - Theme learned records remain in `mario-theme-learned-v1` and are one of the three sources of the shared total word library.
 
 ### Scenario learning
@@ -89,7 +90,7 @@ In the ChatGPT/Codex desktop app, add the cloned repository as a local project a
 - Entry: `review-learning.html`.
 - This is an independent top-level module, not a child page inside Theme Learning.
 - The total word library aggregates words actually learned in Book1, Theme Learning, and Scenario Learning. It reads all three existing progress keys without writing across module boundaries and deduplicates by normalized English spelling.
-- The combined published catalog currently contains 208 unique candidate words. The library and each review round include only the subset actually learned in the current browser profile.
+- The combined published catalog currently contains 215 unique candidate words. The library and each review round include only the subset actually learned in the current browser profile.
 - Theme artwork remains preferred for duplicates, Book1 uses its original word pictures, and scenario words use focused object art when available or a Chinese-meaning choice card when no literal image exists. Reviews keep four unique choices, wrong-answer retry, restart, refresh persistence, desktop and 390px layouts.
 
 ### Bomb maze
@@ -136,6 +137,7 @@ Verified on 2026-08-25 after the Nursery Rhymes theme update:
 - New Hanzi and Phonetics backgrounds returned HTTP 200 and passed screenshot inspection.
 - Book1 migration verified on 2026-09-08: static checks passed, Node 70/70 passed, and Microsoft Edge passed at desktop and 390px with 104/104 images returning HTTP 200 and `opw1`-only legacy migration.
 - Scenario Learning verified on 2026-09-12 after the printed-page-7 continuation and unified-library update: Node 89/89 passed; Microsoft Edge passed at desktop and 390px with two independent scenarios, 20 dialogue lines, eight response questions, active-scenario-only word tabs (16 and 19 candidates), total-library new-word matching, manual-only speech, schema-1 migration, per-scenario refresh restore, independent completion, isolated storage, word-aligned IPA, five focused stationery assets, classroom artwork HTTP 200, and no horizontal overflow.
+- Classroom Things verified on 2026-09-14: Node 91/91 passed; Microsoft Edge theme acceptance passed at desktop and 390px with 5 series, 12 themes, 91 exact learning targets, 8 non-overlapping classroom hotspots, manual speech, completion persistence, and no horizontal overflow. Overall-review Edge acceptance passed with 91 theme records, 89 unique theme words, 215 combined candidate words, 43 unique image crops, classroom crop isolation, storage boundaries, and desktop/390px layouts.
 - No known unresolved product defect was recorded at handoff time.
 
 ## Cross-computer cautions

@@ -27,6 +27,16 @@ const ITEM_CROPS = Object.freeze([
   "510 470 515 520",
   "1000 465 510 525"
 ]);
+const CLASSROOM_CROPS = Object.freeze([
+  "55 85 380 405",
+  "415 85 365 405",
+  "765 85 365 405",
+  "1110 85 380 405",
+  "55 475 380 430",
+  "415 475 365 430",
+  "765 475 365 430",
+  "1110 475 380 430"
+]);
 const ORDINAL_LABELS = Object.freeze(["1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th"]);
 const ITEM_ASSETS = Object.freeze({
   items1: "./assets/themes/items/classic-items-1-scene-v1.png",
@@ -69,6 +79,15 @@ function artFor(themeId, word, index) {
       width: 1536,
       height: 1024,
       viewBox: COLOR_CROPS[word.id]
+    });
+  }
+  if (themeId === "classroom") {
+    return Object.freeze({
+      type: "image",
+      src: "./assets/themes/classroom/classroom-things-scene-v1.png",
+      width: 1536,
+      height: 1024,
+      viewBox: CLASSROOM_CROPS[index]
     });
   }
   return Object.freeze({

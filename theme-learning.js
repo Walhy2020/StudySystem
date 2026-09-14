@@ -1,5 +1,5 @@
 import { PHONETIC_STRESS_MARKS, splitPhonetic } from "./src/phonetic-segmenter.js?v=1.0";
-import { initializeThemeProgress } from "./src/theme-overview.js?v=1.6";
+import { initializeThemeProgress } from "./src/theme-overview.js?v=1.7";
 
 export { splitPhonetic };
 
@@ -104,6 +104,17 @@ export const CLASSIC_ITEMS_4_WORDS = Object.freeze([
   { id: "boomerang", word: "boomerang", phonetic: "/ˈbuːməræŋ/", chinese: "回旋镖", sentence: "The boomerang comes back.", instruction: "Touch the boomerang.", ariaLabel: "boomerang 回旋镖" },
   { id: "spring", word: "spring", phonetic: "/sprɪŋ/", chinese: "弹簧", sentence: "The spring can bounce.", instruction: "Touch the spring.", ariaLabel: "spring 弹簧" },
   { id: "egg", word: "egg", phonetic: "/eɡ/", chinese: "蛋", sentence: "This is an egg.", instruction: "Touch the egg.", ariaLabel: "egg 蛋" }
+]);
+
+export const CLASSROOM_WORDS = Object.freeze([
+  { id: "pencil", word: "pencil", phonetic: "/ˈpensəl/", chinese: "铅笔", sentence: "This is a pencil.", instruction: "Touch the pencil.", ariaLabel: "pencil 铅笔" },
+  { id: "pen", word: "pen", phonetic: "/pen/", chinese: "钢笔", sentence: "This is a pen.", instruction: "Touch the pen.", ariaLabel: "pen 钢笔" },
+  { id: "eraser", word: "eraser", phonetic: "/ɪˈreɪzə/", chinese: "橡皮", sentence: "This is an eraser.", instruction: "Touch the eraser.", ariaLabel: "eraser 橡皮" },
+  { id: "ruler", word: "ruler", phonetic: "/ˈruːlə/", chinese: "尺子", sentence: "This is a ruler.", instruction: "Touch the ruler.", ariaLabel: "ruler 尺子" },
+  { id: "book", word: "book", phonetic: "/bʊk/", chinese: "书", sentence: "This is a book.", instruction: "Touch the book.", ariaLabel: "book 书" },
+  { id: "schoolbag", word: "schoolbag", phonetic: "/ˈskuːlbæɡ/", chinese: "书包", sentence: "This is a schoolbag.", instruction: "Touch the schoolbag.", ariaLabel: "schoolbag 书包" },
+  { id: "table", word: "table", phonetic: "/ˈteɪbəl/", chinese: "桌子", sentence: "This is a table.", instruction: "Touch the table.", ariaLabel: "table 桌子" },
+  { id: "chair", word: "chair", phonetic: "/tʃeə/", chinese: "椅子", sentence: "This is a chair.", instruction: "Touch the chair.", ariaLabel: "chair 椅子" }
 ]);
 
 export const TWINKLE_WORDS = Object.freeze([
@@ -232,6 +243,15 @@ export const THEME_CONFIGS = Object.freeze({
     retryLabel: (word) => word.ariaLabel, instruction: (word) => word.instruction,
     completePrompt: "完成！六个特殊装备全部找对", completeTitle: "六个特殊装备全部找对！",
     completeText: "你完成了经典道具 IV Classic Items IV 的听音点击练习。"
+  }),
+  classroom: Object.freeze({
+    id: "classroom", chineseTitle: "教室用品", englishTitle: "Classroom Things", words: CLASSROOM_WORDS,
+    sceneId: "classroomScene", sceneLabel: "教室用品互动图",
+    learnPrompt: "点击场景中的教室用品", practicePrompt: "听指令，点击正确的教室用品",
+    learnPlaceholderTitle: "点一个教室用品", learnPlaceholderText: "单词、音标、中文和例句会显示在这里。",
+    retryLabel: (word) => word.ariaLabel, instruction: (word) => word.instruction,
+    completePrompt: "完成！八个教室用品全部找对", completeTitle: "八个教室用品全部找对！",
+    completeText: "你完成了教室用品 Classroom Things 的听音点击练习。"
   })
 });
 
@@ -239,7 +259,8 @@ export const THEME_SERIES = Object.freeze({
   basics: Object.freeze({ id: "basics", title: "基础认知", description: "认识身体部位和常见颜色。", themeIds: Object.freeze(["body", "colors"]) }),
   counting: Object.freeze({ id: "counting", title: "数字天地", description: "从 1 数到 100，并学习第1到第10。", themeIds: Object.freeze(["numbers1", "numbersTeens", "tens", "ordinals"]) }),
   songs: Object.freeze({ id: "songs", title: "英文童谣", description: "跟着经典童谣学习歌词、音标和核心单词。", themeIds: Object.freeze(["twinkle"]) }),
-  items: Object.freeze({ id: "items", title: "经典道具", description: "分四个系列认识马里奥世界里的经典道具。", themeIds: Object.freeze(["items1", "items2", "items3", "items4"]) })
+  items: Object.freeze({ id: "items", title: "经典道具", description: "分四个系列认识马里奥世界里的经典道具。", themeIds: Object.freeze(["items1", "items2", "items3", "items4"]) }),
+  classroom: Object.freeze({ id: "classroom", title: "教室用品", description: "认识课堂里常见的文具、书包和桌椅。", themeIds: Object.freeze(["classroom"]) })
 });
 
 export function shuffledIds(words = THEME_WORDS, random = Math.random) {

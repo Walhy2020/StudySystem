@@ -71,7 +71,9 @@ async function openThemeSeries(page, themeId) {
       ? "counting"
       : themeId === "twinkle"
         ? "songs"
-        : "items";
+        : themeId === "classroom"
+          ? "classroom"
+          : "items";
   const activeSeriesId = await page.evaluate(() => window.__THEME_LEARNING__.activeSeriesId);
   if (activeSeriesId === seriesId && await page.locator("#themeSeriesPanel").isVisible()) return;
   if (await page.locator("#learningView").isVisible()) await page.click("#backToThemes");
@@ -99,7 +101,8 @@ async function assertLibrary(page, expectedCount, expectedSources = [
   "./assets/themes/items/classic-items-1-scene-v1.png",
   "./assets/themes/items/classic-items-2-scene-v1.png",
   "./assets/themes/items/classic-items-3-scene-v1.png",
-  "./assets/themes/items/classic-items-4-scene-v1.png"
+  "./assets/themes/items/classic-items-4-scene-v1.png",
+  "./assets/themes/classroom/classroom-things-scene-v1.png"
 ]) {
   assert.equal(await page.locator(".library-card").count(), expectedCount);
   const result = await page.evaluate(async () => {
@@ -173,15 +176,15 @@ async function assertLibrary(page, expectedCount, expectedSources = [
     }
   }
   assert.deepEqual(Object.values(result.statuses), Object.values(result.statuses).map(() => 200));
-  assert.deepEqual(Object.keys(result.statuses).sort(), expectedSources);
+  assert.deepEqual(Object.keys(result.statuses).sort(), [...expectedSources].sort());
 }
 
 async function finishTotalReview(page) {
   const total = await page.evaluate(() => window.__THEME_OVERVIEW__.reviewSession.questions.length);
-  assert.equal(total, 81);
+  assert.equal(total, 89);
   assert.equal(await page.evaluate(() =>
     new Set(window.__THEME_OVERVIEW__.reviewSession.questions).size
-  ), 81);
+  ), 89);
   for (let index = 0; index < total; index += 1) {
     const state = await page.evaluate(() => {
       const session = window.__THEME_OVERVIEW__.reviewSession;
@@ -210,7 +213,7 @@ async function finishTotalReview(page) {
       { word: state.word });
     }
   }
-  assert.equal((await page.locator("#totalReviewResultScore").textContent()).trim(), "81/81");
+  assert.equal((await page.locator("#totalReviewResultScore").textContent()).trim(), "89/89");
 }
 
 const desktopContext = await prepareContext({ viewport: { width: 1440, height: 1000 } });
@@ -220,7 +223,7 @@ await page.goto(new URL("review-learning.html", baseUrl).href);
 await assertNoOverflow(page);
 assert.deepEqual(await page.locator(".theme-nav .nav-link").allTextContents().then((items) => items.map((item) => item.trim())), ["汉字", "Book1", "主题学习", "情景模式", "总复习", "音标"]);
 assert.equal((await page.locator("#totalReviewCount").textContent()).trim(), "0 个已学");
-assert.equal((await page.locator("#wordLibraryCount").textContent()).trim(), "0/208");
+assert.equal((await page.locator("#wordLibraryCount").textContent()).trim(), "0/215");
 assert.equal(await page.locator("#totalReviewEmpty").isVisible(), true);
 
 await page.click("#openWordLibrary");
@@ -234,7 +237,7 @@ assert.equal(await page.locator("#wordLibraryView").isVisible(), true);
 await page.locator('.theme-nav a[href="./theme-learning.html"]').click();
 await page.waitForURL(/theme-learning\.html/);
 assert.equal(await page.locator("#openTotalReview, #openWordLibrary, #totalReviewView, #wordLibraryView").count(), 0);
-assert.equal(await page.locator(".theme-series-cell").count(), 4);
+assert.equal(await page.locator(".theme-series-cell").count(), 5);
 await openThemeSeries(page, "body");
 
 await page.click("#startTheme");
@@ -251,7 +254,7 @@ await page.click("#backToThemes");
 await page.locator('.theme-nav a[href="./review-learning.html"]').click();
 await page.waitForURL(/review-learning\.html/);
 assert.equal((await page.locator("#totalReviewCount").textContent()).trim(), "6 个已学");
-assert.equal((await page.locator("#wordLibraryCount").textContent()).trim(), "6/208");
+assert.equal((await page.locator("#wordLibraryCount").textContent()).trim(), "6/215");
 await page.click("#openWordLibrary");
 assert.equal(await page.locator(".library-card").count(), 6);
 
@@ -261,32 +264,32 @@ await completeTheme(page, "ordinals", 16);
 await page.locator('.theme-nav a[href="./review-learning.html"]').click();
 await page.waitForURL(/review-learning\.html/);
 assert.equal((await page.locator("#totalReviewCount").textContent()).trim(), "16 个已学");
-assert.equal((await page.locator("#wordLibraryCount").textContent()).trim(), "16/208");
+assert.equal((await page.locator("#wordLibraryCount").textContent()).trim(), "16/215");
 
 await page.locator('.theme-nav a[href="./theme-learning.html"]').click();
 await page.waitForURL(/theme-learning\.html/);
-for (const [themeId, expectedCount] of [["numbers1", 26], ["numbersTeens", 35], ["tens", 45], ["colors", 51], ["twinkle", 59], ["items1", 65], ["items2", 71], ["items3", 77], ["items4", 83]]) {
+for (const [themeId, expectedCount] of [["numbers1", 26], ["numbersTeens", 35], ["tens", 45], ["colors", 51], ["twinkle", 59], ["items1", 65], ["items2", 71], ["items3", 77], ["items4", 83], ["classroom", 91]]) {
   await completeTheme(page, themeId, expectedCount);
 }
 const themeStorageMutations = await page.evaluate(() => window.__storageMutations);
 assert.deepEqual(themeStorageMutations.filter(({ key }) => protectedKeys.includes(key)), []);
-assert.equal(themeStorageMutations.filter(({ key }) => key === learnedKey).length, 9);
+assert.equal(themeStorageMutations.filter(({ key }) => key === learnedKey).length, 10);
 await page.locator('.theme-nav a[href="./review-learning.html"]').click();
 await page.waitForURL(/review-learning\.html/);
-assert.equal((await page.locator("#totalReviewCount").textContent()).trim(), "81 个已学");
-assert.equal((await page.locator("#wordLibraryCount").textContent()).trim(), "81/208");
+assert.equal((await page.locator("#totalReviewCount").textContent()).trim(), "89 个已学");
+assert.equal((await page.locator("#wordLibraryCount").textContent()).trim(), "89/215");
 saved = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), learnedKey);
 assert.equal(saved.version, 2);
-assert.equal(saved.learned.length, 83);
-assert.equal(new Set(saved.learned).size, 83);
-assert.equal(saved.learnedThemes.length, 11);
+assert.equal(saved.learned.length, 91);
+assert.equal(new Set(saved.learned).size, 91);
+assert.equal(saved.learnedThemes.length, 12);
 assert.deepEqual(saved.reviewedThemes, []);
 assert.deepEqual(await page.evaluate((keys) =>
   window.__storageMutations.filter(({ key }) => keys.includes(key)),
 protectedKeys), []);
 
 await page.click("#openWordLibrary");
-await assertLibrary(page, 81);
+await assertLibrary(page, 89);
 await assertNoOverflow(page);
 const firstPhonetic = page.locator(".library-phonetic").first();
 await firstPhonetic.click();
@@ -301,7 +304,7 @@ assert.equal(await page.evaluate(() => window.__spoken.length), spokenBefore + 1
 await page.screenshot({ path: "tests/theme-library-desktop.png", fullPage: true });
 
 await page.reload();
-assert.equal((await page.locator("#wordLibraryCount").textContent()).trim(), "81/208");
+assert.equal((await page.locator("#wordLibraryCount").textContent()).trim(), "89/215");
 await page.click("#openWordLibrary");
 await page.click("#startLibraryReview");
 assert.equal(await page.locator("#totalReviewPanel").isVisible(), true);
@@ -317,7 +320,7 @@ await page.screenshot({ path: "tests/theme-review-complete-desktop.png", fullPag
 await page.click("#restartTotalReview");
 assert.equal(await page.evaluate(() =>
   new Set(window.__THEME_OVERVIEW__.reviewSession.questions).size
-), 81);
+), 89);
 await desktopContext.close();
 
 const mobileContext = await prepareContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
@@ -325,12 +328,12 @@ const mobile = await mobileContext.newPage();
 watchPage(mobile);
 await mobile.goto(new URL("review-learning.html", baseUrl).href);
 await mobile.evaluate(() => {
-  for (const themeId of ["body", "colors", "numbers1", "numbersTeens", "tens", "ordinals", "twinkle", "items1", "items2", "items3", "items4"]) {
+  for (const themeId of ["body", "colors", "numbers1", "numbersTeens", "tens", "ordinals", "twinkle", "items1", "items2", "items3", "items4", "classroom"]) {
     window.__THEME_OVERVIEW__.recordTheme(themeId);
   }
 });
 await mobile.tap("#openWordLibrary");
-await assertLibrary(mobile, 81);
+await assertLibrary(mobile, 89);
 await assertNoOverflow(mobile);
 const mobileGeometry = await mobile.locator(".library-card").evaluateAll((cards) => ({
   allInside: cards.every((card) => {
@@ -369,7 +372,7 @@ assert.deepEqual(await mobile.evaluate((keys) =>
 protectedKeys), []);
 assert.ok((await mobile.evaluate((key) =>
   window.__storageMutations.filter((item) => item.key === key).length,
-learnedKey)), 11);
+learnedKey)), 12);
 await mobileContext.close();
 
 const itemCropContext = await prepareContext({ viewport: { width: 1440, height: 1000 } });
@@ -386,6 +389,20 @@ await assertNoOverflow(itemCropPage);
 await itemCropPage.locator('[data-word-key="total:star"]').screenshot({ path: "tests/theme-library-star-390.png" });
 await itemCropContext.close();
 
+const classroomCropContext = await prepareContext({ viewport: { width: 1440, height: 1000 } });
+const classroomCropPage = await classroomCropContext.newPage();
+watchPage(classroomCropPage);
+await classroomCropPage.goto(new URL("review-learning.html", baseUrl).href);
+await classroomCropPage.evaluate(() => window.__THEME_OVERVIEW__.recordTheme("classroom"));
+await classroomCropPage.click("#openWordLibrary");
+await assertLibrary(classroomCropPage, 8, ["./assets/themes/classroom/classroom-things-scene-v1.png"]);
+assert.match((await classroomCropPage.locator('[data-word-key="total:pencil"] .library-theme-label').textContent()).trim(), /教室用品/);
+await classroomCropPage.locator('[data-word-key="total:pencil"]').screenshot({ path: "tests/theme-library-pencil-desktop.png" });
+await classroomCropPage.setViewportSize({ width: 390, height: 844 });
+await assertNoOverflow(classroomCropPage);
+await classroomCropPage.locator('[data-word-key="total:pencil"]').screenshot({ path: "tests/theme-library-pencil-390.png" });
+await classroomCropContext.close();
+
 const combinedContext = await prepareContext({ viewport: { width: 1440, height: 1000 } });
 const combinedPage = await combinedContext.newPage();
 watchPage(combinedPage);
@@ -398,7 +415,7 @@ await combinedPage.evaluate(() => {
 });
 await combinedPage.reload();
 assert.equal((await combinedPage.locator("#totalReviewCount").textContent()).trim(), "5 个已学");
-assert.equal((await combinedPage.locator("#wordLibraryCount").textContent()).trim(), "5/208");
+assert.equal((await combinedPage.locator("#wordLibraryCount").textContent()).trim(), "5/215");
 await combinedPage.click("#openWordLibrary");
 assert.equal(await combinedPage.locator(".library-card").count(), 5);
 assert.match(await combinedPage.locator('[data-word-key="total:pen"] .library-theme-label').textContent(), /Book1.*情景模式/);
@@ -422,13 +439,13 @@ assert.deepEqual(pageErrors, []);
 assert.deepEqual(failedResponses, []);
 console.log(JSON.stringify({
   ok: true,
-  themeRecords: 83,
-  learnedWords: 81,
-  libraryCards: { desktop: 81, mobile390: 81 },
-  review: { questions: 81, unique: 81, choicesPerQuestion: 4, wrongRetry: true, restart: true },
-  artwork: { mappedThemeRecords: 83, uniqueLibraryWords: 81, songWordCards: 8, imageCrops: 35, croppedToViewBox: true, ordinalCards: 10, countUnits: 19, countGroups: 9, assetsHttp200: 6 },
-  unifiedLibrary: { catalogWords: 208, learnedFromBookThemeScenario: 5, deduplicated: true },
-  persistence: { key: learnedKey, schema: 2, themeCompletionWrites: 11, refreshRestored: true, protectedKeysUnchanged: protectedKeys },
+  themeRecords: 91,
+  learnedWords: 89,
+  libraryCards: { desktop: 89, mobile390: 89 },
+  review: { questions: 89, unique: 89, choicesPerQuestion: 4, wrongRetry: true, restart: true },
+  artwork: { mappedThemeRecords: 91, uniqueLibraryWords: 89, songWordCards: 8, imageCrops: 43, croppedToViewBox: true, ordinalCards: 10, countUnits: 19, countGroups: 9, assetsHttp200: 7 },
+  unifiedLibrary: { catalogWords: 215, learnedFromBookThemeScenario: 5, deduplicated: true },
+  persistence: { key: learnedKey, schema: 2, themeCompletionWrites: 12, refreshRestored: true, protectedKeysUnchanged: protectedKeys },
   overflow: { desktop: false, mobile390: false },
   screenshots: [
     "tests/theme-library-desktop.png",
@@ -437,6 +454,8 @@ console.log(JSON.stringify({
     "tests/theme-review-complete-desktop.png",
     "tests/theme-library-390.png",
     "tests/theme-library-star-390.png",
+    "tests/theme-library-pencil-desktop.png",
+    "tests/theme-library-pencil-390.png",
     "tests/theme-review-390.png"
   ]
 }, null, 2));

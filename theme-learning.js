@@ -113,7 +113,8 @@ export const CLASSROOM_WORDS = Object.freeze([
   { id: "ruler", word: "ruler", phonetic: "/ˈruːlə/", chinese: "尺子", sentence: "This is a ruler.", instruction: "Touch the ruler.", ariaLabel: "ruler 尺子" },
   { id: "book", word: "book", phonetic: "/bʊk/", chinese: "书", sentence: "This is a book.", instruction: "Touch the book.", ariaLabel: "book 书" },
   { id: "schoolbag", word: "schoolbag", phonetic: "/ˈskuːlbæɡ/", chinese: "书包", sentence: "This is a schoolbag.", instruction: "Touch the schoolbag.", ariaLabel: "schoolbag 书包" },
-  { id: "table", word: "table", phonetic: "/ˈteɪbəl/", chinese: "桌子", sentence: "This is a table.", instruction: "Touch the table.", ariaLabel: "table 桌子" },
+  // Keep the legacy ID so classroom:table progress and the existing image hotspot remain valid.
+  { id: "table", word: "desk", phonetic: "/desk/", chinese: "课桌", sentence: "This is a desk.", instruction: "Touch the desk.", ariaLabel: "desk 课桌" },
   { id: "chair", word: "chair", phonetic: "/tʃeə/", chinese: "椅子", sentence: "This is a chair.", instruction: "Touch the chair.", ariaLabel: "chair 椅子" }
 ]);
 

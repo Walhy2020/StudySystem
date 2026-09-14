@@ -154,7 +154,7 @@ test("教室用品八词数据逐项准确", () => {
     { id: "ruler", word: "ruler", phonetic: "/ˈruːlə/", chinese: "尺子", sentence: "This is a ruler.", instruction: "Touch the ruler.", ariaLabel: "ruler 尺子" },
     { id: "book", word: "book", phonetic: "/bʊk/", chinese: "书", sentence: "This is a book.", instruction: "Touch the book.", ariaLabel: "book 书" },
     { id: "schoolbag", word: "schoolbag", phonetic: "/ˈskuːlbæɡ/", chinese: "书包", sentence: "This is a schoolbag.", instruction: "Touch the schoolbag.", ariaLabel: "schoolbag 书包" },
-    { id: "table", word: "table", phonetic: "/ˈteɪbəl/", chinese: "桌子", sentence: "This is a table.", instruction: "Touch the table.", ariaLabel: "table 桌子" },
+    { id: "table", word: "desk", phonetic: "/desk/", chinese: "课桌", sentence: "This is a desk.", instruction: "Touch the desk.", ariaLabel: "desk 课桌" },
     { id: "chair", word: "chair", phonetic: "/tʃeə/", chinese: "椅子", sentence: "This is a chair.", instruction: "Touch the chair.", ariaLabel: "chair 椅子" }
   ]);
 });
@@ -208,7 +208,7 @@ test("十二个主题的91个主题词音标按48音标口径准确拆解", () =
     banana: ["b", "ə", "ˈ", "n", "ɑː", "n", "ə"], shell: ["ʃ", "e", "l"], bomb: ["b", "ɒ", "m"], lightning: ["ˈ", "l", "aɪ", "t", "n", "ɪ", "ŋ"], horn: ["h", "ɔː", "n"], ink: ["ɪ", "ŋ", "k"],
     twinkle: ["ˈ", "t", "w", "ɪ", "ŋ", "k", "ə", "l"], little: ["ˈ", "l", "ɪ", "t", "ə", "l"], wonder: ["ˈ", "w", "ʌ", "n", "d", "ə"], world: ["w", "ɜː", "l", "d"], high: ["h", "aɪ"], diamond: ["ˈ", "d", "aɪ", "ə", "m", "ə", "n", "d"], sky: ["s", "k", "aɪ"],
     cap: ["k", "æ", "p"], suit: ["s", "uː", "t"], hammer: ["ˈ", "h", "æ", "m", "ə"], boomerang: ["ˈ", "b", "uː", "m", "ə", "r", "æ", "ŋ"], spring: ["s", "p", "r", "ɪ", "ŋ"], egg: ["e", "ɡ"],
-    pencil: ["ˈ", "p", "e", "n", "s", "ə", "l"], pen: ["p", "e", "n"], eraser: ["ɪ", "ˈ", "r", "eɪ", "z", "ə"], ruler: ["ˈ", "r", "uː", "l", "ə"], book: ["b", "ʊ", "k"], schoolbag: ["ˈ", "s", "k", "uː", "l", "b", "æ", "ɡ"], table: ["ˈ", "t", "eɪ", "b", "ə", "l"], chair: ["tʃ", "eə"],
+    pencil: ["ˈ", "p", "e", "n", "s", "ə", "l"], pen: ["p", "e", "n"], eraser: ["ɪ", "ˈ", "r", "eɪ", "z", "ə"], ruler: ["ˈ", "r", "uː", "l", "ə"], book: ["b", "ʊ", "k"], schoolbag: ["ˈ", "s", "k", "uː", "l", "b", "æ", "ɡ"], table: ["d", "e", "s", "k"], chair: ["tʃ", "eə"],
     first: ["f", "ɜː", "s", "t"], second: ["ˈ", "s", "e", "k", "ə", "n", "d"], third: ["θ", "ɜː", "d"], fourth: ["f", "ɔː", "θ"], fifth: ["f", "ɪ", "f", "θ"], sixth: ["s", "ɪ", "k", "s", "θ"], seventh: ["ˈ", "s", "e", "v", "ə", "n", "θ"], eighth: ["eɪ", "t", "θ"], ninth: ["n", "aɪ", "n", "θ"], tenth: ["t", "e", "n", "θ"]
   };
   for (const word of [...THEME_WORDS, ...COLOR_WORDS, ...NUMBER_1_10_WORDS, ...NUMBER_11_19_WORDS, ...TENS_WORDS, ...ORDINAL_WORDS, ...CLASSIC_ITEMS_1_WORDS, ...CLASSIC_ITEMS_2_WORDS, ...CLASSIC_ITEMS_3_WORDS, ...CLASSIC_ITEMS_4_WORDS, ...CLASSROOM_WORDS, ...TWINKLE_WORDS]) {
@@ -520,7 +520,7 @@ test("主题页十二个卡片、九十一个互动目标、歌词音标、阶�
   assert.doesNotMatch(html, /id="openTotalReview"|id="openWordLibrary"|id="wordLibraryView"|id="totalReviewView"/);
   assert.match(html, /href="\.\/review-learning\.html">总复习<\/a>/);
   assert.match(html, /theme-learning\.css\?v=3\.4/);
-  assert.match(html, /theme-learning\.js\?v=2\.9/);
+  assert.match(html, /theme-learning\.js\?v=2\.10/);
   const script = await readFile(new URL("../theme-learning.js", import.meta.url), "utf8");
   assert.match(script, /phonetic-segmenter\.js\?v=1\.0/);
   assert.match(script, /theme-overview\.js\?v=1\.7/);
@@ -599,9 +599,9 @@ test("总复习是独立并列模块，主题页只记录学习进度", async ()
   assert.match(reviewHtml, /id="totalReviewView"/);
   assert.match(reviewHtml, /id="wordLibraryView" hidden/);
   assert.match(reviewHtml, /theme-learning\.css\?v=3\.4/);
-  assert.match(reviewHtml, /review-learning\.js\?v=1\.6/);
-  assert.match(reviewHtml, /id="wordLibraryCount">0\/215<\/b>/);
-  assert.match(reviewScript, /theme-learning\.js\?v=2\.9/);
+  assert.match(reviewHtml, /review-learning\.js\?v=1\.7/);
+  assert.match(reviewHtml, /id="wordLibraryCount">0\/214<\/b>/);
+  assert.match(reviewScript, /theme-learning\.js\?v=2\.10/);
   assert.match(reviewScript, /theme-overview\.js\?v=1\.7/);
   assert.match(reviewScript, /overview\.openReview\(\)/);
 });

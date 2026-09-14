@@ -11,3 +11,5 @@ Style/medium: friendly high-quality 3D storybook illustration for young children
 Composition/framing: landscape 3:2 aspect ratio; each object large, centered in its own compartment, fully visible, with generous separation and no overlap; keep the exact stated left-to-right order.
 Lighting/mood: bright soft classroom daylight, warm and welcoming.
 Constraints: exactly these eight objects and no others; no people or characters; no object may repeat; the desk and chair must be separate targets in separate compartments; no text, letters, numbers, labels, logos, trademarks, borders with writing, or watermark.
+
+Terminology correction (2026-09-14): the existing student desk artwork is now taught as desk /desk/ (课桌), not table. The original generation prompt above is retained as provenance; no artwork was regenerated.

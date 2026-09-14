@@ -65,8 +65,9 @@ In the ChatGPT/Codex desktop app, add the cloned repository as a local project a
 - The Nursery Rhymes series currently contains Twinkle, Twinkle, Little Star: six lyric lines each place complete British IPA directly below the English line, eight core words remain clickable, and full-verse speech is manual rather than automatic.
 - Counting artwork is code-native and exact: 1-19 use the matching number of coin dots; 10-100 uses one to ten ten-frames, each containing exactly ten dots.
 - Project assets live under `assets/themes/` and have been checked against their mapped words/hotspots.
-- Classroom Things teaches pencil, pen, eraser, ruler, book, schoolbag, table, and chair using `assets/themes/classroom/classroom-things-scene-v1.png`. The 4×2 scene has eight independent non-overlapping hotspots and supplies per-word cropped artwork to the shared word library.
+- Classroom Things teaches pencil, pen, eraser, ruler, book, schoolbag, desk, and chair using `assets/themes/classroom/classroom-things-scene-v1.png`. The 4×2 scene has eight independent non-overlapping hotspots and supplies per-word cropped artwork to the shared word library.
 - Theme learned records remain in `mario-theme-learned-v1` and are one of the three sources of the shared total word library.
+- Classroom's student desk is taught as desk /desk/ (课桌), with “This is a desk.” / “Touch the desk.” The internal ID `table` and saved key `classroom:table` intentionally remain stable to preserve earlier progress. The shared library merges it with Book1 desk, reducing the combined candidate count to 214 without removing learned progress. Focused regression: `node tests/classroom-desk-browser.mjs`.
 
 ### Scenario learning
 
@@ -90,7 +91,7 @@ In the ChatGPT/Codex desktop app, add the cloned repository as a local project a
 - Entry: `review-learning.html`.
 - This is an independent top-level module, not a child page inside Theme Learning.
 - The total word library aggregates words actually learned in Book1, Theme Learning, and Scenario Learning. It reads all three existing progress keys without writing across module boundaries and deduplicates by normalized English spelling.
-- The combined published catalog currently contains 215 unique candidate words. The library and each review round include only the subset actually learned in the current browser profile.
+- The combined published catalog currently contains 214 unique candidate words. The library and each review round include only the subset actually learned in the current browser profile.
 - Theme artwork remains preferred for duplicates, Book1 uses its original word pictures, and scenario words use focused object art when available or a Chinese-meaning choice card when no literal image exists. Reviews keep four unique choices, wrong-answer retry, restart, refresh persistence, desktop and 390px layouts.
 
 ### Bomb maze

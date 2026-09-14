@@ -580,7 +580,7 @@ async function runClassroomTheme(page, action = "click") {
   }
   await page.screenshot({ path: action === "tap" ? "tests/theme-classroom-390.png" : "tests/theme-classroom-desktop.png", fullPage: true });
   if (action === "tap") await page.locator("#practiceStage").tap(); else await page.locator("#practiceStage").click();
-  assert.match((await page.locator("#practiceInstruction").textContent()).trim(), /^Touch the (pencil|pen|eraser|ruler|book|schoolbag|table|chair)\.$/);
+  assert.match((await page.locator("#practiceInstruction").textContent()).trim(), /^Touch the (pencil|pen|eraser|ruler|book|schoolbag|desk|chair)\.$/);
   await finishRound(page, "classroom", classroomIds, action);
   assert.equal((await page.locator("#resultTitle").textContent()).trim(), "八个教室用品全部找对！");
   if (action === "tap") await page.locator("#restartRound").tap(); else await page.locator("#restartRound").click();

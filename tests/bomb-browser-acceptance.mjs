@@ -121,15 +121,15 @@ assert.ok(!primaryIds.includes("0001"), "unlearned word is excluded");
 assert.ok(!primaryIds.includes("0004"), "fully mastered word is excluded");
 assert.ok(!primaryIds.includes("0062"), "legacy data does not override learned primary data");
 await page.locator("#restartBombGame").click();
-await page.waitForFunction(() => window.__BOMB_GAME__.getBoardTargetSummary().renderedLearningCardCount === 5);
+await page.waitForFunction(() => window.__BOMB_GAME__.getBoardTargetSummary().renderedLearningCardCount === 0);
 const initialTargetSummary = await page.evaluate(() => window.__BOMB_GAME__.getBoardTargetSummary());
 assert.equal(initialTargetSummary.levelTargetIds.length, 5, "new level selects exactly five target instances");
 assert.equal(new Set(initialTargetSummary.levelTargetIds).size, 5, "new level target IDs are unique");
-assert.equal(initialTargetSummary.visibleInitialTargetIds.length, 5, "new level places five simultaneous visible target cards");
-assert.equal(new Set(initialTargetSummary.visibleInitialTargetIds).size, 5, "new level renders five different target cards");
+assert.equal(initialTargetSummary.hiddenTargetIds.length, 5, "new level places five simultaneous hidden target cards");
+assert.equal(new Set(initialTargetSummary.hiddenTargetIds).size, 5, "new level renders five different target cards");
 assert.equal(initialTargetSummary.targetEntityCount, 5, "new level state contains five target entities");
-assert.equal(initialTargetSummary.renderedLearningCardCount, 5, "canvas renders all five initial target cards");
-assert.equal((await page.evaluate(() => window.__BOMB_GAME__.getState().hiddenWordCrates.length)), 0, "learning targets are not hidden behind brick placeholders");
+assert.equal(initialTargetSummary.renderedLearningCardCount, 0, "canvas renders no initial target cards");
+assert.equal((await page.evaluate(() => window.__BOMB_GAME__.getState().hiddenWordCrates.length)), 5, "all learning targets are hidden behind bricks");
 const concealedInitialQuestions = await page.evaluate(() => ({
   activeQuestion: window.__BOMB_GAME__.getActiveLearningQuestion(),
   promptTypes: window.__BOMB_GAME__.getState().powerUps
@@ -139,7 +139,7 @@ const concealedInitialQuestions = await page.evaluate(() => ({
     .filter((powerUp) => ["wordChoice", "pinyinChoice"].includes(powerUp.type)).length,
 }));
 assert.equal(concealedInitialQuestions.activeQuestion, null, "no question answer is exposed before a question card is touched");
-assert.deepEqual(concealedInitialQuestions.promptTypes, Array(5).fill("pinyin"), "first level begins with five concealed pinyin question cards");
+assert.deepEqual(concealedInitialQuestions.promptTypes, [], "first level begins with five concealed pinyin question cards");
 assert.equal(concealedInitialQuestions.choiceCount, 0, "answer choices appear only after a question is activated");
 
 const constants = await page.evaluate(() => window.__BOMB_GAME__.getConstants());
@@ -180,7 +180,7 @@ const resourcePaths = [
   "index.html",
   "bomb-game.html",
   "bomb-game.css?v=1.1",
-  "bomb-game.js?v=1.4",
+  "bomb-game.js?v=1.5",
   "data/characters.js?v=1.0",
   "data/pinyin-readings.js?v=1.0",
   "assets/sprites/enemies-bosses.png",
@@ -289,10 +289,10 @@ const restarted = await page.evaluate(() => {
   return { status: current.status, world: current.world, subLevel: current.subLevel, hp: current.hp, bombs: current.bombs.length };
 });
 assert.deepEqual(restarted, { status: "playing", world: 1, subLevel: 1, hp: 3, bombs: 0 }, "Enter on restart performs a full native restart");
-await page.waitForFunction(() => window.__BOMB_GAME__.getBoardTargetSummary().renderedLearningCardCount === 5);
+await page.waitForFunction(() => window.__BOMB_GAME__.getBoardTargetSummary().renderedLearningCardCount === 0);
 const restartedTargets = await page.evaluate(() => window.__BOMB_GAME__.getBoardTargetSummary());
 assert.equal(restartedTargets.levelTargetIds.length, 5, "restart rebuilds five target instances");
-assert.equal(restartedTargets.visibleInitialTargetIds.length, 5, "restart shows five target cards on the board");
+assert.equal(restartedTargets.hiddenTargetIds.length, 5, "restart shows five target cards on the board");
 assert.equal(restartedTargets.targetEntityCount, 5, "restart state contains five target entities");
 
 await page.goto(baseUrl + "bomb-game.css?pause-before-restore=1");
@@ -413,7 +413,7 @@ const oneEvidenceHanziBefore = await page.evaluate(({ hanziKey, legacyKey }) => 
 await page.goto(bombUrl);
 await page.waitForFunction(() => Boolean(window.__BOMB_GAME__));
 await page.locator("#restartBombGame").click();
-await page.waitForFunction(() => window.__BOMB_GAME__.getBoardTargetSummary().renderedLearningCardCount === 5);
+await page.waitForFunction(() => window.__BOMB_GAME__.getBoardTargetSummary().renderedLearningCardCount === 0);
 const uniqueNewGame = await page.evaluate(() => {
   const summary = window.__BOMB_GAME__.getBoardTargetSummary();
   const state = window.__BOMB_GAME__.getState();
@@ -421,7 +421,7 @@ const uniqueNewGame = await page.evaluate(() => {
   return {
     summary,
     levelChars: summary.levelTargetIds.map((id) => charsById.get(id)),
-    visibleChars: summary.visibleInitialTargetIds.map((id) => charsById.get(id)),
+    visibleChars: summary.hiddenTargetIds.map((id) => charsById.get(id)),
     runIds: state.bombRunWordIds,
     runChars: state.bombRunWordIds.map((id) => charsById.get(id)),
   };
@@ -429,10 +429,10 @@ const uniqueNewGame = await page.evaluate(() => {
 assert.deepEqual(uniqueNewGame.summary.levelTargetIds, ["0001", "0002", "0003", "0005", "0006"], "evidence word comes first, then stable non-mastered fallback words");
 assert.equal(new Set(uniqueNewGame.summary.levelTargetIds).size, 5, "new game has five different target IDs");
 assert.equal(new Set(uniqueNewGame.levelChars).size, 5, "new game has five different Hanzi characters");
-assert.deepEqual(uniqueNewGame.summary.visibleInitialTargetIds, uniqueNewGame.summary.levelTargetIds, "all five unique targets are simultaneously visible");
+assert.deepEqual(uniqueNewGame.summary.hiddenTargetIds, uniqueNewGame.summary.levelTargetIds, "all five unique targets are hidden in bricks");
 assert.equal(new Set(uniqueNewGame.visibleChars).size, 5, "the rendered target cards show five different characters");
 assert.equal(uniqueNewGame.summary.targetEntityCount, 5);
-assert.equal(uniqueNewGame.summary.renderedLearningCardCount, 5);
+assert.equal(uniqueNewGame.summary.renderedLearningCardCount, 0);
 assert.equal(uniqueNewGame.runIds.length, 50, "Bomb run pool remains capped at 50 unique words");
 assert.equal(new Set(uniqueNewGame.runIds).size, 50, "Bomb run pool contains unique IDs");
 assert.equal(new Set(uniqueNewGame.runChars).size, 50, "Bomb run pool contains unique characters");
@@ -441,28 +441,28 @@ await page.screenshot({ path: "tests/bomb-desktop.png", fullPage: true });
 
 await page.locator("#restartBombGame").focus();
 await page.keyboard.press("Enter");
-await page.waitForFunction(() => window.__BOMB_GAME__.getBoardTargetSummary().renderedLearningCardCount === 5);
+await page.waitForFunction(() => window.__BOMB_GAME__.getBoardTargetSummary().renderedLearningCardCount === 0);
 const uniqueRestart = await page.evaluate(() => window.__BOMB_GAME__.getBoardTargetSummary());
 assert.deepEqual(uniqueRestart.levelTargetIds, ["0001", "0002", "0003", "0005", "0006"], "restart rebuilds the same stable five unique targets");
-assert.equal(new Set(uniqueRestart.visibleInitialTargetIds).size, 5, "restart visibly renders five different cards");
+assert.equal(new Set(uniqueRestart.hiddenTargetIds).size, 5, "restart hides five different cards");
 assert.equal(uniqueRestart.targetEntityCount, 5);
 
 await page.setViewportSize({ width: 390, height: 844 });
 await page.reload();
-await page.waitForFunction(() => window.__BOMB_GAME__.getBoardTargetSummary().renderedLearningCardCount === 5);
+await page.waitForFunction(() => window.__BOMB_GAME__.getBoardTargetSummary().renderedLearningCardCount === 0);
 const uniqueMobile = await page.evaluate(() => {
   const summary = window.__BOMB_GAME__.getBoardTargetSummary();
   const charsById = new Map(window.MARIO_WORD_BANK.map((word) => [word.id, word.char]));
   return {
     summary,
-    visibleChars: summary.visibleInitialTargetIds.map((id) => charsById.get(id)),
+    visibleChars: summary.hiddenTargetIds.map((id) => charsById.get(id)),
     overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
   };
 });
-assert.equal(uniqueMobile.summary.visibleInitialTargetIds.length, 5, "390px board still renders five target cards");
-assert.equal(new Set(uniqueMobile.summary.visibleInitialTargetIds).size, 5, "390px target IDs are unique");
+assert.equal(uniqueMobile.summary.hiddenTargetIds.length, 5, "390px board still renders five target cards");
+assert.equal(new Set(uniqueMobile.summary.hiddenTargetIds).size, 5, "390px target IDs are unique");
 assert.equal(new Set(uniqueMobile.visibleChars).size, 5, "390px target characters are unique");
-assert.equal(uniqueMobile.summary.renderedLearningCardCount, 5);
+assert.equal(uniqueMobile.summary.renderedLearningCardCount, 0);
 assert.equal(uniqueMobile.overflow, false);
 await page.screenshot({ path: "tests/bomb-390.png", fullPage: true });
 
@@ -471,7 +471,9 @@ await page.setViewportSize({ width: 1440, height: 1000 });
 const pollutedSave = await page.evaluate(() => {
   const current = window.__BOMB_GAME__.getState();
   const tian = current.todayNewWords.find((word) => word.id === "0001");
-  const tianPrompt = current.powerUps.find((powerUp) => powerUp.type === "pinyin" && powerUp.wordId === "0001");
+  const tianPrompt = { type: "pinyin", wordId: "0001", gx: 3, gy: 1, seed: 0 };
+  delete current.targetRevealPolicy;
+  current.hiddenWordCrates = [];
   current.todayNewWords = Array(7).fill(tian);
   current.bombRunWordIds = Array(60).fill("0001");
   current.bombWordCursor = 41;
@@ -485,16 +487,16 @@ const pollutedSave = await page.evaluate(() => {
   return current;
 });
 await restoreBombSnapshot(pollutedSave);
-await page.waitForFunction(() => window.__BOMB_GAME__.getBoardTargetSummary().renderedLearningCardCount === 5);
+await page.waitForFunction(() => window.__BOMB_GAME__.getBoardTargetSummary().renderedLearningCardCount === 0);
 const repairedPollutedSave = await page.evaluate(() => window.__BOMB_GAME__.getBoardTargetSummary());
 assert.equal(repairedPollutedSave.levelTargetIds.length, 5, "polluted save is capped to five targets");
 assert.equal(new Set(repairedPollutedSave.levelTargetIds).size, 5, "polluted repeated target IDs are replaced with five unique IDs");
-assert.equal(new Set(repairedPollutedSave.visibleInitialTargetIds).size, 5, "polluted board entities are replaced with five visible unique cards");
+assert.equal(new Set(repairedPollutedSave.hiddenTargetIds).size, 5, "polluted board entities are replaced with five hidden unique cards");
 assert.equal(repairedPollutedSave.targetEntityCount, 5, "polluted save cannot retain a sixth target entity");
 
 // Restart clears the polluted queue and starts a clean five-target level.
 await page.locator("#restartBombGame").click();
-await page.waitForFunction(() => window.__BOMB_GAME__.getBoardTargetSummary().renderedLearningCardCount === 5);
+await page.waitForFunction(() => window.__BOMB_GAME__.getBoardTargetSummary().renderedLearningCardCount === 0);
 const cleanAfterPollution = await page.evaluate(() => ({
   state: window.__BOMB_GAME__.getState(),
   summary: window.__BOMB_GAME__.getBoardTargetSummary(),
@@ -509,6 +511,9 @@ const oneEvidenceHanziAfter = await page.evaluate(({ hanziKey, legacyKey }) => (
 }), { hanziKey: HANZI_KEY, legacyKey: LEGACY_KEY });
 assert.deepEqual(oneEvidenceHanziAfter, oneEvidenceHanziBefore, "fallback selection never mutates Hanzi or legacy state");
 
+await page.setViewportSize({ width: 390, height: 844 });
+await assertBrickRevealAndEnemyClear("pinyin");
+await page.setViewportSize({ width: 1440, height: 1000 });
 const completionGateSave = await page.evaluate(() => window.__BOMB_GAME__.getState());
 const firstLevelTargetIds = completionGateSave.todayNewWords.map((word) => word.id);
 completionGateSave.status = "playing";
@@ -562,7 +567,7 @@ for (let completed = 0; completed < 5; completed += 1) {
     }
   } else {
     await page.waitForFunction(() => window.__BOMB_GAME__.getState().subLevel === 2);
-    await page.waitForFunction(() => window.__BOMB_GAME__.getBoardTargetSummary().renderedLearningCardCount === 5);
+    await page.waitForFunction(() => window.__BOMB_GAME__.getBoardTargetSummary().renderedLearningCardCount === 0);
     const nextLevelTargets = await page.evaluate(() => ({
       state: window.__BOMB_GAME__.getState(),
       summary: window.__BOMB_GAME__.getBoardTargetSummary(),
@@ -570,8 +575,8 @@ for (let completed = 0; completed < 5; completed += 1) {
     assert.equal(nextLevelTargets.state.subLevel, 2, "level advances only after the fifth target is solved");
     assert.equal(nextLevelTargets.summary.levelTargetIds.length, 5, "next level selects five targets");
     assert.equal(new Set(nextLevelTargets.summary.levelTargetIds).size, 5, "next level target IDs are unique");
-    assert.equal(nextLevelTargets.summary.visibleInitialTargetIds.length, 5, "next level renders five visible target cards");
-    assert.equal(new Set(nextLevelTargets.summary.visibleInitialTargetIds).size, 5, "next level renders five different cards");
+    assert.equal(nextLevelTargets.summary.hiddenTargetIds.length, 5, "next level hides five target cards");
+    assert.equal(new Set(nextLevelTargets.summary.hiddenTargetIds).size, 5, "next level renders five different cards");
     assert.equal(nextLevelTargets.summary.targetEntityCount, 5);
     assert.deepEqual(nextLevelTargets.summary.levelTargetIds.filter((id) => firstLevelTargetIds.includes(id)), [], "next level rotates to five different words when the pool permits");
     await page.waitForTimeout(500);
@@ -581,14 +586,15 @@ for (let completed = 0; completed < 5; completed += 1) {
 
 const nextLevelSave = await page.evaluate(() => window.__BOMB_GAME__.getState());
 await restoreBombSnapshot(nextLevelSave);
-await page.waitForFunction(() => window.__BOMB_GAME__.getBoardTargetSummary().renderedLearningCardCount === 5);
+await page.waitForFunction(() => window.__BOMB_GAME__.getBoardTargetSummary().renderedLearningCardCount === 0);
 const nextLevelRestored = await page.evaluate(() => window.__BOMB_GAME__.getBoardTargetSummary());
 assert.equal(nextLevelRestored.levelTargetIds.length, 5, "fresh next-level save restores five targets");
 assert.equal(new Set(nextLevelRestored.levelTargetIds).size, 5, "fresh next-level save restores five unique target IDs");
-assert.equal(nextLevelRestored.visibleInitialTargetIds.length, 5, "fresh next-level save restores five visible target cards");
-assert.equal(new Set(nextLevelRestored.visibleInitialTargetIds).size, 5, "fresh next-level save restores five different cards");
+assert.equal(nextLevelRestored.hiddenTargetIds.length, 5, "fresh next-level save restores five hidden cards");
+assert.equal(new Set(nextLevelRestored.hiddenTargetIds).size, 5, "fresh next-level save restores five different cards");
 assert.equal(nextLevelRestored.targetEntityCount, 5);
 
+await assertBrickRevealAndEnemyClear("hanzi");
 const hanziQuestionSave = await page.evaluate(() => window.__BOMB_GAME__.getState());
 const hanziPrompt = hanziQuestionSave.powerUps.find((powerUp) => powerUp.type === "hanziPrompt");
 assert.ok(hanziPrompt, "second level begins with concealed Hanzi question cards");
@@ -664,9 +670,74 @@ console.log(JSON.stringify({
   mobile390NoOverflow: true,
   fiveTargetsPerLevel: ["new game", "restart", "next level", "partial restore", "fresh restore", "polluted-save repair"],
   completionBoundary: "five unique completions, one advance, no sixth event",
-  renderedDifferentTargetCards: 5,
+  hiddenDifferentTargetCards: 5,
   resources200: resourceStatuses.length,
 }, null, 2));
 
 await context.close();
 await browser.close();
+
+async function assertBrickRevealAndEnemyClear(mode) {
+  const saved = await page.evaluate(() => window.__BOMB_GAME__.getState());
+  assert.equal(saved.hiddenWordCrates.length, 5, mode + ": five hidden questions");
+  const counts = saved.bombTargetRoundCounts;
+  await restoreBombSnapshot(saved);
+  assert.deepEqual(await page.evaluate(() => window.__BOMB_GAME__.getState().hiddenWordCrates), saved.hiddenWordCrates, "refresh keeps hiding locations");
+  assert.deepEqual(await page.evaluate(() => window.__BOMB_GAME__.getState().bombTargetRoundCounts), counts, "hidden questions do not add appearance rounds");
+  const ids = saved.todayNewWords.map(word => word.id);
+  saved.status = "playing";
+  saved.enemyClearOpenedBricks = false;
+  saved.shells = [];
+  saved.powerUps = [];
+  saved.hiddenPowerUps = [];
+  saved.explosions = [];
+  saved.map = saved.map.map(row => row.map(tile => tile === 2 ? 0 : tile));
+  const cells = [[4,3], [3,5], [5,5], [7,5], [9,5]];
+  saved.hiddenWordCrates = cells.map(([x,y], index) => {
+    saved.map[y][x] = 2;
+    return [x + "," + y, ids[index]];
+  });
+  saved.map[3][2] = 0;
+  saved.map[3][3] = 0;
+  saved.player = { ...saved.player, gx: 1, gy: 1, move: null, invulnerable: 99 };
+  const enemyX = saved.map[0].length - 2;
+  saved.enemies = [7,9].map((y,index) => ({
+    ...saved.enemies[0], id: index + 1, type: "mushroom", hp: 1, alive: true,
+    gx: enemyX, gy: y, move: null, stunTimer: 99, hitCooldown: 0
+  }));
+  saved.enemies.forEach(enemy => { saved.map[enemy.gy][enemy.gx] = 0; });
+  saved.bombs = [{ gx: 3, gy: 3, time: 0.12, range: 1, ownerInside: false, exploded: false }];
+  await restoreBombSnapshot(saved);
+  await page.waitForFunction(() => window.__BOMB_GAME__.getBoardTargetSummary().visibleInitialTargetIds.length === 1);
+  const revealed = await page.evaluate(() => window.__BOMB_GAME__.getState());
+  const summary = await page.evaluate(() => window.__BOMB_GAME__.getBoardTargetSummary());
+  assert.equal(summary.hiddenTargetIds.length, 4);
+  assert.equal(summary.targetEntityCount, 5);
+  assert.deepEqual(summary.visibleInitialTargetIds, [ids[0]]);
+  assert.equal(revealed.powerUps.find(item => item.wordId === ids[0]).type, mode === "hanzi" ? "hanziPrompt" : "pinyin");
+  assert.equal(revealed.enemies.filter(enemy => enemy.alive).length, 2);
+  assert.equal(revealed.bombTargetRoundCounts[ids[0]], (counts[ids[0]] || 0) + 1, "appearance increments only on reveal");
+  revealed.explosions = [];
+  revealed.bombs = [];
+  await restoreBombSnapshot(revealed);
+  assert.equal((await page.evaluate(() => window.__BOMB_GAME__.getBoardTargetSummary())).hiddenTargetIds.length, 4, "reload preserves partially revealed board");
+  assert.deepEqual(await page.evaluate(() => window.__BOMB_GAME__.getState().bombTargetRoundCounts), revealed.bombTargetRoundCounts, "reload never adds appearance rounds");
+  for (let index = 0; index < 2; index += 1) {
+    const attack = await page.evaluate(() => window.__BOMB_GAME__.getState());
+    const enemy = attack.enemies.find(item => item.alive);
+    attack.explosions = [];
+    attack.bombs = [{ gx: enemy.gx, gy: enemy.gy, time: 0.12, range: 1, ownerInside: false, exploded: false }];
+    await restoreBombSnapshot(attack);
+    await page.waitForFunction(count => window.__BOMB_GAME__.getState().enemies.filter(item => item.alive).length === count, 1 - index);
+    if (index === 0) assert.equal((await page.evaluate(() => window.__BOMB_GAME__.getBoardTargetSummary())).hiddenTargetIds.length, 4, "one remaining enemy prevents full reveal");
+  }
+  await page.waitForFunction(() => window.__BOMB_GAME__.getBoardTargetSummary().renderedLearningCardCount === 5);
+  const cleared = await page.evaluate(() => window.__BOMB_GAME__.getState());
+  assert.equal(cleared.hiddenWordCrates.length, 0, "last enemy reveals every pending question");
+  assert.equal(cleared.map.flat().includes(2), false, "enemy clear opens remaining bricks");
+  assert.equal(cleared.moonWordIds.length, 0, "reveal never counts as an answer");
+  assert.equal((await page.evaluate(() => window.__BOMB_GAME__.getBoardTargetSummary())).targetEntityCount, 5);
+  await page.screenshot({ path: "tests/bomb-revealed-" + mode + ".png", fullPage: true });
+  await restoreBombSnapshot(cleared);
+  assert.equal((await page.evaluate(() => window.__BOMB_GAME__.getBoardTargetSummary())).visibleInitialTargetIds.length, 5, "cleared save keeps all pending questions visible");
+}

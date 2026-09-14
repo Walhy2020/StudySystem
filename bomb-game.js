@@ -259,6 +259,7 @@
   function serializeBombProgress() {
     return {
       version: BOMB_PROGRESS_VERSION,
+      targetRevealPolicy: 1,
       savedAt: Date.now(),
       status: state.status,
       world: state.world,
@@ -374,7 +375,7 @@
     state.activeHanziWordId = saved.activeHanziWordId || null;
     state.activePinyinStep = Math.max(0, Number(saved.activePinyinStep) || 0);
     state.activePinyinTotal = Math.max(0, Number(saved.activePinyinTotal) || 0);
-    normalizeRestoredLevelTargets();
+    normalizeRestoredLevelTargets(saved.targetRevealPolicy === 1);
     lastDirection = saved.lastDirection || "right";
     messageNode.textContent = saved.messageText || "";
     messageTimer = Math.max(0, Number(saved.messageTimer) || 0);
@@ -923,6 +924,17 @@
         }
       }
     }
+    // Even the sparsest random board must have room for five hidden questions and rewards.
+    let crates = map.flat().filter((tile) => tile === TILE_CRATE).length;
+    const minimumCrates = BOMB_MOONS_PER_LEVEL + maxFireFlowersForLevel() + 1;
+    for (let y = 1; y < ROWS - 1 && crates < minimumCrates; y += 1) {
+      for (let x = 1; x < COLS - 1 && crates < minimumCrates; x += 1) {
+        if (map[y][x] === TILE_FLOOR && !protectedCells.has(coordKey(x, y))) {
+          map[y][x] = TILE_CRATE;
+          crates += 1;
+        }
+      }
+    }
     return map;
   }
 
@@ -992,6 +1004,10 @@
     }
 
     candidates.sort(() => Math.random() - 0.5);
+    pendingLevelWords().forEach((word) => {
+      const cell = candidates.shift();
+      if (cell) state.hiddenWordCrates.set(coordKey(cell.x, cell.y), word.id);
+    });
     const greenMushroomCell = candidates.shift();
     if (greenMushroomCell) {
       state.hiddenPowerUps.set(coordKey(greenMushroomCell.x, greenMushroomCell.y), "greenMushroom");
@@ -1015,7 +1031,26 @@
     return Math.min(targetWords.length, cells.length);
   }
 
-  function normalizeRestoredLevelTargets() {
+  function hideMissingLevelTargets(words) {
+    const cells = [];
+    for (let y = 1; y < ROWS - 1; y += 1) {
+      for (let x = 1; x < COLS - 1; x += 1) {
+        const key = coordKey(x, y);
+        if (state.map[y][x] === TILE_CRATE && !state.hiddenWordCrates.has(key) &&
+            !state.hiddenPowerUps.has(key) && !powerUpAt(x, y)) cells.push({ x, y });
+      }
+    }
+    cells.sort(() => Math.random() - 0.5);
+    const revealed = [];
+    words.forEach((word) => {
+      const cell = cells.shift();
+      if (cell) state.hiddenWordCrates.set(coordKey(cell.x, cell.y), word.id);
+      else revealed.push(word); // A cleared saved board must never lose its remaining questions.
+    });
+    spawnVisibleLevelTargets(revealed);
+  }
+
+  function normalizeRestoredLevelTargets(preserveRevealed = true) {
     refreshDailyNewWords();
     const targetIds = uniqueWordIdsByCharacter(state.todayNewWords.map((word) => word.id));
     fillLevelTargetIds(targetIds);
@@ -1029,14 +1064,6 @@
     if (!pendingSet.has(state.activePinyinWordId) && !pendingSet.has(state.activeHanziWordId)) {
       resetActiveLearningTask();
     }
-
-    state.hiddenWordCrates.forEach((wordId, key) => {
-      const [gx, gy] = key.split(",").map(Number);
-      if (state.map[gy]?.[gx] === TILE_CRATE && wordById(wordId)) {
-        state.map[gy][gx] = TILE_FLOOR;
-      }
-    });
-    state.hiddenWordCrates = new Map();
 
     const mode = currentLearningMode();
     const legacyPinyinTargetId = mode === LEARNING_MODES.hanzi
@@ -1072,6 +1099,7 @@
 
     state.powerUps = state.powerUps.filter((powerUp) => {
       if (powerUp.type !== "pinyin" && powerUp.type !== "hanziPrompt") return true;
+      if (!preserveRevealed && !state.enemyClearOpenedBricks && crateCount() > 0) return false;
       const expectedType = mode === LEARNING_MODES.hanzi ? "hanziPrompt" : "pinyin";
       if (powerUp.type !== expectedType) return false;
       if (!pendingSet.has(powerUp.wordId) || representedIds.has(powerUp.wordId)) return false;
@@ -1079,8 +1107,19 @@
       return true;
     });
 
+    const openedWords = [];
+    state.hiddenWordCrates = new Map([...state.hiddenWordCrates].filter(([key, id]) => {
+      if (!pendingSet.has(id) || representedIds.has(id)) return false;
+      const [gx, gy] = key.split(",").map(Number);
+      if (!Number.isInteger(gx) || !Number.isInteger(gy) || gx < 1 || gx >= COLS - 1 || gy < 1 || gy >= ROWS - 1) return false;
+      representedIds.add(id);
+      if (state.map[gy][gx] === TILE_CRATE) return true;
+      openedWords.push(wordById(id));
+      return false;
+    }));
+    spawnVisibleLevelTargets(openedWords);
     const missingWords = pendingLevelWords().filter((word) => !representedIds.has(word.id));
-    spawnVisibleLevelTargets(missingWords);
+    hideMissingLevelTargets(missingWords);
   }
 
   function setupSubLevel() {
@@ -1105,7 +1144,6 @@
     state.dayClock = 0;
     clearInputState();
     seedHiddenPowerUps();
-    spawnVisibleLevelTargets();
     startTitle.textContent = `第 ${state.world}-${state.subLevel} / ${LEVELS_PER_WORLD} 小关 · 难度 ${difficultyLabelForSubLevel()}`;
     overlayStartButton.textContent = state.subLevel === 1 ? "开始" : "继续";
     startLayer.classList.remove("hidden");
@@ -3061,8 +3099,9 @@
         levelTargetIds: state.todayNewWords.map((word) => word.id),
         completedTargetIds: state.moonWordIds.slice(),
         visibleInitialTargetIds: initialTargets.map((powerUp) => powerUp.wordId),
+        hiddenTargetIds: [...state.hiddenWordCrates.values()],
         activeTargetIds,
-        targetEntityCount: state.moonWordIds.length + initialTargets.length + activeTargetIds.length,
+        targetEntityCount: state.moonWordIds.length + state.hiddenWordCrates.size + initialTargets.length + activeTargetIds.length,
         renderedLearningCardCount: lastRenderedLearningCardCount,
       };
     },

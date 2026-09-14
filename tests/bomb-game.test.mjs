@@ -34,7 +34,7 @@ const calculateLayout = new Function(
 
 assert.match(html, /<canvas id="bombCanvas" width="1280" height="720"/);
 assert.ok(html.includes('bomb-game.css?v=1.1'));
-assert.ok(html.includes('bomb-game.js?v=1.4'));
+assert.ok(html.includes('bomb-game.js?v=1.5'));
 assert.ok(html.includes('./data/characters.js?v=1.0'));
 assert.ok(html.includes('./data/pinyin-readings.js?v=1.0'));
 assert.ok(!html.includes("stable-url.js"));
@@ -69,7 +69,7 @@ assert.ok(js.includes("function uniqueWordIdsByCharacter(ids)"));
 assert.ok(js.includes("while (levelIds.length < BOMB_MOONS_PER_LEVEL && inspected < runIds.length)"));
 assert.ok(js.includes("selectedCharacters.has(character)"), "a level cannot repeat the same Hanzi character");
 assert.ok(js.includes("function spawnVisibleLevelTargets(words = pendingLevelWords())"));
-assert.ok(js.includes("function normalizeRestoredLevelTargets()"));
+assert.ok(js.includes("function normalizeRestoredLevelTargets(preserveRevealed = true)"));
 assert.ok(js.includes("function completeLearningTarget(wordId)"));
 assert.ok(js.includes("state.moonWordIds.push(wordId)"));
 assert.ok(js.includes("isLevelTarget(wordId) || isLevelWordComplete(wordId)"), "only an unfinished level target can complete");

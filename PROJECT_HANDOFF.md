@@ -97,7 +97,9 @@ In the ChatGPT/Codex desktop app, add the cloned repository as a local project a
 ### Bomb maze
 
 - Entry: `bomb-game.html`.
-- Each level has five target instances. When the eligible Hanzi pool contains fewer than five distinct words, a word may repeat as separate target instances so the level still requires 5/5 completions.
+- Each level has five distinct Hanzi targets: prioritize learning evidence, then fill from non-mastered words without repeating the same character. Odd/even sublevels alternate pinyin-to-Hanzi and Hanzi-to-pinyin questions.
+- All five questions start hidden inside separate bricks. Destroying a target brick reveals its question card; eliminating the last enemy opens all remaining bricks and reveals all pending questions. Revealing is not answering: five correct completions are still required.
+- Bomb saves remain version 1, with targetRevealPolicy=1 distinguishing the restored hidden-question rule. New saves preserve hidden/revealed/active/completed state; old automatically visible unanswered prompts are re-hidden where intact bricks remain, without discarding active answers or completed progress. Only actual reveals increment appearance counts.
 - Save/resume, restart, next-level flow, keyboard controls, mobile layout, and isolated bomb progress are implemented.
 
 ## Navigation and storage

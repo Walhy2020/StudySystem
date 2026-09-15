@@ -89,6 +89,7 @@ In the ChatGPT/Codex desktop app, add the cloned repository as a local project a
 ### Overall review
 
 - Entry: `review-learning.html`.
+- Space toggles the current review word's IPA breakdown, using the same click behavior. Entering a round focuses its IPA button; repeated keydown does not retrigger, and sound/answer/navigation controls keep native keyboard behavior. New questions begin collapsed.
 - This is an independent top-level module, not a child page inside Theme Learning.
 - The total word library aggregates words actually learned in Book1, Theme Learning, and Scenario Learning. It reads all three existing progress keys without writing across module boundaries and deduplicates by normalized English spelling.
 - The combined published catalog currently contains 214 unique candidate words. The library and each review round include only the subset actually learned in the current browser profile.

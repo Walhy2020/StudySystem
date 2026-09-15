@@ -599,7 +599,7 @@ test("总复习是独立并列模块，主题页只记录学习进度", async ()
   assert.match(reviewHtml, /id="totalReviewView"/);
   assert.match(reviewHtml, /id="wordLibraryView" hidden/);
   assert.match(reviewHtml, /theme-learning\.css\?v=3\.4/);
-  assert.match(reviewHtml, /review-learning\.js\?v=1\.7/);
+  assert.match(reviewHtml, /review-learning\.js\?v=1\.8/);
   assert.match(reviewHtml, /id="wordLibraryCount">0\/214<\/b>/);
   assert.match(reviewScript, /theme-learning\.js\?v=2\.10/);
   assert.match(reviewScript, /theme-overview\.js\?v=1\.7/);

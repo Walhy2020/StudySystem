@@ -311,6 +311,7 @@ assert.equal(await page.locator("#totalReviewPanel").isVisible(), true);
 assert.equal(await page.locator(".review-option").count(), 4);
 await page.locator("#totalReviewPhonetic").click();
 assert.equal(await page.locator("#totalReviewPhonemes").isVisible(), true);
+await assertReviewSpace(page);
 const reviewSpokenBefore = await page.evaluate(() => window.__spoken.length);
 await page.locator("#totalReviewSpeak").click();
 assert.equal(await page.evaluate(() => window.__spoken.length), reviewSpokenBefore + 1);
@@ -347,6 +348,7 @@ assert.equal(mobileGeometry.allInside, true);
 assert.ok(mobileGeometry.firstArt >= 100 && mobileGeometry.lastArt >= 100);
 await mobile.screenshot({ path: "tests/theme-library-390.png", fullPage: true });
 await mobile.tap("#startLibraryReview");
+await assertReviewSpace(mobile);
 await assertNoOverflow(mobile);
 assert.equal(await mobile.locator(".review-option").count(), 4);
 const optionGeometry = await mobile.locator(".review-option").evaluateAll((options) => options.map((node) => {
@@ -460,3 +462,48 @@ console.log(JSON.stringify({
   ]
 }, null, 2));
 await browser.close();
+
+async function assertReviewSpace(page) {
+  const toggle = page.locator("#totalReviewPhonetic");
+  const expanded = () => toggle.getAttribute("aria-expanded");
+  await toggle.focus();
+  if (await expanded() === "true") await toggle.click();
+  const before = await page.evaluate(() => ({
+    index: window.__THEME_OVERVIEW__.reviewSession.questionIndex,
+    spoken: window.__spoken.length, writes: window.__storageMutations.length
+  }));
+  await page.keyboard.down("Space");
+  assert.equal(await expanded(), "true", "Space expands once on keydown");
+  await page.keyboard.down("Space");
+  assert.equal(await expanded(), "true", "holding Space cannot toggle repeatedly");
+  await page.keyboard.up("Space");
+  assert.equal(await expanded(), "true", "native keyup cannot toggle a second time");
+  await page.keyboard.press("Space");
+  assert.equal(await expanded(), "false");
+  await toggle.evaluate(node => node.blur());
+  const scrollBefore = await page.evaluate(() => scrollY);
+  await page.keyboard.press("Space");
+  assert.equal(await expanded(), "true", "Space works without button focus");
+  assert.equal(await page.evaluate(() => scrollY), scrollBefore, "Space does not scroll");
+  await page.keyboard.press("Space");
+  assert.equal(await expanded(), "false");
+  await page.keyboard.press("Control+Space");
+  assert.equal(await expanded(), "false", "modified shortcut is ignored");
+  assert.deepEqual(await page.evaluate(() => ({
+    index: window.__THEME_OVERVIEW__.reviewSession.questionIndex,
+    spoken: window.__spoken.length, writes: window.__storageMutations.length
+  })), before, "IPA toggling never answers, speaks or stores progress");
+  await page.locator("#totalReviewSpeak").focus();
+  await page.keyboard.press("Space");
+  assert.equal(await expanded(), "false", "sound button Space keeps its native action");
+  assert.equal(await page.evaluate(() => window.__spoken.length), before.spoken + 1);
+  await page.locator("#openWordLibrary").click();
+  await page.locator("#openWordLibrary").evaluate(node => node.blur());
+  await page.keyboard.press("Space");
+  assert.equal(await expanded(), "false", "hidden review is not toggled from library");
+  await page.locator("#startLibraryReview").click();
+  assert.equal(await toggle.evaluate(node => document.activeElement === node), true);
+  await page.keyboard.press("Space");
+  assert.equal(await expanded(), "true", "entry immediately supports Space");
+  await assertNoOverflow(page);
+}

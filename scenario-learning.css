@@ -24,3 +24,4 @@
 .actor-stage[data-scenario-id="counting-pens"] .scenario-object-focus{width:62%;top:4%;border-radius:22px}
 .actor-stage[data-scenario-id="counting-pens"] .scene-actor{width:25%;height:48%;bottom:2%}
 @media(max-width:560px){.actor-stage[data-scenario-id="counting-pens"]{aspect-ratio:1}}
+.counting-practice-image{display:block;width:min(100%,260px);aspect-ratio:1;object-fit:contain;margin:0 auto 16px;border-radius:18px;background:#fff}

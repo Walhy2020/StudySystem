@@ -67,11 +67,32 @@ export const WHAT_IS_IT_VOCABULARY = Object.freeze([
   ["good", "/ɡʊd/", "好的；很棒"], ["color", "/ˈkʌlə/", "颜色"], ["no", "/nəʊ/", "不；不对"],
 ].map(([word, phonetic, chinese]) => Object.freeze({ word, phonetic, chinese })));
 
+export const COUNTING_EXTRA_GROUPS = Object.freeze([
+  ["three-pencils", 3, "three", "/θriː/", "pencils", "/ˈpensəlz/", "三", "支铅笔", "classroom", "pencil"],
+  ["two-keys", 2, "two", "/tuː/", "keys", "/kiːz/", "二", "把钥匙", "items1", "key"],
+  ["four-mushrooms", 4, "four", "/fɔː/", "mushrooms", "/ˈmʌʃruːmz/", "四", "个蘑菇", "items2", "mushroom"],
+  ["five-coins", 5, "five", "/faɪv/", "coins", "/kɔɪnz/", "五", "枚金币", "items1", "coin"],
+  ["six-stars", 6, "six", "/sɪks/", "stars", "/stɑːz/", "六", "颗星星", "items1", "star"],
+].map(([id, count, number, numberIpa, word, wordIpa, chineseNumber, objectChinese, sourceTheme, sourceWord]) => Object.freeze({ id, count, number, numberIpa, word, wordIpa, chineseNumber, objectChinese, sourceTheme, sourceWord })));
+
+const countingGroupLines = (group) => {
+  const prefix = `counting-${group.id}`;
+  const number = group.numberIpa.slice(1, -1), word = group.wordIpa.slice(1, -1);
+  const amount = group.count === 2 ? "两" : group.chineseNumber;
+  return [
+    line(`${prefix}-number-question`, "Mia", "What number is it?", "/wɒt ˈnʌmbə ɪz ɪt/", "这是数字几？", [["What", "/wɒt/"], ["number", "/ˈnʌmbə/"], ["is", "/ɪz/"], ["it?", "/ɪt/"]], group.id),
+    line(`${prefix}-number-answer`, "Leo", `It is ${group.number}.`, `/ɪt ɪz ${number}/`, `是数字${group.chineseNumber}。`, [["It", "/ɪt/"], ["is", "/ɪz/"], [`${group.number}.`, group.numberIpa]], group.id),
+    line(`${prefix}-question`, "Mia", `How many ${group.word} do you have?`, `/haʊ ˈmeni ${word} duː juː hæv/`, `你有多少${group.objectChinese}？`, [["How", "/haʊ/"], ["many", "/ˈmeni/"], [group.word, group.wordIpa], ["do", "/duː/"], ["you", "/juː/"], ["have?", "/hæv/"]], group.id),
+    line(`${prefix}-answer`, "Leo", `I have ${group.number} ${group.word}.`, `/aɪ hæv ${number} ${word}/`, `我有${amount}${group.objectChinese}。`, [["I", "/aɪ/"], ["have", "/hæv/"], [group.number, group.numberIpa], [`${group.word}.`, group.wordIpa]], group.id),
+  ];
+};
+
 export const COUNTING_LINES = Object.freeze([
   line("counting-number-question", "Mia", "What number is it?", "/wɒt ˈnʌmbə ɪz ɪt/", "这是数字几？", [["What", "/wɒt/"], ["number", "/ˈnʌmbə/"], ["is", "/ɪz/"], ["it?", "/ɪt/"]], "eight-pens"),
   line("counting-number-answer", "Leo", "It is eight.", "/ɪt ɪz eɪt/", "是数字八。", [["It", "/ɪt/"], ["is", "/ɪz/"], ["eight.", "/eɪt/"]], "eight-pens"),
   line("counting-pens-question", "Mia", "How many pens do you have?", "/haʊ ˈmeni penz duː juː hæv/", "你有多少支笔？", [["How", "/haʊ/"], ["many", "/ˈmeni/"], ["pens", "/penz/"], ["do", "/duː/"], ["you", "/juː/"], ["have?", "/hæv/"]], "eight-pens"),
   line("counting-pens-answer", "Leo", "I have eight pens.", "/aɪ hæv eɪt penz/", "我有八支笔。", [["I", "/aɪ/"], ["have", "/hæv/"], ["eight", "/eɪt/"], ["pens.", "/penz/"]], "eight-pens"),
+  ...COUNTING_EXTRA_GROUPS.flatMap(countingGroupLines),
 ]);
 
 export const COUNTING_VOCABULARY = Object.freeze([
@@ -79,11 +100,19 @@ export const COUNTING_VOCABULARY = Object.freeze([
   ["eight", "/eɪt/", "八"], ["how", "/haʊ/", "怎样（how many 表示多少）"], ["many", "/ˈmeni/", "许多（how many 表示多少）"],
   ["pens", "/penz/", "笔（复数）"], ["do", "/duː/", "用于构成疑问句"], ["you", "/juː/", "你；你们"],
   ["have", "/hæv/", "有"], ["i", "/aɪ/", "我"],
+  ...COUNTING_EXTRA_GROUPS.flatMap(group => [[group.number, group.numberIpa, group.chineseNumber], [group.word, group.wordIpa, `${group.objectChinese.slice(1)}（复数）`]]),
 ].map(([word, phonetic, chinese]) => Object.freeze({ word, phonetic, chinese })));
 
 export const COUNTING_PRACTICE = Object.freeze([
   Object.freeze({ id: "read-eight", promptId: "counting-number-question", answerId: "counting-number-answer", optionIds: Object.freeze(["counting-number-answer", "counting-pens-answer", "counting-pens-question"]) }),
   Object.freeze({ id: "count-eight-pens", promptId: "counting-pens-question", answerId: "counting-pens-answer", optionIds: Object.freeze(["counting-number-answer", "counting-number-question", "counting-pens-answer"]) }),
+  ...COUNTING_EXTRA_GROUPS.flatMap(group => {
+    const prefix = `counting-${group.id}`;
+    return [
+      Object.freeze({ id: `read-${group.number}`, promptId: `${prefix}-number-question`, answerId: `${prefix}-number-answer`, optionIds: Object.freeze(["counting-number-answer", `${prefix}-number-answer`, `${prefix}-answer`]) }),
+      Object.freeze({ id: `count-${group.id}`, promptId: `${prefix}-question`, answerId: `${prefix}-answer`, optionIds: Object.freeze([`${prefix}-answer`, "counting-pens-answer", `${prefix}-number-answer`]) }),
+    ];
+  }),
 ]);
 
 export const SCENARIOS = Object.freeze([
@@ -115,7 +144,7 @@ export const SCENARIOS = Object.freeze([
     number: 3,
     chineseTitle: "数一数",
     englishTitle: "Let's Count!",
-    description: "先认数字八，再数一数有多少支笔。",
+    description: "用笔、铅笔、钥匙、蘑菇、金币和星星，先认数字，再问数量。",
     completionTitle: "数一数完成！",
     completionText: "你已经会询问数字，并用英语问答物品的数量。",
     lines: COUNTING_LINES,
@@ -123,6 +152,7 @@ export const SCENARIOS = Object.freeze([
     vocabulary: COUNTING_VOCABULARY,
     focusObjects: Object.freeze({
       "eight-pens": Object.freeze({ label: "数字8和八支蓝色笔，每排四支，共两排", image: "./assets/scenarios/counting-pens-v1.png?v=1.0" }),
+      ...Object.fromEntries(COUNTING_EXTRA_GROUPS.map(group => [group.id, Object.freeze({ label: `数字${group.count}和${group.count === 2 ? "两" : group.chineseNumber}${group.objectChinese}`, image: `./assets/scenarios/counting-${group.id}-v1.png?v=1.0` })])),
     }),
   }),
 ]);

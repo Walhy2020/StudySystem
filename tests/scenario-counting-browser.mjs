@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { COUNTING_LINES } from "../data/scenarios.js";
+import { COUNTING_LINES, COUNTING_PRACTICE, COUNTING_VOCABULARY, scenarioById } from "../data/scenarios.js";
+const scene = scenarioById("counting-pens");
 const { chromium } = await import(pathToFileURL(join(homedir(), ".cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/index.mjs")));
 const base = process.env.HANZI_BASE_URL || "http://127.0.0.1:53177/";
 const browser = await chromium.launch({ headless: true, executablePath: "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe" });
@@ -37,6 +38,8 @@ try {
     await page.locator("#scenarioObjectImage").evaluate(img => img.decode());
     for (let i = 0; i < COUNTING_LINES.length; i++) {
       assert.equal(await page.locator("#dialogueEnglish").textContent(), COUNTING_LINES[i].text);
+      await page.locator("#scenarioObjectImage").evaluate(img => img.decode());
+      assert.equal(await page.locator("#scenarioObjectImage").getAttribute("src"), scene.focusObjects[COUNTING_LINES[i].focusObject].image);
       assert.deepEqual(await page.locator("#dialogueAligned .aligned-word strong").allTextContents(), COUNTING_LINES[i].tokens.map(x => x.text));
       assert.deepEqual(await page.locator("#dialogueAligned .aligned-word small").allTextContents(), COUNTING_LINES[i].tokens.map(x => x.phonetic));
       const geometry = await page.locator("#scenarioObjectImage").evaluate(img => {
@@ -48,41 +51,58 @@ try {
       });
       assert.deepEqual(geometry, { width: 1254, height: 1254, fit: "contain", inside: true, readable: true, square: true, ipaBelow: true });
       await noOverflow();
-      if (i < 3) { const n = await count(); await act("#nextLine"); await spoken(n + 1); await finish(); }
+      if (i % 4 === 3) await page.screenshot({ path: `tests/scenario-counting-${COUNTING_LINES[i].focusObject}-${width}.png`, fullPage: true });
+      if (i < COUNTING_LINES.length - 1) { const n = await count(); await act("#nextLine"); await spoken(n + 1); await finish(); }
     }
     await page.reload(); await enter();
-    assert.equal(await page.locator("#dialogueProgress").textContent(), "4/4", "refresh restores current line");
+    assert.equal(await page.locator("#dialogueProgress").textContent(), "24/24", "refresh restores current line");
     await act("#replayDialogue"); await spoken(1); await finish();
-    assert.equal(await page.locator("#dialogueProgress").textContent(), "1/4");
+    assert.equal(await page.locator("#dialogueProgress").textContent(), "1/24");
     await act("#continuousDialogue");
-    for (let i = 0; i < 4; i++) { await spoken(i + 2); assert.equal(await page.evaluate(() => window.__spoken.at(-1).text), COUNTING_LINES[i].text); await finish(); }
+    for (let i = 0; i < COUNTING_LINES.length; i++) { await spoken(i + 2); assert.equal(await page.evaluate(() => window.__spoken.at(-1).text), COUNTING_LINES[i].text); await finish(); }
     assert.equal(await page.locator("#nextLine").isDisabled(), true);
     await page.screenshot({ path: `tests/scenario-counting-${width}.png`, fullPage: true });
     await act("#practiceStage");
-    await act('[data-answer-id="counting-pens-answer"]');
-    assert.equal(await page.locator("#practiceProgress").textContent(), "1/2", "wrong answer must not advance");
-    await act('[data-answer-id="counting-number-answer"]');
-    await page.waitForFunction(() => document.querySelector("#practiceProgress").textContent === "2/2", null, { polling: 100 });
-    await act('[data-answer-id="counting-pens-answer"]');
+    for (const [i, question] of COUNTING_PRACTICE.entries()) {
+      await page.waitForFunction(text => document.querySelector("#practiceProgress").textContent === text, `${i + 1}/12`, { polling: 100 });
+      const line = COUNTING_LINES.find(x => x.id === question.promptId);
+      assert.equal(await page.locator("#countingPracticeImage").getAttribute("src"), scene.focusObjects[line.focusObject].image);
+      await page.locator("#countingPracticeImage").evaluate(img => img.decode());
+      assert.equal(await page.locator("#countingPracticeImage").isVisible(), true);
+      await act(`[data-answer-id="${question.optionIds.find(x => x !== question.answerId)}"]`);
+      assert.equal(await page.locator("#practiceProgress").textContent(), `${i + 1}/12`, "wrong answer must not advance");
+      await noOverflow();
+      if (i === 10) await page.screenshot({ path: `tests/scenario-counting-practice-${width}.png`, fullPage: true });
+      await act(`[data-answer-id="${question.answerId}"]`);
+    }
     await page.locator("#practiceResult").waitFor({ state: "visible" });
-    assert.equal(await page.locator("#practiceResultScore").textContent(), "2/2");
+    assert.equal(await page.locator("#practiceResultScore").textContent(), "12/12");
     assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem("mario-scenario-learning-v1")).learnedWords), []);
     await act("#returnAfterComplete");
     assert.equal(await page.locator('[data-scenario-id="counting-pens"] [data-complete-badge]').isVisible(), true);
     assert.equal(await page.locator('[data-scenario-id="first-meeting"] [data-complete-badge]').isHidden(), true);
     await enter(); await act("#wordsStage");
-    assert.equal(await page.locator(".scenario-word-card").count(), 12);
+    assert.equal(await page.locator(".scenario-word-card").count(), COUNTING_VOCABULARY.length);
     await page.locator('[data-word="pens"] button').last().focus(); await page.keyboard.press("Enter");
-    assert.equal(await page.locator(".scenario-word-card").count(), 11);
+    assert.equal(await page.locator(".scenario-word-card").count(), COUNTING_VOCABULARY.length - 1);
     await page.reload(); await enter(); await act("#wordsStage");
     assert.equal(await page.locator('[data-word="pens"]').count(), 0);
+    for (const word of ["keys", "mushrooms", "coins", "stars"]) {
+      await page.locator(`[data-word="${word}"] button`).last().click();
+    }
     assert.ok((await page.evaluate(() => window.__writes)).every(k => k === "mario-scenario-learning-v1"));
     await page.goto(new URL("review-learning.html", base).href);
     await act("#openWordLibrary");
     assert.equal(await page.locator('[data-word-key="total:pens"]').count(), 1);
-    assert.equal(await page.locator("#wordLibraryCount").textContent(), "1/219");
+    assert.equal(await page.locator("#wordLibraryCount").textContent(), "5/223");
+    for (const [word, objectId] of Object.entries({ keys: "two-keys", mushrooms: "four-mushrooms", coins: "five-coins", stars: "six-stars" })) {
+      const image = page.locator(`[data-word-key="total:${word}"] img`);
+      assert.equal(await image.getAttribute("src"), scene.focusObjects[objectId].image);
+      await image.evaluate(img => img.decode());
+      assert.equal(await image.evaluate(img => getComputedStyle(img).objectFit), "contain");
+    }
     await noOverflow();
-    results.push({ width, lines: 4, questions: 2, refresh: true, learnedWordInLibrary: true, asset: "1254x1254", noOverflow: true });
+    results.push({ width, lines: COUNTING_LINES.length, questions: COUNTING_PRACTICE.length, groups: 6, refresh: true, learnedWordInLibrary: true, asset: "1254x1254", noOverflow: true });
     await context.close();
   }
   assert.deepEqual(errors, []);

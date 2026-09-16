@@ -68,7 +68,7 @@ try {
     assert.equal((await card.locator(".library-phonetic").textContent()).trim(),"/desk/");
     assert.match(await card.locator(".library-theme-label").textContent(),/Book1/);
     assert.equal(await card.locator("svg").getAttribute("viewBox"),"765 475 365 430");
-    assert.equal(await page.locator("#wordLibraryCount").textContent(),"8/219");
+    assert.equal(await page.locator("#wordLibraryCount").textContent(),"8/223");
     await card.locator(".library-speak").click();
     await page.waitForFunction(()=>window.__spoken.includes("desk. This is a desk."));
     await card.screenshot({path:"tests/library-desk-"+width+".png"});

@@ -6,7 +6,7 @@
   <meta http-equiv="Cache-Control" content="no-cache,no-store,must-revalidate" />
   <link rel="icon" href="data:," />
   <title>马里奥学习系统 · 情景模式</title>
-  <link rel="stylesheet" href="./scenario-learning.css?v=2.3" />
+  <link rel="stylesheet" href="./scenario-learning.css?v=2.4" />
 </head>
 <body>
   <div class="scenario-shell">
@@ -39,7 +39,7 @@
             <div class="scenario-preview scene-preview">
               <img src="./assets/scenarios/counting-pens-v1.png?v=1.0" width="1254" height="1254" alt="数字8和八支蓝色笔，每排四支，共两排" />
             </div>
-            <div class="scenario-card-copy"><small>情景 03</small><h3>数一数 <em>Let's Count!</em></h3><p>先问数字是什么，再问有多少支笔，用 4 句对话练习数数。</p><button type="button" data-start-label>开始情景</button></div>
+            <div class="scenario-card-copy"><small>情景 03</small><h3>数一数 <em>Let's Count!</em></h3><p>笔、铅笔、钥匙、蘑菇、金币、星星：6 组道具，先认数字，再问数量。</p><button type="button" data-start-label>开始情景</button></div>
             <span class="scenario-complete-badge" data-complete-badge hidden aria-label="已完成">✓</span>
           </article>
         </div>
@@ -71,7 +71,7 @@
 
         <section class="practice-panel" id="practicePanel" hidden>
           <div class="practice-question" aria-live="polite"><span class="progress-pill" id="practiceProgress">1/3</span><strong id="practiceSpeaker">Mia</strong><div class="aligned-sentence" id="practiceAligned" aria-label="Hello! My name is Mia."></div><p id="practicePrompt" hidden>Hello! My name is Mia.</p><span id="practicePhonetic" hidden>/həˈləʊ maɪ neɪm ɪz ˈmiːə/</span><button class="sound-button" id="speakPractice" type="button" aria-label="朗读问题"><span aria-hidden="true">🔊</span></button></div>
-          <div><h3>你会怎么回应？</h3><div class="response-options" id="responseOptions"></div><p class="practice-feedback" id="practiceFeedback" role="status">选择最合适的回应。</p></div>
+          <div><img class="counting-practice-image" id="countingPracticeImage" alt="" hidden /><h3>你会怎么回应？</h3><div class="response-options" id="responseOptions"></div><p class="practice-feedback" id="practiceFeedback" role="status">选择最合适的回应。</p></div>
         </section>
 
         <section class="practice-result" id="practiceResult" hidden><span aria-hidden="true">✓</span><h3 id="practiceResultTitle">第一次见面完成！</h3><strong id="practiceResultScore">3/3</strong><p id="practiceResultText">你已经会用英语完成一次简单的初次见面对话。</p><div><button id="restartPractice" type="button">再练一轮</button><button id="returnAfterComplete" type="button">返回情景选择</button></div></section>
@@ -85,6 +85,6 @@
       </section>
     </main>
   </div>
-  <script type="module" src="./scenario-learning.js?v=2.2"></script>
+  <script type="module" src="./scenario-learning.js?v=2.3"></script>
 </body>
 </html>

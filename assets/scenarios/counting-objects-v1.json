@@ -1,0 +1,7 @@
+[
+  {"id":"three-pencils","count":3,"theme":"classroom","word":"pencil","source":"assets/themes/classroom/classroom-things-scene-v1.png","crop":[55,85,380,405]},
+  {"id":"two-keys","count":2,"theme":"items1","word":"key","source":"assets/themes/items/classic-items-1-scene-v1.png","crop":[500,25,500,455]},
+  {"id":"four-mushrooms","count":4,"theme":"items2","word":"mushroom","source":"assets/themes/items/classic-items-2-scene-v1.png","crop":[35,25,490,445]},
+  {"id":"five-coins","count":5,"theme":"items1","word":"coin","source":"assets/themes/items/classic-items-1-scene-v1.png","crop":[35,25,490,445]},
+  {"id":"six-stars","count":6,"theme":"items1","word":"star","source":"assets/themes/items/classic-items-1-scene-v1.png","crop":[510,470,515,520]}
+]

@@ -1,5 +1,5 @@
-import { SCENARIOS, scenarioById, scenarioLineById } from "./data/scenarios.js?v=1.3";
-import { initializeScenarioWords } from "./src/scenario-workshop.js?v=1.7";
+import { SCENARIOS, scenarioById, scenarioLineById } from "./data/scenarios.js?v=1.4";
+import { initializeScenarioWords } from "./src/scenario-workshop.js?v=1.8";
 import { createDialoguePlayback } from "./src/scenario-playback.js?v=1.1";
 
 export { SCENARIOS };
@@ -301,6 +301,15 @@ function initializePage() {
   function renderPractice() {
     if (practice.complete) return finishPractice();
     const question = practice.question();
+    const countingArt = scenario.id === "counting-pens" && scenario.focusObjects?.[question.prompt.focusObject];
+    dom.countingPracticeImage.hidden = !countingArt;
+    if (countingArt) {
+      dom.countingPracticeImage.src = countingArt.image;
+      dom.countingPracticeImage.alt = countingArt.label;
+    } else {
+      dom.countingPracticeImage.removeAttribute("src");
+      dom.countingPracticeImage.alt = "";
+    }
     dom.practiceProgress.textContent = `${practice.questionIndex + 1}/${scenario.practice.length}`;
     dom.practiceSpeaker.textContent = question.prompt.speaker;
     dom.practicePrompt.textContent = question.prompt.text;

@@ -9,10 +9,11 @@ Baseline before this handoff document: `3a6815d`
 
 Latest addition: Scenario 03, `counting-pens` (数一数 / Let's Count!), follows
 `What number is it?` → `It is eight.` → `How many pens do you have?` → `I have eight pens.`
-It has four word-aligned British-IPA dialogue lines, two response questions and 12 vocabulary candidates.
-The approved 1254×1254 PNG shows the numeral 8 and exactly eight blue pens (two rows of four).
+It now has six counting groups: eight pens, three pencils, two keys, four mushrooms, five coins and six stars.
+Each group follows the same four-line pattern, for 24 word-aligned British-IPA lines, 12 illustrated response questions and 22 vocabulary candidates.
+The original pens image is retained; five new 1254×1254 cards reuse approved theme artwork with exact copy counts, built by `scripts/build-counting-cards.py` from `assets/scenarios/counting-objects-v1.json`.
 Playback, per-scenario refresh restoration and explicit learned-word marking use the existing scenario module.
-The deduplicated combined catalog now contains 219 candidate words; only explicitly learned words enter overall review.
+The deduplicated combined catalog now contains 223 candidate words; only explicitly learned words enter overall review.
 The dedicated Edge check is `node tests/scenario-counting-browser.mjs`; normal suite includes it.
 
 Clone once:

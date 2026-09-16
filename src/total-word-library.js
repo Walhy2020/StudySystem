@@ -1,5 +1,5 @@
 import { BOOK1_ITEMS } from "../data/book1.js";
-import { SCENARIOS } from "../data/scenarios.js?v=1.3";
+import { SCENARIOS } from "../data/scenarios.js?v=1.4";
 
 export const TOTAL_WORD_SOURCE_KEYS = Object.freeze({
   theme: "mario-theme-learned-v1",
@@ -26,6 +26,12 @@ function read(storage, key) {
 const values = (value) => Array.isArray(value) ? value : [];
 
 function scenarioArt(word, scenarios) {
+  const countingScene = scenarios.find(({ id }) => id === "counting-pens");
+  const countingObject = { keys: "two-keys", mushrooms: "four-mushrooms", coins: "five-coins", stars: "six-stars" }[word];
+  if (countingObject && countingScene?.focusObjects?.[countingObject]) {
+    const art = countingScene.focusObjects[countingObject];
+    return Object.freeze({ type: "image-url", src: art.image, alt: art.label });
+  }
   if (word === "pens" || word === "number") {
     const counting = scenarios.find(({ id }) => id === "counting-pens")?.focusObjects?.["eight-pens"];
     if (counting) return Object.freeze({ type: "image-url", src: counting.image, alt: counting.label });

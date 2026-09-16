@@ -5,6 +5,7 @@
 <meta http-equiv="Cache-Control" content="no-cache,no-store,must-revalidate"><link rel="icon" href="data:,">
 <title>马里奥学习系统 · 总复习</title>
 <link rel="stylesheet" href="./theme-learning.css?v=3.4">
+<link rel="stylesheet" href="./review-learning.css?v=1.0">
 </head>
 <body><div class="theme-shell">
 <header class="theme-topbar">
@@ -31,6 +32,11 @@
 <div class="collection-empty" id="totalReviewEmpty"><span aria-hidden="true">★</span><h3>还没有可复习的单词</h3><p>先去 Book1、主题学习或情景模式学习单词，再回来复习。</p><button class="primary-action" id="emptyReviewLibrary" type="button">查看总单词库</button></div>
 <section class="total-review-panel" id="totalReviewPanel" hidden>
 <div class="review-question-card"><span class="round-progress" id="totalReviewProgress">第 1/1 题</span><h3 id="totalReviewWord">word</h3><button class="review-phonetic" id="totalReviewPhonetic" type="button" aria-expanded="false">/wɜːd/</button><div class="phoneme-breakdown review-phonemes" id="totalReviewPhonemes" hidden></div><button class="theme-sound-button review-sound" id="totalReviewSpeak" type="button" aria-label="朗读当前单词"><span aria-hidden="true">🔊</span></button><p>选择对应的图片或中文释义</p></div>
+<div class="review-memory-actions" role="group" aria-label="单词记忆状态">
+<button class="review-memory-button review-remembered" id="reviewRemembered" type="button" aria-pressed="false"><span aria-hidden="true">✓</span>记住了</button>
+<button class="review-memory-button review-forgotten" id="reviewForgotten" type="button" aria-pressed="false"><span aria-hidden="true">×</span>没记住</button>
+</div>
+<p class="review-memory-status" id="reviewMemoryStatus" role="status"></p>
 <div class="review-options" id="totalReviewOptions"></div>
 <p class="total-review-feedback" id="totalReviewFeedback" role="status">选择正确的图片或中文释义。</p>
 </section>
@@ -41,6 +47,7 @@
 <div class="collection-empty" id="libraryEmpty"><span aria-hidden="true">📚</span><h3>单词库还是空的</h3><p>Book1、主题学习和情景模式中实际学过的单词都会收录到这里。</p></div>
 <div class="library-grid" id="libraryGrid" hidden></div>
 </section>
+<p class="review-save-notice" id="reviewSaveNotice" role="status" hidden>浏览器未能保存复习进度，请检查是否禁用了本地存储；当前仍可继续复习。</p>
 </main>
-</div><script type="module" src="./review-learning.js?v=1.8"></script></body>
+</div><script type="module" src="./review-learning.js?v=1.9"></script></body>
 </html>

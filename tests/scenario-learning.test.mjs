@@ -103,8 +103,8 @@ test("情景页面资源、三个阶段、手动声音按钮和独立导航齐�
     readFile(new URL("../scenario-learning.js", import.meta.url), "utf8"),
   ]);
   assert.match(html, /scenario-learning\.css\?v=2\.2/);
-  assert.match(html, /scenario-learning\.js\?v=2\.0/);
-  assert.match(script, /scenario-workshop\.js\?v=1\.5/);
+  assert.match(html, /scenario-learning\.js\?v=2\.1/);
+  assert.match(script, /scenario-workshop\.js\?v=1\.6/);
   assert.match(script, /scenario-playback\.js\?v=1\.1/);
   assert.doesNotMatch(html, /id="playDialogue"|id="dialogueLineList"/);
   assert.match(html, /id="continuousDialogue"/);
@@ -145,7 +145,7 @@ test("情景使用内置imagegen正式PNG和独立文具强调图，无网页生
   assert.equal(classroomPng.subarray(0, 8).toString("hex"), "89504e470d0a1a0a");
   assert.equal(classroomPng.readUInt32BE(16), 1254);
   assert.equal(classroomPng.readUInt32BE(20), 1254);
-  assert.match(workshop, /scenario-vocabulary\.js\?v=1\.4/);
+  assert.match(workshop, /scenario-vocabulary\.js\?v=1\.5/);
   assert.equal((html.match(/assets\/scenarios\/first-meeting-v1\.png/g) || []).length, 1);
   assert.equal((html.match(/assets\/scenarios\/what-is-it-classroom-v1\.png/g) || []).length, 1);
   for (const actor of ["mia", "leo"]) {

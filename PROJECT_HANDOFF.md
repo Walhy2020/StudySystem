@@ -89,6 +89,7 @@ In the ChatGPT/Codex desktop app, add the cloned repository as a local project a
 ### Overall review
 
 - Entry: `review-learning.html`.
+- Overall review independently saves its question order, position, options and remembered/forgotten marks in `mario-total-review-v1`. Refresh and re-entry resume, including completed rounds; only “再来一轮” resets round position. ✓/× explicitly save a word's memory state and advance; new rounds prioritize ×, then unmarked, then ✓. All learned words remain included. Picture answers still work but do not infer a manual memory mark.
 - Space toggles the current review word's IPA breakdown, using the same click behavior. Entering a round focuses its IPA button; repeated keydown does not retrigger, and sound/answer/navigation controls keep native keyboard behavior. New questions begin collapsed.
 - This is an independent top-level module, not a child page inside Theme Learning.
 - The total word library aggregates words actually learned in Book1, Theme Learning, and Scenario Learning. It reads all three existing progress keys without writing across module boundaries and deduplicates by normalized English spelling.
@@ -122,6 +123,7 @@ Persistent browser keys:
 - `mario-scenario-learning-v1`
 - `mario-bomb-game-progress-v1`
 - `mario-theme-learned-v1`
+- `mario-total-review-v1` (round progress and explicit memory marks only)
 - legacy migration source: `mario-literacy-desktop-mvp-v1`
 
 `src/total-word-library.js` is a read-only aggregate view over the Book1, Theme Learning, and Scenario Learning keys; it does not introduce another browser storage key.

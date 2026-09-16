@@ -73,7 +73,7 @@ try {
     await page.waitForFunction(()=>window.__spoken.includes("desk. This is a desk."));
     await card.screenshot({path:"tests/library-desk-"+width+".png"});
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
-    assert.deepEqual(await page.evaluate(()=>window.__writes),[]);
+    assert.ok((await page.evaluate(()=>window.__writes)).every(key => key === "mario-total-review-v1"), "review writes only its own progress");
     await page.locator("#startLibraryReview").click();
     const words=await page.evaluate(()=>window.__THEME_OVERVIEW__.reviewSession.words.map(x=>x.word));
     assert.equal(words.filter(x=>x==="desk").length,1);assert.equal(words.includes("table"),false);

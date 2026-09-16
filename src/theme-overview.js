@@ -399,7 +399,7 @@ export function initializeThemeProgress({ configs }) {
   return api;
 }
 
-export function initializeThemeOverview({ configs, splitPhonetic, stressMarks, speakEnglish }) {
+export function initializeThemeOverview({ configs, splitPhonetic, stressMarks, speakEnglish, reviewProgress = null }) {
   if (typeof document === "undefined") return null;
   const catalog = buildThemeCatalog(configs);
   const store = new ThemeLearnedStore(catalog);
@@ -408,6 +408,14 @@ export function initializeThemeOverview({ configs, splitPhonetic, stressMarks, s
   let reviewSession = null;
   let reviewTimer = 0;
   let libraryByKey = new Map();
+  let reviewAdvancing = false;
+
+  function saveReview() {
+    if (reviewProgress && reviewSession) {
+      const saved = reviewProgress.save(reviewSession);
+      if (dom.reviewSaveNotice) dom.reviewSaveNotice.hidden = saved;
+    }
+  }
 
   function learnedEntries() {
     const entries = buildTotalWordLibrary(catalog, store.storage);
@@ -484,6 +492,7 @@ export function initializeThemeOverview({ configs, splitPhonetic, stressMarks, s
   }
 
   function renderReviewQuestion() {
+    reviewAdvancing = false;
     const target = reviewSession.target();
     if (!target) return finishReview();
     dom.totalReviewProgress.textContent = "第 " + (reviewSession.questionIndex + 1) + "/" + reviewSession.questions.length + " 题";
@@ -494,6 +503,14 @@ export function initializeThemeOverview({ configs, splitPhonetic, stressMarks, s
     dom.totalReviewPhonemes.hidden = true;
     dom.totalReviewPhonemes.innerHTML = phonemeMarkup(target, splitPhonetic, stressMarks);
     dom.totalReviewSpeak.setAttribute("aria-label", "朗读 " + target.word);
+    const memory = reviewProgress?.status(target.key) || "unmarked";
+    if (dom.reviewMemoryStatus) dom.reviewMemoryStatus.textContent =
+      memory === "forgotten" ? "上次：× 没记住" : memory === "remembered" ? "上次：✓ 记住了" : "尚未标记";
+    for (const [button, status] of [[dom.reviewRemembered, "remembered"], [dom.reviewForgotten, "forgotten"]]) {
+      if (!button) continue;
+      button.disabled = false;
+      button.setAttribute("aria-pressed", String(memory === status));
+    }
     dom.totalReviewFeedback.className = "total-review-feedback";
     dom.totalReviewFeedback.textContent = "选择与 " + target.word + " 对应的图片或中文释义。";
     dom.totalReviewOptions.innerHTML = reviewSession.options().map((entry) =>
@@ -506,8 +523,9 @@ export function initializeThemeOverview({ configs, splitPhonetic, stressMarks, s
     });
   }
 
-  function answerReview(key, button) {
-    if (!reviewSession || reviewSession.complete) return;
+  function answerReview(key, button, memory = null) {
+    if (!reviewSession || reviewSession.complete || reviewAdvancing) return;
+    const currentKey = reviewSession.target().key;
     const result = reviewSession.answer(key);
     if (result.status === "wrong") {
       button.classList.add("is-wrong");
@@ -515,13 +533,22 @@ export function initializeThemeOverview({ configs, splitPhonetic, stressMarks, s
       dom.totalReviewFeedback.textContent = "再看一看，选择 " + result.target.word + " 的正确图片或中文释义。";
       return;
     }
+    if (memory) reviewProgress?.mark(currentKey, memory);
+    reviewAdvancing = true;
+    saveReview(); // Persist the next question before the feedback animation or page close.
+    if (dom.reviewRemembered) dom.reviewRemembered.disabled = true;
+    if (dom.reviewForgotten) dom.reviewForgotten.disabled = true;
     dom.totalReviewOptions.querySelectorAll(".review-option").forEach((option) => { option.disabled = true; });
     button.classList.add("is-correct");
     dom.totalReviewFeedback.className = "total-review-feedback is-success";
-    dom.totalReviewFeedback.textContent = result.target.word + " · " + result.target.chinese;
+    dom.totalReviewFeedback.textContent = result.target.word + " · " + result.target.chinese +
+      (memory === "forgotten" ? " · × 没记住，下轮优先" : memory === "remembered" ? " · ✓ 记住了" : "");
     reviewTimer = setTimeout(() => {
       if (result.complete) finishReview();
-      else renderReviewQuestion();
+      else {
+        renderReviewQuestion();
+        dom.totalReviewPhonetic.focus({ preventScroll: true });
+      }
     }, 650);
   }
 
@@ -534,8 +561,9 @@ export function initializeThemeOverview({ configs, splitPhonetic, stressMarks, s
     dom.totalReviewResultText.textContent = "已复习全部 " + reviewSession.questions.length + " 个已学单词。";
   }
 
-  function openReview() {
+  function openReview(restart = false) {
     clearTimeout(reviewTimer);
+    reviewAdvancing = false;
     dom.openTotalReview.classList.add("is-active");
     dom.openTotalReview.setAttribute("aria-pressed", "true");
     dom.openWordLibrary.classList.remove("is-active");
@@ -551,7 +579,12 @@ export function initializeThemeOverview({ configs, splitPhonetic, stressMarks, s
     dom.reviewHeaderCount.textContent = entries.length + " 个已学单词";
     if (entries.length > 0) {
       reviewSession = new TotalReviewSession(entries);
-      renderReviewQuestion();
+      if (reviewProgress) {
+        const saved = reviewProgress.restore(reviewSession, restart === true);
+        if (dom.reviewSaveNotice) dom.reviewSaveNotice.hidden = saved;
+      }
+      if (reviewSession.complete) finishReview();
+      else renderReviewQuestion();
     } else {
       reviewSession = null;
     }
@@ -576,7 +609,15 @@ export function initializeThemeOverview({ configs, splitPhonetic, stressMarks, s
   dom.backFromReview?.addEventListener("click", showPicker);
   dom.startLibraryReview.addEventListener("click", openReview);
   dom.emptyReviewLibrary.addEventListener("click", openLibrary);
-  dom.restartTotalReview.addEventListener("click", openReview);
+  dom.restartTotalReview.addEventListener("click", () => openReview(true));
+  dom.reviewRemembered?.addEventListener("click", () => {
+    const target = reviewSession?.target();
+    if (target) answerReview(target.key, dom.reviewRemembered, "remembered");
+  });
+  dom.reviewForgotten?.addEventListener("click", () => {
+    const target = reviewSession?.target();
+    if (target) answerReview(target.key, dom.reviewForgotten, "forgotten");
+  });
   dom.totalReviewPhonetic.addEventListener("click", () => {
     const expanded = dom.totalReviewPhonetic.getAttribute("aria-expanded") !== "true";
     dom.totalReviewPhonetic.setAttribute("aria-expanded", String(expanded));

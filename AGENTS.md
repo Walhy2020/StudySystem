@@ -61,6 +61,7 @@ Browser progress is local to each browser profile and is not synchronized by Git
 - Phonetics writes `mario-phonetics-v1` only.
 - Bomb maze writes `mario-bomb-game-progress-v1` and only reads Hanzi sources needed for its learning pool.
 - Theme learning writes learned-word progress through `mario-theme-learned-v1`; overall review reads it together with Book1 and Scenario Learning progress through the shared read-only total-word-library aggregator.
+- Overall review saves only its own round and per-word remembered/forgotten marks in `mario-total-review-v1`. It never changes the three source modules' learned records. Refresh resumes the same round; new rounds prioritize forgotten words.
 - Scenario learning writes `mario-scenario-learning-v1` only.
 - Scenario new-word matching reads the same total word library used by overall review, but writes its `learnedWords` only to the scenario key. New scenarios are authored in conversation using imagegen; do not add a web generation form or API unless explicitly requested. Final approved artwork lives in `assets/scenarios/`. Preserve and never commit any private legacy `.local-scenarios/` directory.
 - Do not let one module reset, migrate, or overwrite another module's key.

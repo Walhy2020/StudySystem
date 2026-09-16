@@ -1,12 +1,18 @@
 import { PHONETIC_STRESS_MARKS } from "./src/phonetic-segmenter.js?v=1.0";
-import { THEME_CONFIGS, speakEnglish, splitPhonetic } from "./theme-learning.js?v=2.10";
-import { initializeThemeOverview } from "./src/theme-overview.js?v=1.7";
+import { ReviewProgress } from "./src/review-progress.js?v=1.0";
+import { THEME_CONFIGS, speakEnglish, splitPhonetic } from "./theme-learning.js?v=2.11";
+import { initializeThemeOverview } from "./src/theme-overview.js?v=1.8";
+
+let reviewStorage = null;
+try { reviewStorage = window.localStorage; } catch {}
+const reviewProgress = new ReviewProgress(reviewStorage);
 
 const overview = initializeThemeOverview({
   configs: THEME_CONFIGS,
   splitPhonetic,
   stressMarks: PHONETIC_STRESS_MARKS,
-  speakEnglish
+  speakEnglish,
+  reviewProgress
 });
 
 overview.openReview();

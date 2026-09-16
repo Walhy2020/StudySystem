@@ -210,7 +210,16 @@ async function finishTotalReview(page) {
     } else {
       await page.waitForFunction(({ word }) =>
         document.querySelector("#totalReviewWord")?.textContent.trim() !== word,
-      { word: state.word });
+      { word: state.word }, { polling: 100 }).catch(async error => {
+        console.error("review transition", { index, state, pageErrors, actual: await page.evaluate(() => ({
+          index: window.__THEME_OVERVIEW__.reviewSession.questionIndex,
+          target: window.__THEME_OVERVIEW__.reviewSession.target()?.word,
+          text: document.querySelector("#totalReviewWord").textContent,
+          feedback: document.querySelector("#totalReviewFeedback").textContent,
+          complete: window.__THEME_OVERVIEW__.reviewSession.complete
+        })) });
+        throw error;
+      });
     }
   }
   assert.equal((await page.locator("#totalReviewResultScore").textContent()).trim(), "89/89");
@@ -434,7 +443,7 @@ await combinedPage.setViewportSize({ width: 390, height: 844 });
 await assertNoOverflow(combinedPage);
 await combinedPage.click("#openWordLibrary");
 await combinedPage.screenshot({ path: "tests/total-word-library-390.png", fullPage: true });
-assert.deepEqual(await combinedPage.evaluate(() => window.__storageMutations), []);
+assert.ok((await combinedPage.evaluate(() => window.__storageMutations)).every(item => item.key === "mario-total-review-v1"));
 await combinedContext.close();
 
 assert.deepEqual(pageErrors, []);

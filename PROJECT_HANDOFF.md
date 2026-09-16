@@ -1,11 +1,19 @@
 # StudySystem cross-device handoff
 
-Last updated: 2026-09-14
+Last updated: 2026-09-16
 Repository: `https://github.com/Walhy2020/StudySystem.git`
 Branch: `main`
 Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
+
+Latest addition: Scenario 03, `counting-pens` (数一数 / Let's Count!), follows
+`What number is it?` → `It is eight.` → `How many pens do you have?` → `I have eight pens.`
+It has four word-aligned British-IPA dialogue lines, two response questions and 12 vocabulary candidates.
+The approved 1254×1254 PNG shows the numeral 8 and exactly eight blue pens (two rows of four).
+Playback, per-scenario refresh restoration and explicit learned-word marking use the existing scenario module.
+The deduplicated combined catalog now contains 219 candidate words; only explicitly learned words enter overall review.
+The dedicated Edge check is `node tests/scenario-counting-browser.mjs`; normal suite includes it.
 
 Clone once:
 

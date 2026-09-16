@@ -67,6 +67,25 @@ export const WHAT_IS_IT_VOCABULARY = Object.freeze([
   ["good", "/ɡʊd/", "好的；很棒"], ["color", "/ˈkʌlə/", "颜色"], ["no", "/nəʊ/", "不；不对"],
 ].map(([word, phonetic, chinese]) => Object.freeze({ word, phonetic, chinese })));
 
+export const COUNTING_LINES = Object.freeze([
+  line("counting-number-question", "Mia", "What number is it?", "/wɒt ˈnʌmbə ɪz ɪt/", "这是数字几？", [["What", "/wɒt/"], ["number", "/ˈnʌmbə/"], ["is", "/ɪz/"], ["it?", "/ɪt/"]], "eight-pens"),
+  line("counting-number-answer", "Leo", "It is eight.", "/ɪt ɪz eɪt/", "是数字八。", [["It", "/ɪt/"], ["is", "/ɪz/"], ["eight.", "/eɪt/"]], "eight-pens"),
+  line("counting-pens-question", "Mia", "How many pens do you have?", "/haʊ ˈmeni penz duː juː hæv/", "你有多少支笔？", [["How", "/haʊ/"], ["many", "/ˈmeni/"], ["pens", "/penz/"], ["do", "/duː/"], ["you", "/juː/"], ["have?", "/hæv/"]], "eight-pens"),
+  line("counting-pens-answer", "Leo", "I have eight pens.", "/aɪ hæv eɪt penz/", "我有八支笔。", [["I", "/aɪ/"], ["have", "/hæv/"], ["eight", "/eɪt/"], ["pens.", "/penz/"]], "eight-pens"),
+]);
+
+export const COUNTING_VOCABULARY = Object.freeze([
+  ["what", "/wɒt/", "什么"], ["number", "/ˈnʌmbə/", "数字"], ["is", "/ɪz/", "是"], ["it", "/ɪt/", "它"],
+  ["eight", "/eɪt/", "八"], ["how", "/haʊ/", "怎样（how many 表示多少）"], ["many", "/ˈmeni/", "许多（how many 表示多少）"],
+  ["pens", "/penz/", "笔（复数）"], ["do", "/duː/", "用于构成疑问句"], ["you", "/juː/", "你；你们"],
+  ["have", "/hæv/", "有"], ["i", "/aɪ/", "我"],
+].map(([word, phonetic, chinese]) => Object.freeze({ word, phonetic, chinese })));
+
+export const COUNTING_PRACTICE = Object.freeze([
+  Object.freeze({ id: "read-eight", promptId: "counting-number-question", answerId: "counting-number-answer", optionIds: Object.freeze(["counting-number-answer", "counting-pens-answer", "counting-pens-question"]) }),
+  Object.freeze({ id: "count-eight-pens", promptId: "counting-pens-question", answerId: "counting-pens-answer", optionIds: Object.freeze(["counting-number-answer", "counting-number-question", "counting-pens-answer"]) }),
+]);
+
 export const SCENARIOS = Object.freeze([
   Object.freeze({
     id: "first-meeting",
@@ -90,6 +109,21 @@ export const SCENARIOS = Object.freeze([
     practice: WHAT_IS_IT_PRACTICE,
     vocabulary: WHAT_IS_IT_VOCABULARY,
     focusObjects: WHAT_IS_IT_OBJECTS,
+  }),
+  Object.freeze({
+    id: "counting-pens",
+    number: 3,
+    chineseTitle: "数一数",
+    englishTitle: "Let's Count!",
+    description: "先认数字八，再数一数有多少支笔。",
+    completionTitle: "数一数完成！",
+    completionText: "你已经会询问数字，并用英语问答物品的数量。",
+    lines: COUNTING_LINES,
+    practice: COUNTING_PRACTICE,
+    vocabulary: COUNTING_VOCABULARY,
+    focusObjects: Object.freeze({
+      "eight-pens": Object.freeze({ label: "数字8和八支蓝色笔，每排四支，共两排", image: "./assets/scenarios/counting-pens-v1.png?v=1.0" }),
+    }),
   }),
 ]);
 

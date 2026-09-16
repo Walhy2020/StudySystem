@@ -10,8 +10,8 @@ class MemoryStorage {
   setItem(key, value) { this.writes.push(key); this.values.set(key, String(value)); }
 }
 
-test("两个情景包含准确对话、逐词英式音标和中文", () => {
-  assert.equal(SCENARIOS.length, 2);
+test("三个情景包含准确对话、逐词英式音标和中文", () => {
+  assert.equal(SCENARIOS.length, 3);
   assert.equal(FIRST_MEETING_LINES.length, 6);
   assert.equal(WHAT_IS_IT_LINES.length, 14);
   assert.deepEqual(WHAT_IS_IT_LINES.slice(-3).map(({ text }) => text), [
@@ -28,7 +28,7 @@ test("两个情景包含准确对话、逐词英式音标和中文", () => {
   }
 });
 
-test("两个情景的回应练习不重复，答错停留、答对推进并完成", () => {
+test("三个情景的回应练习不重复，答错停留、答对推进并完成", () => {
   assert.equal(FIRST_MEETING_PRACTICE.length, 3);
   assert.equal(WHAT_IS_IT_PRACTICE.length, 5);
   for (const scenario of SCENARIOS) {
@@ -102,9 +102,9 @@ test("情景页面资源、三个阶段、手动声音按钮和独立导航齐�
     readFile(new URL("../scenario-learning.css", import.meta.url), "utf8"),
     readFile(new URL("../scenario-learning.js", import.meta.url), "utf8"),
   ]);
-  assert.match(html, /scenario-learning\.css\?v=2\.2/);
-  assert.match(html, /scenario-learning\.js\?v=2\.1/);
-  assert.match(script, /scenario-workshop\.js\?v=1\.6/);
+  assert.match(html, /scenario-learning\.css\?v=2\.3/);
+  assert.match(html, /scenario-learning\.js\?v=2\.2/);
+  assert.match(script, /scenario-workshop\.js\?v=1\.7/);
   assert.match(script, /scenario-playback\.js\?v=1\.1/);
   assert.doesNotMatch(html, /id="playDialogue"|id="dialogueLineList"/);
   assert.match(html, /id="continuousDialogue"/);
@@ -116,7 +116,7 @@ test("情景页面资源、三个阶段、手动声音按钮和独立导航齐�
   assert.match(script, /scenarioObjectFocus\.classList\.add\("is-breathing"\)/);
   assert.doesNotMatch(css, /#fff7ae|#fffbd6/);
   assert.doesNotMatch(css, /outline:4px dashed/);
-  assert.match(script, /scenarios\.js\?v=1\.2/);
+  assert.match(script, /scenarios\.js\?v=1\.3/);
   assert.match(html, /id="learnStage"/);
   assert.match(html, /id="practiceStage"/);
   assert.match(html, /id="wordsStage"/);
@@ -127,6 +127,7 @@ test("情景页面资源、三个阶段、手动声音按钮和独立导航齐�
   assert.match(html, /id="speakPractice"/);
   assert.match(html, /data-scenario-id="first-meeting"/);
   assert.match(html, /data-scenario-id="what-is-it"/);
+  assert.match(html, /data-scenario-id="counting-pens"/);
   assert.match(css, /grid-template-columns:repeat\(6/);
   assert.doesNotMatch(script, /mario-theme-learned-v1|mario-book1-v1|mario-hanzi-refactor-v1|mario-phonetics-v1|mario-bomb-game-progress-v1/);
 });
@@ -145,7 +146,7 @@ test("情景使用内置imagegen正式PNG和独立文具强调图，无网页生
   assert.equal(classroomPng.subarray(0, 8).toString("hex"), "89504e470d0a1a0a");
   assert.equal(classroomPng.readUInt32BE(16), 1254);
   assert.equal(classroomPng.readUInt32BE(20), 1254);
-  assert.match(workshop, /scenario-vocabulary\.js\?v=1\.5/);
+  assert.match(workshop, /scenario-vocabulary\.js\?v=1\.6/);
   assert.equal((html.match(/assets\/scenarios\/first-meeting-v1\.png/g) || []).length, 1);
   assert.equal((html.match(/assets\/scenarios\/what-is-it-classroom-v1\.png/g) || []).length, 1);
   for (const actor of ["mia", "leo"]) {

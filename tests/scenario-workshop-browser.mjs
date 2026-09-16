@@ -33,8 +33,8 @@ try {
       });
       assert.deepEqual(actual, { w: 1254, h: 1254, fit: "contain", full: true });
     }
-    assert.equal(await page.locator(".scene-preview img").count(), 2);
-    for (let index = 0; index < 2; index += 1) await checkImage(`.scene-preview img >> nth=${index}`);
+    assert.equal(await page.locator(".scene-preview img").count(), 3);
+    for (let index = 0; index < 3; index += 1) await checkImage(`.scene-preview img >> nth=${index}`);
     await page.screenshot({ path: `tests/scenario-cover-${width}.png`, fullPage: true });
     await page.locator('[data-scenario-id="first-meeting"] [data-start-label]').click();
     for (const id of ["actorMia", "actorLeo"]) {

@@ -39,7 +39,7 @@ const page = await desktopContext.newPage();
 watch(page);
 await page.goto(new URL("scenario-learning.html?test=scenario-desktop", baseUrl).href);
 assert.deepEqual(await page.locator(".scenario-nav > *").allTextContents(), ["汉字", "Book1", "主题学习", "情景模式", "总复习", "音标"]);
-assert.equal(await page.locator(".scenario-card").count(), 2);
+assert.equal(await page.locator(".scenario-card").count(), 3);
 assert.equal(await page.locator(".scenario-card.is-complete").count(), 0);
 assert.equal(await noOverflow(page), true);
 
@@ -221,5 +221,5 @@ await focusContext.close();
 
 assert.deepEqual(errors, []);
 assert.deepEqual(failedResponses, []);
-console.log(JSON.stringify({ ok: true, scenarios: 2, lines: 20, practiceQuestions: 8, desktopOverflow: false, mobileOverflow: false, storage: "isolated", classroomCenterClear: true, alignedIpa: true, focusedObjects: true, focusedObjectBreathing: "3 cycles" }, null, 2));
+console.log(JSON.stringify({ ok: true, scenarios: 3, existingScenariosChecked: 2, linesChecked: 20, practiceQuestionsChecked: 8, desktopOverflow: false, mobileOverflow: false, storage: "isolated", classroomCenterClear: true, alignedIpa: true, focusedObjects: true, focusedObjectBreathing: "3 cycles" }, null, 2));
 await browser.close();

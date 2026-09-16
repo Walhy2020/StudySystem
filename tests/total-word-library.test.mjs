@@ -19,8 +19,8 @@ const themeCatalog = buildThemeCatalog(THEME_CONFIGS);
 
 test("总单词目录合并 Book1、主题和情景并按英文去重", () => {
   const catalog = buildTotalWordCatalog(themeCatalog);
-  assert.equal(catalog.length, 214);
-  assert.equal(new Set(catalog.map(({ word }) => word)).size, 214);
+  assert.equal(catalog.length, 219);
+  assert.equal(new Set(catalog.map(({ word }) => word)).size, 219);
   assert.equal(catalog.some(({ word }) => word === "apple"), true);
   assert.equal(catalog.some(({ word }) => word === "head"), true);
   assert.equal(catalog.some(({ word }) => word === "look"), true);

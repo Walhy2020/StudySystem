@@ -52,12 +52,24 @@
 
 ## 验证
 
+### 数一数 / Let's Count!（2026-09-16）
+
+- 新增情景 03 `counting-pens`，先认数字再问物品数量，共四句：
+  `What number is it?` / `It is eight.` / `How many pens do you have?` / `I have eight pens.`
+- 逐词英式音标、中文、Mia / Leo 分步出场和原播放规则保持一致；两道回应题，答错重试，完成后独立绿色对勾。
+- 当前情景 12 个候选词；仅点击「学会了」才写入情景 learnedWords，并通过总词库进入总复习；完成对话或练习不自动入库。
+- 正式图 `assets/scenarios/counting-pens-v1.png`，实际 1254×1254 RGBA；人工确认数字 8 及 4+4 支蓝色笔，无重叠或额外笔。
+- 使用用户已授权的 imagegen CLI/API、`gpt-image-1.5` 生成；提示及尺寸记录见同目录 `counting-pens-v1.prompt.md`，未上传参考图。
+- 封面和舞台共用正式 PNG；中央方形卡片放大数数图，两侧复用原人物，390px 不裁切。
+- 验证：Node 103/103；真实 Microsoft Edge 1440/390 下四句音标对齐、手动/连播、两题、刷新恢复、完成徽章、词库联动及资源无失败；语音使用受控 spy 验证调用/结束，不等同人工听音。
+
 ```powershell
 pnpm run check
 pnpm test
 node tests/scenario-browser-acceptance.mjs
 node tests/scenario-workshop-browser.mjs
 node tests/scenario-playback-browser.mjs
+node tests/scenario-counting-browser.mjs
 ```
 
 检查真实图片 HTTP 200、PNG 尺寸和透明像素、桌面/390px完整显示、人物依次出现、语音结束后推进、音标上下关系、暂停与重播、新单词持久化及存储隔离。浏览器语音测试使用受控回调验证调用和时序，不等同于人工听音。页面不发送生成 API 请求。

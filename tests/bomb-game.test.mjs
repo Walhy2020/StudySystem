@@ -34,7 +34,7 @@ const calculateLayout = new Function(
 
 assert.match(html, /<canvas id="bombCanvas" width="1280" height="720"/);
 assert.ok(html.includes('bomb-game.css?v=1.1'));
-assert.ok(html.includes('bomb-game.js?v=1.5'));
+assert.ok(html.includes('bomb-game.js?v=1.6'));
 assert.ok(html.includes('./data/characters.js?v=1.0'));
 assert.ok(html.includes('./data/pinyin-readings.js?v=1.0'));
 assert.ok(!html.includes("stable-url.js"));
@@ -135,7 +135,9 @@ assert.ok(js.includes("viewportObserver.observe(stageNode)"));
 assert.ok(js.includes("function hasNativeKeyboardTarget(target)"));
 assert.ok(js.includes("if (!(target instanceof Element) || target === canvas) return false;"));
 assert.ok(js.match(/window\.addEventListener\("keydown", \(event\) => \{\s+if \(hasNativeKeyboardTarget\(event\.target\)\) return;/));
-assert.ok(js.match(/window\.addEventListener\("keyup", \(event\) => \{\s+if \(hasNativeKeyboardTarget\(event\.target\)\) return;/));
+assert.ok(js.match(/window\.addEventListener\("keyup", \(event\) => \{\s+const direction = KEY_DIRS\[event.code\];/));
+assert.ok(js.includes('heldDirections.delete(direction);'));
+assert.ok(js.includes('if (!hasNativeKeyboardTarget(event.target)) event.preventDefault();'));
 for (const selector of [
   '"a"', '"button"', '"input"', '"select"', '"textarea"',
   "[contenteditable]", '[role="button"]', '[role="link"]', "[tabindex]",

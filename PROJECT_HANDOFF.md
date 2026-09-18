@@ -1,11 +1,23 @@
 # StudySystem cross-device handoff
 
-Last updated: 2026-09-16
+Last updated: 2026-09-18
 Repository: `https://github.com/Walhy2020/StudySystem.git`
 Branch: `main`
 Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
+
+Bomb maze session/input repair (2026-09-18): same-origin windows in one browser profile
+share the bomb snapshot. Opening a game window takes over playback; older windows
+mirror saved state without advancing or writing. Explicit game input can take over again.
+Blur/pagehide flush the active snapshot; stale writes first read the latest snapshot.
+Separate browsers/profiles/ports still have separate localStorage; Git does not sync it.
+Question cards stay inside five randomly selected bricks until revealed (both question types);
+enemy clear reveals all remaining questions. Never-started saved levels also repair visible
+initial cards back into bricks, without re-hiding genuinely revealed playing saves.
+Damage clears held directions and movement; OS key-repeat cannot restart movement until
+release and a fresh press. Bomb script cache is v1.6. Regression entry points:
+`tests/bomb-browser-acceptance.mjs` and `tests/bomb-session-browser.mjs` (real Microsoft Edge).
 
 Latest addition: Scenario 03, `counting-pens` (数一数 / Let's Count!), follows
 `What number is it?` → `It is eight.` → `How many pens do you have?` → `I have eight pens.`

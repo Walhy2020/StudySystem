@@ -259,6 +259,7 @@
   function serializeBombProgress() {
     return {
       version: BOMB_PROGRESS_VERSION,
+      progressSessionId,
       targetRevealPolicy: 1,
       savedAt: Date.now(),
       status: state.status,
@@ -304,9 +305,40 @@
     };
   }
 
-  function saveBombProgress() {
+  // Compare the exact snapshot last read/written, so an older tab cannot overwrite a newer one.
+  let lastStoredProgress = null;
+  const progressSessionId = crypto.randomUUID();
+  let ownsProgress = true;
+
+  function syncBombProgress() {
     try {
-      localStorage.setItem(BOMB_PROGRESS_KEY, JSON.stringify(serializeBombProgress()));
+      if (localStorage.getItem(BOMB_PROGRESS_KEY) === lastStoredProgress) return;
+      ownsProgress = false;
+      clearInputState();
+      if (!restoreBombProgress()) resetGame();
+    } catch (error) {
+      console.warn("Unable to synchronize bomb progress", error);
+    }
+  }
+
+  function claimBombProgress() {
+    syncBombProgress();
+    if (ownsProgress) return;
+    ownsProgress = true;
+    saveBombProgress();
+  }
+
+  function saveBombProgress() {
+    if (!ownsProgress) return;
+    try {
+      const latest = localStorage.getItem(BOMB_PROGRESS_KEY);
+      if (latest !== lastStoredProgress) {
+        syncBombProgress();
+        return;
+      }
+      const next = JSON.stringify(serializeBombProgress());
+      localStorage.setItem(BOMB_PROGRESS_KEY, next);
+      lastStoredProgress = next;
     } catch (error) {
       console.warn("Unable to save bomb progress", error);
     }
@@ -324,9 +356,11 @@
   function restoreBombProgress() {
     let saved = null;
     try {
-      saved = JSON.parse(localStorage.getItem(BOMB_PROGRESS_KEY) || "null");
+      lastStoredProgress = localStorage.getItem(BOMB_PROGRESS_KEY);
+      saved = JSON.parse(lastStoredProgress || "null");
     } catch (error) {
       localStorage.removeItem(BOMB_PROGRESS_KEY);
+      lastStoredProgress = null;
       return false;
     }
     if (!saved || saved.version !== BOMB_PROGRESS_VERSION) {
@@ -337,6 +371,7 @@
     setLevelDimensions(savedSubLevel);
     if (!isValidSavedMap(saved.map)) {
       localStorage.removeItem(BOMB_PROGRESS_KEY);
+      lastStoredProgress = null;
       return false;
     }
 
@@ -375,7 +410,7 @@
     state.activeHanziWordId = saved.activeHanziWordId || null;
     state.activePinyinStep = Math.max(0, Number(saved.activePinyinStep) || 0);
     state.activePinyinTotal = Math.max(0, Number(saved.activePinyinTotal) || 0);
-    normalizeRestoredLevelTargets(saved.targetRevealPolicy === 1);
+    normalizeRestoredLevelTargets(saved.targetRevealPolicy === 1 && state.status !== "ready");
     lastDirection = saved.lastDirection || "right";
     messageNode.textContent = saved.messageText || "";
     messageTimer = Math.max(0, Number(saved.messageTimer) || 0);
@@ -1177,6 +1212,7 @@
   }
 
   function startGame() {
+    claimBombProgress();
     if (state.status === "locked") {
       resetGame();
     }
@@ -1197,6 +1233,7 @@
   }
 
   function restartGame() {
+    claimBombProgress();
     resetGame();
     startGame();
   }
@@ -2040,6 +2077,7 @@
   }
 
   function openAllBricks() {
+    claimBombProgress();
     if (state.status === "locked") {
       resetGame();
       if (state.status === "locked") {
@@ -2130,6 +2168,8 @@
   function damagePlayer() {
     const player = state.player;
     if (player.invulnerable > 0 || state.status !== "playing") return;
+    clearInputState();
+    player.move = null;
     state.hp -= 1;
     updateHud();
     if (state.hp <= 0) {
@@ -3037,7 +3077,7 @@
     const dt = Math.min(0.033, (now - lastTime) / 1000 || 0);
     lastTime = now;
     animationClock += dt;
-    update(dt);
+    if (!document.hidden && ownsProgress) update(dt);
     render();
     requestAnimationFrame(loop);
   }
@@ -3081,6 +3121,7 @@
   }
 
   window.__BOMB_GAME__ = Object.freeze({
+    isProgressOwner: () => ownsProgress,
     getState: () => serializeBombProgress(),
     getLearningWordIds: () => bombWordsFromLearning(loadLearningState()).map((word) => word.id),
     getLearningSource: () => {
@@ -3174,6 +3215,9 @@
     const direction = KEY_DIRS[event.code];
     if (direction) {
       event.preventDefault();
+      // After damage/focus loss, auto-repeat is not a new press. Require release and press again.
+      if (event.repeat && !heldDirections.has(direction)) return;
+      claimBombProgress();
       if (state.status !== "playing") {
         clearInputState();
         return;
@@ -3184,6 +3228,8 @@
     }
     if (event.code === "Space") {
       event.preventDefault();
+      if (event.repeat) return;
+      claimBombProgress();
       placeBomb();
       return;
     }
@@ -3194,15 +3240,18 @@
   });
 
   window.addEventListener("keyup", (event) => {
-    if (hasNativeKeyboardTarget(event.target)) return;
     const direction = KEY_DIRS[event.code];
     if (direction) {
-      event.preventDefault();
       heldDirections.delete(direction);
+      if (!hasNativeKeyboardTarget(event.target)) event.preventDefault();
     }
   });
 
-  window.addEventListener("blur", clearInputState);
+  window.addEventListener("blur", () => { clearInputState(); saveBombProgress(); });
+  window.addEventListener("storage", (event) => {
+    if (event.key === BOMB_PROGRESS_KEY || event.key === null) syncBombProgress();
+  });
+  window.addEventListener("focus", syncBombProgress);
   window.addEventListener("resize", scheduleBombViewportFit);
   window.addEventListener("pageshow", scheduleBombViewportFit);
   window.visualViewport?.addEventListener("resize", scheduleBombViewportFit);
@@ -3213,10 +3262,13 @@
   }
   document.fonts?.ready.then(scheduleBombViewportFit);
   canvas.addEventListener("blur", clearInputState);
+  canvas.addEventListener("pointerdown", claimBombProgress);
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) {
       clearInputState();
       saveBombProgress();
+    } else {
+      syncBombProgress();
     }
   });
   window.addEventListener("pagehide", saveBombProgress);
@@ -3240,6 +3292,8 @@
   if (!restoreBombProgress()) {
     resetGame();
   }
+  // The newly opened game owns playback; older windows only mirror its saved state.
+  saveBombProgress();
   fitBombViewport();
   requestAnimationFrame(loop);
 }());

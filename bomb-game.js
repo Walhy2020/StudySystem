@@ -2446,11 +2446,11 @@
         drawGuidedPowerUpGlow(center, bob);
       }
       if (powerUp.type === "pinyin") {
-        drawQuestionCard(center, bob, "拼音题", Boolean(activeLearningTargetId()));
+        drawPinyinReward(center, powerUp, bob, Boolean(activeLearningTargetId()));
         return;
       }
       if (powerUp.type === "hanziPrompt") {
-        drawQuestionCard(center, bob, "汉字题", Boolean(activeLearningTargetId()));
+        drawWordChoice(center, powerUp, bob, Boolean(activeLearningTargetId()));
         return;
       }
       if (powerUp.type === "pinyinChoice") {
@@ -2532,30 +2532,6 @@
     ctx.arcTo(x, y + height, x, y, r);
     ctx.arcTo(x, y, x + width, y, r);
     ctx.closePath();
-  }
-
-  function drawQuestionCard(center, bob, label, locked = false) {
-    ctx.save();
-    ctx.translate(center.x, center.y + bob);
-    ctx.fillStyle = "rgba(0, 0, 0, 0.24)";
-    ctx.beginPath();
-    ctx.ellipse(0, 20, 22, 6, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.globalAlpha = locked ? 0.68 : 1;
-    ctx.fillStyle = locked ? "#e5e7eb" : "#fff7d6";
-    ctx.strokeStyle = locked ? "#9ca3af" : "#f59e0b";
-    ctx.lineWidth = 3;
-    roundRectPath(-34, -30, 68, 54, 9);
-    ctx.fill();
-    ctx.stroke();
-    ctx.fillStyle = locked ? "#6b7280" : "#172033";
-    ctx.font = "bold 28px Microsoft YaHei";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText("?", 0, -7);
-    ctx.font = "bold 11px Microsoft YaHei";
-    ctx.fillText(label, 0, 13);
-    ctx.restore();
   }
 
   function drawPinyinReward(center, powerUp, bob, locked = false) {

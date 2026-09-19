@@ -53,6 +53,7 @@ async function restoreBombSnapshot(snapshot) {
 }
 
 await page.goto(baseUrl);
+assert.equal(await page.locator("#appVersionLabel").textContent(), "v1.0.1", "system display version updated");
 assert.equal(await page.locator('.module-tabs a[href="./bomb-game.html?v=1.0"]').count(), 0, "bomb entry is not a module tab");
 assert.equal(await page.locator('.topbar .top-actions #bombGameEntry').isVisible(), true, "header shows bomb-game entry");
 assert.equal(await page.locator('.topbar #resetProgress').count(), 0, "header does not contain Hanzi reset");
@@ -180,7 +181,7 @@ const resourcePaths = [
   "index.html",
   "bomb-game.html",
   "bomb-game.css?v=1.1",
-  "bomb-game.js?v=1.6",
+  "bomb-game.js?v=1.7",
   "data/characters.js?v=1.0",
   "data/pinyin-readings.js?v=1.0",
   "assets/sprites/enemies-bosses.png",
@@ -714,6 +715,7 @@ async function assertBrickRevealAndEnemyClear(mode) {
   assert.equal(summary.hiddenTargetIds.length, 4);
   assert.equal(summary.targetEntityCount, 5);
   assert.deepEqual(summary.visibleInitialTargetIds, [ids[0]]);
+  await assertRevealedTargetText(mode);
   assert.equal(revealed.powerUps.find(item => item.wordId === ids[0]).type, mode === "hanzi" ? "hanziPrompt" : "pinyin");
   assert.equal(revealed.enemies.filter(enemy => enemy.alive).length, 2);
   assert.equal(revealed.bombTargetRoundCounts[ids[0]], (counts[ids[0]] || 0) + 1, "appearance increments only on reveal");
@@ -737,7 +739,46 @@ async function assertBrickRevealAndEnemyClear(mode) {
   assert.equal(cleared.map.flat().includes(2), false, "enemy clear opens remaining bricks");
   assert.equal(cleared.moonWordIds.length, 0, "reveal never counts as an answer");
   assert.equal((await page.evaluate(() => window.__BOMB_GAME__.getBoardTargetSummary())).targetEntityCount, 5);
+  const previousViewport = page.viewportSize();
+  for (const width of [1440, 390]) {
+    await page.setViewportSize({ width, height: width === 390 ? 844 : 1000 });
+    await assertRevealedTargetText(mode);
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+    await page.screenshot({ path: `tests/bomb-revealed-${mode}-${width}.png`, fullPage: true });
+  }
+  await page.setViewportSize(previousViewport);
   await page.screenshot({ path: "tests/bomb-revealed-" + mode + ".png", fullPage: true });
   await restoreBombSnapshot(cleared);
   assert.equal((await page.evaluate(() => window.__BOMB_GAME__.getBoardTargetSummary())).visibleInitialTargetIds.length, 5, "cleared save keeps all pending questions visible");
+}
+
+async function assertRevealedTargetText(mode) {
+  const result = await page.evaluate(async mode => {
+    const saved = window.__BOMB_GAME__.getState();
+    const expected = saved.powerUps.filter(item => item.type === (mode === "hanzi" ? "hanziPrompt" : "pinyin"))
+      .map(item => {
+        const word = window.MARIO_WORD_BANK.find(word => word.id === item.wordId);
+        return mode === "hanzi" ? word.char : window.MARIO_PINYIN_READINGS.label(word, window.MARIO_WORD_BANK);
+      });
+    const drawn = await new Promise(resolve => {
+      const calls = [];
+      const original = CanvasRenderingContext2D.prototype.fillText;
+      CanvasRenderingContext2D.prototype.fillText = function(text, ...args) {
+        if (this.canvas.id === "bombCanvas") calls.push({ text: String(text), width: this.measureText(text).width });
+        return original.call(this, text, ...args);
+      };
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        CanvasRenderingContext2D.prototype.fillText = original;
+        resolve(calls);
+      }));
+    });
+    return { expected, drawn };
+  }, mode);
+  assert.ok(result.expected.length > 0);
+  for (const target of result.expected) {
+    const draws = result.drawn.filter(call => call.text === target);
+    assert.ok(draws.length > 0, mode + ": canvas actually draws " + target);
+    assert.ok(draws.every(call => call.width <= (mode === "hanzi" ? 42 : 66)), target + " fits its card");
+  }
+  assert.equal(result.drawn.some(call => ["?", "？", "拼音题", "汉字题"].includes(call.text)), false);
 }

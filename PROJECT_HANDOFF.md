@@ -1,11 +1,16 @@
 # StudySystem cross-device handoff
 
-Last updated: 2026-09-18
+Last updated: 2026-09-19
 Repository: `https://github.com/Walhy2020/StudySystem.git`
 Branch: `main`
 Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
+
+System display version: **v1.0.1** (2026-09-19). Revealed bomb targets now directly
+show their target pinyin or Hanzi instead of a question mark/type label (bomb script v1.7). Five concealed
+targets, brick reveal timing, enemy-clear reveal and question interactions are unchanged.
+Every future delivery increments the displayed system version as well as changed asset caches.
 
 Bomb maze session/input repair (2026-09-18): same-origin windows in one browser profile
 share the bomb snapshot. Opening a game window takes over playback; older windows

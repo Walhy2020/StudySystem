@@ -34,7 +34,7 @@ const calculateLayout = new Function(
 
 assert.match(html, /<canvas id="bombCanvas" width="1280" height="720"/);
 assert.ok(html.includes('bomb-game.css?v=1.1'));
-assert.ok(html.includes('bomb-game.js?v=1.6'));
+assert.ok(html.includes('bomb-game.js?v=1.7'));
 assert.ok(html.includes('./data/characters.js?v=1.0'));
 assert.ok(html.includes('./data/pinyin-readings.js?v=1.0'));
 assert.ok(!html.includes("stable-url.js"));
@@ -86,8 +86,9 @@ assert.ok(js.includes('return currentLearningMode() === LEARNING_MODES.pinyin ? 
 assert.ok(js.includes('spawnPowerUp("pinyinChoice"'));
 assert.ok(js.includes('"hanzi-to-pinyin"'));
 assert.ok(js.includes('"pinyin-to-hanzi"'));
-assert.ok(js.includes('drawQuestionCard(center, bob, "拼音题"'));
-assert.ok(js.includes('drawQuestionCard(center, bob, "汉字题"'));
+assert.ok(js.includes('drawPinyinReward(center, powerUp, bob, Boolean(activeLearningTargetId()))'));
+assert.ok(js.includes('drawWordChoice(center, powerUp, bob, Boolean(activeLearningTargetId()))'));
+assert.ok(!js.includes('drawQuestionCard'), "revealed targets show their content, not question marks");
 assert.ok(js.includes("getActiveLearningQuestion: () =>"));
 assert.ok(js.includes('retryWordNextLevel(wrongPinyinWordId);'));
 assert.ok(js.includes('retryWordNextLevel(wrongWordTargetId);'));

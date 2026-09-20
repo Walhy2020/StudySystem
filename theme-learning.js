@@ -1,5 +1,5 @@
 import { PHONETIC_STRESS_MARKS, splitPhonetic } from "./src/phonetic-segmenter.js?v=1.0";
-import { initializeThemeProgress } from "./src/theme-overview.js?v=1.10";
+import { initializeThemeProgress } from "./src/theme-overview.js?v=1.11";
 
 export { splitPhonetic };
 
@@ -116,6 +116,15 @@ export const CLASSROOM_WORDS = Object.freeze([
   // Keep the legacy ID so classroom:table progress and the existing image hotspot remain valid.
   { id: "table", word: "desk", phonetic: "/desk/", chinese: "课桌", sentence: "This is a desk.", instruction: "Touch the desk.", ariaLabel: "desk 课桌" },
   { id: "chair", word: "chair", phonetic: "/tʃeə/", chinese: "椅子", sentence: "This is a chair.", instruction: "Touch the chair.", ariaLabel: "chair 椅子" }
+]);
+
+export const MID_AUTUMN_WORDS = Object.freeze([
+  { id: "moon", word: "moon", phonetic: "/muːn/", chinese: "月亮", sentence: "The moon is round.", instruction: "Touch the moon.", ariaLabel: "moon 月亮" },
+  { id: "mooncake", word: "mooncake", phonetic: "/ˈmuːnkeɪk/", chinese: "月饼", sentence: "This is a mooncake.", instruction: "Touch the mooncake.", ariaLabel: "mooncake 月饼" },
+  { id: "lantern", word: "lantern", phonetic: "/ˈlæntən/", chinese: "灯笼", sentence: "The lantern is red.", instruction: "Touch the lantern.", ariaLabel: "lantern 灯笼" },
+  { id: "rabbit", word: "rabbit", phonetic: "/ˈræbɪt/", chinese: "兔子", sentence: "The rabbit is white.", instruction: "Touch the rabbit.", ariaLabel: "rabbit 兔子" },
+  { id: "tea", word: "tea", phonetic: "/tiː/", chinese: "茶", sentence: "This is a cup of tea.", instruction: "Touch the tea.", ariaLabel: "tea 茶" },
+  { id: "family", word: "family", phonetic: "/ˈfæməli/", chinese: "家人", sentence: "We are a family.", instruction: "Touch the family.", ariaLabel: "family 家人" }
 ]);
 
 export const TWINKLE_WORDS = Object.freeze([
@@ -253,10 +262,20 @@ export const THEME_CONFIGS = Object.freeze({
     retryLabel: (word) => word.ariaLabel, instruction: (word) => word.instruction,
     completePrompt: "完成！八个教室用品全部找对", completeTitle: "八个教室用品全部找对！",
     completeText: "你完成了教室用品 Classroom Things 的听音点击练习。"
+  }),
+  midAutumn: Object.freeze({
+    id: "midAutumn", chineseTitle: "中秋节", englishTitle: "Mid-Autumn Festival", words: MID_AUTUMN_WORDS,
+    sceneId: "midAutumnScene", sceneLabel: "中秋节六组互动配图",
+    learnPrompt: "赏月、吃月饼，认识中秋节", practicePrompt: "听指令，点击正确配图",
+    learnPlaceholderTitle: "点一张中秋配图", learnPlaceholderText: "单词、音标、中文和例句会显示在这里。",
+    retryLabel: (word) => word.ariaLabel, instruction: (word) => word.instruction,
+    completePrompt: "完成！六个中秋单词全部找对", completeTitle: "六个中秋单词全部找对！",
+    completeText: "你完成了中秋节 Mid-Autumn Festival 的听音点击练习。"
   })
 });
 
 export const THEME_SERIES = Object.freeze({
+  festivals: Object.freeze({ id: "festivals", title: "节日", description: "通过配图认识节日里的事物和习俗。", themeIds: Object.freeze(["midAutumn"]) }),
   basics: Object.freeze({ id: "basics", title: "基础认知", description: "认识身体部位和常见颜色。", themeIds: Object.freeze(["body", "colors"]) }),
   counting: Object.freeze({ id: "counting", title: "数字天地", description: "从 1 数到 100，并学习第1到第10。", themeIds: Object.freeze(["numbers1", "numbersTeens", "tens", "ordinals"]) }),
   songs: Object.freeze({ id: "songs", title: "英文童谣", description: "跟着经典童谣学习歌词、音标和核心单词。", themeIds: Object.freeze(["twinkle"]) }),

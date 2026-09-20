@@ -63,8 +63,9 @@ async function assertNoOverflow(page) {
 }
 
 async function assertSeriesList(page, complete = false) {
-  assert.equal(await page.locator(".theme-series-cell").count(), 5);
-  const geometry = await page.locator(".theme-series-cell").evaluateAll((cells) => cells.map((cell) => {
+  assert.equal(await page.locator(".theme-series-cell").count(), 6);
+  // This legacy run covers the original five series; Mid-Autumn has a dedicated browser check.
+  const geometry = await page.locator('.theme-series-cell:not([data-series-id="festivals"])').evaluateAll((cells) => cells.map((cell) => {
     const box = cell.getBoundingClientRect();
     const preview = cell.querySelector(".series-preview").getBoundingClientRect();
     return { left: box.left, right: box.right, top: box.top, bottom: box.bottom, width: box.width, height: box.height, previewWidth: preview.width, previewHeight: preview.height, complete: cell.classList.contains("is-complete") };
@@ -629,8 +630,8 @@ assert.ok((await page.locator(".module-tab").allTextContents()).some((item) => i
 assert.deepEqual(await page.locator(".top-actions > *").allTextContents().then((x) => x.map((v) => v.trim())), ["炸弹迷宫"]);
 await page.locator('.module-tab[href="./theme-learning.html"]').click();
 await page.waitForURL(/theme-learning\.html/);
-assert.deepEqual(await page.locator(".theme-card h3").allTextContents().then((items) => items.map((x) => x.replace(/\s+/g, " ").trim())), ["身体 Body", "颜色 Colors", "数字 1–10 Numbers 1–10", "数字 11–19 Numbers 11–19", "整十 10–100 Tens 10–100", "第1到第10 First–Tenth", "一闪一闪小星星 Twinkle, Twinkle, Little Star", "经典道具 I Classic Items I", "经典道具 II Classic Items II", "经典道具 III Classic Items III", "经典道具 IV Classic Items IV", "教室用品 Classroom Things"]);
-assert.equal(await page.locator(".theme-reviewed-badge").count(), 12);
+assert.deepEqual(await page.locator(".theme-card h3").allTextContents().then((items) => items.map((x) => x.replace(/\s+/g, " ").trim())), ["中秋节 Mid-Autumn Festival", "身体 Body", "颜色 Colors", "数字 1–10 Numbers 1–10", "数字 11–19 Numbers 11–19", "整十 10–100 Tens 10–100", "第1到第10 First–Tenth", "一闪一闪小星星 Twinkle, Twinkle, Little Star", "经典道具 I Classic Items I", "经典道具 II Classic Items II", "经典道具 III Classic Items III", "经典道具 IV Classic Items IV", "教室用品 Classroom Things"]);
+assert.equal(await page.locator(".theme-reviewed-badge").count(), 13);
 assert.equal(await page.locator(".theme-reviewed-badge:visible").count(), 0);
 assert.equal(await page.locator("#themeSeriesPanel").isHidden(), true);
 assert.equal(await page.locator("#themePicker > .picker-copy").count(), 0);

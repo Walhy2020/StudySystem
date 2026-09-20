@@ -94,7 +94,7 @@ try {
     await page.goto(new URL("review-learning.html", base).href);
     await act("#openWordLibrary");
     assert.equal(await page.locator('[data-word-key="total:pens"]').count(), 1);
-    assert.equal(await page.locator("#wordLibraryCount").textContent(), "5/223");
+    assert.equal(await page.locator("#wordLibraryCount").textContent(), "5/227");
     for (const [word, objectId] of Object.entries({ keys: "two-keys", mushrooms: "four-mushrooms", coins: "five-coins", stars: "six-stars" })) {
       const image = page.locator(`[data-word-key="total:${word}"] img`);
       assert.equal(await image.getAttribute("src"), scene.focusObjects[objectId].image);

@@ -296,13 +296,13 @@ test("主题朗读延迟重启且只保留最后请求，结束回调后再推�
   assert.equal(secondEnded, 1);
   speaker.cancel();
 });
-test("总词库覆盖十二个主题89个唯一单词且数数配图无歧义", () => {
+test("总词库覆盖十三个主题94个唯一单词且数数配图无歧义", () => {
   const catalog = buildThemeCatalog(THEME_CONFIGS);
-  assert.equal(catalog.length, 91);
-  assert.equal(new Set(catalog.map(({ key }) => key)).size, 91);
-  assert.equal(new Set(catalog.map(({ word }) => word.toLowerCase())).size, 89);
+  assert.equal(catalog.length, 97);
+  assert.equal(new Set(catalog.map(({ key }) => key)).size, 97);
+  assert.equal(new Set(catalog.map(({ word }) => word.toLowerCase())).size, 94);
   assert.equal(catalog.filter(({ word }) => word === "ten").length, 2);
-  assert.equal(catalog.filter(({ art }) => art.type === "image").length, 44);
+  assert.equal(catalog.filter(({ art }) => art.type === "image").length, 50);
   assert.equal(catalog.filter(({ art }) => art.type === "song-word").length, 8);
   assert.equal(catalog.filter(({ art }) => art.type === "ordinal").length, 10);
   assert.equal(catalog.filter(({ art }) => art.type === "count-units").length, 19);
@@ -327,7 +327,7 @@ test("总词库覆盖十二个主题89个唯一单词且数数配图无歧义", 
       assert.ok(entry.art.groups >= 1 && entry.art.groups <= 10);
       continue;
     }
-    assert.match(entry.art.src, /^\.\/assets\/themes\/(body|colors|items|classroom)\//);
+    assert.match(entry.art.src, /^\.\/assets\/themes\/(body|colors|items|classroom|mid-autumn)\//);
     assert.ok(entry.art.width > 0 && entry.art.height > 0);
     const crop = entry.art.viewBox.split(/\s+/).map(Number);
     assert.equal(crop.length, 4);
@@ -345,9 +345,9 @@ test("总词库覆盖十二个主题89个唯一单词且数数配图无歧义", 
   assert.ok(classroomEntries.every(({ art }) => art.src === "./assets/themes/classroom/classroom-things-scene-v1.png"));
   const store = new ThemeLearnedStore(catalog, null);
   for (const themeId of Object.keys(THEME_CONFIGS)) store.recordTheme(themeId);
-  assert.equal(store.entries().length, 89);
+  assert.equal(store.entries().length, 94);
   assert.equal(store.entries().filter(({ word }) => word === "ten").length, 1);
-  assert.equal(store.uniqueCatalogEntries().length, 89);
+  assert.equal(store.uniqueCatalogEntries().length, 94);
 });
 test("学习完毕整批入库，复习完毕单独记录并保持幂等", () => {
   const catalog = buildThemeCatalog(THEME_CONFIGS);
@@ -444,7 +444,7 @@ test("主题页十二个卡片、九十一个互动目标、歌词音标、阶�
   assert.match(html, /data-theme-id="numbersTeens"/);
   assert.match(html, /data-theme-id="tens"/);
   assert.match(html, /data-theme-id="ordinals"/);
-  assert.equal((html.match(/data-theme-id=/g) || []).length, 12);
+  assert.equal((html.match(/data-theme-id=/g) || []).length, 13);
   assert.match(html, /data-theme-id="items1"/);
   assert.match(html, /data-theme-id="items2"/);
   assert.match(html, /data-theme-id="items3"/);
@@ -472,7 +472,7 @@ test("主题页十二个卡片、九十一个互动目标、歌词音标、阶�
   assert.match(html, /id="learnPanel"/);
   assert.match(html, /id="practicePanel" hidden/);
   assert.match(html, /id="backToThemes"/);
-  assert.equal((html.match(/data-series-id=/g) || []).length, 5);
+  assert.equal((html.match(/data-series-id=/g) || []).length, 6);
   assert.match(html, /data-series-id="basics"/);
   assert.match(html, /data-series-id="counting"/);
   assert.match(html, /data-series-id="items"/);
@@ -520,10 +520,10 @@ test("主题页十二个卡片、九十一个互动目标、歌词音标、阶�
   assert.doesNotMatch(html, /id="openTotalReview"|id="openWordLibrary"|id="wordLibraryView"|id="totalReviewView"/);
   assert.match(html, /href="\.\/review-learning\.html">总复习<\/a>/);
   assert.match(html, /theme-learning\.css\?v=3\.4/);
-  assert.match(html, /theme-learning\.js\?v=2\.13/);
+  assert.match(html, /theme-learning\.js\?v=2\.14/);
   const script = await readFile(new URL("../theme-learning.js", import.meta.url), "utf8");
   assert.match(script, /phonetic-segmenter\.js\?v=1\.0/);
-  assert.match(script, /theme-overview\.js\?v=1\.10/);
+  assert.match(script, /theme-overview\.js\?v=1\.11/);
   assert.match(script, /function renderCountingScenes/);
   assert.match(script, /export const THEME_SERIES/);
   assert.match(script, /function showSeries/);
@@ -599,10 +599,10 @@ test("总复习是独立并列模块，主题页只记录学习进度", async ()
   assert.match(reviewHtml, /id="totalReviewView"/);
   assert.match(reviewHtml, /id="wordLibraryView" hidden/);
   assert.match(reviewHtml, /theme-learning\.css\?v=3\.4/);
-  assert.match(reviewHtml, /review-learning\.js\?v=1\.11/);
-  assert.match(reviewHtml, /id="wordLibraryCount">0\/223<\/b>/);
-  assert.match(reviewScript, /theme-learning\.js\?v=2\.13/);
-  assert.match(reviewScript, /theme-overview\.js\?v=1\.10/);
+  assert.match(reviewHtml, /review-learning\.js\?v=1\.12/);
+  assert.match(reviewHtml, /id="wordLibraryCount">0\/227<\/b>/);
+  assert.match(reviewScript, /theme-learning\.js\?v=2\.14/);
+  assert.match(reviewScript, /theme-overview\.js\?v=1\.11/);
   assert.match(reviewScript, /overview\.openReview\(\)/);
 });
 

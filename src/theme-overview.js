@@ -50,6 +50,11 @@ export function themeWordKey(themeId, wordId) {
 }
 
 function artFor(themeId, word, index) {
+  if (themeId === "midAutumn") {
+    return Object.freeze({ type: "image", src: "./assets/themes/mid-autumn/mid-autumn-scene-v1.png",
+      width: 1536, height: 1024,
+      viewBox: ["50 40 440 430", "540 55 480 440", "1060 0 450 495", "45 475 455 525", "520 560 505 440", "1050 500 460 500"][index] });
+  }
   if (Number.isInteger(word.value)) {
     return Object.freeze({
       type: word.groups ? "count-groups" : "count-units",

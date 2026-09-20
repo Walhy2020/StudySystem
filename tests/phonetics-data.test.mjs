@@ -91,5 +91,5 @@ test("炸弹入口位于音标页 header，地图内只保留重置按钮，提�
   assert.doesNotMatch(html, /<p class="feedback"/);
   assert.match(html, /phonetics\.css\?v=1\.9/);
   assert.match(html, /phonetics-transcriptions\.js\?v=1\.0/);
-  assert.match(html, /phonetics-app\.js\?v=1\.7/);
+  assert.match(html, /phonetics-app\.js\?v=1\.8/);
 });

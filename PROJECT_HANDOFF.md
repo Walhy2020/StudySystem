@@ -1,13 +1,21 @@
 # StudySystem cross-device handoff
 
-Last updated: 2026-09-19
+Last updated: 2026-09-20
 Repository: `https://github.com/Walhy2020/StudySystem.git`
 Branch: `main`
 Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.1** (2026-09-19). Revealed bomb targets now directly
+System display version: **v1.0.2** (2026-09-20). New Festivals → Mid-Autumn Festival theme:
+moon, mooncake, lantern, rabbit, tea and family, with British IPA, segmentation, manual
+speech, six-question practice, explicit learned-library entry and persisted review check.
+Artwork is `assets/themes/mid-autumn/mid-autumn-scene-v1.png` (1536×1024 RGB PNG),
+generated through the user-authorized imagegen CLI / gpt-image-1.5. Six separate crops
+preserve ears, lantern tassels and full figures. Tea replaces pomelo by user choice.
+Dedicated Edge acceptance: `node tests/mid-autumn-browser.mjs`.
+
+Previous v1.0.1 (2026-09-19): Revealed bomb targets now directly
 show their target pinyin or Hanzi instead of a question mark/type label (bomb script v1.7). Five concealed
 targets, brick reveal timing, enemy-clear reveal and question interactions are unchanged.
 Every future delivery increments the displayed system version as well as changed asset caches.
@@ -30,7 +38,7 @@ It now has six counting groups: eight pens, three pencils, two keys, four mushro
 Each group follows the same four-line pattern, for 24 word-aligned British-IPA lines, 12 illustrated response questions and 22 vocabulary candidates.
 The original pens image is retained; five new 1254×1254 cards reuse approved theme artwork with exact copy counts, built by `scripts/build-counting-cards.py` from `assets/scenarios/counting-objects-v1.json`.
 Playback, per-scenario refresh restoration and explicit learned-word marking use the existing scenario module.
-The deduplicated combined catalog now contains 223 candidate words; only explicitly learned words enter overall review.
+The deduplicated combined catalog now contains 227 candidate words after the Mid-Autumn addition; only explicitly learned words enter overall review.
 The dedicated Edge check is `node tests/scenario-counting-browser.mjs`; normal suite includes it.
 
 Clone once:
@@ -85,9 +93,9 @@ In the ChatGPT/Codex desktop app, add the cloned repository as a local project a
 ### Theme learning
 
 - Entry: `theme-learning.html`.
-- Twelve delivered themes with 91 theme records: Body, Colors, Numbers 1-10, Numbers 11-19, Tens 10-100, Ordinals 1-10, Twinkle Twinkle Little Star, Classic Items I-IV, and Classroom Things.
+- Thirteen delivered themes with 97 theme records (94 unique words): Body, Colors, Numbers 1-10, Numbers 11-19, Tens 10-100, Ordinals 1-10, Twinkle Twinkle Little Star, Classic Items I-IV, Classroom Things, and Mid-Autumn Festival.
 - Theme word cards support IPA display and phoneme segmentation, manual sound playback, previous/next navigation, keyboard/touch interaction, learning, and practice.
-- The outer picker groups themes into five horizontal preview series: Basic Recognition, Counting World, Nursery Rhymes, Classic Items, and Classroom Things. Individual reviewed themes keep their green checks, and a series turns green when all themes inside it are reviewed.
+- The outer picker groups themes into six horizontal preview series: Festivals, Basic Recognition, Counting World, Nursery Rhymes, Classic Items, and Classroom Things. Individual reviewed themes keep their green checks, and a series turns green when all themes inside it are reviewed.
 - The Nursery Rhymes series currently contains Twinkle, Twinkle, Little Star: six lyric lines each place complete British IPA directly below the English line, eight core words remain clickable, and full-verse speech is manual rather than automatic.
 - Counting artwork is code-native and exact: 1-19 use the matching number of coin dots; 10-100 uses one to ten ten-frames, each containing exactly ten dots.
 - Project assets live under `assets/themes/` and have been checked against their mapped words/hotspots.
@@ -119,7 +127,7 @@ In the ChatGPT/Codex desktop app, add the cloned repository as a local project a
 - Space toggles the current review word's IPA breakdown, using the same click behavior. Entering a round focuses its IPA button; repeated keydown does not retrigger, and sound/answer/navigation controls keep native keyboard behavior. New questions begin collapsed.
 - This is an independent top-level module, not a child page inside Theme Learning.
 - The total word library aggregates words actually learned in Book1, Theme Learning, and Scenario Learning. It reads all three existing progress keys without writing across module boundaries and deduplicates by normalized English spelling.
-- The combined published catalog currently contains 214 unique candidate words. The library and each review round include only the subset actually learned in the current browser profile.
+- The combined published catalog currently contains 227 unique candidate words. The library and each review round include only the subset actually learned in the current browser profile.
 - Theme artwork remains preferred for duplicates, Book1 uses its original word pictures, and scenario words use focused object art when available or a Chinese-meaning choice card when no literal image exists. Reviews keep four unique choices, wrong-answer retry, restart, refresh persistence, desktop and 390px layouts.
 
 ### Bomb maze

@@ -9,6 +9,7 @@
 <main>
 <section class="theme-picker" id="themePicker" aria-label="主题系列选择">
 <div class="theme-series-list" id="themeSeriesList" aria-label="主题系列">
+<button class="theme-series-cell" type="button" data-series-id="festivals" aria-label="节日，1个主题"><span class="series-preview items-series-preview" aria-hidden="true"><img src="./assets/themes/mid-autumn/mid-autumn-scene-v1.png" alt=""></span><span class="series-cell-copy"><small>1 个主题</small><strong>节日</strong><em>Festivals</em><span data-series-progress>0/1 已复习</span></span><span class="series-arrow" aria-hidden="true">›</span></button>
 <button class="theme-series-cell basics-series-cell" type="button" data-series-id="basics" aria-label="基础认知，2个主题"><span class="series-preview basics-series-preview" aria-hidden="true"><img src="./assets/themes/body/body-character-anime-v2.png" alt=""></span><span class="series-cell-copy"><small>2 个主题</small><strong>基础认知</strong><em>Body &amp; Colors</em><span data-series-progress>0/2 已复习</span></span><span class="series-arrow" aria-hidden="true">›</span></button>
 <button class="theme-series-cell counting-series-cell" type="button" data-series-id="counting" aria-label="数字天地，4个主题"><span class="series-preview counting-series-preview" aria-hidden="true"><b>1</b><b>10</b><b>100</b><i></i><i></i><i></i><i></i><i></i></span><span class="series-cell-copy"><small>4 个主题</small><strong>数字天地</strong><em>Counting &amp; Ordinals</em><span data-series-progress>0/4 已复习</span></span><span class="series-arrow" aria-hidden="true">›</span></button>
 
@@ -19,6 +20,7 @@
 <section class="theme-series-panel" id="themeSeriesPanel" aria-labelledby="seriesTitle" hidden>
 <div class="series-panel-heading"><button class="back-series" id="backToSeries" type="button">返回主题系列</button><div><span class="section-kicker">选择一个小主题</span><h2 id="seriesTitle">基础认知</h2><p id="seriesDescription">认识身体部位和常见颜色。</p></div></div>
 <div class="theme-grid">
+<article class="theme-card items-card midautumn-card" data-series="festivals"><div class="theme-card-art items-card-art" aria-hidden="true"><img src="./assets/themes/mid-autumn/mid-autumn-scene-v1.png" alt=""><strong>MID-AUTUMN</strong></div><div class="theme-card-copy"><span class="theme-number">主题 13</span><h3>中秋节 <em>Mid-Autumn Festival</em></h3><p>赏圆月、吃月饼，认识灯笼、兔子、茶和家人。</p><button class="primary-action" id="startMidAutumn" data-theme-id="midAutumn" type="button">开始主题</button></div></article>
 <article class="theme-card body-card" data-series="basics"><div class="theme-card-art" aria-hidden="true"><span></span><strong>BODY</strong></div>
 <div class="theme-card-copy"><span class="theme-number">主题 01</span><h3>身体 <em>Body</em></h3><p>认识头、手、手臂、腿、脚和身体。</p><button class="primary-action" id="startTheme" data-theme-id="body" type="button">开始主题</button></div></article>
 <article class="theme-card colors-card" data-series="basics"><div class="theme-card-art colors-card-art" aria-hidden="true"><div class="palette-dots"><i></i><i></i><i></i><i></i><i></i><i></i></div><strong>COLORS</strong></div>
@@ -132,6 +134,16 @@
 <g class="scene-target item-target" data-target="spring" tabindex="0" role="button" aria-label="spring 弹簧"><rect class="item-hitbox" x="535" y="500" width="465" height="450" rx="110"/><rect class="target-outline" x="535" y="500" width="465" height="450" rx="110"/></g>
 <g class="scene-target item-target" data-target="egg" tabindex="0" role="button" aria-label="egg 蛋"><rect class="item-hitbox" x="1025" y="490" width="455" height="465" rx="115"/><rect class="target-outline" x="1025" y="490" width="455" height="465" rx="115"/></g>
 </svg><p class="scene-note">点击帽子、套装、锤子、回旋镖、弹簧或蛋，认识经典道具第四系列。</p></div>
+<div class="theme-scene" id="midAutumnScene" data-theme="midAutumn" hidden>
+<svg class="scene-figure items-figure" id="midAutumnFigure" viewBox="0 0 1536 1024" role="group" aria-label="可互动的中秋节六组配图">
+<image class="item-scene-image" href="./assets/themes/mid-autumn/mid-autumn-scene-v1.png" x="0" y="0" width="1536" height="1024" preserveAspectRatio="xMidYMid meet" pointer-events="none"/>
+<g class="scene-target item-target" data-target="moon" tabindex="0" role="button" aria-label="moon 月亮"><rect class="item-hitbox" x="50" y="40" width="440" height="430" rx="40"/><rect class="target-outline" x="50" y="40" width="440" height="430" rx="40"/></g>
+<g class="scene-target item-target" data-target="mooncake" tabindex="0" role="button" aria-label="mooncake 月饼"><rect class="item-hitbox" x="540" y="55" width="480" height="440" rx="40"/><rect class="target-outline" x="540" y="55" width="480" height="440" rx="40"/></g>
+<g class="scene-target item-target" data-target="lantern" tabindex="0" role="button" aria-label="lantern 灯笼"><rect class="item-hitbox" x="1060" y="0" width="450" height="495" rx="40"/><rect class="target-outline" x="1060" y="0" width="450" height="495" rx="40"/></g>
+<g class="scene-target item-target" data-target="rabbit" tabindex="0" role="button" aria-label="rabbit 兔子"><rect class="item-hitbox" x="45" y="475" width="455" height="525" rx="40"/><rect class="target-outline" x="45" y="475" width="455" height="525" rx="40"/></g>
+<g class="scene-target item-target" data-target="tea" tabindex="0" role="button" aria-label="tea 茶"><rect class="item-hitbox" x="520" y="560" width="505" height="440" rx="40"/><rect class="target-outline" x="520" y="560" width="505" height="440" rx="40"/></g>
+<g class="scene-target item-target" data-target="family" tabindex="0" role="button" aria-label="family 家人"><rect class="item-hitbox" x="1050" y="500" width="460" height="500" rx="40"/><rect class="target-outline" x="1050" y="500" width="460" height="500" rx="40"/></g>
+</svg><p class="scene-note">中秋赏圆月、吃月饼，与家人团圆。点击配图，认识月亮、月饼、灯笼、兔子、茶和家人。</p></div>
 <div class="theme-scene" id="classroomScene" data-theme="classroom" hidden>
 <svg class="scene-figure items-figure classroom-figure" id="classroomFigure" viewBox="0 0 1536 1024" role="group" aria-label="可互动的教室用品场景">
 <image class="item-scene-image" href="./assets/themes/classroom/classroom-things-scene-v1.png" x="0" y="0" width="1536" height="1024" preserveAspectRatio="xMidYMid meet" pointer-events="none"/>
@@ -174,4 +186,4 @@
 <section class="info-panel result-panel" id="resultPanel" hidden><span class="result-star" aria-hidden="true">★</span><span class="card-label">ROUND COMPLETE</span><h3 id="resultTitle">六个目标全部找对！</h3><p id="resultText">你完成了听音点击练习。</p><strong id="resultScore">6/6</strong><button class="primary-action" id="restartRound" type="button">再来一轮</button></section>
 </div><p class="tts-notice" id="ttsNotice" role="status" hidden>当前浏览器无法朗读，但仍可继续点击学习。</p>
 </section>
-</main></div><script type="module" src="./theme-learning.js?v=2.13"></script></body></html>
+</main></div><script type="module" src="./theme-learning.js?v=2.14"></script></body></html>

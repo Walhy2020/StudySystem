@@ -82,6 +82,7 @@
   const PLAYER_MOVE_TIME = 0.18;
   const ENEMY_MOVE_TIME = 0.55;
   const ENEMY_MOVE_RANDOM_TIME = 0.125;
+  const MUSHROOM_SPEED_FACTOR = 0.9;
   const KOOPA_MOVE_TIME = 1.0;
   const SHELL_MOVE_TIME = 0.075;
   const ENEMY_CHASE_TIME = 2.6;
@@ -309,6 +310,7 @@
   let lastStoredProgress = null;
   const progressSessionId = crypto.randomUUID();
   let ownsProgress = true;
+  let awaitingContinue = false;
 
   function syncBombProgress() {
     try {
@@ -415,8 +417,10 @@
     messageNode.textContent = saved.messageText || "";
     messageTimer = Math.max(0, Number(saved.messageTimer) || 0);
     startTitle.textContent = saved.startTitleText || `第 ${state.world}-${state.subLevel} / ${LEVELS_PER_WORLD} 小关 · 难度 ${difficultyLabelForSubLevel()}`;
-    overlayStartButton.textContent = saved.overlayStartText || "继续";
-    startLayer.classList.toggle("hidden", state.status === "playing" || Boolean(saved.startLayerHidden));
+    awaitingContinue = state.status === "playing";
+    overlayStartButton.textContent = awaitingContinue ? "继续" : saved.overlayStartText || "开始";
+    startButton.textContent = awaitingContinue ? "继续" : "开始";
+    startLayer.classList.toggle("hidden", !awaitingContinue && Boolean(saved.startLayerHidden));
     clearInputState();
     updateHud();
     return true;
@@ -1158,6 +1162,8 @@
   }
 
   function setupSubLevel() {
+    awaitingContinue = false;
+    startButton.textContent = "开始";
     refreshDailyNewWords();
     setLevelDimensions(state.subLevel);
     state.status = "ready";
@@ -1213,6 +1219,9 @@
 
   function startGame() {
     claimBombProgress();
+    const resuming = awaitingContinue;
+    awaitingContinue = false;
+    startButton.textContent = "开始";
     if (state.status === "locked") {
       resetGame();
     }
@@ -1226,7 +1235,7 @@
     clearInputState();
     state.status = "playing";
     startLayer.classList.add("hidden");
-    setMessage("开始");
+    setMessage(resuming ? "继续" : "开始");
     canvas.focus();
     updateHud();
     saveBombProgress();
@@ -1584,7 +1593,8 @@
         return;
       }
       if (stopEnemyMoveBeforeBomb(enemy)) return;
-      if (advanceMove(enemy, dt) || enemy.move) return;
+      // Scale displacement, including a move already in progress in a restored save.
+      if (advanceMove(enemy, enemy.type === "mushroom" ? dt * MUSHROOM_SPEED_FACTOR : dt) || enemy.move) return;
 
       if (enemy.type === "koopa-green") {
         const nextDir = chooseKoopaDirection(enemy);
@@ -2327,6 +2337,7 @@
   }
 
   function update(dt) {
+    if (awaitingContinue) return;
     if (messageTimer > 0) {
       messageTimer -= dt;
       if (messageTimer <= 0 && state.status === "playing") {
@@ -3098,6 +3109,7 @@
 
   window.__BOMB_GAME__ = Object.freeze({
     isProgressOwner: () => ownsProgress,
+    isAwaitingContinue: () => awaitingContinue,
     getState: () => serializeBombProgress(),
     getLearningWordIds: () => bombWordsFromLearning(loadLearningState()).map((word) => word.id),
     getLearningSource: () => {
@@ -3157,6 +3169,7 @@
       flameTime: FLAME_TIME,
       moonsPerLevel: BOMB_MOONS_PER_LEVEL,
       wordsPerRun: BOMB_WORDS_PER_RUN,
+      mushroomSpeedFactor: MUSHROOM_SPEED_FACTOR,
       koopaMoveTime: KOOPA_MOVE_TIME,
       nightTime: isNightTime(),
       canvasWidth: canvas.width,
@@ -3193,6 +3206,8 @@
       event.preventDefault();
       // After damage/focus loss, auto-repeat is not a new press. Require release and press again.
       if (event.repeat && !heldDirections.has(direction)) return;
+      syncBombProgress();
+      if (awaitingContinue) return;
       claimBombProgress();
       if (state.status !== "playing") {
         clearInputState();
@@ -3205,12 +3220,19 @@
     if (event.code === "Space") {
       event.preventDefault();
       if (event.repeat) return;
+      syncBombProgress();
+      if (awaitingContinue) return;
       claimBombProgress();
       placeBomb();
       return;
     }
     if (event.code === "Enter") {
       event.preventDefault();
+      syncBombProgress();
+      if (awaitingContinue) {
+        overlayStartButton.focus();
+        return;
+      }
       startGame();
     }
   });
@@ -3238,7 +3260,10 @@
   }
   document.fonts?.ready.then(scheduleBombViewportFit);
   canvas.addEventListener("blur", clearInputState);
-  canvas.addEventListener("pointerdown", claimBombProgress);
+  canvas.addEventListener("pointerdown", () => {
+    syncBombProgress();
+    if (!awaitingContinue) claimBombProgress();
+  });
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) {
       clearInputState();
@@ -3268,7 +3293,7 @@
   if (!restoreBombProgress()) {
     resetGame();
   }
-  // The newly opened game owns playback; older windows only mirror its saved state.
+  // The new window owns the snapshot, but restored gameplay waits for Continue.
   saveBombProgress();
   fitBombViewport();
   requestAnimationFrame(loop);

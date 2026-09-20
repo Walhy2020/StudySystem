@@ -71,6 +71,25 @@ test("碰撞受伤及致命伤都清空按住的方向和移动动画，无敌�
   }
 });
 
+test("等待继续时冻结整个更新，包括爆炸、敌人和伤害", () => {
+  new Function(`let awaitingContinue = true; ${extract("update")} update(10);`)();
+});
+
+test("蘑菇移动速度精确降低10%，库巴和乌龟不变，包含存档中的移动", () => {
+  for (const type of ["mushroom", "bowser", "koopa-green"]) {
+    const enemy = { type, alive: true, chaseTimer: 0, hitCooldown: 0, stunTimer: 0, move: {} };
+    let elapsed;
+    new Function("state", "advanceMove", `
+      const MUSHROOM_SPEED_FACTOR = 0.9;
+      const isNightTime = () => false, stopEnemyMoveBeforeBomb = () => false;
+      ${extract("updateEnemies")}
+      updateEnemies(0.1);
+    `)({ enemies: [enemy] }, (_, dt) => { elapsed = dt; return true; });
+    assert.ok(Math.abs(elapsed - (type === "mushroom" ? 0.09 : 0.1)) < 1e-10);
+  }
+  assert.match(source, /const MUSHROOM_SPEED_FACTOR = 0\.9;/);
+});
+
 test("方向键在原生按钮上释放仍清理游戏输入，但保留按钮默认行为", () => {
   const start = source.indexOf('window.addEventListener("keyup", (event) => {');
   const end = source.indexOf("\n  });", start) + 6;

@@ -7,7 +7,14 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.2** (2026-09-20). New Festivals → Mid-Autumn Festival theme:
+System display version: **v1.0.3** (2026-09-20). Bomb saves now open paused with a Continue
+button: actors, bomb fuses, explosions and damage wait for explicit button activation.
+Directions/Space on the canvas cannot bypass the gate; the button retains native Enter/Space
+and touch activation. Question reveal state and partial moves are retained. Mushroom movement
+is now 90% of its previous speed, including restored moves; other enemies are unchanged.
+Bomb script cache: v1.8. Focused Edge checks: bomb-session-browser and bomb-browser-acceptance.
+
+Previous v1.0.2 (2026-09-20). New Festivals → Mid-Autumn Festival theme:
 moon, mooncake, lantern, rabbit, tea and family, with British IPA, segmentation, manual
 speech, six-question practice, explicit learned-library entry and persisted review check.
 Artwork is `assets/themes/mid-autumn/mid-autumn-scene-v1.png` (1536×1024 RGB PNG),
@@ -21,8 +28,8 @@ targets, brick reveal timing, enemy-clear reveal and question interactions are u
 Every future delivery increments the displayed system version as well as changed asset caches.
 
 Bomb maze session/input repair (2026-09-18): same-origin windows in one browser profile
-share the bomb snapshot. Opening a game window takes over playback; older windows
-mirror saved state without advancing or writing. Explicit game input can take over again.
+share the bomb snapshot. Opening a game window takes ownership but waits for Continue;
+older windows mirror saved state without advancing or writing. Their Continue button can take over again.
 Blur/pagehide flush the active snapshot; stale writes first read the latest snapshot.
 Separate browsers/profiles/ports still have separate localStorage; Git does not sync it.
 Question cards stay inside five randomly selected bricks until revealed (both question types);

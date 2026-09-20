@@ -4,13 +4,17 @@ import { chromium } from "file:///C:/Users/St/.cache/codex-runtimes/codex-primar
 const base = process.env.HANZI_BASE_URL || "http://127.0.0.1:5177/";
 const key = "mario-bomb-game-progress-v1";
 const browser = await chromium.launch({ headless: true, executablePath: "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe" });
-const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, hasTouch: true });
 const errors = [];
 context.on("page", page => {
   page.on("pageerror", error => errors.push(error.message));
   page.on("response", response => { if (response.status() >= 400) errors.push(response.url()); });
 });
-const state = page => page.evaluate(() => window.__BOMB_GAME__.getState());
+const state = page => page.evaluate(() => {
+  // getState stamps serialization time; compare every gameplay field, not wall-clock metadata.
+  const { savedAt, ...snapshot } = window.__BOMB_GAME__.getState();
+  return snapshot;
+});
 const owner = page => page.evaluate(() => window.__BOMB_GAME__.isProgressOwner());
 async function open(page) {
   await page.goto(base + "bomb-game.html?test=bomb-session");
@@ -70,20 +74,27 @@ try {
   await open(second);
   await first.waitForFunction(() => !window.__BOMB_GAME__.isProgressOwner());
   const continued = await state(second);
+  assert.equal(await second.evaluate(() => window.__BOMB_GAME__.isAwaitingContinue()), true);
+  assert.equal(await second.locator("#overlayStartBombGame").textContent(), "继续");
   for (const field of ["world", "subLevel", "hp", "score", "map", "hiddenWordCrates", "moonWordIds", "powerUps"]) {
     assert.deepEqual(continued[field], played[field], "new window restores " + field);
   }
   assert.equal(continued.player.gy, 2);
   assert.equal(await owner(second), true);
   await new Promise(resolve => setTimeout(resolve, 1100));
+  assert.deepEqual(await state(second), continued, "restored snapshot stays entirely frozen before Continue");
   assert.equal(await owner(first), false, "old window never takes back autosave ownership");
   assert.equal(await owner(second), true);
   const currentSession = (await state(second)).progressSessionId;
   assert.equal(await first.evaluate(key => JSON.parse(localStorage.getItem(key)).progressSessionId, key), currentSession);
 
-  // Explicit input can safely resume the old window; a late close of the other cannot overwrite it.
+  // Only Continue takes back playback; stray directions do not resume the old window.
   await first.bringToFront();
   await first.locator("#bombCanvas").focus();
+  await first.keyboard.press("ArrowUp");
+  assert.equal(await owner(first), false);
+  await first.locator("#overlayStartBombGame").focus();
+  await first.keyboard.press("Enter");
   await first.keyboard.down("ArrowUp");
   await first.waitForFunction(() => !!window.__BOMB_GAME__.getState().player.move);
   await first.keyboard.up("ArrowUp");
@@ -95,6 +106,35 @@ try {
   await first.waitForFunction(() => !!window.__BOMB_GAME__);
   assert.equal((await state(first)).player.gy, 1);
   assert.equal((await state(first)).score, 125);
+  assert.equal(await first.evaluate(() => window.__BOMB_GAME__.isAwaitingContinue()), true);
+
+  // Near-expiry bomb, moving actors and an overlapping enemy must remain frozen on entry.
+  for (const width of [1440, 390]) {
+    await first.setViewportSize({ width, height: width === 390 ? 844 : 1000 });
+    const pending = structuredClone(initial);
+    pending.status = "playing";
+    pending.startLayerHidden = true;
+    pending.player = { gx: 1, gy: 1, move: null, invulnerable: 0 };
+    pending.enemies = [stationaryEnemy(pending.enemies[0], 1, 1)];
+    pending.bombs = [{ gx: 1, gy: 1, time: 1.8, range: 1, exploded: false }];
+    await restore(first, pending);
+    const frozen = await state(first);
+    await first.locator("#bombCanvas").focus();
+    await first.keyboard.press("ArrowDown");
+    await first.keyboard.press("Space");
+    await first.waitForTimeout(2200);
+    assert.deepEqual(await state(first), frozen, "no damage/movement/bomb fuse progress before Continue at " + width);
+    assert.equal(await first.locator("#bombStartLayer").isVisible(), true);
+    assert.equal(await first.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+    await first.screenshot({ path: `tests/bomb-continue-${width}.png`, fullPage: true });
+    if (width === 390) await first.locator("#overlayStartBombGame").tap();
+    else {
+      await first.locator("#overlayStartBombGame").focus();
+      await first.keyboard.press("Space");
+    }
+    assert.equal(await first.evaluate(() => window.__BOMB_GAME__.isAwaitingContinue()), false);
+    await first.waitForFunction(() => window.__BOMB_GAME__.getState().hp < 3);
+  }
 
   // Top-right downward collision: damage must cancel held input, including OS auto-repeat.
   for (const width of [1440, 390]) {
@@ -124,7 +164,7 @@ try {
   }
   assert.deepEqual(errors, []);
   console.log(JSON.stringify({ ok: true, browser: "Microsoft Edge", sameProfileWindowRestore: true,
-    staleWindowCannotOverwrite: true, explicitInputTakeover: true, readySaveHidesQuestions: ["pinyin", "hanzi"],
+    staleWindowCannotOverwrite: true, continueButtonTakeover: true, resumeGate: [1440, 390], readySaveHidesQuestions: ["pinyin", "hanzi"],
     respawnStopsHeldDirection: [1440, 390], freshPressResumes: true }, null, 2));
 } finally {
   await browser.close();

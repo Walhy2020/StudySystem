@@ -93,6 +93,7 @@
   const BULLET_BILL_MIN_DIFFICULTY_INDEX = 5;
   const BULLET_BILL_SPAWN_CHANCE = 0.35;
   const BULLET_BILL_TEST_FIRST_LEVEL = true;
+  const BULLET_BILL_TEST_VISIBLE_COUNT = 5;
   const ENEMY_CHASE_TIME = 2.6;
   const ENEMY_SIGHT_RANGE = 8 / 3;
   const ENEMY_VISION_HALF_ANGLE = Math.PI / 3;
@@ -458,11 +459,11 @@
   }
 
   function bulletBillBrickCapacityForLevel() {
-    return isBulletBillTestLevel() || difficultyIndexForSubLevel() >= BULLET_BILL_MIN_DIFFICULTY_INDEX ? 1 : 0;
+    return difficultyIndexForSubLevel() >= BULLET_BILL_MIN_DIFFICULTY_INDEX ? 1 : 0;
   }
 
   function shouldSeedBulletBill() {
-    if (isBulletBillTestLevel()) return true;
+    if (isBulletBillTestLevel()) return false;
     if (difficultyIndexForSubLevel() < BULLET_BILL_MIN_DIFFICULTY_INDEX) return false;
     return Math.random() < BULLET_BILL_SPAWN_CHANCE;
   }
@@ -974,6 +975,7 @@
       `1,${ROWS - 2}`, `1,${ROWS - 3}`, `2,${ROWS - 2}`,
       `${center},${middle}`, `${center},${middle - 1}`, `${center},${middle + 1}`,
       `${center - 1},${middle}`, `${center + 1},${middle}`,
+      ...(isBulletBillTestLevel() ? [`${center - 3},${middle}`, `${center + 3},${middle}`] : []),
     ]);
 
     for (let y = 0; y < ROWS; y += 1) {
@@ -1001,10 +1003,37 @@
     return map;
   }
 
+  function makeBulletBillEnemy(id, gx, gy, dir = "") {
+    return {
+      id,
+      type: "bullet-bill",
+      hp: 1,
+      gx,
+      gy,
+      dir,
+      move: null,
+      stepsTravelled: 0,
+      straightSteps: 0,
+      turnPause: 0,
+      turnResetPending: false,
+      chaseTimer: 0,
+      stunTimer: 0,
+      hitCooldown: 0,
+      lastSeen: null,
+      seed: Math.random() * 10,
+      alive: true,
+    };
+  }
+
   function createEnemies() {
     const right = COLS - 2;
     const center = Math.floor(COLS / 2);
     const middle = Math.floor(ROWS / 2);
+    if (isBulletBillTestLevel()) {
+      return [-3, -1, 0, 1, 3]
+        .slice(0, BULLET_BILL_TEST_VISIBLE_COUNT)
+        .map((offset, index) => makeBulletBillEnemy(index + 1, center + offset, middle));
+    }
     const starts = [
       { gx: right, gy: ROWS - 2 },
       { gx: right, gy: 1 },
@@ -1423,11 +1452,11 @@
     };
   }
 
-  function advanceMove(actor, dt) {
+  function advanceMove(actor, dt, linear = false) {
     if (!actor.move) return false;
     actor.move.time += dt;
     const ratio = clamp(actor.move.time / actor.move.duration, 0, 1);
-    const ease = ratio < 0.5 ? 2 * ratio * ratio : 1 - Math.pow(-2 * ratio + 2, 2) / 2;
+    const ease = linear ? ratio : ratio < 0.5 ? 2 * ratio * ratio : 1 - Math.pow(-2 * ratio + 2, 2) / 2;
     actor.gx = actor.move.fromX + (actor.move.toX - actor.move.fromX) * ease;
     actor.gy = actor.move.fromY + (actor.move.toY - actor.move.fromY) * ease;
     if (ratio >= 1) {
@@ -1693,7 +1722,7 @@
     explodeBombTouchedByBulletBill(enemy);
 
     if (enemy.move) {
-      if (!advanceMove(enemy, dt)) return;
+      if (!advanceMove(enemy, dt, true)) return;
       enemy.stepsTravelled += 1;
       if (enemy.stepsTravelled >= BULLET_BILL_MAX_STEPS) {
         explodeBulletBill(enemy);
@@ -1795,25 +1824,7 @@
 
   function spawnBulletBill(gx, gy) {
     const id = state.enemies.reduce((maximum, enemy) => Math.max(maximum, Number(enemy.id) || 0), 0) + 1;
-    state.enemies.push({
-      id,
-      type: "bullet-bill",
-      hp: 1,
-      gx,
-      gy,
-      dir: "",
-      move: null,
-      stepsTravelled: 0,
-      straightSteps: 0,
-      turnPause: 0,
-      turnResetPending: false,
-      chaseTimer: 0,
-      stunTimer: 0,
-      hitCooldown: 0,
-      lastSeen: null,
-      seed: Math.random() * 10,
-      alive: true,
-    });
+    state.enemies.push(makeBulletBillEnemy(id, gx, gy));
     spawnParticles("enemy", gx, gy);
     setMessage("导弹出现，已锁定小飞星", 1.8);
     updateHud();
@@ -3439,6 +3450,7 @@
         minDifficultyIndex: BULLET_BILL_MIN_DIFFICULTY_INDEX,
         spawnChance: BULLET_BILL_SPAWN_CHANCE,
         testFirstLevel: BULLET_BILL_TEST_FIRST_LEVEL,
+        testVisibleCount: BULLET_BILL_TEST_VISIBLE_COUNT,
       },
       nightTime: isNightTime(),
       canvasWidth: canvas.width,

@@ -7,7 +7,15 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.6** (2026-09-21). Bomb maze now includes a tracking Bullet Bill
+System display version: **v1.0.7** (2026-09-21). Level 1-1 is now an explicit Bullet Bill
+test field: five visible missiles start in a horizontal formation across the map center, replacing
+the ordinary first-level enemies and the earlier hidden test missile. Their travel interpolation
+is linear inside each cell so straight runs remain visually continuous instead of easing to a stop
+at every grid boundary; the intentional 0.45-second pause still occurs only on a real turn.
+Advanced-level hidden-brick spawning remains unchanged. Bomb script cache: v2.1. Focused check:
+`node tests/bullet-bill-browser.mjs` at desktop and 390px.
+
+Previous v1.0.6 (2026-09-21). Bomb maze now includes a tracking Bullet Bill
 enemy using sprite frame `(560, 48, 16, 16)` from the existing `assets/sprites/enemies-bosses.png`.
 Destroying its hidden brick spawns it. It continuously pathfinds toward the fly-star, immediately
 detonates player bombs on contact without being destroyed, accelerates while moving straight,
@@ -171,7 +179,7 @@ In the ChatGPT/Codex desktop app, add the cloned repository as a local project a
 - Entry: `bomb-game.html`.
 - Each level has five distinct Hanzi targets: prioritize learning evidence, then fill from non-mastered words without repeating the same character. Odd/even sublevels alternate pinyin-to-Hanzi and Hanzi-to-pinyin questions.
 - All five questions start hidden inside separate bricks. Destroying a target brick reveals its question card; eliminating the last enemy opens all remaining bricks and reveals all pending questions. Revealing is not answering: five correct completions are still required.
-- A Bullet Bill can be hidden in its own non-question brick. Level 1-1 always receives one for testing; difficulty index 5+ receives one with 35% probability. It pathfinds toward the fly-star for up to 10 cells, accelerates on straight runs, pauses once on a turn, triggers bombs without dying, and then self-destructs. Its complete state persists in the existing bomb save key.
+- Level 1-1 is a dedicated test field with five visible Bullet Bills across the center row and no hidden test missile. Difficulty index 5+ can still hide one in its own non-question brick with 35% probability. It pathfinds toward the fly-star for up to 10 cells, uses continuous linear travel between cell centers, accelerates on straight runs, pauses once only when turning, triggers bombs without dying, and then self-destructs. Its complete state persists in the existing bomb save key.
 - Bomb saves remain version 1, with targetRevealPolicy=1 distinguishing the restored hidden-question rule. New saves preserve hidden/revealed/active/completed state; old automatically visible unanswered prompts are re-hidden where intact bricks remain, without discarding active answers or completed progress. Only actual reveals increment appearance counts.
 - Save/resume, restart, next-level flow, keyboard controls, mobile layout, and isolated bomb progress are implemented.
 
@@ -202,6 +210,11 @@ Persistent browser keys:
 Git synchronizes source code and assets only. Browser `localStorage` progress, API keys, environment variables, Codex plugins, browser-extension connections, and local tool installations must be configured separately on the company computer.
 
 ## Latest verification snapshot
+
+Verified on 2026-09-21 after the centered test-field and smooth-travel update:
+
+- `pnpm run check`, `pnpm test`, and `git diff --check`: passed.
+- Real Microsoft Edge Bullet Bill acceptance passed at desktop and 390px: five visible centered missiles on 1-1, no hidden test missile, linear between-cell travel, advanced brick-triggered spawning, bomb-contact survival, 10-cell self-destruction, sprite HTTP 200, and no horizontal overflow.
 
 Verified on 2026-09-21 after the Bullet Bill test release:
 

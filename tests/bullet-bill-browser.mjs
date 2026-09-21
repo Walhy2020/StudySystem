@@ -68,12 +68,25 @@ try {
     minDifficultyIndex: 5,
     spawnChance: 0.35,
     testFirstLevel: true,
+    testVisibleCount: 5,
   });
-  const firstLevelBills = initial.hiddenPowerUps.filter(([, type]) => type === "bulletBill");
-  assert.equal(firstLevelBills.length, 1, "level 1-1 always contains one hidden Bullet Bill for testing");
+  const firstLevelBills = initial.enemies.filter((enemy) => enemy.type === "bullet-bill" && enemy.alive);
+  const middle = Math.floor(initial.map.length / 2);
+  const center = Math.floor(initial.map[0].length / 2);
+  assert.equal(firstLevelBills.length, 5, "level 1-1 opens with five visible Bullet Bills for testing");
+  assert.deepEqual(firstLevelBills.map(({ gx, gy }) => [gx, gy]), [-3, -1, 0, 1, 3].map((offset) => [center + offset, middle]));
+  assert.equal(initial.hiddenPowerUps.some(([, type]) => type === "bulletBill"), false, "the test level uses visible center missiles instead of another hidden missile");
 
   const spawnFixture = structuredClone(initial);
-  const [brickKey] = firstLevelBills[0];
+  const reservedBrickKeys = new Set([
+    ...spawnFixture.hiddenWordCrates.map(([key]) => key),
+    ...spawnFixture.hiddenPowerUps.map(([key]) => key),
+  ]);
+  const spawnBrick = spawnFixture.map.flatMap((row, y) => row.map((tile, x) => ({ tile, x, y })))
+    .find((cell) => cell.tile === 2 && !reservedBrickKeys.has(`${cell.x},${cell.y}`));
+  assert.ok(spawnBrick, "fixture has a spare brick for the probability-spawn check");
+  const brickKey = `${spawnBrick.x},${spawnBrick.y}`;
+  spawnFixture.hiddenPowerUps.push([brickKey, "bulletBill"]);
   const [brickX, brickY] = brickKey.split(",").map(Number);
   const neighbor = [
     [brickX - 1, brickY],
@@ -147,6 +160,22 @@ try {
   const afterBomb = await page.evaluate(() => window.__BOMB_GAME__.getState());
   assert.ok(afterBomb.enemies.find((enemy) => enemy.type === "bullet-bill").alive, "Bullet Bill survives the bomb it triggers");
   assert.ok(afterBomb.dayClock < 2, "the two-second bomb is triggered early by contact");
+  const motionSamples = await page.evaluate(async () => {
+    const samples = [];
+    for (let frame = 0; frame < 16; frame += 1) {
+      await new Promise(requestAnimationFrame);
+      const bullet = window.__BOMB_GAME__.getState().enemies.find((enemy) => enemy.type === "bullet-bill" && enemy.alive);
+      if (bullet?.move) samples.push({ gx: bullet.gx, gy: bullet.gy, move: bullet.move });
+    }
+    return samples;
+  });
+  assert.ok(motionSamples.length >= 8, "real Edge captured enough in-flight missile frames");
+  motionSamples.forEach(({ gx, gy, move }) => {
+    const ratio = Math.min(1, move.time / move.duration);
+    const expectedX = move.fromX + (move.toX - move.fromX) * ratio;
+    const expectedY = move.fromY + (move.toY - move.fromY) * ratio;
+    assert.ok(Math.abs(gx - expectedX) < 0.001 && Math.abs(gy - expectedY) < 0.001, "missile glides linearly without per-cell easing");
+  });
   await page.waitForFunction(() => {
     const bullet = window.__BOMB_GAME__.getState().enemies.find((enemy) => enemy.type === "bullet-bill");
     return bullet && !bullet.alive && bullet.stepsTravelled === 10;
@@ -157,14 +186,11 @@ try {
   assert.equal(expiredBullet.alive, false);
   assert.match(expired.messageText, /导弹追踪 10 格后爆炸/);
 
-  const visualFixture = structuredClone(chaseFixture);
+  const visualFixture = structuredClone(initial);
   visualFixture.status = "ready";
   visualFixture.startLayerHidden = true;
-  visualFixture.messageText = "导弹测试：已锁定小飞星";
+  visualFixture.messageText = "第一关导弹测试场：中间 5 枚导弹";
   visualFixture.bombs = [];
-  visualFixture.enemies[0] = {
-    ...visualFixture.enemies[0], gx: 5, gy: 5, dir: "right", alive: true, stepsTravelled: 2, straightSteps: 2,
-  };
   for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: width === 390 ? 844 : 1000 });
     await restoreSnapshot(visualFixture, false);
@@ -176,9 +202,10 @@ try {
   assert.equal(spriteStatus, 200, "Bullet Bill sprite sheet is served successfully");
   assert.deepEqual(errors, [], "Bullet Bill acceptance has no page or resource errors");
   console.log(JSON.stringify({
-    firstLevelHiddenBill: true,
+    firstLevelCenterBills: 5,
     brickSpawn: true,
     bombContactSurvival: true,
+    linearMotionSamples: motionSamples.length,
     tenCellSelfDestruct: true,
     spriteFrame: constants.frame,
     desktopAndMobile: true,

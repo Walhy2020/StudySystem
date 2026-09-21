@@ -21,6 +21,7 @@ test("每种地图尺寸在最稀疏随机结果下仍有五个藏题砖，不�
         const ROWS = 11, TILE_CRATE = 2, TILE_FLOOR = 0, TILE_HARD = 1;
         const BOMB_MOONS_PER_LEVEL = 5;
         const maxFireFlowersForLevel = () => 2;
+        const isBulletBillTestLevel = () => false;
         const bulletBillBrickCapacityForLevel = () => 1;
         const shouldSeedBulletBill = () => true;
         ${extract("createMap")}

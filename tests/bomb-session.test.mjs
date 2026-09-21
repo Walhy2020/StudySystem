@@ -175,6 +175,26 @@ test("导弹始终对小飞星寻路，直线逐格加速且最低速度受限",
   assert.equal(duration(99), 0.22);
 });
 
+test("导弹跨格采用匀速插值，不在每格边界重复减速", () => {
+  const advance = new Function(`
+    const clamp = (value, minimum, maximum) => Math.max(minimum, Math.min(maximum, value));
+    const state = { player: {} };
+    const rememberPlayerCell = () => {};
+    ${extract("advanceMove")}
+    return advanceMove;
+  `)();
+  const linear = {
+    gx: 0,
+    gy: 0,
+    move: { fromX: 0, fromY: 0, toX: 1, toY: 0, time: 0, duration: 1 },
+  };
+  const eased = structuredClone(linear);
+  advance(linear, 0.25, true);
+  advance(eased, 0.25);
+  assert.equal(linear.gx, 0.25, "missile covers one quarter cell in one quarter duration");
+  assert.equal(eased.gx, 0.125, "other actors retain the existing eased movement");
+});
+
 test("导弹转弯暂停并以基础速度重启，走满十格自爆", () => {
   const calls = { starts: [], exploded: 0, touched: 0 };
   const run = new Function("calls", `

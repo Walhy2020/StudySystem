@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
-import { chromium } from "file:///C:/Users/St/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/index.mjs";
+import { loadChromium } from "./playwright-runtime.mjs";
+
+const chromium = await loadChromium();
 
 const base = process.env.HANZI_BASE_URL || "http://127.0.0.1:5177/";
 const key = "mario-bomb-game-progress-v1";

@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
-import { chromium } from "file:///C:/Users/St/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/index.mjs";
+import { loadChromium } from "./playwright-runtime.mjs";
+
+const chromium = await loadChromium();
 
 const baseUrl = process.env.HANZI_BASE_URL || "http://127.0.0.1:5177/";
 const url = new URL("?test=browser-acceptance", baseUrl).href;
@@ -163,9 +165,9 @@ async function pageActionGeometry(label) {
 await resetTestKey();
 assert.equal(await page.locator("#bootError").isHidden(), true);
 assert.equal(await page.locator("#appVersionLabel").isVisible(), true);
-assert.equal(await page.locator("#appVersionLabel").textContent(), "v1.0.5");
+assert.equal(await page.locator("#appVersionLabel").textContent(), "v1.0.6");
 const packageVersion = await page.evaluate(() => fetch("./package.json").then((response) => response.json()).then((metadata) => metadata.version));
-assert.equal(packageVersion, "1.0.5");
+assert.equal(packageVersion, "1.0.6");
 assert.equal(await page.locator("#appVersionLabel").textContent(), `v${packageVersion}`);
 assert.equal(await page.locator(".hp-counter, #hpIcons, #repairHint").count(), 0);
 assert.equal(await page.locator(".star-counter").isVisible(), true);
@@ -418,7 +420,7 @@ await page.screenshot({ path: "tests/browser-desktop.png", fullPage: true });
 await page.setViewportSize({ width: 390, height: 844 });
 await page.reload();
 assert.equal(await page.locator("#appVersionLabel").isVisible(), true);
-assert.equal(await page.locator("#appVersionLabel").textContent(), "v1.0.5");
+assert.equal(await page.locator("#appVersionLabel").textContent(), "v1.0.6");
 assert.equal(await page.locator(".hp-counter, #hpIcons, #repairHint").count(), 0);
 assert.equal(await page.locator(".star-counter").isVisible(), true);
 assert.equal(await page.locator("#starCount").isVisible(), true);
@@ -484,7 +486,7 @@ console.log(JSON.stringify({
   ttsStateUnchanged: true,
   idleAnswerControlsHidden: true,
   taskChoiceVisibility: true,
-  displayedVersion: "1.0.5",
+  displayedVersion: "1.0.6",
   desktopIdleCard: `${desktopIdleCard.buttonWidth}x${desktopIdleCard.buttonHeight} @ ${desktopIdleCard.fontSize}px`,
   desktopCharacterPx: desktopCharacterCard.fontSize,
   desktopCompletePx: desktopCompleteCard.fontSize,

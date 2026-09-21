@@ -143,6 +143,75 @@ test("蘑菇移动速度精确降低10%，库巴和乌龟不变，包含存档�
   assert.match(source, /const MUSHROOM_SPEED_FACTOR = 0\.9;/);
 });
 
+test("导弹始终对小飞星寻路，直线逐格加速且最低速度受限", () => {
+  const map = Array.from({ length: 7 }, (_, y) => Array.from({ length: 7 }, (_, x) =>
+    x === 0 || y === 0 || x === 6 || y === 6 ? 1 : 0));
+  map[1][2] = 1;
+  const state = { map, player: { gx: 4, gy: 1 } };
+  const chooseDirection = new Function("state", `
+    const TILE_FLOOR = 0;
+    const DIRS = { up:{x:0,y:-1}, down:{x:0,y:1}, left:{x:-1,y:0}, right:{x:1,y:0} };
+    const coordKey = (gx, gy) => gx + "," + gy;
+    const isInside = (gx, gy) => gx >= 0 && gy >= 0 && gx < 7 && gy < 7;
+    const shellAt = () => false;
+    ${extract("isBulletBillCellOpen")}
+    ${extract("chooseBulletBillDirection")}
+    return chooseBulletBillDirection;
+  `)(state);
+  const enemy = { gx: 1, gy: 1, dir: "right" };
+  assert.equal(chooseDirection(enemy), "down", "blocked direct route turns through the maze");
+  map[1][2] = 0;
+  assert.equal(chooseDirection(enemy), "right", "open direct route keeps heading toward the player");
+
+  const duration = new Function(`
+    const BULLET_BILL_MOVE_TIME = 0.55;
+    const BULLET_BILL_MIN_MOVE_TIME = 0.22;
+    const BULLET_BILL_ACCELERATION = 0.04;
+    ${extract("bulletBillMoveDuration")}
+    return bulletBillMoveDuration;
+  `)();
+  assert.equal(duration(0), 0.55);
+  assert.ok(duration(4) < duration(3));
+  assert.equal(duration(99), 0.22);
+});
+
+test("导弹转弯暂停并以基础速度重启，走满十格自爆", () => {
+  const calls = { starts: [], exploded: 0, touched: 0 };
+  const run = new Function("calls", `
+    const BULLET_BILL_MAX_STEPS = 10;
+    const BULLET_BILL_TURN_PAUSE = 0.45;
+    const DIRS = { up:{x:0,y:-1}, down:{x:0,y:1}, left:{x:-1,y:0}, right:{x:1,y:0} };
+    const bombAt = () => null;
+    const bulletBillMoveDuration = steps => 0.55 - steps * 0.04;
+    const explodeBombTouchedByBulletBill = () => { calls.touched++; };
+    const chooseBulletBillDirection = () => "down";
+    const advanceMove = enemy => { enemy.move = null; return true; };
+    const explodeBulletBill = enemy => { enemy.alive = false; calls.exploded++; };
+    const explodeBomb = () => {};
+    const startMove = (enemy, direction, duration) => {
+      enemy.move = { direction };
+      calls.starts.push({ direction, duration });
+    };
+    ${extract("updateBulletBill")}
+    return updateBulletBill;
+  `)(calls);
+  const turning = { alive: true, gx: 2, gy: 2, dir: "right", move: null, stepsTravelled: 0, straightSteps: 4, turnPause: 0 };
+  run(turning, 0.1);
+  assert.equal(turning.dir, "down");
+  assert.equal(turning.turnPause, 0.45);
+  assert.equal(calls.starts.length, 0);
+  run(turning, 0.45);
+  assert.equal(calls.starts.length, 0, "turn pause consumes one movement beat");
+  run(turning, 0.01);
+  assert.deepEqual(calls.starts.at(-1), { direction: "down", duration: 0.55 }, "first cell after a turn is not accelerated");
+
+  const expiring = { alive: true, gx: 4, gy: 2, dir: "down", move: {}, stepsTravelled: 9, straightSteps: 0, turnPause: 0 };
+  run(expiring, 1);
+  assert.equal(expiring.stepsTravelled, 10);
+  assert.equal(expiring.alive, false);
+  assert.equal(calls.exploded, 1);
+});
+
 test("方向键在原生按钮上释放仍清理游戏输入，但保留按钮默认行为", () => {
   const start = source.indexOf('window.addEventListener("keyup", (event) => {');
   const end = source.indexOf("\n  });", start) + 6;

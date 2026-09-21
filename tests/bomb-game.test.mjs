@@ -34,7 +34,7 @@ const calculateLayout = new Function(
 
 assert.match(html, /<canvas id="bombCanvas" width="1280" height="720"/);
 assert.ok(html.includes('bomb-game.css?v=1.1'));
-assert.ok(html.includes('bomb-game.js?v=1.9'));
+assert.ok(html.includes('bomb-game.js?v=2.0'));
 assert.ok(html.includes('./data/characters.js?v=1.0'));
 assert.ok(html.includes('./data/pinyin-readings.js?v=1.0'));
 assert.ok(!html.includes("stable-url.js"));
@@ -122,12 +122,24 @@ for (const field of [
 
 assert.ok(js.includes("const KOOPA_MOVE_TIME = 1.0;"));
 assert.ok(js.includes('if (isNightTime() && enemy.type !== "koopa-green")'));
-assert.ok(js.includes('if (!isNightTime() || enemy.type === "koopa-green") return;'));
+assert.ok(js.includes('if (!isNightTime() || enemy.type === "koopa-green" || enemy.type === "bullet-bill") return;'));
 assert.match(js, /function isNightTime\(\) \{\s+return false;\s+\}/);
 assert.ok(js.includes('type: index === 1 ? "bowser" : "mushroom",'));
 assert.ok(js.includes("hp: index === 1 ? 2 : 1,"));
 assert.ok(js.includes('type: "koopa-green",'));
 assert.ok(js.includes("spawnShell(gx, gy);"));
+assert.ok(js.includes('const BULLET_BILL_FRAME = { sx: 560, sy: 48, sw: 16, sh: 16 };'));
+assert.ok(js.includes("const BULLET_BILL_MAX_STEPS = 10;"));
+assert.ok(js.includes("const BULLET_BILL_MIN_DIFFICULTY_INDEX = 5;"));
+assert.ok(js.includes("const BULLET_BILL_SPAWN_CHANCE = 0.35;"));
+assert.ok(js.includes("const BULLET_BILL_TEST_FIRST_LEVEL = true;"));
+assert.ok(js.includes('if (hiddenType === "bulletBill")'));
+assert.ok(js.includes('type: "bullet-bill",'));
+assert.ok(js.includes("function chooseBulletBillDirection(enemy)"));
+assert.ok(js.includes("function explodeBombTouchedByBulletBill(enemy)"));
+assert.ok(js.includes('if (enemy.type === "bullet-bill") return;'));
+assert.ok(js.includes("if (enemy.stepsTravelled >= BULLET_BILL_MAX_STEPS)"));
+assert.ok(js.includes('enemy.type === "bullet-bill"'));
 assert.ok(js.includes('window.addEventListener("resize", scheduleBombViewportFit)'));
 assert.ok(js.includes('window.addEventListener("pageshow", scheduleBombViewportFit)'));
 assert.ok(js.includes('window.visualViewport?.addEventListener("resize", scheduleBombViewportFit)'));

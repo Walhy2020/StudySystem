@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
-import { chromium } from "file:///C:/Users/St/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/index.mjs";
+import { loadChromium } from "./playwright-runtime.mjs";
+
+const chromium = await loadChromium();
 import { BOOK1_GROUPS } from "../data/book1.js";
 
 const baseUrl = process.env.HANZI_BASE_URL || "http://127.0.0.1:53177/";

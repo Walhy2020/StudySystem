@@ -450,6 +450,7 @@
       gy: 1,
       move: null,
       invulnerable: 0,
+      trail: [{ gx: 1, gy: 1 }],
     };
   }
 
@@ -1380,6 +1381,7 @@
   }
 
   function startMove(actor, direction, duration) {
+    if (actor === state.player) rememberPlayerCell(Math.round(actor.gx), Math.round(actor.gy));
     const dir = DIRS[direction];
     const targetX = Math.round(actor.gx) + dir.x;
     const targetY = Math.round(actor.gy) + dir.y;
@@ -1404,6 +1406,7 @@
     if (ratio >= 1) {
       actor.gx = actor.move.toX;
       actor.gy = actor.move.toY;
+      if (actor === state.player) rememberPlayerCell(actor.gx, actor.gy);
       actor.move = null;
       return true;
     }
@@ -2175,9 +2178,44 @@
     return state.explosions.some((explosion) => explosion.cells.some((cell) => cell.gx === gx && cell.gy === gy));
   }
 
-  function damagePlayer() {
+  function rememberPlayerCell(gx, gy) {
+    const player = state.player;
+    const trail = Array.isArray(player.trail) ? player.trail.slice(-16) : [];
+    const last = trail.at(-1);
+    if (last?.gx === gx && last?.gy === gy) return;
+    if (last && Math.abs(last.gx - gx) + Math.abs(last.gy - gy) !== 1) trail.length = 0;
+    trail.push({ gx, gy });
+    player.trail = trail.slice(-16);
+  }
+
+  function retreatPlayer(move) {
+    const player = state.player;
+    const origin = move ? { gx: move.fromX, gy: move.fromY } : { gx: Math.round(player.gx), gy: Math.round(player.gy) };
+    // During a partial step the impact cell is its destination; returning to its origin is step one.
+    let anchor = move ? { gx: move.toX, gy: move.toY } : origin;
+    rememberPlayerCell(origin.gx, origin.gy);
+    const trail = player.trail.slice();
+    if (trail.at(-1)?.gx === anchor.gx && trail.at(-1)?.gy === anchor.gy) trail.pop();
+    let destination = { gx: Math.round(player.gx), gy: Math.round(player.gy) };
+    for (let step = 0; step < 2 && trail.length; step += 1) {
+      const cell = trail.at(-1);
+      if (Math.abs(cell.gx - anchor.gx) + Math.abs(cell.gy - anchor.gy) !== 1 || !isCellOpen(cell.gx, cell.gy, "player")) break;
+      destination = cell;
+      anchor = cell;
+      trail.pop();
+    }
+    player.gx = destination.gx;
+    player.gy = destination.gy;
+    // Keep only the route up to the landing cell; a second hit must not follow abandoned forward steps.
+    const landing = trail.at(-1);
+    if (landing?.gx !== destination.gx || landing?.gy !== destination.gy) trail.push(destination);
+    player.trail = trail.slice(-16);
+  }
+
+  function damagePlayer(source = "hazard") {
     const player = state.player;
     if (player.invulnerable > 0 || state.status !== "playing") return;
+    const interruptedMove = player.move;
     clearInputState();
     player.move = null;
     state.hp -= 1;
@@ -2190,10 +2228,15 @@
       setMessage("失败", 3);
       return;
     }
-    player.gx = 1;
-    player.gy = 1;
-    player.move = null;
-    player.invulnerable = 1.2;
+    if (source === "monster") {
+      retreatPlayer(interruptedMove);
+      player.invulnerable = 1;
+    } else {
+      player.gx = 1;
+      player.gy = 1;
+      player.trail = [{ gx: 1, gy: 1 }];
+      player.invulnerable = 1.2;
+    }
     setMessage("受伤");
   }
 
@@ -2283,7 +2326,7 @@
       const dx = enemy.gx - state.player.gx;
       const dy = enemy.gy - state.player.gy;
       if (Math.hypot(dx, dy) < 0.58) {
-        damagePlayer();
+        damagePlayer("monster");
       }
     });
 
@@ -2292,7 +2335,7 @@
       const dx = shell.gx - state.player.gx;
       const dy = shell.gy - state.player.gy;
       if (Math.hypot(dx, dy) < 0.58) {
-        damagePlayer();
+        damagePlayer("monster");
       }
     });
   }
@@ -2846,11 +2889,14 @@
     });
   }
 
+  function isPlayerBlinkHidden() {
+    return state.player.invulnerable > 0 && Math.floor(state.player.invulnerable * 16) % 2 === 0;
+  }
+
   function drawPlayer() {
     const player = state.player;
     const center = cellCenter(player.gx, player.gy);
-    const blink = player.invulnerable > 0 && Math.floor(animationClock * 16) % 2 === 0;
-    if (blink) return;
+    if (isPlayerBlinkHidden()) return;
 
     ctx.fillStyle = "rgba(0, 0, 0, 0.32)";
     ctx.beginPath();
@@ -3110,6 +3156,7 @@
   window.__BOMB_GAME__ = Object.freeze({
     isProgressOwner: () => ownsProgress,
     isAwaitingContinue: () => awaitingContinue,
+    getPlayerVisualState: () => ({ invulnerable: state.player.invulnerable > 0, hidden: isPlayerBlinkHidden() }),
     getState: () => serializeBombProgress(),
     getLearningWordIds: () => bombWordsFromLearning(loadLearningState()).map((word) => word.id),
     getLearningSource: () => {

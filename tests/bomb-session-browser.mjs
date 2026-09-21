@@ -151,21 +151,54 @@ try {
     await first.keyboard.down("ArrowDown");
     await first.waitForFunction(() => window.__BOMB_GAME__.getState().hp === 2);
     for (let repeat = 0; repeat < 3; repeat += 1) await first.keyboard.down("ArrowDown");
-    await new Promise(resolve => setTimeout(resolve, 500));
+    const blinkFrames = await first.evaluate(async () => {
+      const samples = [];
+      const end = performance.now() + 350;
+      while (performance.now() < end) {
+        await new Promise(requestAnimationFrame);
+        samples.push(window.__BOMB_GAME__.getPlayerVisualState());
+      }
+      return samples;
+    });
+    assert.ok(blinkFrames.every(frame => frame.invulnerable));
+    assert.equal(new Set(blinkFrames.map(frame => frame.hidden)).size, 2, "player alternates visible and hidden during immunity");
     const respawn = (await state(first)).player;
-    assert.deepEqual({ gx: respawn.gx, gy: respawn.gy, move: respawn.move }, { gx: 1, gy: 1, move: null }, "respawn stays still at " + width);
+    assert.deepEqual({ gx: respawn.gx, gy: respawn.gy, move: respawn.move }, { gx, gy: 1, move: null }, "retreat stays on the travelled route at " + width);
+    assert.ok(respawn.invulnerable > 0 && respawn.invulnerable <= 1);
     await first.screenshot({ path: `tests/bomb-respawn-${width}.png`, fullPage: true });
+    await first.waitForFunction(() => window.__BOMB_GAME__.getState().player.invulnerable === 0);
+    assert.deepEqual(await first.evaluate(() => window.__BOMB_GAME__.getPlayerVisualState()), { invulnerable: false, hidden: false });
+    assert.equal((await state(first)).hp, 2);
     await first.keyboard.up("ArrowDown");
     await first.keyboard.down("ArrowDown");
     await first.waitForFunction(() => !!window.__BOMB_GAME__.getState().player.move);
     await first.keyboard.up("ArrowDown");
     await first.waitForFunction(() => window.__BOMB_GAME__.getState().player.gy === 2);
     assert.equal(await first.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+
+    // A restored turning route is retraced, and another enemy at the landing cell cannot hit during the shield.
+    const turning = structuredClone(initial);
+    turning.status = "playing";
+    turning.player = { gx: 7, gy: 3, move: null, invulnerable: 0,
+      trail: [[5, 1], [5, 2], [5, 3], [6, 3], [7, 3]].map(([gx, gy]) => ({ gx, gy })) };
+    for (const cell of turning.player.trail) turning.map[cell.gy][cell.gx] = 0;
+    turning.enemies = [stationaryEnemy(turning.enemies[0], 7, 3), stationaryEnemy(turning.enemies[1], 5, 3)];
+    await restore(first, turning);
+    await first.locator("#overlayStartBombGame").click();
+    await first.waitForFunction(() => window.__BOMB_GAME__.getState().hp === 2);
+    const hit = await state(first);
+    assert.deepEqual([hit.player.gx, hit.player.gy], [5, 3]);
+    await first.waitForTimeout(350);
+    assert.equal((await state(first)).hp, 2, "overlapping enemy does not bypass the shield");
+    await first.waitForFunction(() => window.__BOMB_GAME__.getState().hp === 1);
+    const hitAgain = await state(first);
+    assert.ok(hitAgain.dayClock - hit.dayClock >= 0.9, "damage resumes only after the one-second shield");
+    assert.deepEqual([hitAgain.player.gx, hitAgain.player.gy], [5, 1], "second retreat follows the bend, not a straight teleport");
   }
   assert.deepEqual(errors, []);
   console.log(JSON.stringify({ ok: true, browser: "Microsoft Edge", sameProfileWindowRestore: true,
     staleWindowCannotOverwrite: true, continueButtonTakeover: true, resumeGate: [1440, 390], readySaveHidesQuestions: ["pinyin", "hanzi"],
-    respawnStopsHeldDirection: [1440, 390], freshPressResumes: true }, null, 2));
+    retreatStopsHeldDirection: [1440, 390], freshPressResumes: true }, null, 2));
 } finally {
   await browser.close();
 }

@@ -7,7 +7,15 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.4** (2026-09-21). Phonetics new learning is a single pass:
+System display version: **v1.0.5** (2026-09-21). Bomb enemy/shell contact now retreats
+two cells along the player's actual travelled route, including corners and a partial step,
+instead of returning to spawn. Short/blocked routes stop at the reachable cell; legacy saves
+without a trail do not invent a route. The route is saved inside the existing player snapshot.
+Contact damage grants exactly one second of blinking/invulnerability; held input is cleared.
+At zero HP game-over remains unchanged. Flame respawn and wrong-answer penalties are unchanged.
+Bomb script cache: v1.9. Focused checks: bomb-session-browser and bomb-browser-acceptance.
+
+Previous v1.0.4 (2026-09-21). Phonetics new learning is a single pass:
 screening never repeats already checked items in the same batch; each selected new IPA needs
 one correct answer, then waits for the explicit 学习完毕 button (no automatic mixed review).
 Partial batches and all-known/all-mastered batches also finish. Screening/confirmation state

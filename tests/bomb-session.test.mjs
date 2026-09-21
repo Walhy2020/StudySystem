@@ -46,7 +46,7 @@ test("过期窗口即使尚未收到 storage 事件，也不能覆盖新存档�
   assert.deepEqual(app.read().data, { score: 0 });
 });
 
-test("碰撞受伤及致命伤都清空按住的方向和移动动画，无敌期不误清除", () => {
+test("原有火焰受伤及致命伤清空输入，无敌期不重复扣血", () => {
   for (const hp of [1, 3]) {
     const state = { status: "playing", hp, player: { gx: 11, gy: 3, invulnerable: 0, move: {} } };
     const held = new Set(["down"]);
@@ -73,6 +73,59 @@ test("碰撞受伤及致命伤都清空按住的方向和移动动画，无敌�
 
 test("等待继续时冻结整个更新，包括爆炸、敌人和伤害", () => {
   new Function(`let awaitingContinue = true; ${extract("update")} update(10);`)();
+});
+
+test("怪物碰撞沿真实路线退两格：直行、拐弯、半步、短路、阻挡及旧存档", () => {
+  const cases = [
+    { trail: [[5, 1], [6, 1], [7, 1]], position: [7, 1], expected: [5, 1] },
+    { trail: [[5, 1], [5, 2], [5, 3], [6, 3]], position: [6, 3], expected: [5, 2] },
+    { trail: [[5, 1], [5, 2], [5, 3]], position: [5.6, 3], move: { fromX: 5, fromY: 3, toX: 6, toY: 3 }, expected: [5, 2] },
+    { trail: [[5, 1], [6, 1]], position: [6, 1], expected: [5, 1] },
+    { trail: [[5, 1], [6, 1], [7, 1]], position: [7, 1], blocked: [5, 1], expected: [6, 1] },
+    { trail: [[5, 1], [6, 1], [7, 1]], position: [7, 1], blocked: [6, 1], expected: [7, 1] },
+    { trail: [[5, 1], [6, 1]], position: [6.6, 1], move: { fromX: 6, fromY: 1, toX: 7, toY: 1 }, blocked: [6, 1], expected: [7, 1] },
+    { position: [7, 3], expected: [7, 3] },
+  ];
+  for (const sample of cases) {
+    const state = { hp: 3, status: "playing", player: { gx: sample.position[0], gy: sample.position[1],
+      trail: sample.trail?.map(([gx, gy]) => ({ gx, gy })), invulnerable: 0, move: sample.move || null } };
+    let clears = 0;
+    const damage = new Function("state", "clearInputState", "isCellOpen", `
+      const updateHud = () => {}, setMessage = () => {};
+      ${extract("rememberPlayerCell")}
+      ${extract("retreatPlayer")}
+      ${extract("damagePlayer")}
+      return damagePlayer;
+    `)(state, () => { clears++; }, (gx, gy) => gx !== sample.blocked?.[0] || gy !== sample.blocked?.[1]);
+    damage("monster");
+    assert.equal(state.hp, 2);
+    assert.deepEqual([state.player.gx, state.player.gy], sample.expected);
+    assert.equal(state.player.move, null);
+    assert.equal(state.player.invulnerable, 1);
+    assert.equal(clears, 1);
+    damage("monster");
+    damage();
+    assert.equal(state.hp, 2, "the same one-second shield blocks enemy and flame damage");
+    assert.equal(clears, 1);
+  }
+});
+
+test("无敌恰好1秒，与闪烁同步结束；存档暂停不会耗掉无敌时间", () => {
+  const state = { player: { invulnerable: 1 }, bombs: [] };
+  const app = new Function("state", `
+    const advanceMove = () => true;
+    ${extract("updatePlayer")}
+    ${extract("isPlayerBlinkHidden")}
+    return { updatePlayer, isPlayerBlinkHidden };
+  `)(state);
+  const blink = new Set();
+  for (let i = 0; i < 16; i++) {
+    blink.add(app.isPlayerBlinkHidden());
+    app.updatePlayer(1 / 16);
+  }
+  assert.equal(blink.size, 2);
+  assert.equal(state.player.invulnerable, 0);
+  assert.equal(app.isPlayerBlinkHidden(), false);
 });
 
 test("蘑菇移动速度精确降低10%，库巴和乌龟不变，包含存档中的移动", () => {

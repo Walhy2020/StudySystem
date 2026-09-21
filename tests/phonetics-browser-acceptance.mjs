@@ -96,7 +96,7 @@ const assetStatuses = await page.evaluate(async () => {
   const assets = [
     "./phonetics.html", "./styles.css?v=2.2", "./phonetics.css?v=1.9",
     "./data/phonetics.js?v=1.0", "./data/phonetics-transcriptions.js?v=1.0",
-    "./src/phonetics-app.js?v=1.10", "./src/phonetics-display.js?v=1.0",
+    "./src/phonetics-app.js?v=1.11", "./src/phonetics-display.js?v=1.0",
     "./src/phonetics-engine.js?v=1.2", "./src/phonetics-storage.js?v=1.1",
     "./src/phonetics-tts.js?v=1.2", "./src/engine.js", "./src/storage.js",
     "./assets/backgrounds/phonetics-sound-kingdom-v2.png?v=1.0",

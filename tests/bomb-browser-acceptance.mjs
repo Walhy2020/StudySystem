@@ -57,7 +57,7 @@ async function restoreBombSnapshot(snapshot) {
 }
 
 await page.goto(baseUrl);
-assert.equal(await page.locator("#appVersionLabel").textContent(), "v1.0.4", "system display version updated");
+assert.equal(await page.locator("#appVersionLabel").textContent(), "v1.0.5", "system display version updated");
 assert.equal(await page.locator('.module-tabs a[href="./bomb-game.html?v=1.0"]').count(), 0, "bomb entry is not a module tab");
 assert.equal(await page.locator('.topbar .top-actions #bombGameEntry').isVisible(), true, "header shows bomb-game entry");
 assert.equal(await page.locator('.topbar #resetProgress').count(), 0, "header does not contain Hanzi reset");
@@ -185,7 +185,7 @@ const resourcePaths = [
   "index.html",
   "bomb-game.html",
   "bomb-game.css?v=1.1",
-  "bomb-game.js?v=1.8",
+  "bomb-game.js?v=1.9",
   "data/characters.js?v=1.0",
   "data/pinyin-readings.js?v=1.0",
   "assets/sprites/enemies-bosses.png",

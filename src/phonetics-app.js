@@ -1,6 +1,6 @@
-import { PhoneticsEngine } from "./phonetics-engine.js?v=1.1";
-import { APP_VERSION, PHASE } from "./constants.js?v=1.7";
-import { PhoneticsStorage } from "./phonetics-storage.js?v=1.0";
+import { PhoneticsEngine } from "./phonetics-engine.js?v=1.2";
+import { APP_VERSION, PHASE } from "./constants.js?v=1.8";
+import { PhoneticsStorage } from "./phonetics-storage.js?v=1.1";
 import { cancelPhoneticSpeech, speakPhoneticExample } from "./phonetics-tts.js?v=1.2";
 import { displaySymbol, exampleEntries } from "./phonetics-display.js?v=1.0";
 
@@ -86,7 +86,7 @@ function progressText() {
   const progress = engine.progress();
   if (engine.state.inlineReviewContext) return "临时复习 · 完成后返回原任务";
   if (engine.state.dailyPhase === PHASE.SCREENING) return `已选 ${engine.state.dailyNewIds.length}/3`;
-  if (engine.state.dailyPhase === PHASE.NEW_LEARNING) return `完成 ${progress.newDone}/${progress.newTotal} · 每个需 3 次`;
+  if (engine.state.dailyPhase === PHASE.NEW_LEARNING) return `完成 ${progress.newDone}/${progress.newTotal} · 每个认识 1 次`;
   if (engine.state.dailyPhase === PHASE.MIXED_REVIEW) return `混合 ${progress.mixedDone}/${progress.newTotal}`;
   if (engine.state.dailyPhase === PHASE.REVIEW) {
     return `普通 ${progress.reviewDone}/${progress.reviewTotal} · 错音标 ${progress.wrongDone}/${progress.wrongTotal}`;
@@ -143,13 +143,17 @@ function renderItem() {
     cancelPhoneticSpeech();
     renderedSpeechItemId = nextSpeechItemId;
   }
-  [dom.startDaily, dom.startReview].forEach((button) => button.classList.toggle("hidden", active));
+  const learning = engine.state.dailyTaskStarted && !engine.state.dailyTaskDone;
+  // Keep module entry buttons visible; disable the current mode so repeated clicks cannot reset it.
+  dom.startDaily.disabled = learning && engine.state.dailyPhase !== PHASE.REVIEW;
+  dom.startReview.disabled = learning && engine.state.dailyPhase === PHASE.REVIEW;
   dom.masteredBadge.classList.add("hidden");
   dom.reviewRoundBadge.classList.add("hidden");
   if (!active) {
-    setCardContent("placeholder", engine.state.dailyTaskDone ? "完成" : "开始");
+    const ready = engine.canFinishNewLearning();
+    setCardContent("placeholder", engine.state.dailyTaskDone ? "完成" : ready ? "学完了" : "开始");
     dom.currentChar.disabled = true;
-    dom.pinyinLine.innerHTML = `<span class="idle-copy">${engine.state.dailyTaskDone ? "本次任务已完成" : "选择今日新音标或复习音标"}</span>`;
+    dom.pinyinLine.innerHTML = `<span class="idle-copy">${engine.state.dailyTaskDone ? "本次任务已完成" : ready ? "本轮已学完，请点击“学习完毕”。" : "选择今日新音标或复习音标"}</span>`;
     [dom.speakCurrent, dom.markCorrect, dom.markWrong, dom.markMastered].forEach((button) => {
       button.disabled = true;
       button.classList.add("hidden");
@@ -181,7 +185,7 @@ function renderItem() {
 function chipClass(id, source) {
   if (engine.isMastered(id)) return "done";
   if (source === "review-wrong") return engine.reviewWrongCount(id) >= 3 ? "done" : "wrong";
-  if ((engine.state.dailyNewCorrectCounts[id] || 0) >= 3 || engine.state.dailyMixedDoneIds.includes(id)) return "done";
+  if ((engine.state.dailyNewCorrectCounts[id] || 0) >= 1 || engine.state.dailyMixedDoneIds.includes(id)) return "done";
   if (engine.state.records[id]?.status === "wrong") return "wrong";
   return "pending";
 }
@@ -194,7 +198,7 @@ function renderList(container, ids, source, emptyText) {
   container.innerHTML = ids.map((id) => {
     const item = itemById(id);
     const disabled = engine.isMastered(id) ? "disabled" : "";
-    const detail = source === "review-wrong" ? `${engine.reviewWrongCount(id)}/3` : `${engine.state.dailyNewCorrectCounts[id] || 0}/3`;
+    const detail = source === "review-wrong" ? `${engine.reviewWrongCount(id)}/3` : `${Math.min(1, engine.state.dailyNewCorrectCounts[id] || 0)}/1`;
     const targetSymbol = displaySymbol(item.symbol);
     return `<button class="word-chip ${chipClass(id, source)}" type="button" data-inline-id="${id}" data-inline-source="${source}" ${disabled} aria-label="临时复习音标 ${escapeHtml(targetSymbol)}，进度 ${detail}">${escapeHtml(targetSymbol)}</button>`;
   }).join("");
@@ -212,8 +216,7 @@ function render() {
   dom.taskProgress.textContent = progressText();
   renderList(dom.todayNewList, engine.state.dailyNewIds, "today-new", "尚未选择");
   renderList(dom.reviewWrongList, engine.state.reviewWrongIds, "review-wrong", "暂无错音标");
-  const ready = engine.state.dailyPhase === PHASE.NEW_LEARNING && engine.state.dailyNewIds.length === 3 &&
-    engine.state.dailyNewIds.every((id) => engine.isMastered(id) || (engine.state.dailyNewCorrectCounts[id] || 0) >= 3);
+  const ready = engine.canFinishNewLearning();
   dom.finishNewWords.classList.toggle("hidden", !ready);
   renderItem();
 }

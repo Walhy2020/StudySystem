@@ -1,13 +1,23 @@
 # StudySystem cross-device handoff
 
-Last updated: 2026-09-20
+Last updated: 2026-09-21
 Repository: `https://github.com/Walhy2020/StudySystem.git`
 Branch: `main`
 Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.3** (2026-09-20). Bomb saves now open paused with a Continue
+System display version: **v1.0.4** (2026-09-21). Phonetics new learning is a single pass:
+screening never repeats already checked items in the same batch; each selected new IPA needs
+one correct answer, then waits for the explicit 学习完毕 button (no automatic mixed review).
+Partial batches and all-known/all-mastered batches also finish. Screening/confirmation state
+survives refresh; old looping saves with prior correct answers can finish immediately.
+New/review entry buttons stay visible; the active mode is disabled to prevent accidental resets.
+Full IPA review is restored before completion is recomputed, fixing premature completion after
+the first 20 items. Cross-day normalization no longer revives yesterday's review queue.
+Hanzi rules are unchanged. Focused Edge checks: phonetics-completion-browser and phonetics-browser-acceptance.
+
+Previous v1.0.3 (2026-09-20). Bomb saves now open paused with a Continue
 button: actors, bomb fuses, explosions and damage wait for explicit button activation.
 Directions/Space on the canvas cannot bypass the gate; the button retains native Enter/Space
 and touch activation. Question reveal state and partial moves are retained. Mushroom movement
@@ -86,6 +96,7 @@ In the ChatGPT/Codex desktop app, add the cloned repository as a local project a
 - Entry: `phonetics.html`; 48 DJ/IPA items.
 - Review regenerates all non-mastered items on every entry, so the batch is 0-48.
 - Mastering an item removes it immediately from normal and temporary review.
+- New learning stops after one correct answer per selected IPA and waits for 学习完毕; no forced mixed lap.
 - Example words, full-word transcriptions, phoneme display, TTS, refresh restore, and isolated storage are implemented.
 - Current background: `assets/backgrounds/phonetics-sound-kingdom-v2.png`.
 

@@ -1,5 +1,5 @@
 import { createInitialState, localDateString, normalizeState } from "./state.js";
-import { PHONETICS_REVIEW_POLICY_VERSION } from "./phonetics-engine.js";
+import { PHONETICS_REVIEW_POLICY_VERSION } from "./phonetics-engine.js?v=1.2";
 
 function safeParse(text) {
   try { return JSON.parse(text); } catch { return null; }
@@ -15,7 +15,10 @@ export class PhoneticsStorage {
   }
 
   _withReviewPolicy(normalized, source = {}) {
+    if (source.todayDate !== this.date) source = {};
     const validIds = new Set(this.words.map((item) => item.id));
+    normalized.phoneticsScreenedIds = Array.isArray(source.phoneticsScreenedIds)
+      ? [...new Set(source.phoneticsScreenedIds)].filter((id) => validIds.has(id)) : [];
     const mastered = new Set(normalized.masteredIds);
     const valid = (value) => Array.isArray(value)
       ? [...new Set(value)].filter((id) => validIds.has(id) && !mastered.has(id))

@@ -34,12 +34,91 @@ function completeDailyRoute(Engine, words) {
   };
 }
 
-test("汉字与音标使用同一状态机：今日新内容推进和完成结果完全一致", () => {
+test("音标新学习仅一遍并确认完成，汉字仍保留三次加混合复习", () => {
   const mirroredHanzi = phonetics.map((item, index) => ({ ...item, id: `h-${index}` }));
-  assert.deepEqual(
-    completeDailyRoute(PhoneticsEngine, phonetics),
-    completeDailyRoute(HanziEngine, mirroredHanzi),
-  );
+  const ipa = completeDailyRoute(PhoneticsEngine, phonetics);
+  const hanzi = completeDailyRoute(HanziEngine, mirroredHanzi);
+  assert.deepEqual(ipa.correctCounts, [1, 1, 1]);
+  assert.equal(ipa.phase, PHASE.NEW_LEARNING);
+  assert.equal(ipa.mixedCount, 0);
+  assert.equal(ipa.done, true);
+  assert.deepEqual(hanzi.correctCounts, [3, 3, 3]);
+  assert.equal(hanzi.phase, PHASE.MIXED_REVIEW);
+  assert.equal(hanzi.done, true);
+});
+
+test("筛选全打勾一遍后停下，刷新不丢已看项目，点击完成后仍保持完成", () => {
+  let value = engine();
+  value.startDaily();
+  const seen = new Set();
+  for (let index = 0; index < 48; index += 1) {
+    assert.ok(value.currentWord());
+    assert.ok(!seen.has(value.state.activeWordId));
+    seen.add(value.state.activeWordId);
+    value.correct();
+    value = engine(phonetics, structuredClone(value.state));
+  }
+  assert.equal(seen.size, 48);
+  assert.equal(value.currentWord(), null);
+  assert.equal(value.canFinishNewLearning(), true);
+  assert.equal(value.state.dailyTaskDone, false);
+  value.finishNewLearning();
+  value = engine(phonetics, structuredClone(value.state));
+  assert.equal(value.state.dailyTaskDone, true);
+  assert.equal(value.currentWord(), null);
+});
+
+test("新学习全部点星、不足三个和旧循环存档均可结束，不再回放已答对项", () => {
+  for (const count of [0, 1, 2, 3]) {
+    const value = engine(phonetics.slice(0, count));
+    value.startDaily();
+    for (let index = 0; index < count; index += 1) value.wrong();
+    for (let index = 0; index < count; index += 1) value.master();
+    assert.equal(value.canFinishNewLearning(), true);
+    assert.equal(value.currentWord(), null);
+    value.finishNewLearning();
+    assert.equal(engine(phonetics.slice(0, count), value.state).state.dailyTaskDone, true);
+  }
+  const value = engine();
+  value.startDaily();
+  for (let index = 0; index < 3; index += 1) value.wrong();
+  value.state.dailyNewCorrectCounts = Object.fromEntries(value.state.dailyNewIds.map(id => [id, 1]));
+  const restored = engine(phonetics, value.state);
+  assert.equal(restored.currentWord(), null);
+  assert.equal(restored.canFinishNewLearning(), true);
+  restored.state.dailyPhase = PHASE.MIXED_REVIEW;
+  assert.equal(engine(phonetics, restored.state).canFinishNewLearning(), true);
+});
+
+test("复习前20项完成后刷新仍继续第21至48项，不误报完成", () => {
+  const value = engine();
+  value.startReview();
+  value.state.dailyReviewDoneIds = value.state.dailyReviewIds.slice(0, 20);
+  value.state.activeWordId = value.state.dailyReviewIds[20];
+  const restored = engine(phonetics, value.state);
+  assert.equal(restored.state.dailyTaskDone, false);
+  assert.equal(restored.state.activeWordId, value.state.activeWordId);
+  assert.equal(restored.progress().reviewTotal, 48);
+  for (let index = 0; index < 28; index += 1) restored.correct();
+  assert.equal(restored.state.dailyTaskDone, true);
+});
+
+test("音标专属存储保存筛选已看项目，跨日不复活昨日复习队列", () => {
+  const map = new Map();
+  const memory = { getItem: key => map.get(key), setItem: (key, value) => map.set(key, value) };
+  const storage = new PhoneticsStorage(memory, phonetics, { key: PHONETICS_KEY, date: DATE });
+  const value = engine();
+  value.startDaily();
+  value.correct();
+  storage.save(value.state);
+  assert.deepEqual(engine(phonetics, storage.load()).state.phoneticsScreenedIds, value.state.phoneticsScreenedIds);
+  value.startReview();
+  storage.save(value.state);
+  const tomorrow = new PhoneticsStorage(memory, phonetics, { key: PHONETICS_KEY, date: "2026-08-22" });
+  const restored = engine(phonetics, tomorrow.load(), "2026-08-22");
+  assert.deepEqual(restored.state.dailyReviewIds, []);
+  assert.equal(restored.currentWord(), null);
+  assert.equal(restored.state.dailyTaskStarted, false);
 });
 
 test("48 项均未完全认识时全量复习 48 项，已认识、错误、到期和未学习项都纳入", () => {
@@ -222,7 +301,7 @@ test("音标刷新恢复、跨日边界和全量重置只作用于专属 key", (
     activeWordId: phonetics[0].id,
   });
   const restored = engine(phonetics, structuredClone(state));
-  assert.equal(restored.state.activeWordId, phonetics[0].id);
+  assert.notEqual(restored.state.activeWordId, phonetics[0].id, "一次已答对项刷新后不重放");
   assert.deepEqual(restored.state.dailyNewIds, state.dailyNewIds);
   const tomorrow = normalizeState(restored.state, phonetics, "2026-08-22");
   assert.equal(tomorrow.dailyPhase, PHASE.IDLE);

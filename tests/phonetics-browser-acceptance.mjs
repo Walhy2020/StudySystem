@@ -96,8 +96,8 @@ const assetStatuses = await page.evaluate(async () => {
   const assets = [
     "./phonetics.html", "./styles.css?v=2.2", "./phonetics.css?v=1.9",
     "./data/phonetics.js?v=1.0", "./data/phonetics-transcriptions.js?v=1.0",
-    "./src/phonetics-app.js?v=1.9", "./src/phonetics-display.js?v=1.0",
-    "./src/phonetics-engine.js?v=1.1", "./src/phonetics-storage.js?v=1.0",
+    "./src/phonetics-app.js?v=1.10", "./src/phonetics-display.js?v=1.0",
+    "./src/phonetics-engine.js?v=1.2", "./src/phonetics-storage.js?v=1.1",
     "./src/phonetics-tts.js?v=1.2", "./src/engine.js", "./src/storage.js",
     "./assets/backgrounds/phonetics-sound-kingdom-v2.png?v=1.0",
   ];
@@ -125,7 +125,8 @@ for (const selector of ["#speakCurrent", "#markCorrect", "#markWrong", "#markMas
 await assertStateLabelFits(page, "开始");
 
 await page.click("#startDaily");
-for (const selector of ["#startDaily", "#startReview"]) assert.equal(await page.locator(selector).isVisible(), false);
+for (const selector of ["#startDaily", "#startReview"]) assert.equal(await page.locator(selector).isVisible(), true);
+assert.equal(await page.locator("#startReview").isEnabled(), true);
 assert.equal(await page.locator(".phonetic-details").isVisible(), true);
 assert.equal(await page.locator(".phonetic-example").count(), 3);
 assert.equal(await page.locator("#currentChar .phonetic-card-category").isVisible(), true);
@@ -416,15 +417,15 @@ assert.deepEqual(afterRefresh.dailyNewIds, beforeRefresh.dailyNewIds);
 assert.equal(afterRefresh.activeWordId, beforeRefresh.activeWordId);
 for (let guard = 0; guard < 20; guard += 1) {
   const current = await page.evaluate(() => window.__PHONETICS_APP__.getState());
-  if (current.dailyNewIds.every((id) => (current.dailyNewCorrectCounts[id] || 0) >= 3 || current.masteredIds.includes(id))) break;
+  if (current.dailyNewIds.every((id) => (current.dailyNewCorrectCounts[id] || 0) >= 1 || current.masteredIds.includes(id))) break;
   await page.click("#markCorrect");
 }
 assert.equal(await page.locator("#finishNewWords").isVisible(), true);
+assert.equal((await page.evaluate(() => window.__PHONETICS_APP__.getState())).activeWordId, null);
+await page.reload();
+assert.equal(await page.locator("#finishNewWords").isVisible(), true);
+assert.equal(await page.locator("#markCorrect").isVisible(), false);
 await page.click("#finishNewWords");
-for (let guard = 0; guard < 10; guard += 1) {
-  if ((await page.evaluate(() => window.__PHONETICS_APP__.getState())).dailyTaskDone) break;
-  await page.click("#markCorrect");
-}
 assert.equal((await page.evaluate(() => window.__PHONETICS_APP__.getState())).dailyTaskDone, true);
 for (const selector of ["#startDaily", "#startReview"]) assert.equal(await page.locator(selector).isVisible(), true);
 await page.screenshot({ path: "tests/phonetics-desktop.png", fullPage: true });

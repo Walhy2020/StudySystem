@@ -13,7 +13,7 @@ try {
     page.on("response", response => { if (response.status() >= 400) errors.push(response.url()); });
     await page.goto(base + `phonetics.html?test=completion-${width}`);
     await page.locator("#startDaily").click();
-    assert.equal(await page.locator("#startReview").isVisible(), true);
+    for (const selector of ["#startDaily", "#startReview"]) assert.equal(await page.locator(selector).isVisible(), false);
     for (let i = 0; i < 3; i++) await page.locator("#markWrong").click();
     const ids = new Set();
     for (let i = 0; i < 3; i++) {
@@ -58,12 +58,17 @@ try {
     await page.locator("#finishNewWords").click();
     assert.equal((await state(page)).dailyTaskDone, true);
 
-    // A visible review entry works during new learning; an active review button never resets its round.
-    await page.locator("#startDaily").click();
-    await page.locator("#startReview").click();
+    // Entry choices disappear during review, including after restoring a saved round.
+    for (const selector of ["#startDaily", "#startReview"]) assert.equal(await page.locator(selector).isVisible(), true);
+    if (width === 390) await page.locator("#startReview").tap();
+    else {
+      await page.locator("#startReview").focus();
+      await page.keyboard.press("Enter");
+    }
     assert.equal((await state(page)).dailyReviewIds.length, 48);
-    assert.equal(await page.locator("#startReview").isVisible(), true);
-    assert.equal(await page.locator("#startReview").isDisabled(), true);
+    for (const selector of ["#startDaily", "#startReview"]) assert.equal(await page.locator(selector).isVisible(), false);
+    for (const selector of ["#speakCurrent", "#markCorrect", "#markWrong", "#markMastered"]) assert.equal(await page.locator(selector).isVisible(), true);
+    await page.screenshot({ path: `tests/phonetics-review-active-${width}.png`, fullPage: true });
     const target = await page.evaluate(() => {
       const app = window.__PHONETICS_APP__;
       const saved = app.getState();
@@ -76,14 +81,19 @@ try {
     assert.equal((await state(page)).activeWordId, target);
     assert.equal((await state(page)).dailyTaskDone, false);
     assert.equal((await state(page)).dailyReviewIds.length, 48);
+    for (const selector of ["#startDaily", "#startReview"]) assert.equal(await page.locator(selector).isVisible(), false);
     await page.locator("#markCorrect").click();
     assert.equal((await state(page)).dailyReviewDoneIds.length, 21);
+    await page.evaluate(() => {
+      while (!window.__PHONETICS_APP__.getState().dailyTaskDone) window.__PHONETICS_APP__.dispatch("correct");
+    });
+    for (const selector of ["#startDaily", "#startReview"]) assert.equal(await page.locator(selector).isVisible(), true);
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
     await context.close();
   }
   assert.deepEqual(errors, []);
   console.log(JSON.stringify({ ok: true, browser: "Microsoft Edge", widths: [1440, 390], singlePass: true,
-    screeningCheckmarks: 48, completionPersists: true, reviewEntryVisible: true, fullReviewResumeAfter20: true }));
+    screeningCheckmarks: 48, completionPersists: true, activeEntryButtonsHidden: true, completionEntryButtonsVisible: true, fullReviewResumeAfter20: true }));
 } finally {
   await browser.close();
 }

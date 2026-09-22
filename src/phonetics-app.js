@@ -1,5 +1,5 @@
 import { PhoneticsEngine } from "./phonetics-engine.js?v=1.2";
-import { APP_VERSION, PHASE } from "./constants.js?v=1.9";
+import { APP_VERSION, PHASE } from "./constants.js?v=1.10";
 import { PhoneticsStorage } from "./phonetics-storage.js?v=1.1";
 import { cancelPhoneticSpeech, speakPhoneticExample } from "./phonetics-tts.js?v=1.2";
 import { displaySymbol, exampleEntries } from "./phonetics-display.js?v=1.0";
@@ -144,7 +144,8 @@ function renderItem() {
     renderedSpeechItemId = nextSpeechItemId;
   }
   const learning = engine.state.dailyTaskStarted && !engine.state.dailyTaskDone;
-  // Keep module entry buttons visible; disable the current mode so repeated clicks cannot reset it.
+  // Entry choices belong to idle/completed screens, not the active learning controls.
+  [dom.startDaily, dom.startReview].forEach(button => button.classList.toggle("hidden", active));
   dom.startDaily.disabled = learning && engine.state.dailyPhase !== PHASE.REVIEW;
   dom.startReview.disabled = learning && engine.state.dailyPhase === PHASE.REVIEW;
   dom.masteredBadge.classList.add("hidden");

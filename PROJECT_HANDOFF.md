@@ -1,13 +1,19 @@
 # StudySystem cross-device handoff
 
-Last updated: 2026-09-21
+Last updated: 2026-09-22
 Repository: `https://github.com/Walhy2020/StudySystem.git`
 Branch: `main`
 Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.5** (2026-09-21). Bomb enemy/shell contact now retreats
+System display version: **v1.0.6** (2026-09-22). Hide both 今日新音标 and 复习音标
+entry buttons while an IPA learning/review item is active, including after refresh.
+Restore entry choices on idle/completed screens. Keep the single-pass completion button
+and full-review progress restoration unchanged. Phonetics app cache: v1.12.
+Focused check: tests/phonetics-completion-browser.mjs (desktop and 390px).
+
+Previous v1.0.5 (2026-09-21). Bomb enemy/shell contact now retreats
 two cells along the player's actual travelled route, including corners and a partial step,
 instead of returning to spawn. Short/blocked routes stop at the reachable cell; legacy saves
 without a trail do not invent a route. The route is saved inside the existing player snapshot.
@@ -20,7 +26,7 @@ screening never repeats already checked items in the same batch; each selected n
 one correct answer, then waits for the explicit 学习完毕 button (no automatic mixed review).
 Partial batches and all-known/all-mastered batches also finish. Screening/confirmation state
 survives refresh; old looping saves with prior correct answers can finish immediately.
-New/review entry buttons stay visible; the active mode is disabled to prevent accidental resets.
+The v1.0.4 always-visible entry buttons were superseded by the v1.0.6 active-screen hiding rule.
 Full IPA review is restored before completion is recomputed, fixing premature completion after
 the first 20 items. Cross-day normalization no longer revives yesterday's review queue.
 Hanzi rules are unchanged. Focused Edge checks: phonetics-completion-browser and phonetics-browser-acceptance.

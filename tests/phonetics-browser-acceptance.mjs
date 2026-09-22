@@ -96,7 +96,7 @@ const assetStatuses = await page.evaluate(async () => {
   const assets = [
     "./phonetics.html", "./styles.css?v=2.2", "./phonetics.css?v=1.9",
     "./data/phonetics.js?v=1.0", "./data/phonetics-transcriptions.js?v=1.0",
-    "./src/phonetics-app.js?v=1.11", "./src/phonetics-display.js?v=1.0",
+    "./src/phonetics-app.js?v=1.12", "./src/phonetics-display.js?v=1.0",
     "./src/phonetics-engine.js?v=1.2", "./src/phonetics-storage.js?v=1.1",
     "./src/phonetics-tts.js?v=1.2", "./src/engine.js", "./src/storage.js",
     "./assets/backgrounds/phonetics-sound-kingdom-v2.png?v=1.0",
@@ -125,8 +125,7 @@ for (const selector of ["#speakCurrent", "#markCorrect", "#markWrong", "#markMas
 await assertStateLabelFits(page, "开始");
 
 await page.click("#startDaily");
-for (const selector of ["#startDaily", "#startReview"]) assert.equal(await page.locator(selector).isVisible(), true);
-assert.equal(await page.locator("#startReview").isEnabled(), true);
+for (const selector of ["#startDaily", "#startReview"]) assert.equal(await page.locator(selector).isVisible(), false);
 assert.equal(await page.locator(".phonetic-details").isVisible(), true);
 assert.equal(await page.locator(".phonetic-example").count(), 3);
 assert.equal(await page.locator("#currentChar .phonetic-card-category").isVisible(), true);

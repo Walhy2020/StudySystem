@@ -57,7 +57,7 @@ async function restoreBombSnapshot(snapshot) {
 }
 
 await page.goto(baseUrl);
-assert.equal(await page.locator("#appVersionLabel").textContent(), "v1.0.5", "system display version updated");
+assert.equal(await page.locator("#appVersionLabel").textContent(), "v1.0.6", "system display version updated");
 assert.equal(await page.locator('.module-tabs a[href="./bomb-game.html?v=1.0"]').count(), 0, "bomb entry is not a module tab");
 assert.equal(await page.locator('.topbar .top-actions #bombGameEntry').isVisible(), true, "header shows bomb-game entry");
 assert.equal(await page.locator('.topbar #resetProgress').count(), 0, "header does not contain Hanzi reset");

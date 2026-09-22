@@ -1,5 +1,5 @@
 import { HanziEngine } from "./engine.js";
-import { APP_VERSION, PHASE, REVIEW_INTERVAL_ROUNDS } from "./constants.js?v=1.10";
+import { APP_VERSION, PHASE, REVIEW_INTERVAL_ROUNDS } from "./constants.js?v=1.11";
 import { HanziStorage, storageOptionsFromLocation } from "./storage.js?v=1.1";
 import { speakChineseCharacter } from "./tts.js";
 

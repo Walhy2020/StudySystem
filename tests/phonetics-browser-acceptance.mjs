@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
-import { chromium } from "file:///C:/Users/St/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/index.mjs";
+import { loadChromium } from "./playwright-runtime.mjs";
+
+const chromium = await loadChromium();
 
 const rootUrl = process.env.PHONETICS_BASE_URL || process.env.HANZI_BASE_URL || "http://127.0.0.1:53177/";
 const mainUrl = new URL("?test=phonetics-entry", rootUrl).href;
@@ -96,7 +98,7 @@ const assetStatuses = await page.evaluate(async () => {
   const assets = [
     "./phonetics.html", "./styles.css?v=2.2", "./phonetics.css?v=1.9",
     "./data/phonetics.js?v=1.0", "./data/phonetics-transcriptions.js?v=1.0",
-    "./src/phonetics-app.js?v=1.12", "./src/phonetics-display.js?v=1.0",
+    "./src/phonetics-app.js?v=1.13", "./src/phonetics-display.js?v=1.0",
     "./src/phonetics-engine.js?v=1.2", "./src/phonetics-storage.js?v=1.1",
     "./src/phonetics-tts.js?v=1.2", "./src/engine.js", "./src/storage.js",
     "./assets/backgrounds/phonetics-sound-kingdom-v2.png?v=1.0",

@@ -7,11 +7,29 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.6** (2026-09-22). Hide both 今日新音标 and 复习音标
+System display version: **v1.0.8** (2026-09-22). Hide both 今日新音标 and 复习音标
 entry buttons while an IPA learning/review item is active, including after refresh.
 Restore entry choices on idle/completed screens. Keep the single-pass completion button
-and full-review progress restoration unchanged. Phonetics app cache: v1.12.
+and full-review progress restoration unchanged. Phonetics app cache: v1.13.
 Focused check: tests/phonetics-completion-browser.mjs (desktop and 390px).
+
+Previous v1.0.7 (2026-09-21). Level 1-1 is now an explicit Bullet Bill
+test field: five visible missiles start in a horizontal formation across the map center, replacing
+the ordinary first-level enemies and the earlier hidden test missile. Their travel interpolation
+is linear inside each cell so straight runs remain visually continuous instead of easing to a stop
+at every grid boundary; the intentional 0.45-second pause still occurs only on a real turn.
+Advanced-level hidden-brick spawning remains unchanged. Bomb script cache: v2.1. Focused check:
+`node tests/bullet-bill-browser.mjs` at desktop and 390px.
+
+Previous v1.0.6 (2026-09-21). Bomb maze now includes a tracking Bullet Bill
+enemy using sprite frame `(560, 48, 16, 16)` from the existing `assets/sprites/enemies-bosses.png`.
+Destroying its hidden brick spawns it. It continuously pathfinds toward the fly-star, immediately
+detonates player bombs on contact without being destroyed, accelerates while moving straight,
+pauses for 0.45 seconds when it turns, restarts that direction at base speed, and self-destructs
+after exactly 10 travelled cells. It is immune to bomb flames, shells and ordinary enemy damage.
+For user testing, level 1-1 always hides one Bullet Bill; difficulty index 5 and above otherwise
+uses a 35% per-level spawn chance. Bomb script cache: v2.0. Dedicated Edge check:
+`node tests/bullet-bill-browser.mjs` at desktop and 390px.
 
 Previous v1.0.5 (2026-09-21). Bomb enemy/shell contact now retreats
 two cells along the player's actual travelled route, including corners and a partial step,
@@ -26,7 +44,7 @@ screening never repeats already checked items in the same batch; each selected n
 one correct answer, then waits for the explicit 学习完毕 button (no automatic mixed review).
 Partial batches and all-known/all-mastered batches also finish. Screening/confirmation state
 survives refresh; old looping saves with prior correct answers can finish immediately.
-The v1.0.4 always-visible entry buttons were superseded by the v1.0.6 active-screen hiding rule.
+The v1.0.4 always-visible entry buttons were superseded by the v1.0.8 active-screen hiding rule.
 Full IPA review is restored before completion is recomputed, fixing premature completion after
 the first 20 items. Cross-day normalization no longer revives yesterday's review queue.
 Hanzi rules are unchanged. Focused Edge checks: phonetics-completion-browser and phonetics-browser-acceptance.
@@ -167,6 +185,7 @@ In the ChatGPT/Codex desktop app, add the cloned repository as a local project a
 - Entry: `bomb-game.html`.
 - Each level has five distinct Hanzi targets: prioritize learning evidence, then fill from non-mastered words without repeating the same character. Odd/even sublevels alternate pinyin-to-Hanzi and Hanzi-to-pinyin questions.
 - All five questions start hidden inside separate bricks. Destroying a target brick reveals its question card; eliminating the last enemy opens all remaining bricks and reveals all pending questions. Revealing is not answering: five correct completions are still required.
+- Level 1-1 is a dedicated test field with five visible Bullet Bills across the center row and no hidden test missile. Difficulty index 5+ can still hide one in its own non-question brick with 35% probability. It pathfinds toward the fly-star for up to 10 cells, uses continuous linear travel between cell centers, accelerates on straight runs, pauses once only when turning, triggers bombs without dying, and then self-destructs. Its complete state persists in the existing bomb save key.
 - Bomb saves remain version 1, with targetRevealPolicy=1 distinguishing the restored hidden-question rule. New saves preserve hidden/revealed/active/completed state; old automatically visible unanswered prompts are re-hidden where intact bricks remain, without discarding active answers or completed progress. Only actual reveals increment appearance counts.
 - Save/resume, restart, next-level flow, keyboard controls, mobile layout, and isolated bomb progress are implemented.
 
@@ -198,6 +217,17 @@ Git synchronizes source code and assets only. Browser `localStorage` progress, A
 
 ## Latest verification snapshot
 
+Verified on 2026-09-21 after the centered test-field and smooth-travel update:
+
+- `pnpm run check`, `pnpm test`, and `git diff --check`: passed.
+- Real Microsoft Edge Bullet Bill acceptance passed at desktop and 390px: five visible centered missiles on 1-1, no hidden test missile, linear between-cell travel, advanced brick-triggered spawning, bomb-contact survival, 10-cell self-destruction, sprite HTTP 200, and no horizontal overflow.
+
+Verified on 2026-09-21 after the Bullet Bill test release:
+
+- `pnpm run check`, `pnpm test`, and `git diff --check`: passed.
+- Real Microsoft Edge Bullet Bill acceptance passed at desktop and 390px: fixed 1-1 hidden spawn, brick-triggered appearance, sprite crop and HTTP 200, bomb-contact early detonation with survival, exactly 10-cell self-destruction, and no horizontal overflow.
+- Full `pnpm run test:browser` passed against the inherited 5177 service after replacing stale hard-coded Windows usernames with current-profile Playwright resolution; existing bomb save/session and every learning module remained green.
+
 Verified on 2026-08-25 after the Nursery Rhymes theme update:
 
 - `pnpm run check`: passed.
@@ -214,7 +244,7 @@ Verified on 2026-08-25 after the Nursery Rhymes theme update:
 
 ## Cross-computer cautions
 
-- The three Scenario acceptance scripts resolve Playwright from the current Windows profile. Other acceptance scripts may still import it from a local Codex runtime path; on another Windows account, confirm or deliberately make that dependency portable before relying on `pnpm run test:browser`.
+- Browser acceptance resolves Playwright from the current Windows profile's bundled Codex runtime. The shared bomb/browser helper also accepts `CODEX_PLAYWRIGHT_PATH` when the runtime lives elsewhere; verify that dependency before relying on `pnpm run test:browser` on a machine without the standard bundle.
 - Do not copy `.env`, API keys, browser profiles, cookies, or storage-state files through Git.
 - If learning progress must move between computers, use a separately reviewed export/import workflow; do not commit progress data to this repository.
 - If port 5177 is occupied, choose another isolated port. Do not stop a server that was not started by the current task.

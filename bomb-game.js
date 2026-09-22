@@ -92,8 +92,7 @@
   const BULLET_BILL_MAX_STEPS = 10;
   const BULLET_BILL_MIN_DIFFICULTY_INDEX = 5;
   const BULLET_BILL_SPAWN_CHANCE = 0.35;
-  const BULLET_BILL_TEST_FIRST_LEVEL = true;
-  const BULLET_BILL_TEST_VISIBLE_COUNT = 1;
+  const BULLET_BILL_FIRST_LEVEL_HIDDEN_COUNT = 1;
   const ENEMY_CHASE_TIME = 2.6;
   const ENEMY_SIGHT_RANGE = 8 / 3;
   const ENEMY_VISION_HALF_ANGLE = Math.PI / 3;
@@ -454,16 +453,16 @@
     return FIRE_FLOWERS_PER_LEVEL;
   }
 
-  function isBulletBillTestLevel() {
-    return BULLET_BILL_TEST_FIRST_LEVEL && state.world === 1 && state.subLevel === 1;
+  function isBulletBillFirstLevel() {
+    return state.world === 1 && state.subLevel === 1;
   }
 
   function bulletBillBrickCapacityForLevel() {
-    return difficultyIndexForSubLevel() >= BULLET_BILL_MIN_DIFFICULTY_INDEX ? 1 : 0;
+    return isBulletBillFirstLevel() ? BULLET_BILL_FIRST_LEVEL_HIDDEN_COUNT : (difficultyIndexForSubLevel() >= BULLET_BILL_MIN_DIFFICULTY_INDEX ? 1 : 0);
   }
 
   function shouldSeedBulletBill() {
-    if (isBulletBillTestLevel()) return false;
+    if (isBulletBillFirstLevel()) return true;
     if (difficultyIndexForSubLevel() < BULLET_BILL_MIN_DIFFICULTY_INDEX) return false;
     return Math.random() < BULLET_BILL_SPAWN_CHANCE;
   }
@@ -975,7 +974,6 @@
       `1,${ROWS - 2}`, `1,${ROWS - 3}`, `2,${ROWS - 2}`,
       `${center},${middle}`, `${center},${middle - 1}`, `${center},${middle + 1}`,
       `${center - 1},${middle}`, `${center + 1},${middle}`,
-      ...(isBulletBillTestLevel() ? [`${center - 3},${middle}`, `${center + 3},${middle}`] : []),
     ]);
 
     for (let y = 0; y < ROWS; y += 1) {
@@ -1029,11 +1027,6 @@
     const right = COLS - 2;
     const center = Math.floor(COLS / 2);
     const middle = Math.floor(ROWS / 2);
-    if (isBulletBillTestLevel()) {
-      return [0]
-        .slice(0, BULLET_BILL_TEST_VISIBLE_COUNT)
-        .map((offset, index) => makeBulletBillEnemy(index + 1, center + offset, middle));
-    }
     const starts = [
       { gx: right, gy: ROWS - 2 },
       { gx: right, gy: 1 },
@@ -3459,8 +3452,7 @@
         turnPause: BULLET_BILL_TURN_PAUSE,
         minDifficultyIndex: BULLET_BILL_MIN_DIFFICULTY_INDEX,
         spawnChance: BULLET_BILL_SPAWN_CHANCE,
-        testFirstLevel: BULLET_BILL_TEST_FIRST_LEVEL,
-        testVisibleCount: BULLET_BILL_TEST_VISIBLE_COUNT,
+        firstLevelHiddenCount: BULLET_BILL_FIRST_LEVEL_HIDDEN_COUNT,
       },
       nightTime: isNightTime(),
       canvasWidth: canvas.width,

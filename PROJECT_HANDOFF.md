@@ -7,7 +7,13 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.9** (2026-09-22). Level 1-1 starts with one centered
+System display version: **v1.0.10** (2026-09-22). Removed the visible-missile test field.
+Level 1-1 now starts with its normal mushroom and exactly one missile hidden in a separate
+brick; only destroying that brick releases the missile. Enemy-clear cleanup still retains
+the missile brick for manual bombing. Existing playing saves are preserved: restart to use
+the new opening setup. Bomb script cache: v2.3. Focused check: tests/bullet-bill-browser.mjs.
+
+Previous v1.0.9 (2026-09-22). Level 1-1 starts with one centered
 Bullet Bill. Enemy-clear cleanup leaves any intact hidden Bullet Bill brick for the player
 to bomb; all other bricks and learning targets still open. Hidden missiles also block level
 completion until revealed and defeated. Existing running saves retain their enemy state.
@@ -191,7 +197,7 @@ In the ChatGPT/Codex desktop app, add the cloned repository as a local project a
 - Entry: `bomb-game.html`.
 - Each level has five distinct Hanzi targets: prioritize learning evidence, then fill from non-mastered words without repeating the same character. Odd/even sublevels alternate pinyin-to-Hanzi and Hanzi-to-pinyin questions.
 - All five questions start hidden inside separate bricks. Destroying a target brick reveals its question card; eliminating the last enemy opens remaining bricks except intact hidden Bullet Bill bricks, and reveals all pending questions. The player must bomb the retained missile brick; hidden/live missiles block completion even after five correct answers.
-- Level 1-1 starts with one visible centered Bullet Bill and no hidden test missile. Difficulty index 5+ can still hide one in its own non-question brick with 35% probability. It pathfinds toward the fly-star for up to 10 cells, uses continuous linear travel between cell centers, accelerates on straight runs, pauses once only when turning, triggers bombs without dying, and then self-destructs. Its complete state persists in the existing bomb save key; ongoing saves are not reset by release updates.
+- Level 1-1 starts with its normal mushroom and exactly one hidden Bullet Bill in a non-question brick; no visible missile spawns at entry. Difficulty index 5+ can still hide one in its own non-question brick with 35% probability. It pathfinds toward the fly-star for up to 10 cells, uses continuous linear travel between cell centers, accelerates on straight runs, pauses once only when turning, triggers bombs without dying, and then self-destructs. Its complete state persists in the existing bomb save key; ongoing saves are not reset by release updates.
 - Bomb saves remain version 1, with targetRevealPolicy=1 distinguishing the restored hidden-question rule. New saves preserve hidden/revealed/active/completed state; old automatically visible unanswered prompts are re-hidden where intact bricks remain, without discarding active answers or completed progress. Only actual reveals increment appearance counts.
 - Save/resume, restart, next-level flow, keyboard controls, mobile layout, and isolated bomb progress are implemented.
 
@@ -222,6 +228,13 @@ Persistent browser keys:
 Git synchronizes source code and assets only. Browser `localStorage` progress, API keys, environment variables, Codex plugins, browser-extension connections, and local tool installations must be configured separately on the company computer.
 
 ## Latest verification snapshot
+
+Verified on 2026-09-22 for v1.0.10:
+
+- Syntax checks and Node tests passed (124/124).
+- Targeted real Microsoft Edge at 1440px/390px: zero visible missiles at first-level entry,
+  one hidden missile, normal enemies restored, no startup auto-clear, player-triggered reveal,
+  enemy-clear retained brick and reload/manual bombing passed. Screenshots refreshed.
 
 Verified on 2026-09-22 for v1.0.9:
 

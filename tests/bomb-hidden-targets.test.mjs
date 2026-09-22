@@ -11,6 +11,30 @@ const extract = (name) => {
 const coordKey = (x, y) => x + "," + y;
 const words = Array.from({ length: 5 }, (_, index) => ({ id: String(index + 1) }));
 
+test("1-1 固定藏一枚导弹，其他关卡保留高难度35%规则", () => {
+  const state = { world: 1, subLevel: 1 };
+  const math = Object.create(Math);
+  const helpers = new Function("state", "Math", `
+    const BULLET_BILL_FIRST_LEVEL_HIDDEN_COUNT = 1;
+    const BULLET_BILL_MIN_DIFFICULTY_INDEX = 5, BULLET_BILL_SPAWN_CHANCE = 0.35;
+    const difficultyIndexForSubLevel = () => state.subLevel + 1;
+    ${extract("isBulletBillFirstLevel")}
+    ${extract("bulletBillBrickCapacityForLevel")}
+    ${extract("shouldSeedBulletBill")}
+    return { bulletBillBrickCapacityForLevel, shouldSeedBulletBill };
+  `)(state, math);
+  for (const random of [0, 0.3499, 0.35, 0.9999]) {
+    math.random = () => random;
+    for (state.world = 1; state.world <= 2; state.world++) {
+      for (state.subLevel = 1; state.subLevel <= 5; state.subLevel++) {
+        const first = state.world === 1 && state.subLevel === 1;
+        assert.equal(helpers.bulletBillBrickCapacityForLevel(), first || state.subLevel >= 4 ? 1 : 0);
+        assert.equal(helpers.shouldSeedBulletBill(), first || (state.subLevel >= 4 && random < 0.35));
+      }
+    }
+  }
+});
+
 test("怪物清场保留导弹砖，五题仍全揭示；已揭示导弹不保留空砖", () => {
   for (const hiddenMissile of [true, false]) {
     const state = {
@@ -85,7 +109,6 @@ test("每种地图尺寸在最稀疏随机结果下仍有五个藏题砖，不�
         const ROWS = 11, TILE_CRATE = 2, TILE_FLOOR = 0, TILE_HARD = 1;
         const BOMB_MOONS_PER_LEVEL = 5;
         const maxFireFlowersForLevel = () => 2;
-        const isBulletBillTestLevel = () => false;
         const bulletBillBrickCapacityForLevel = () => 1;
         const shouldSeedBulletBill = () => true;
         ${extract("createMap")}

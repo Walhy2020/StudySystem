@@ -67,26 +67,21 @@ try {
     turnPause: 0.45,
     minDifficultyIndex: 5,
     spawnChance: 0.35,
-    testFirstLevel: true,
-    testVisibleCount: 1,
+    firstLevelHiddenCount: 1,
   });
   const firstLevelBills = initial.enemies.filter((enemy) => enemy.type === "bullet-bill" && enemy.alive);
-  const middle = Math.floor(initial.map.length / 2);
-  const center = Math.floor(initial.map[0].length / 2);
-  assert.equal(firstLevelBills.length, 1, "level 1-1 opens with one visible Bullet Bill");
-  assert.deepEqual(firstLevelBills.map(({ gx, gy }) => [gx, gy]), [[center, middle]]);
-  assert.equal(initial.hiddenPowerUps.some(([, type]) => type === "bulletBill"), false, "the test level uses visible center missiles instead of another hidden missile");
+  assert.equal(firstLevelBills.length, 0, "level 1-1 never opens with a visible Bullet Bill");
+  assert.equal(initial.enemies.filter(enemy => enemy.alive && enemy.type === "mushroom").length, 1, "normal first-level mushroom is restored");
+  assert.equal(initial.hiddenPowerUps.filter(([, type]) => type === "bulletBill").length, 1, "exactly one missile starts hidden inside a brick");
+  await page.locator("#overlayStartBombGame").click();
+  await page.waitForTimeout(1200);
+  const runningStart = await page.evaluate(() => window.__BOMB_GAME__.getState());
+  assert.equal(runningStart.enemies.some(enemy => enemy.type === "bullet-bill"), false, "starting the game does not release a missile");
+  assert.equal(runningStart.enemyClearOpenedBricks, false, "no automatic clearing at start");
+  assert.ok(runningStart.map.flat().some(tile => tile === 2));
 
   const spawnFixture = structuredClone(initial);
-  const reservedBrickKeys = new Set([
-    ...spawnFixture.hiddenWordCrates.map(([key]) => key),
-    ...spawnFixture.hiddenPowerUps.map(([key]) => key),
-  ]);
-  const spawnBrick = spawnFixture.map.flatMap((row, y) => row.map((tile, x) => ({ tile, x, y })))
-    .find((cell) => cell.tile === 2 && !reservedBrickKeys.has(`${cell.x},${cell.y}`));
-  assert.ok(spawnBrick, "fixture has a spare brick for the probability-spawn check");
-  const brickKey = `${spawnBrick.x},${spawnBrick.y}`;
-  spawnFixture.hiddenPowerUps.push([brickKey, "bulletBill"]);
+  const [brickKey] = spawnFixture.hiddenPowerUps.find(([, type]) => type === "bulletBill");
   const [brickX, brickY] = brickKey.split(",").map(Number);
   const neighbor = [
     [brickX - 1, brickY],
@@ -207,7 +202,7 @@ try {
     cleanupFixture.explosions = [];
     cleanupFixture.shells = [];
     cleanupFixture.player = { gx: 3, gy: 5, move: null, invulnerable: 20, trail: [{ gx: 3, gy: 5 }] };
-    cleanupFixture.enemies = [{ ...firstLevelBills[0], gx: 10, gy: 7, move: null, stepsTravelled: 10 }];
+    cleanupFixture.enemies = [{ ...spawned.enemies.find(enemy => enemy.type === "bullet-bill"), gx: 10, gy: 7, move: null, stepsTravelled: 10 }];
     await restoreSnapshot(cleanupFixture);
     await page.waitForFunction(() => window.__BOMB_GAME__.getState().enemyClearOpenedBricks);
     const cleared = await page.evaluate(() => window.__BOMB_GAME__.getState());
@@ -240,12 +235,12 @@ try {
   const visualFixture = structuredClone(initial);
   visualFixture.status = "ready";
   visualFixture.startLayerHidden = true;
-  visualFixture.messageText = "第一关：中间 1 枚导弹";
+  visualFixture.messageText = "第一关：1 枚导弹藏在砖块里";
   visualFixture.bombs = [];
   for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: width === 390 ? 844 : 1000 });
     await restoreSnapshot(visualFixture, false);
-    await page.waitForFunction(() => window.__bulletBillSpriteDraws.some(([sx, sy, sw, sh]) => sx === 560 && sy === 48 && sw === 16 && sh === 16));
+    assert.equal((await page.evaluate(() => window.__BOMB_GAME__.getState())).enemies.some(enemy => enemy.type === "bullet-bill" && enemy.alive), false);
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `${width}px has no horizontal overflow`);
     await page.screenshot({ path: `tests/bullet-bill-${width}.png`, fullPage: true });
   }
@@ -253,7 +248,8 @@ try {
   assert.equal(spriteStatus, 200, "Bullet Bill sprite sheet is served successfully");
   assert.deepEqual(errors, [], "Bullet Bill acceptance has no page or resource errors");
   console.log(JSON.stringify({
-    firstLevelCenterBills: 1,
+    firstLevelVisibleBills: 0,
+    firstLevelHiddenBills: 1,
     brickSpawn: true,
     enemyClearRetainsMissileBrick: true,
     retainedBrickSurvivesReload: true,

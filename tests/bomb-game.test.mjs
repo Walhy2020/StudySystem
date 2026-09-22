@@ -34,7 +34,7 @@ const calculateLayout = new Function(
 
 assert.match(html, /<canvas id="bombCanvas" width="1280" height="720"/);
 assert.ok(html.includes('bomb-game.css?v=1.1'));
-assert.ok(html.includes('bomb-game.js?v=2.2'));
+assert.ok(html.includes('bomb-game.js?v=2.3'));
 assert.ok(html.includes('./data/characters.js?v=1.0'));
 assert.ok(html.includes('./data/pinyin-readings.js?v=1.0'));
 assert.ok(!html.includes("stable-url.js"));
@@ -132,8 +132,8 @@ assert.ok(js.includes('const BULLET_BILL_FRAME = { sx: 560, sy: 48, sw: 16, sh: 
 assert.ok(js.includes("const BULLET_BILL_MAX_STEPS = 10;"));
 assert.ok(js.includes("const BULLET_BILL_MIN_DIFFICULTY_INDEX = 5;"));
 assert.ok(js.includes("const BULLET_BILL_SPAWN_CHANCE = 0.35;"));
-assert.ok(js.includes("const BULLET_BILL_TEST_FIRST_LEVEL = true;"));
-assert.ok(js.includes("const BULLET_BILL_TEST_VISIBLE_COUNT = 1;"));
+assert.ok(js.includes("const BULLET_BILL_FIRST_LEVEL_HIDDEN_COUNT = 1;"));
+assert.ok(!js.includes("BULLET_BILL_TEST_FIRST_LEVEL"));
 assert.ok(js.includes('if (hiddenType === "bulletBill")'));
 assert.ok(js.includes('type: "bullet-bill",'));
 assert.ok(js.includes("function chooseBulletBillDirection(enemy)"));

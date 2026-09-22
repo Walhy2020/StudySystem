@@ -7,7 +7,13 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.8** (2026-09-22). Hide both 今日新音标 and 复习音标
+System display version: **v1.0.9** (2026-09-22). Level 1-1 starts with one centered
+Bullet Bill. Enemy-clear cleanup leaves any intact hidden Bullet Bill brick for the player
+to bomb; all other bricks and learning targets still open. Hidden missiles also block level
+completion until revealed and defeated. Existing running saves retain their enemy state.
+Bomb script cache: v2.2. Focused check: tests/bullet-bill-browser.mjs (desktop and 390px).
+
+Previous v1.0.8 (2026-09-22). Hide both 今日新音标 and 复习音标
 entry buttons while an IPA learning/review item is active, including after refresh.
 Restore entry choices on idle/completed screens. Keep the single-pass completion button
 and full-review progress restoration unchanged. Phonetics app cache: v1.13.
@@ -184,8 +190,8 @@ In the ChatGPT/Codex desktop app, add the cloned repository as a local project a
 
 - Entry: `bomb-game.html`.
 - Each level has five distinct Hanzi targets: prioritize learning evidence, then fill from non-mastered words without repeating the same character. Odd/even sublevels alternate pinyin-to-Hanzi and Hanzi-to-pinyin questions.
-- All five questions start hidden inside separate bricks. Destroying a target brick reveals its question card; eliminating the last enemy opens all remaining bricks and reveals all pending questions. Revealing is not answering: five correct completions are still required.
-- Level 1-1 is a dedicated test field with five visible Bullet Bills across the center row and no hidden test missile. Difficulty index 5+ can still hide one in its own non-question brick with 35% probability. It pathfinds toward the fly-star for up to 10 cells, uses continuous linear travel between cell centers, accelerates on straight runs, pauses once only when turning, triggers bombs without dying, and then self-destructs. Its complete state persists in the existing bomb save key.
+- All five questions start hidden inside separate bricks. Destroying a target brick reveals its question card; eliminating the last enemy opens remaining bricks except intact hidden Bullet Bill bricks, and reveals all pending questions. The player must bomb the retained missile brick; hidden/live missiles block completion even after five correct answers.
+- Level 1-1 starts with one visible centered Bullet Bill and no hidden test missile. Difficulty index 5+ can still hide one in its own non-question brick with 35% probability. It pathfinds toward the fly-star for up to 10 cells, uses continuous linear travel between cell centers, accelerates on straight runs, pauses once only when turning, triggers bombs without dying, and then self-destructs. Its complete state persists in the existing bomb save key; ongoing saves are not reset by release updates.
 - Bomb saves remain version 1, with targetRevealPolicy=1 distinguishing the restored hidden-question rule. New saves preserve hidden/revealed/active/completed state; old automatically visible unanswered prompts are re-hidden where intact bricks remain, without discarding active answers or completed progress. Only actual reveals increment appearance counts.
 - Save/resume, restart, next-level flow, keyboard controls, mobile layout, and isolated bomb progress are implemented.
 
@@ -216,6 +222,15 @@ Persistent browser keys:
 Git synchronizes source code and assets only. Browser `localStorage` progress, API keys, environment variables, Codex plugins, browser-extension connections, and local tool installations must be configured separately on the company computer.
 
 ## Latest verification snapshot
+
+Verified on 2026-09-22 for v1.0.9:
+
+- Syntax checks and Node tests passed (123/123); diff whitespace checks passed.
+- Targeted real Microsoft Edge Bullet Bill acceptance passed at 1440px and 390px:
+  one centered first-level missile; final-enemy death reveals all five questions but retains
+  the hidden missile brick; reload preserves it; a player-placed bomb releases exactly one missile.
+  Existing bomb-contact survival, linear movement and ten-cell self-destruction checks passed.
+  No unrelated module browser suites were run for this release.
 
 Verified on 2026-09-21 after the centered test-field and smooth-travel update:
 

@@ -11,6 +11,70 @@ const extract = (name) => {
 const coordKey = (x, y) => x + "," + y;
 const words = Array.from({ length: 5 }, (_, index) => ({ id: String(index + 1) }));
 
+test("怪物清场保留导弹砖，五题仍全揭示；已揭示导弹不保留空砖", () => {
+  for (const hiddenMissile of [true, false]) {
+    const state = {
+      map: [[2, 2, 2, 2, 2, 2, 2]],
+      enemies: [{ alive: false }], enemyClearOpenedBricks: false,
+      hiddenPowerUps: new Map(hiddenMissile ? [["5,0", "bulletBill"]] : []),
+      hiddenWordCrates: new Map(words.map((word, x) => [coordKey(x, 0), word.id])),
+      powerUps: [], score: 0,
+    };
+    const cleanup = new Function("state", "coordKey", `
+      const ROWS = 1, COLS = 7, TILE_CRATE = 2, TILE_FLOOR = 0;
+      const livingEnemyCount = () => state.enemies.filter(e => e.alive).length;
+      const hasVisibleLearningPowerUp = () => state.powerUps.length > 0;
+      const isAvailableLearningPowerUp = () => true;
+      const spawnParticles = () => {}, setMessage = () => {}, updateHud = () => {};
+      const maybeSpawnBrickPowerUp = (x, y) => {
+        const key = coordKey(x, y);
+        if (state.hiddenWordCrates.has(key)) {
+          state.powerUps.push({ wordId: state.hiddenWordCrates.get(key) });
+          state.hiddenWordCrates.delete(key);
+        }
+        if (state.hiddenPowerUps.get(key) === "bulletBill") throw Error("auto-spawned missile");
+      };
+      ${extract("hasHiddenBulletBillBrick")}
+      ${extract("autoOpenBricksAfterEnemyClear")}
+      return autoOpenBricksAfterEnemyClear;
+    `)(state, coordKey);
+    cleanup();
+    assert.deepEqual(state.map[0], [0, 0, 0, 0, 0, hiddenMissile ? 2 : 0, 0]);
+    assert.equal(state.hiddenPowerUps.size, hiddenMissile ? 1 : 0);
+    assert.equal(state.powerUps.length, 5);
+    assert.equal(state.hiddenWordCrates.size, 0);
+    assert.equal(state.score, (hiddenMissile ? 6 : 7) * 5);
+    cleanup();
+    assert.equal(state.powerUps.length, 5, "cleanup is idempotent");
+  }
+});
+
+test("五题完成后仍需手动炸出隐藏导弹，且活导弹死亡后才过关", () => {
+  const state = {
+    status: "playing", map: [[2]], moonWordIds: words.map(w => w.id),
+    hiddenPowerUps: new Map([["0,0", "bulletBill"]]), enemies: [{ alive: false }],
+  };
+  let advances = 0;
+  const check = new Function("state", "advanceSubLevel", `
+    const TILE_CRATE = 2, BOMB_MOONS_PER_LEVEL = 5;
+    const livingEnemyCount = () => state.enemies.filter(e => e.alive).length;
+    const crateCount = () => state.map.flat().filter(tile => tile === TILE_CRATE).length;
+    ${extract("hasHiddenBulletBillBrick")}
+    ${extract("checkLevelComplete")}
+    return checkLevelComplete;
+  `)(state, () => advances++);
+  check();
+  assert.equal(advances, 0);
+  state.map[0][0] = 0;
+  state.hiddenPowerUps.clear();
+  state.enemies.push({ alive: true });
+  check();
+  assert.equal(advances, 0);
+  state.enemies[1].alive = false;
+  check();
+  assert.equal(advances, 1);
+});
+
 test("每种地图尺寸在最稀疏随机结果下仍有五个藏题砖，不占出生安全区", () => {
   for (const COLS of [13, 15, 17, 19, 21]) {
     for (const random of [0, 0.5, 0.999999]) {

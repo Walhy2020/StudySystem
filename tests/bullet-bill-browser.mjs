@@ -9,7 +9,7 @@ const browser = await chromium.launch({
   headless: true,
   executablePath: "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe",
 });
-const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, hasTouch: true });
 await context.addInitScript(() => {
   window.__bulletBillSpriteDraws = [];
   const originalDrawImage = CanvasRenderingContext2D.prototype.drawImage;
@@ -68,13 +68,13 @@ try {
     minDifficultyIndex: 5,
     spawnChance: 0.35,
     testFirstLevel: true,
-    testVisibleCount: 5,
+    testVisibleCount: 1,
   });
   const firstLevelBills = initial.enemies.filter((enemy) => enemy.type === "bullet-bill" && enemy.alive);
   const middle = Math.floor(initial.map.length / 2);
   const center = Math.floor(initial.map[0].length / 2);
-  assert.equal(firstLevelBills.length, 5, "level 1-1 opens with five visible Bullet Bills for testing");
-  assert.deepEqual(firstLevelBills.map(({ gx, gy }) => [gx, gy]), [-3, -1, 0, 1, 3].map((offset) => [center + offset, middle]));
+  assert.equal(firstLevelBills.length, 1, "level 1-1 opens with one visible Bullet Bill");
+  assert.deepEqual(firstLevelBills.map(({ gx, gy }) => [gx, gy]), [[center, middle]]);
   assert.equal(initial.hiddenPowerUps.some(([, type]) => type === "bulletBill"), false, "the test level uses visible center missiles instead of another hidden missile");
 
   const spawnFixture = structuredClone(initial);
@@ -186,10 +186,61 @@ try {
   assert.equal(expiredBullet.alive, false);
   assert.match(expired.messageText, /导弹追踪 10 格后爆炸/);
 
+  // A real final-enemy death opens all ordinary/target bricks, but not the hidden missile.
+  for (const width of [1440, 390]) {
+    await page.setViewportSize({ width, height: width === 390 ? 844 : 1000 });
+    const cleanupFixture = structuredClone(initial);
+    cleanupFixture.status = "playing";
+    cleanupFixture.startLayerHidden = true;
+    cleanupFixture.enemyClearOpenedBricks = false;
+    cleanupFixture.map = makeOpenMap(rows, columns);
+    cleanupFixture.map[5][4] = 2;
+    cleanupFixture.map[6][6] = 2;
+    cleanupFixture.hiddenPowerUps = [["4,5", "bulletBill"]];
+    cleanupFixture.hiddenWordCrates = cleanupFixture.todayNewWords.map((word, index) => {
+      cleanupFixture.map[3][5 + index] = 2;
+      return [`${5 + index},3`, word.id];
+    });
+    cleanupFixture.powerUps = [];
+    cleanupFixture.moonWordIds = [];
+    cleanupFixture.bombs = [];
+    cleanupFixture.explosions = [];
+    cleanupFixture.shells = [];
+    cleanupFixture.player = { gx: 3, gy: 5, move: null, invulnerable: 20, trail: [{ gx: 3, gy: 5 }] };
+    cleanupFixture.enemies = [{ ...firstLevelBills[0], gx: 10, gy: 7, move: null, stepsTravelled: 10 }];
+    await restoreSnapshot(cleanupFixture);
+    await page.waitForFunction(() => window.__BOMB_GAME__.getState().enemyClearOpenedBricks);
+    const cleared = await page.evaluate(() => window.__BOMB_GAME__.getState());
+    assert.equal(cleared.map.flat().filter(tile => tile === 2).length, 1, "only the hidden missile brick remains");
+    assert.equal(cleared.map[5][4], 2);
+    assert.deepEqual(cleared.hiddenPowerUps, [["4,5", "bulletBill"]]);
+    assert.equal(cleared.enemies.filter(enemy => enemy.alive).length, 0, "cleanup does not spawn the missile");
+    assert.equal(cleared.hiddenWordCrates.length, 0);
+    assert.equal((await page.evaluate(() => window.__BOMB_GAME__.getBoardTargetSummary())).visibleInitialTargetIds.length, 5);
+    await page.reload();
+    await page.waitForFunction(() => window.__BOMB_GAME__?.isAwaitingContinue());
+    assert.equal((await page.evaluate(() => window.__BOMB_GAME__.getState())).map[5][4], 2, "reload preserves the retained brick");
+    if (width === 390) await page.locator("#overlayStartBombGame").tap();
+    else {
+      await page.locator("#overlayStartBombGame").focus();
+      await page.keyboard.press("Enter");
+    }
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+    await page.screenshot({ path: `tests/bullet-bill-retained-brick-${width}.png`, fullPage: true });
+    await page.locator("#bombCanvas").focus();
+    await page.keyboard.press("Space");
+    await page.waitForFunction(() => window.__BOMB_GAME__.getState().bombs.length === 1);
+    await page.waitForFunction(() => window.__BOMB_GAME__.getState().enemies.some(enemy => enemy.type === "bullet-bill" && enemy.alive));
+    const manuallyRevealed = await page.evaluate(() => window.__BOMB_GAME__.getState());
+    assert.equal(manuallyRevealed.map[5][4], 0, "player bomb destroys the retained brick");
+    assert.equal(manuallyRevealed.hiddenPowerUps.some(([, type]) => type === "bulletBill"), false);
+    assert.equal(manuallyRevealed.enemies.filter(enemy => enemy.alive).length, 1, "player bomb reveals exactly one live missile");
+  }
+
   const visualFixture = structuredClone(initial);
   visualFixture.status = "ready";
   visualFixture.startLayerHidden = true;
-  visualFixture.messageText = "第一关导弹测试场：中间 5 枚导弹";
+  visualFixture.messageText = "第一关：中间 1 枚导弹";
   visualFixture.bombs = [];
   for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: width === 390 ? 844 : 1000 });
@@ -202,8 +253,11 @@ try {
   assert.equal(spriteStatus, 200, "Bullet Bill sprite sheet is served successfully");
   assert.deepEqual(errors, [], "Bullet Bill acceptance has no page or resource errors");
   console.log(JSON.stringify({
-    firstLevelCenterBills: 5,
+    firstLevelCenterBills: 1,
     brickSpawn: true,
+    enemyClearRetainsMissileBrick: true,
+    retainedBrickSurvivesReload: true,
+    playerBombRevealsRetainedMissile: true,
     bombContactSurvival: true,
     linearMotionSamples: motionSamples.length,
     tenCellSelfDestruct: true,

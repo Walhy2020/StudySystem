@@ -93,7 +93,7 @@
   const BULLET_BILL_MIN_DIFFICULTY_INDEX = 5;
   const BULLET_BILL_SPAWN_CHANCE = 0.35;
   const BULLET_BILL_TEST_FIRST_LEVEL = true;
-  const BULLET_BILL_TEST_VISIBLE_COUNT = 5;
+  const BULLET_BILL_TEST_VISIBLE_COUNT = 1;
   const ENEMY_CHASE_TIME = 2.6;
   const ENEMY_SIGHT_RANGE = 8 / 3;
   const ENEMY_VISION_HALF_ANGLE = Math.PI / 3;
@@ -1030,7 +1030,7 @@
     const center = Math.floor(COLS / 2);
     const middle = Math.floor(ROWS / 2);
     if (isBulletBillTestLevel()) {
-      return [-3, -1, 0, 1, 3]
+      return [0]
         .slice(0, BULLET_BILL_TEST_VISIBLE_COUNT)
         .map((offset, index) => makeBulletBillEnemy(index + 1, center + offset, middle));
     }
@@ -1356,6 +1356,8 @@
     for (let y = 0; y < ROWS; y += 1) {
       for (let x = 0; x < COLS; x += 1) {
         if (state.map[y][x] !== TILE_CRATE) continue;
+        // Hidden missiles must be revealed by the player, never by enemy-clear cleanup.
+        if (state.hiddenPowerUps.get(coordKey(x, y)) === "bulletBill") continue;
         state.map[y][x] = TILE_FLOOR;
         maybeSpawnBrickPowerUp(x, y);
         spawnParticles("crate", x, y);
@@ -1371,7 +1373,7 @@
           guidedPowerUp.guided = true;
         }
       }
-      setMessage(`怪物清空，自动打开 ${opened} 个砖块`, 2);
+      setMessage(`怪物清空，自动打开 ${opened} 个砖块${hasHiddenBulletBillBrick() ? "，剩余导弹砖块请手动炸开" : ""}`, 2);
       updateHud();
     }
   }
@@ -1397,10 +1399,18 @@
     setMessage("全部关卡完成", 3);
   }
 
+  function hasHiddenBulletBillBrick() {
+    return [...state.hiddenPowerUps].some(([key, type]) => {
+      if (type !== "bulletBill") return false;
+      const [x, y] = key.split(",").map(Number);
+      return state.map[y]?.[x] === TILE_CRATE;
+    });
+  }
+
   function checkLevelComplete() {
     if (state.status !== "playing" && state.status !== "ready") return;
     const learningDone = state.moonWordIds.length >= BOMB_MOONS_PER_LEVEL;
-    if (learningDone && livingEnemyCount() === 0 && (state.enemies.length > 0 || crateCount() === 0)) {
+    if (learningDone && livingEnemyCount() === 0 && !hasHiddenBulletBillBrick() && (state.enemies.length > 0 || crateCount() === 0)) {
       advanceSubLevel();
     }
   }

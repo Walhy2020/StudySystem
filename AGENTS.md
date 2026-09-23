@@ -73,6 +73,7 @@ Browser progress is local to each browser profile and is not synchronized by Git
 - Preserve user-owned dirty-worktree changes. Do not use destructive Git commands.
 - When a referenced CSS or JavaScript asset changes, update its cache query and the matching tests.
 - Every delivered change must increment the displayed system version (`APP_VERSION` and `package.json`), not only asset cache queries. Report the version and Git commit after pushing.
+- Every release must also set all seven page references to `src/version-update.js?v=<package version>` so open pages detect new releases correctly; `tests/version-update.test.mjs` enforces this.
 - Put final generated web assets under `assets/` with semantic versioned names. Verify dimensions, file signatures, HTTP 200, and visible page use.
 - For visual changes, verify both desktop and a 390px viewport. Check horizontal overflow, clipping, actual element geometry, keyboard/touch behavior, and resource failures.
 - Prefer real Microsoft Edge acceptance through the repository scripts. Report the actual validation surface; do not label another browser as Edge.

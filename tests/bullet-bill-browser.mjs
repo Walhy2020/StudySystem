@@ -61,9 +61,6 @@ try {
   assert.deepEqual(constants, {
     frame: { sx: 560, sy: 48, sw: 16, sh: 16 },
     moveTime: 0.18,
-    minMoveTime: 0.135,
-    acceleration: 0.005,
-    turnPause: 0.45,
     hiddenCountPerLevel: 1,
   });
   const firstLevelBills = initial.enemies.filter((enemy) => enemy.type === "bullet-bill" && enemy.alive);
@@ -193,7 +190,7 @@ try {
   });
   assert.ok(motionSamples.length >= 8, "real Edge captured enough in-flight missile frames");
   motionSamples.forEach(({ gx, gy, move, straightSteps }) => {
-    assert.ok(Math.abs(move.duration - Math.max(0.135, 0.18 - straightSteps * 0.005)) < 1e-10, "real movement uses gentle acceleration");
+    assert.equal(move.duration, 0.18, "all actual movement uses constant player speed");
     const ratio = Math.min(1, move.time / move.duration);
     const expectedX = move.fromX + (move.toX - move.fromX) * ratio;
     const expectedY = move.fromY + (move.toY - move.fromY) * ratio;
@@ -206,6 +203,22 @@ try {
   const persistentChaser = await page.evaluate(() => window.__BOMB_GAME__.getState());
   assert.equal(persistentChaser.enemies[0].alive, true, "missile survives beyond ten cells");
   assert.equal(persistentChaser.explosions.length, 0, "no distance-triggered explosion");
+
+  const turnFixture = structuredClone(chaseFixture);
+  turnFixture.enemies[0].dir = "up";
+  turnFixture.enemies[0].turnPause = 0.45;
+  turnFixture.enemies[0].turnResetPending = true;
+  await restoreSnapshot(turnFixture);
+  const turningFrames = await page.evaluate(async () => {
+    const samples = [];
+    for (let frame = 0; frame < 12; frame++) {
+      await new Promise(requestAnimationFrame);
+      const enemy = window.__BOMB_GAME__.getState().enemies[0];
+      samples.push({ dir: enemy.dir, duration: enemy.move?.duration, turnPause: enemy.turnPause });
+    }
+    return samples;
+  });
+  assert.ok(turningFrames.every(frame => frame.dir === "right" && frame.duration === 0.18 && frame.turnPause === 0), "turning/restoring never inserts a pause or slowdown");
 
   const collisionFixture = structuredClone(chaseFixture);
   collisionFixture.map[5][5] = 2;
@@ -321,6 +334,7 @@ try {
     bombContactConvertsToRed: true,
     redBombSameBlastAndPersistence: true,
     linearMotionSamples: motionSamples.length,
+    constantSpeedAndInstantTurns: true,
     survivesBeyondTenCells: true,
     spriteFrame: constants.frame,
     desktopAndMobile: true,

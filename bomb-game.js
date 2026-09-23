@@ -86,9 +86,6 @@
   const KOOPA_MOVE_TIME = 1.0;
   const SHELL_MOVE_TIME = 0.075;
   const BULLET_BILL_MOVE_TIME = PLAYER_MOVE_TIME;
-  const BULLET_BILL_MIN_MOVE_TIME = 0.135;
-  const BULLET_BILL_ACCELERATION = 0.005;
-  const BULLET_BILL_TURN_PAUSE = 0.45;
   const BULLET_BILL_HIDDEN_COUNT_PER_LEVEL = 1;
   const ENEMY_CHASE_TIME = 2.6;
   const ENEMY_SIGHT_RANGE = 8 / 3;
@@ -401,6 +398,7 @@
     state.particles = plainArray(saved.particles);
     state.powerUps = plainArray(saved.powerUps);
     state.enemies = plainArray(saved.enemies);
+    state.enemies.forEach(normalizeBulletBillMotion);
     state.shells = plainArray(saved.shells);
     state.player = saved.player && typeof saved.player === "object" ? saved.player : makePlayer();
     state.hiddenPowerUps = new Map(Array.isArray(saved.hiddenPowerUps) ? saved.hiddenPowerUps : []);
@@ -1669,11 +1667,16 @@
     }) || "";
   }
 
-  function bulletBillMoveDuration(straightSteps) {
-    return Math.max(
-      BULLET_BILL_MIN_MOVE_TIME,
-      BULLET_BILL_MOVE_TIME - Math.max(0, Number(straightSteps) || 0) * BULLET_BILL_ACCELERATION
-    );
+  function normalizeBulletBillMotion(enemy) {
+    if (enemy.type !== "bullet-bill") return;
+    enemy.straightSteps = 0;
+    enemy.turnPause = 0;
+    enemy.turnResetPending = false;
+    if (enemy.move) {
+      const progress = enemy.move.duration > 0 ? clamp(enemy.move.time / enemy.move.duration, 0, 1) : 0;
+      enemy.move.duration = BULLET_BILL_MOVE_TIME;
+      enemy.move.time = progress * BULLET_BILL_MOVE_TIME;
+    }
   }
 
   function convertBombTouchedByBulletBill(enemy) {
@@ -1695,8 +1698,6 @@
 
   function updateBulletBill(enemy, dt) {
     enemy.stepsTravelled = Math.max(0, Number(enemy.stepsTravelled) || 0);
-    enemy.straightSteps = Math.max(0, Number(enemy.straightSteps) || 0);
-    enemy.turnPause = Math.max(0, Number(enemy.turnPause) || 0);
     if (convertBombTouchedByBulletBill(enemy)) return;
 
     if (enemy.move) {
@@ -1704,28 +1705,10 @@
       enemy.stepsTravelled += 1;
       if (convertBombTouchedByBulletBill(enemy)) return;
     }
-    if (enemy.turnPause > 0) {
-      enemy.turnPause = Math.max(0, enemy.turnPause - dt);
-      return;
-    }
-
     const nextDirection = chooseBulletBillDirection(enemy);
     if (!nextDirection) return;
-    if (enemy.dir && enemy.dir !== nextDirection) {
-      enemy.dir = nextDirection;
-      enemy.straightSteps = 0;
-      enemy.turnPause = BULLET_BILL_TURN_PAUSE;
-      enemy.turnResetPending = true;
-      return;
-    }
-    if (enemy.turnResetPending) {
-      enemy.straightSteps = 0;
-      enemy.turnResetPending = false;
-    } else {
-      enemy.straightSteps = enemy.stepsTravelled > 0 && enemy.dir === nextDirection ? enemy.straightSteps + 1 : 0;
-    }
     enemy.dir = nextDirection;
-    startMove(enemy, nextDirection, bulletBillMoveDuration(enemy.straightSteps));
+    startMove(enemy, nextDirection, BULLET_BILL_MOVE_TIME);
   }
 
   function updateEnemies(dt) {
@@ -3420,9 +3403,6 @@
       bulletBill: {
         frame: { ...BULLET_BILL_FRAME },
         moveTime: BULLET_BILL_MOVE_TIME,
-        minMoveTime: BULLET_BILL_MIN_MOVE_TIME,
-        acceleration: BULLET_BILL_ACCELERATION,
-        turnPause: BULLET_BILL_TURN_PAUSE,
         hiddenCountPerLevel: BULLET_BILL_HIDDEN_COUNT_PER_LEVEL,
       },
       nightTime: isNightTime(),
@@ -3527,6 +3507,7 @@
     }
   });
   window.addEventListener("pagehide", saveBombProgress);
+  window.addEventListener("studysystem:update-prompt", () => { clearInputState(); saveBombProgress(); });
 
   startButton.addEventListener("click", startGame);
   overlayStartButton.addEventListener("click", () => {

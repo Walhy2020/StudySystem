@@ -7,7 +7,18 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.11** (2026-09-24). Bullet Bill starts at PLAYER_MOVE_TIME
+System display version: **v1.0.12** (2026-09-24). Bullet Bill always moves at
+PLAYER_MOVE_TIME (0.18 seconds per cell), including turns: no acceleration and no turn pause.
+Old saved missile movement retains its position/progress while adopting the constant duration.
+All seven pages now load src/version-update.js?v=1.0.12. It checks package.json without cache
+every 60 seconds and on focus/visibility/online, prompts once per newer release, and reloads
+the current URL only after confirmation. Cancel keeps the current page. Offline/errors are silent.
+The prompt event saves bomb progress and clears held inputs; refresh restores the Continue gate.
+For every future release, update all seven version-update script queries to package.json's
+version (enforced by a Node test). Existing v1.0.11 tabs need one manual refresh to install it;
+Git push alone does not update a different computer's local server. Bomb script cache: v2.5.
+
+Previous v1.0.11 (2026-09-24). Bullet Bill starts at PLAYER_MOVE_TIME
 (0.18 seconds per cell). Each subsequent straight cell shortens travel by 0.005 seconds,
 down to 0.135 seconds. A preset heading does not accelerate the first step. Turning still
 pauses 0.45 seconds and resets to player speed. Removed distance-based self-destruction:
@@ -209,7 +220,7 @@ In the ChatGPT/Codex desktop app, add the cloned repository as a local project a
 - Entry: `bomb-game.html`.
 - Each level has five distinct Hanzi targets: prioritize learning evidence, then fill from non-mastered words without repeating the same character. Odd/even sublevels alternate pinyin-to-Hanzi and Hanzi-to-pinyin questions.
 - All five questions start hidden inside separate bricks. Destroying a target brick reveals its question card; eliminating the last enemy opens remaining bricks except intact hidden Bullet Bill bricks, and reveals all pending questions. The player must bomb the retained missile brick; hidden/live missiles block completion even after five correct answers.
-- All ten levels start with their normal enemies and exactly one hidden Bullet Bill in a non-question brick; no visible missile spawns at entry and there is no random spawn chance. It continuously chases the player with no distance limit, starts at 0.18s/cell, accelerates by 0.005s per straight cell to 0.135s/cell, and pauses 0.45s on turns before restarting at player speed. Bomb contact consumes the missile and recolors the existing bomb red, retaining its range and ordinary two-second fuse/blast. Red color and timer persist in the existing save; pending red bombs prevent early cleanup/completion. Ongoing saves are not reset by releases.
+- All ten levels start with their normal enemies and exactly one hidden Bullet Bill in a non-question brick; no visible missile spawns at entry and there is no random spawn chance. It continuously chases the player with no distance limit at a constant 0.18s/cell, including turns, with no acceleration or pause. Bomb contact consumes the missile and recolors the existing bomb red, retaining its range and ordinary two-second fuse/blast. Red color and timer persist in the existing save; pending red bombs prevent early cleanup/completion. Ongoing saves are not reset by releases.
 - Bomb saves remain version 1, with targetRevealPolicy=1 distinguishing the restored hidden-question rule. New saves preserve hidden/revealed/active/completed state; old automatically visible unanswered prompts are re-hidden where intact bricks remain, without discarding active answers or completed progress. Only actual reveals increment appearance counts.
 - Save/resume, restart, next-level flow, keyboard controls, mobile layout, and isolated bomb progress are implemented.
 
@@ -240,6 +251,17 @@ Persistent browser keys:
 Git synchronizes source code and assets only. Browser `localStorage` progress, API keys, environment variables, Codex plugins, browser-extension connections, and local tool installations must be configured separately on the company computer.
 
 ## Latest verification snapshot
+
+Verified on 2026-09-24 for v1.0.12:
+
+- Syntax and Node checks passed (131/131), including release-query consistency across all
+  seven pages, numeric version comparisons, cancellation, errors and concurrent checks.
+- Real Microsoft Edge targeted Bullet Bill checks passed: constant 0.18s/cell, no turning
+  pause (including legacy saved pauses), ten-level hidden missiles, red conversion and saves.
+- Real Microsoft Edge update-notification integration passed on all seven pages plus 390px
+  bomb page: current version stays quiet, newer version prompts, cancel does not reload,
+  later releases prompt again, confirm reloads the same URL and bomb resume remains gated.
+- No unrelated module learning/gameplay browser suites were run.
 
 Verified on 2026-09-24 for v1.0.11:
 

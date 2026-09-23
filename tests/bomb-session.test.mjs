@@ -143,7 +143,7 @@ test("蘑菇移动速度精确降低10%，库巴和乌龟不变，包含存档�
   assert.match(source, /const MUSHROOM_SPEED_FACTOR = 0\.9;/);
 });
 
-test("导弹始终对小飞星寻路，直线逐格加速且最低速度受限", () => {
+test("导弹始终对小飞星寻路，固定使用玩家移动时长", () => {
   const map = Array.from({ length: 7 }, (_, y) => Array.from({ length: 7 }, (_, x) =>
     x === 0 || y === 0 || x === 6 || y === 6 ? 1 : 0));
   map[1][2] = 1;
@@ -163,21 +163,29 @@ test("导弹始终对小飞星寻路，直线逐格加速且最低速度受限",
   map[1][2] = 0;
   assert.equal(chooseDirection(enemy), "right", "open direct route keeps heading toward the player");
 
-  const duration = new Function(`
-    ${source.match(/const PLAYER_MOVE_TIME = [^;]+;/)[0]}
-    ${source.match(/const BULLET_BILL_MOVE_TIME = [^;]+;/)[0]}
-    ${source.match(/const BULLET_BILL_MIN_MOVE_TIME = [^;]+;/)[0]}
-    ${source.match(/const BULLET_BILL_ACCELERATION = [^;]+;/)[0]}
-    ${extract("bulletBillMoveDuration")}
-    return bulletBillMoveDuration;
-  `)();
-  assert.equal(duration(0), 0.18);
   assert.match(source, /const BULLET_BILL_MOVE_TIME = PLAYER_MOVE_TIME;/);
-  for (let step = 0; step < 10; step++) {
-    assert.ok(Math.abs(duration(step) - (0.18 - step * 0.005)) < 1e-10);
-    if (step > 0) assert.ok(duration(step - 1) / duration(step) < 1.04, "each cell speeds up by less than four percent");
-  }
-  assert.equal(duration(99), 0.135);
+  assert.ok(!source.includes("BULLET_BILL_ACCELERATION"));
+  assert.ok(!source.includes("BULLET_BILL_TURN_PAUSE"));
+});
+
+test("旧存档导弹保持当前位置和步内进度，去掉转弯等待并转换为匀速", () => {
+  const normalize = new Function(`
+    const BULLET_BILL_MOVE_TIME = 0.18;
+    const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
+    ${extract("normalizeBulletBillMotion")}
+    return normalizeBulletBillMotion;
+  `)();
+  const enemy = { type: "bullet-bill", gx: 2.5, gy: 3, straightSteps: 8,
+    turnPause: 0.4, turnResetPending: true, move: { time: 0.0675, duration: 0.135 } };
+  normalize(enemy);
+  assert.equal(enemy.gx, 2.5);
+  assert.deepEqual(enemy.move, { time: 0.09, duration: 0.18 });
+  assert.equal(enemy.turnPause, 0);
+  assert.equal(enemy.straightSteps, 0);
+  assert.equal(enemy.turnResetPending, false);
+  const mushroom = { ...enemy, type: "mushroom", move: { time: 0.1, duration: 0.55 } };
+  normalize(mushroom);
+  assert.deepEqual(mushroom.move, { time: 0.1, duration: 0.55 });
 });
 
 test("导弹跨格采用匀速插值，不在每格边界重复减速", () => {
@@ -200,13 +208,12 @@ test("导弹跨格采用匀速插值，不在每格边界重复减速", () => {
   assert.equal(eased.gx, 0.125, "other actors retain the existing eased movement");
 });
 
-test("导弹转弯暂停并以基础速度重启，走过十格仍持续追踪", () => {
+test("导弹直行转弯都不暂停不变速，走过十格仍持续追踪", () => {
   const calls = { starts: [], exploded: 0, touched: 0 };
   const run = new Function("calls", `
-    const BULLET_BILL_TURN_PAUSE = 0.45;
+    const BULLET_BILL_MOVE_TIME = 0.18;
     const DIRS = { up:{x:0,y:-1}, down:{x:0,y:1}, left:{x:-1,y:0}, right:{x:1,y:0} };
     const bombAt = () => null;
-    const bulletBillMoveDuration = steps => Math.max(0.135, 0.18 - steps * 0.005);
     const convertBombTouchedByBulletBill = () => { calls.touched++; return false; };
     const chooseBulletBillDirection = () => "down";
     const advanceMove = enemy => { enemy.move = null; return true; };
@@ -223,17 +230,14 @@ test("导弹转弯暂停并以基础速度重启，走过十格仍持续追踪",
   run(fresh, 0.01);
   assert.deepEqual(calls.starts.at(-1), { direction: "down", duration: 0.18 }, "first step matches player even when a direction is preset");
   run(fresh, 0.18);
-  assert.deepEqual(calls.starts.at(-1), { direction: "down", duration: 0.175 }, "next straight step accelerates gently");
+  assert.deepEqual(calls.starts.at(-1), { direction: "down", duration: 0.18 }, "next straight step stays at the same speed");
   calls.starts.length = 0;
   const turning = { alive: true, gx: 2, gy: 2, dir: "right", move: null, stepsTravelled: 0, straightSteps: 4, turnPause: 0 };
   run(turning, 0.1);
   assert.equal(turning.dir, "down");
-  assert.equal(turning.turnPause, 0.45);
-  assert.equal(calls.starts.length, 0);
-  run(turning, 0.45);
-  assert.equal(calls.starts.length, 0, "turn pause consumes one movement beat");
-  run(turning, 0.01);
-  assert.deepEqual(calls.starts.at(-1), { direction: "down", duration: 0.18 }, "first cell after a turn matches player speed");
+  assert.equal(turning.turnPause, 0);
+  assert.equal(calls.starts.length, 1, "turning starts a new move in the same frame");
+  assert.deepEqual(calls.starts.at(-1), { direction: "down", duration: 0.18 }, "turning does not slow down");
 
   const expiring = { alive: true, gx: 4, gy: 2, dir: "down", move: {}, stepsTravelled: 9, straightSteps: 0, turnPause: 0 };
   run(expiring, 1);

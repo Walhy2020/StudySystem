@@ -59,7 +59,7 @@ async function restoreBombSnapshot(snapshot) {
 }
 
 await page.goto(baseUrl);
-assert.equal(await page.locator("#appVersionLabel").textContent(), "v1.0.11", "system display version updated");
+assert.equal(await page.locator("#appVersionLabel").textContent(), "v1.0.12", "system display version updated");
 assert.equal(await page.locator('.module-tabs a[href="./bomb-game.html?v=1.0"]').count(), 0, "bomb entry is not a module tab");
 assert.equal(await page.locator('.topbar .top-actions #bombGameEntry').isVisible(), true, "header shows bomb-game entry");
 assert.equal(await page.locator('.topbar #resetProgress').count(), 0, "header does not contain Hanzi reset");
@@ -178,9 +178,6 @@ assert.deepEqual({
   bulletBill: {
     frame: { sx: 560, sy: 48, sw: 16, sh: 16 },
     moveTime: 0.18,
-    minMoveTime: 0.135,
-    acceleration: 0.005,
-    turnPause: 0.45,
     hiddenCountPerLevel: 1,
   },
   nightTime: false,
@@ -196,7 +193,7 @@ const resourcePaths = [
   "index.html",
   "bomb-game.html",
   "bomb-game.css?v=1.1",
-  "bomb-game.js?v=2.4",
+  "bomb-game.js?v=2.5",
   "data/characters.js?v=1.0",
   "data/pinyin-readings.js?v=1.0",
   "assets/sprites/enemies-bosses.png",

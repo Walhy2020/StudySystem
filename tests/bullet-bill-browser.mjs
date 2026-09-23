@@ -60,14 +60,11 @@ try {
   const constants = await page.evaluate(() => window.__BOMB_GAME__.getConstants().bulletBill);
   assert.deepEqual(constants, {
     frame: { sx: 560, sy: 48, sw: 16, sh: 16 },
-    maxSteps: 10,
-    moveTime: 0.55,
-    minMoveTime: 0.22,
-    acceleration: 0.04,
+    moveTime: 0.18,
+    minMoveTime: 0.135,
+    acceleration: 0.005,
     turnPause: 0.45,
-    minDifficultyIndex: 5,
-    spawnChance: 0.35,
-    firstLevelHiddenCount: 1,
+    hiddenCountPerLevel: 1,
   });
   const firstLevelBills = initial.enemies.filter((enemy) => enemy.type === "bullet-bill" && enemy.alive);
   assert.equal(firstLevelBills.length, 0, "level 1-1 never opens with a visible Bullet Bill");
@@ -79,6 +76,37 @@ try {
   assert.equal(runningStart.enemies.some(enemy => enemy.type === "bullet-bill"), false, "starting the game does not release a missile");
   assert.equal(runningStart.enemyClearOpenedBricks, false, "no automatic clearing at start");
   assert.ok(runningStart.map.flat().some(tile => tile === 2));
+
+  // Exercise actual next-level generation across both worlds, not just a constant check.
+  let generatedLevel = structuredClone(initial);
+  for (let levelIndex = 0; levelIndex < 10; levelIndex++) {
+    assert.equal(generatedLevel.world, Math.floor(levelIndex / 5) + 1);
+    assert.equal(generatedLevel.subLevel, levelIndex % 5 + 1);
+    const missiles = generatedLevel.hiddenPowerUps.filter(([, type]) => type === "bulletBill");
+    assert.equal(missiles.length, 1, `level ${generatedLevel.world}-${generatedLevel.subLevel} hides exactly one missile`);
+    const [x, y] = missiles[0][0].split(",").map(Number);
+    assert.equal(generatedLevel.map[y][x], 2);
+    assert.equal(generatedLevel.hiddenWordCrates.length, 5);
+    assert.equal(generatedLevel.hiddenWordCrates.some(([key]) => key === missiles[0][0]), false);
+    assert.equal(generatedLevel.enemies.some(enemy => enemy.type === "bullet-bill"), false);
+    if (levelIndex === 9) break;
+    const completed = structuredClone(generatedLevel);
+    completed.status = "playing";
+    completed.startLayerHidden = true;
+    completed.moonWordIds = completed.todayNewWords.map(word => word.id);
+    completed.hiddenPowerUps = [];
+    completed.hiddenWordCrates = [];
+    completed.powerUps = [];
+    completed.enemies.forEach(enemy => { enemy.alive = false; enemy.move = null; });
+    completed.bombs = [{ gx: 1, gy: 1, time: 1.8, range: 1, ownerInside: false, exploded: false }];
+    completed.player.invulnerable = 20;
+    await restoreSnapshot(completed);
+    await page.waitForFunction(({ world, subLevel }) => {
+      const state = window.__BOMB_GAME__.getState();
+      return state.world !== world || state.subLevel !== subLevel;
+    }, { world: generatedLevel.world, subLevel: generatedLevel.subLevel });
+    generatedLevel = await page.evaluate(() => window.__BOMB_GAME__.getState());
+  }
 
   const spawnFixture = structuredClone(initial);
   const [brickKey] = spawnFixture.hiddenPowerUps.find(([, type]) => type === "bulletBill");
@@ -121,7 +149,7 @@ try {
   chaseFixture.status = "playing";
   chaseFixture.startLayerHidden = true;
   chaseFixture.map = makeOpenMap(rows, columns);
-  chaseFixture.player = { gx: 11, gy: 5, move: null, invulnerable: 0, trail: [{ gx: 11, gy: 5 }] };
+  chaseFixture.player = { gx: columns - 2, gy: 5, move: null, invulnerable: 20, trail: [{ gx: columns - 2, gy: 5 }] };
   chaseFixture.enemies = [{
     id: 100,
     type: "bullet-bill",
@@ -141,7 +169,7 @@ try {
     seed: 0,
     alive: true,
   }];
-  chaseFixture.bombs = [{ gx: 2, gy: 5, time: 2, range: 1, ownerInside: false, exploded: false }];
+  chaseFixture.bombs = [];
   chaseFixture.explosions = [];
   chaseFixture.shells = [];
   chaseFixture.powerUps = [];
@@ -150,22 +178,22 @@ try {
   await restoreSnapshot(chaseFixture);
   await page.waitForFunction(() => {
     const state = window.__BOMB_GAME__.getState();
-    return state.bombs.length === 0 && state.enemies.some((enemy) => enemy.type === "bullet-bill" && enemy.alive);
+    return state.enemies.some((enemy) => enemy.type === "bullet-bill" && enemy.move);
   });
   const afterBomb = await page.evaluate(() => window.__BOMB_GAME__.getState());
-  assert.ok(afterBomb.enemies.find((enemy) => enemy.type === "bullet-bill").alive, "Bullet Bill survives the bomb it triggers");
-  assert.ok(afterBomb.dayClock < 2, "the two-second bomb is triggered early by contact");
+  assert.equal(afterBomb.enemies.find(enemy => enemy.type === "bullet-bill").move.duration, 0.18, "first actual missile step matches the player's cell duration");
   const motionSamples = await page.evaluate(async () => {
     const samples = [];
     for (let frame = 0; frame < 16; frame += 1) {
       await new Promise(requestAnimationFrame);
       const bullet = window.__BOMB_GAME__.getState().enemies.find((enemy) => enemy.type === "bullet-bill" && enemy.alive);
-      if (bullet?.move) samples.push({ gx: bullet.gx, gy: bullet.gy, move: bullet.move });
+      if (bullet?.move) samples.push({ gx: bullet.gx, gy: bullet.gy, move: bullet.move, straightSteps: bullet.straightSteps });
     }
     return samples;
   });
   assert.ok(motionSamples.length >= 8, "real Edge captured enough in-flight missile frames");
-  motionSamples.forEach(({ gx, gy, move }) => {
+  motionSamples.forEach(({ gx, gy, move, straightSteps }) => {
+    assert.ok(Math.abs(move.duration - Math.max(0.135, 0.18 - straightSteps * 0.005)) < 1e-10, "real movement uses gentle acceleration");
     const ratio = Math.min(1, move.time / move.duration);
     const expectedX = move.fromX + (move.toX - move.fromX) * ratio;
     const expectedY = move.fromY + (move.toY - move.fromY) * ratio;
@@ -173,13 +201,48 @@ try {
   });
   await page.waitForFunction(() => {
     const bullet = window.__BOMB_GAME__.getState().enemies.find((enemy) => enemy.type === "bullet-bill");
-    return bullet && !bullet.alive && bullet.stepsTravelled === 10;
+    return bullet && bullet.alive && bullet.stepsTravelled >= 12;
   }, null, { timeout: 10000 });
-  const expired = await page.evaluate(() => window.__BOMB_GAME__.getState());
-  const expiredBullet = expired.enemies.find((enemy) => enemy.type === "bullet-bill");
-  assert.equal(expiredBullet.stepsTravelled, 10, "Bullet Bill self-destructs after exactly ten cells");
-  assert.equal(expiredBullet.alive, false);
-  assert.match(expired.messageText, /导弹追踪 10 格后爆炸/);
+  const persistentChaser = await page.evaluate(() => window.__BOMB_GAME__.getState());
+  assert.equal(persistentChaser.enemies[0].alive, true, "missile survives beyond ten cells");
+  assert.equal(persistentChaser.explosions.length, 0, "no distance-triggered explosion");
+
+  const collisionFixture = structuredClone(chaseFixture);
+  collisionFixture.map[5][5] = 2;
+  collisionFixture.bombs = [{ gx: 3, gy: 5, time: 0, range: 3, ownerInside: false, exploded: false }];
+  collisionFixture.enemyClearOpenedBricks = false;
+  await restoreSnapshot(collisionFixture);
+  await page.waitForFunction(() => window.__BOMB_GAME__.getState().bombs.some(bomb => bomb.isRed));
+  const converted = await page.evaluate(() => window.__BOMB_GAME__.getState());
+  assert.equal(converted.enemies[0].alive, false, "missile is consumed by collision");
+  assert.equal(converted.enemies[0].move, null);
+  assert.equal(converted.bombs.length, 1, "one black bomb becomes one red bomb");
+  assert.equal(converted.bombs[0].range, 3, "power is inherited, not added");
+  assert.ok(converted.bombs[0].time < 0.5, "conversion restarts the ordinary fuse");
+  assert.equal(converted.explosions.length, 0, "collision is not instant detonation");
+  assert.equal(converted.map[5][5], 2, "conversion does not automatically clear bricks");
+  await page.reload();
+  await page.waitForFunction(() => window.__BOMB_GAME__?.isAwaitingContinue());
+  assert.equal((await page.evaluate(() => window.__BOMB_GAME__.getState())).bombs[0].isRed, true, "red color survives reload");
+  await page.locator("#overlayStartBombGame").click();
+  await page.waitForFunction(() => window.__BOMB_GAME__.getState().explosions.some(explosion => explosion.cells.some(cell => cell.gx === 3 && cell.gy === 5)));
+  const redBlast = await page.evaluate(() => window.__BOMB_GAME__.getState().explosions[0].cells);
+  const blackFixture = structuredClone(collisionFixture);
+  blackFixture.enemies = [];
+  blackFixture.bombs[0].time = 1.8;
+  await restoreSnapshot(blackFixture);
+  await page.waitForFunction(() => window.__BOMB_GAME__.getState().explosions.length > 0);
+  assert.deepEqual(await page.evaluate(() => window.__BOMB_GAME__.getState().explosions[0].cells), redBlast, "red/black bomb blast cells and brick blocking are identical");
+  for (const width of [1440, 390]) {
+    await page.setViewportSize({ width, height: width === 390 ? 844 : 1000 });
+    const preview = structuredClone(converted);
+    preview.status = "ready";
+    preview.startLayerHidden = true;
+    preview.bombs.push({ gx: 7, gy: 5, time: 0, range: 3, ownerInside: false, exploded: false });
+    await restoreSnapshot(preview, false);
+    await page.screenshot({ path: `tests/bullet-bill-red-bomb-${width}.png`, fullPage: true });
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+  }
 
   // A real final-enemy death opens all ordinary/target bricks, but not the hidden missile.
   for (const width of [1440, 390]) {
@@ -199,10 +262,10 @@ try {
     cleanupFixture.powerUps = [];
     cleanupFixture.moonWordIds = [];
     cleanupFixture.bombs = [];
-    cleanupFixture.explosions = [];
+    cleanupFixture.explosions = [{ cells: [{ gx: 10, gy: 7 }], blockedCells: [], life: 1, maxLife: 1 }];
     cleanupFixture.shells = [];
     cleanupFixture.player = { gx: 3, gy: 5, move: null, invulnerable: 20, trail: [{ gx: 3, gy: 5 }] };
-    cleanupFixture.enemies = [{ ...spawned.enemies.find(enemy => enemy.type === "bullet-bill"), gx: 10, gy: 7, move: null, stepsTravelled: 10 }];
+    cleanupFixture.enemies = [{ ...initial.enemies.find(enemy => enemy.type === "mushroom"), gx: 10, gy: 7, move: null, hp: 1, stunTimer: 1, hitCooldown: 0 }];
     await restoreSnapshot(cleanupFixture);
     await page.waitForFunction(() => window.__BOMB_GAME__.getState().enemyClearOpenedBricks);
     const cleared = await page.evaluate(() => window.__BOMB_GAME__.getState());
@@ -250,13 +313,15 @@ try {
   console.log(JSON.stringify({
     firstLevelVisibleBills: 0,
     firstLevelHiddenBills: 1,
+    allTenLevelsHideOneMissile: true,
     brickSpawn: true,
     enemyClearRetainsMissileBrick: true,
     retainedBrickSurvivesReload: true,
     playerBombRevealsRetainedMissile: true,
-    bombContactSurvival: true,
+    bombContactConvertsToRed: true,
+    redBombSameBlastAndPersistence: true,
     linearMotionSamples: motionSamples.length,
-    tenCellSelfDestruct: true,
+    survivesBeyondTenCells: true,
     spriteFrame: constants.frame,
     desktopAndMobile: true,
   }, null, 2));

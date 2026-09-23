@@ -11,25 +11,19 @@ const extract = (name) => {
 const coordKey = (x, y) => x + "," + y;
 const words = Array.from({ length: 5 }, (_, index) => ({ id: String(index + 1) }));
 
-test("1-1 固定藏一枚导弹，其他关卡保留高难度35%规则", () => {
+test("两个世界十个关卡均固定预留一枚隐藏导弹，不受随机概率影响", () => {
   const state = { world: 1, subLevel: 1 };
   const math = Object.create(Math);
   const helpers = new Function("state", "Math", `
-    const BULLET_BILL_FIRST_LEVEL_HIDDEN_COUNT = 1;
-    const BULLET_BILL_MIN_DIFFICULTY_INDEX = 5, BULLET_BILL_SPAWN_CHANCE = 0.35;
-    const difficultyIndexForSubLevel = () => state.subLevel + 1;
-    ${extract("isBulletBillFirstLevel")}
+    ${source.match(/const BULLET_BILL_HIDDEN_COUNT_PER_LEVEL = [^;]+;/)[0]}
     ${extract("bulletBillBrickCapacityForLevel")}
-    ${extract("shouldSeedBulletBill")}
-    return { bulletBillBrickCapacityForLevel, shouldSeedBulletBill };
+    return { bulletBillBrickCapacityForLevel };
   `)(state, math);
   for (const random of [0, 0.3499, 0.35, 0.9999]) {
     math.random = () => random;
     for (state.world = 1; state.world <= 2; state.world++) {
       for (state.subLevel = 1; state.subLevel <= 5; state.subLevel++) {
-        const first = state.world === 1 && state.subLevel === 1;
-        assert.equal(helpers.bulletBillBrickCapacityForLevel(), first || state.subLevel >= 4 ? 1 : 0);
-        assert.equal(helpers.shouldSeedBulletBill(), first || (state.subLevel >= 4 && random < 0.35));
+        assert.equal(helpers.bulletBillBrickCapacityForLevel(), 1);
       }
     }
   }
@@ -42,7 +36,7 @@ test("怪物清场保留导弹砖，五题仍全揭示；已揭示导弹不保�
       enemies: [{ alive: false }], enemyClearOpenedBricks: false,
       hiddenPowerUps: new Map(hiddenMissile ? [["5,0", "bulletBill"]] : []),
       hiddenWordCrates: new Map(words.map((word, x) => [coordKey(x, 0), word.id])),
-      powerUps: [], score: 0,
+      powerUps: [], bombs: [], score: 0,
     };
     const cleanup = new Function("state", "coordKey", `
       const ROWS = 1, COLS = 7, TILE_CRATE = 2, TILE_FLOOR = 0;
@@ -75,7 +69,7 @@ test("怪物清场保留导弹砖，五题仍全揭示；已揭示导弹不保�
 
 test("五题完成后仍需手动炸出隐藏导弹，且活导弹死亡后才过关", () => {
   const state = {
-    status: "playing", map: [[2]], moonWordIds: words.map(w => w.id),
+    status: "playing", map: [[2]], bombs: [], moonWordIds: words.map(w => w.id),
     hiddenPowerUps: new Map([["0,0", "bulletBill"]]), enemies: [{ alive: false }],
   };
   let advances = 0;
@@ -95,6 +89,10 @@ test("五题完成后仍需手动炸出隐藏导弹，且活导弹死亡后才�
   check();
   assert.equal(advances, 0);
   state.enemies[1].alive = false;
+  state.bombs.push({ isRed: true, exploded: false });
+  check();
+  assert.equal(advances, 0, "converted red bomb still blocks completion");
+  state.bombs[0].exploded = true;
   check();
   assert.equal(advances, 1);
 });
@@ -109,8 +107,8 @@ test("每种地图尺寸在最稀疏随机结果下仍有五个藏题砖，不�
         const ROWS = 11, TILE_CRATE = 2, TILE_FLOOR = 0, TILE_HARD = 1;
         const BOMB_MOONS_PER_LEVEL = 5;
         const maxFireFlowersForLevel = () => 2;
-        const bulletBillBrickCapacityForLevel = () => 1;
-        const shouldSeedBulletBill = () => true;
+        ${source.match(/const BULLET_BILL_HIDDEN_COUNT_PER_LEVEL = [^;]+;/)[0]}
+        ${extract("bulletBillBrickCapacityForLevel")}
         ${extract("createMap")}
         ${extract("seedHiddenPowerUps")}
         return { createMap, seedHiddenPowerUps };

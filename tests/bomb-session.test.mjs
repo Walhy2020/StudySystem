@@ -164,15 +164,20 @@ test("导弹始终对小飞星寻路，直线逐格加速且最低速度受限",
   assert.equal(chooseDirection(enemy), "right", "open direct route keeps heading toward the player");
 
   const duration = new Function(`
-    const BULLET_BILL_MOVE_TIME = 0.55;
-    const BULLET_BILL_MIN_MOVE_TIME = 0.22;
-    const BULLET_BILL_ACCELERATION = 0.04;
+    ${source.match(/const PLAYER_MOVE_TIME = [^;]+;/)[0]}
+    ${source.match(/const BULLET_BILL_MOVE_TIME = [^;]+;/)[0]}
+    ${source.match(/const BULLET_BILL_MIN_MOVE_TIME = [^;]+;/)[0]}
+    ${source.match(/const BULLET_BILL_ACCELERATION = [^;]+;/)[0]}
     ${extract("bulletBillMoveDuration")}
     return bulletBillMoveDuration;
   `)();
-  assert.equal(duration(0), 0.55);
-  assert.ok(duration(4) < duration(3));
-  assert.equal(duration(99), 0.22);
+  assert.equal(duration(0), 0.18);
+  assert.match(source, /const BULLET_BILL_MOVE_TIME = PLAYER_MOVE_TIME;/);
+  for (let step = 0; step < 10; step++) {
+    assert.ok(Math.abs(duration(step) - (0.18 - step * 0.005)) < 1e-10);
+    if (step > 0) assert.ok(duration(step - 1) / duration(step) < 1.04, "each cell speeds up by less than four percent");
+  }
+  assert.equal(duration(99), 0.135);
 });
 
 test("导弹跨格采用匀速插值，不在每格边界重复减速", () => {
@@ -195,15 +200,14 @@ test("导弹跨格采用匀速插值，不在每格边界重复减速", () => {
   assert.equal(eased.gx, 0.125, "other actors retain the existing eased movement");
 });
 
-test("导弹转弯暂停并以基础速度重启，走满十格自爆", () => {
+test("导弹转弯暂停并以基础速度重启，走过十格仍持续追踪", () => {
   const calls = { starts: [], exploded: 0, touched: 0 };
   const run = new Function("calls", `
-    const BULLET_BILL_MAX_STEPS = 10;
     const BULLET_BILL_TURN_PAUSE = 0.45;
     const DIRS = { up:{x:0,y:-1}, down:{x:0,y:1}, left:{x:-1,y:0}, right:{x:1,y:0} };
     const bombAt = () => null;
-    const bulletBillMoveDuration = steps => 0.55 - steps * 0.04;
-    const explodeBombTouchedByBulletBill = () => { calls.touched++; };
+    const bulletBillMoveDuration = steps => Math.max(0.135, 0.18 - steps * 0.005);
+    const convertBombTouchedByBulletBill = () => { calls.touched++; return false; };
     const chooseBulletBillDirection = () => "down";
     const advanceMove = enemy => { enemy.move = null; return true; };
     const explodeBulletBill = enemy => { enemy.alive = false; calls.exploded++; };
@@ -215,6 +219,12 @@ test("导弹转弯暂停并以基础速度重启，走满十格自爆", () => {
     ${extract("updateBulletBill")}
     return updateBulletBill;
   `)(calls);
+  const fresh = { alive: true, gx: 2, gy: 2, dir: "down", move: null, stepsTravelled: 0, straightSteps: 0, turnPause: 0 };
+  run(fresh, 0.01);
+  assert.deepEqual(calls.starts.at(-1), { direction: "down", duration: 0.18 }, "first step matches player even when a direction is preset");
+  run(fresh, 0.18);
+  assert.deepEqual(calls.starts.at(-1), { direction: "down", duration: 0.175 }, "next straight step accelerates gently");
+  calls.starts.length = 0;
   const turning = { alive: true, gx: 2, gy: 2, dir: "right", move: null, stepsTravelled: 0, straightSteps: 4, turnPause: 0 };
   run(turning, 0.1);
   assert.equal(turning.dir, "down");
@@ -223,13 +233,55 @@ test("导弹转弯暂停并以基础速度重启，走满十格自爆", () => {
   run(turning, 0.45);
   assert.equal(calls.starts.length, 0, "turn pause consumes one movement beat");
   run(turning, 0.01);
-  assert.deepEqual(calls.starts.at(-1), { direction: "down", duration: 0.55 }, "first cell after a turn is not accelerated");
+  assert.deepEqual(calls.starts.at(-1), { direction: "down", duration: 0.18 }, "first cell after a turn matches player speed");
 
   const expiring = { alive: true, gx: 4, gy: 2, dir: "down", move: {}, stepsTravelled: 9, straightSteps: 0, turnPause: 0 };
   run(expiring, 1);
   assert.equal(expiring.stepsTravelled, 10);
-  assert.equal(expiring.alive, false);
-  assert.equal(calls.exploded, 1);
+  assert.equal(expiring.alive, true);
+  for (let step = 0; step < 20; step++) run(expiring, 1);
+  assert.equal(expiring.stepsTravelled, 30);
+  assert.equal(expiring.alive, true);
+  assert.equal(calls.exploded, 0);
+});
+
+test("导弹接触黑弹才转红并消失，范围和玩家离开权限不变，红弹再次碰撞不重置引线", () => {
+  const bomb = { gx: 3, gy: 5, time: 1.2, range: 4, ownerInside: true, exploded: false };
+  const convert = new Function("bomb", `
+    const bombAt = (x, y) => x === bomb.gx && y === bomb.gy ? bomb : null;
+    const setMessage = () => {}, updateHud = () => {}, saveBombProgress = () => {};
+    ${extract("convertBombTouchedByBulletBill")}
+    return convertBombTouchedByBulletBill;
+  `)(bomb);
+  const missile = { alive: true, gx: 2, gy: 5, move: { toX: 3, toY: 5 } };
+  assert.equal(convert(missile), false, "planning a step toward a bomb is not contact");
+  missile.gx = 3;
+  assert.equal(convert(missile), true);
+  assert.deepEqual(bomb, { gx: 3, gy: 5, time: 0, range: 4, ownerInside: true, exploded: false, isRed: true });
+  assert.equal(missile.alive, false);
+  assert.equal(missile.move, null);
+  bomb.time = 1;
+  assert.equal(convert({ alive: true, gx: 3, gy: 5, move: {} }), true);
+  assert.equal(bomb.time, 1, "another missile cannot indefinitely extend a red bomb fuse");
+  assert.equal(convert(missile), false);
+});
+
+test("红色炸弹使用普通两秒计时，爆炸后才允许清场", () => {
+  const state = { bombs: [{ isRed: true, time: 0, range: 3, exploded: false }] };
+  const calls = [];
+  const update = new Function("state", "calls", `
+    const BOMB_TIMER = 2;
+    const explodeBomb = bomb => { bomb.exploded = true; calls.push("explode"); };
+    const autoOpenBricksAfterEnemyClear = () => calls.push("cleanup");
+    const checkLevelComplete = () => calls.push("completion");
+    ${extract("updateBombs")}
+    return updateBombs;
+  `)(state, calls);
+  update(1.9);
+  assert.deepEqual(calls, []);
+  update(0.1);
+  assert.deepEqual(calls, ["explode", "cleanup", "completion"]);
+  assert.deepEqual(state.bombs, []);
 });
 
 test("方向键在原生按钮上释放仍清理游戏输入，但保留按钮默认行为", () => {

@@ -7,7 +7,14 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.12** (2026-09-24). Bullet Bill always moves at
+System display version: **v1.0.13** (2026-09-24). Bullet Bill moves at a constant
+0.225 seconds per cell, 20% slower than the previous 0.18 seconds per cell.
+Turns remain immediate with no acceleration or slowdown. Restored in-flight missiles
+retain position and fractional progress while adopting the new duration. Player and other
+enemy speeds are unchanged. Bomb script cache: v2.6. All seven update-notifier queries
+are v1.0.13. The World 3 / following-camera request remains pending, not part of this release.
+
+Previous v1.0.12 (2026-09-24). Bullet Bill always moves at
 PLAYER_MOVE_TIME (0.18 seconds per cell), including turns: no acceleration and no turn pause.
 Old saved missile movement retains its position/progress while adopting the constant duration.
 All seven pages now load src/version-update.js?v=1.0.12. It checks package.json without cache
@@ -220,7 +227,7 @@ In the ChatGPT/Codex desktop app, add the cloned repository as a local project a
 - Entry: `bomb-game.html`.
 - Each level has five distinct Hanzi targets: prioritize learning evidence, then fill from non-mastered words without repeating the same character. Odd/even sublevels alternate pinyin-to-Hanzi and Hanzi-to-pinyin questions.
 - All five questions start hidden inside separate bricks. Destroying a target brick reveals its question card; eliminating the last enemy opens remaining bricks except intact hidden Bullet Bill bricks, and reveals all pending questions. The player must bomb the retained missile brick; hidden/live missiles block completion even after five correct answers.
-- All ten levels start with their normal enemies and exactly one hidden Bullet Bill in a non-question brick; no visible missile spawns at entry and there is no random spawn chance. It continuously chases the player with no distance limit at a constant 0.18s/cell, including turns, with no acceleration or pause. Bomb contact consumes the missile and recolors the existing bomb red, retaining its range and ordinary two-second fuse/blast. Red color and timer persist in the existing save; pending red bombs prevent early cleanup/completion. Ongoing saves are not reset by releases.
+- All ten levels start with their normal enemies and exactly one hidden Bullet Bill in a non-question brick; no visible missile spawns at entry and there is no random spawn chance. It continuously chases the player with no distance limit at a constant 0.225s/cell (20% slower since v1.0.13), including turns, with no acceleration or pause. Bomb contact consumes the missile and recolors the existing bomb red, retaining its range and ordinary two-second fuse/blast. Red color and timer persist in the existing save; pending red bombs prevent early cleanup/completion. Ongoing saves are not reset by releases.
 - Bomb saves remain version 1, with targetRevealPolicy=1 distinguishing the restored hidden-question rule. New saves preserve hidden/revealed/active/completed state; old automatically visible unanswered prompts are re-hidden where intact bricks remain, without discarding active answers or completed progress. Only actual reveals increment appearance counts.
 - Save/resume, restart, next-level flow, keyboard controls, mobile layout, and isolated bomb progress are implemented.
 
@@ -251,6 +258,13 @@ Persistent browser keys:
 Git synchronizes source code and assets only. Browser `localStorage` progress, API keys, environment variables, Codex plugins, browser-extension connections, and local tool installations must be configured separately on the company computer.
 
 ## Latest verification snapshot
+
+Verified on 2026-09-24 for v1.0.13:
+
+- Syntax checks, Node tests (131/131), and whitespace checks passed.
+- Targeted real Microsoft Edge Bullet Bill acceptance passed: 0.225s/cell movement,
+  immediate constant-speed turns, brick release, red conversion and save continuation,
+  desktop/390px. No unrelated module browser suites were run.
 
 Verified on 2026-09-24 for v1.0.12:
 

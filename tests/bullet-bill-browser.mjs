@@ -60,7 +60,7 @@ try {
   const constants = await page.evaluate(() => window.__BOMB_GAME__.getConstants().bulletBill);
   assert.deepEqual(constants, {
     frame: { sx: 560, sy: 48, sw: 16, sh: 16 },
-    moveTime: 0.18,
+    moveTime: 0.225,
     hiddenCountPerLevel: 1,
   });
   const firstLevelBills = initial.enemies.filter((enemy) => enemy.type === "bullet-bill" && enemy.alive);
@@ -178,7 +178,7 @@ try {
     return state.enemies.some((enemy) => enemy.type === "bullet-bill" && enemy.move);
   });
   const afterBomb = await page.evaluate(() => window.__BOMB_GAME__.getState());
-  assert.equal(afterBomb.enemies.find(enemy => enemy.type === "bullet-bill").move.duration, 0.18, "first actual missile step matches the player's cell duration");
+  assert.equal(afterBomb.enemies.find(enemy => enemy.type === "bullet-bill").move.duration, 0.225, "first actual missile step uses the 20% reduced speed");
   const motionSamples = await page.evaluate(async () => {
     const samples = [];
     for (let frame = 0; frame < 16; frame += 1) {
@@ -190,7 +190,7 @@ try {
   });
   assert.ok(motionSamples.length >= 8, "real Edge captured enough in-flight missile frames");
   motionSamples.forEach(({ gx, gy, move, straightSteps }) => {
-    assert.equal(move.duration, 0.18, "all actual movement uses constant player speed");
+    assert.equal(move.duration, 0.225, "all actual movement uses constant reduced speed");
     const ratio = Math.min(1, move.time / move.duration);
     const expectedX = move.fromX + (move.toX - move.fromX) * ratio;
     const expectedY = move.fromY + (move.toY - move.fromY) * ratio;
@@ -218,7 +218,7 @@ try {
     }
     return samples;
   });
-  assert.ok(turningFrames.every(frame => frame.dir === "right" && frame.duration === 0.18 && frame.turnPause === 0), "turning/restoring never inserts a pause or slowdown");
+  assert.ok(turningFrames.every(frame => frame.dir === "right" && frame.duration === 0.225 && frame.turnPause === 0), "turning/restoring never inserts a pause or slowdown");
 
   const collisionFixture = structuredClone(chaseFixture);
   collisionFixture.map[5][5] = 2;

@@ -85,7 +85,8 @@
   const MUSHROOM_SPEED_FACTOR = 0.9;
   const KOOPA_MOVE_TIME = 1.0;
   const SHELL_MOVE_TIME = 0.075;
-  const BULLET_BILL_MOVE_TIME = PLAYER_MOVE_TIME;
+  // 80% of the previous speed: 0.18 / 0.8 seconds per cell.
+  const BULLET_BILL_MOVE_TIME = 0.225;
   const BULLET_BILL_HIDDEN_COUNT_PER_LEVEL = 1;
   const ENEMY_CHASE_TIME = 2.6;
   const ENEMY_SIGHT_RANGE = 8 / 3;

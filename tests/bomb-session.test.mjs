@@ -163,16 +163,17 @@ test("导弹始终对小飞星寻路，速度降低20%且玩家速度不变", ()
   map[1][2] = 0;
   assert.equal(chooseDirection(enemy), "right", "open direct route keeps heading toward the player");
 
-  assert.match(source, /const BULLET_BILL_MOVE_TIME = 0\.225;/);
+  assert.match(source, /const BULLET_BILL_MOVE_TIME = 0\.28125;/);
   assert.match(source, /const PLAYER_MOVE_TIME = 0\.18;/);
-  assert.ok(Math.abs(0.18 / 0.225 - 0.8) < 1e-12);
+  assert.ok(Math.abs(0.225 / 0.28125 - 0.8) < 1e-12);
+  assert.ok(Math.abs(0.18 / 0.28125 - 0.64) < 1e-12);
   assert.ok(!source.includes("BULLET_BILL_ACCELERATION"));
   assert.ok(!source.includes("BULLET_BILL_TURN_PAUSE"));
 });
 
 test("旧存档导弹保持当前位置和步内进度，去掉转弯等待并转换为匀速", () => {
   const normalize = new Function(`
-    const BULLET_BILL_MOVE_TIME = 0.225;
+    const BULLET_BILL_MOVE_TIME = 0.28125;
     const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
     ${extract("normalizeBulletBillMotion")}
     return normalizeBulletBillMotion;
@@ -181,15 +182,15 @@ test("旧存档导弹保持当前位置和步内进度，去掉转弯等待并�
     turnPause: 0.4, turnResetPending: true, move: { time: 0.0675, duration: 0.135 } };
   normalize(enemy);
   assert.equal(enemy.gx, 2.5);
-  assert.deepEqual(enemy.move, { time: 0.1125, duration: 0.225 });
+  assert.deepEqual(enemy.move, { time: 0.140625, duration: 0.28125 });
   assert.equal(enemy.turnPause, 0);
   assert.equal(enemy.straightSteps, 0);
   assert.equal(enemy.turnResetPending, false);
   const previousRelease = { type: "bullet-bill", gx: 2.5, gy: 3,
-    move: { time: 0.09, duration: 0.18 } };
+    move: { time: 0.1125, duration: 0.225 } };
   normalize(previousRelease);
   assert.equal(previousRelease.gx, 2.5);
-  assert.deepEqual(previousRelease.move, { time: 0.1125, duration: 0.225 });
+  assert.deepEqual(previousRelease.move, { time: 0.140625, duration: 0.28125 });
   const mushroom = { ...enemy, type: "mushroom", move: { time: 0.1, duration: 0.55 } };
   normalize(mushroom);
   assert.deepEqual(mushroom.move, { time: 0.1, duration: 0.55 });
@@ -218,7 +219,7 @@ test("导弹跨格采用匀速插值，不在每格边界重复减速", () => {
 test("导弹直行转弯都不暂停不变速，走过十格仍持续追踪", () => {
   const calls = { starts: [], exploded: 0, touched: 0 };
   const run = new Function("calls", `
-    const BULLET_BILL_MOVE_TIME = 0.225;
+    const BULLET_BILL_MOVE_TIME = 0.28125;
     const DIRS = { up:{x:0,y:-1}, down:{x:0,y:1}, left:{x:-1,y:0}, right:{x:1,y:0} };
     const bombAt = () => null;
     const convertBombTouchedByBulletBill = () => { calls.touched++; return false; };
@@ -235,16 +236,16 @@ test("导弹直行转弯都不暂停不变速，走过十格仍持续追踪", ()
   `)(calls);
   const fresh = { alive: true, gx: 2, gy: 2, dir: "down", move: null, stepsTravelled: 0, straightSteps: 0, turnPause: 0 };
   run(fresh, 0.01);
-  assert.deepEqual(calls.starts.at(-1), { direction: "down", duration: 0.225 }, "first step uses reduced speed even when a direction is preset");
-  run(fresh, 0.225);
-  assert.deepEqual(calls.starts.at(-1), { direction: "down", duration: 0.225 }, "next straight step stays at the same speed");
+  assert.deepEqual(calls.starts.at(-1), { direction: "down", duration: 0.28125 }, "first step uses reduced speed even when a direction is preset");
+  run(fresh, 0.28125);
+  assert.deepEqual(calls.starts.at(-1), { direction: "down", duration: 0.28125 }, "next straight step stays at the same speed");
   calls.starts.length = 0;
   const turning = { alive: true, gx: 2, gy: 2, dir: "right", move: null, stepsTravelled: 0, straightSteps: 4, turnPause: 0 };
   run(turning, 0.1);
   assert.equal(turning.dir, "down");
   assert.equal(turning.turnPause, 0);
   assert.equal(calls.starts.length, 1, "turning starts a new move in the same frame");
-  assert.deepEqual(calls.starts.at(-1), { direction: "down", duration: 0.225 }, "turning does not slow down");
+  assert.deepEqual(calls.starts.at(-1), { direction: "down", duration: 0.28125 }, "turning does not slow down");
 
   const expiring = { alive: true, gx: 4, gy: 2, dir: "down", move: {}, stepsTravelled: 9, straightSteps: 0, turnPause: 0 };
   run(expiring, 1);

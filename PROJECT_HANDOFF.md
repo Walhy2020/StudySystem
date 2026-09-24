@@ -7,7 +7,13 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.13** (2026-09-24). Bullet Bill moves at a constant
+System display version: **v1.0.14** (2026-09-24). Bullet Bill now takes 0.28125 seconds
+per cell: another 20% speed reduction from v1.0.13, or 64% of the original speed.
+Straight movement and turns remain constant-speed. Old saves keep their positions and
+fractional movement progress. Other actors are unchanged. Bomb script cache: v2.7;
+all seven update-notifier queries are v1.0.14. World 3 / following-camera remains pending.
+
+Previous v1.0.13 (2026-09-24). Bullet Bill moves at a constant
 0.225 seconds per cell, 20% slower than the previous 0.18 seconds per cell.
 Turns remain immediate with no acceleration or slowdown. Restored in-flight missiles
 retain position and fractional progress while adopting the new duration. Player and other
@@ -227,7 +233,7 @@ In the ChatGPT/Codex desktop app, add the cloned repository as a local project a
 - Entry: `bomb-game.html`.
 - Each level has five distinct Hanzi targets: prioritize learning evidence, then fill from non-mastered words without repeating the same character. Odd/even sublevels alternate pinyin-to-Hanzi and Hanzi-to-pinyin questions.
 - All five questions start hidden inside separate bricks. Destroying a target brick reveals its question card; eliminating the last enemy opens remaining bricks except intact hidden Bullet Bill bricks, and reveals all pending questions. The player must bomb the retained missile brick; hidden/live missiles block completion even after five correct answers.
-- All ten levels start with their normal enemies and exactly one hidden Bullet Bill in a non-question brick; no visible missile spawns at entry and there is no random spawn chance. It continuously chases the player with no distance limit at a constant 0.225s/cell (20% slower since v1.0.13), including turns, with no acceleration or pause. Bomb contact consumes the missile and recolors the existing bomb red, retaining its range and ordinary two-second fuse/blast. Red color and timer persist in the existing save; pending red bombs prevent early cleanup/completion. Ongoing saves are not reset by releases.
+- All ten levels start with their normal enemies and exactly one hidden Bullet Bill in a non-question brick; no visible missile spawns at entry and there is no random spawn chance. It continuously chases the player with no distance limit at a constant 0.28125s/cell (another 20% slower since v1.0.14), including turns, with no acceleration or pause. Bomb contact consumes the missile and recolors the existing bomb red, retaining its range and ordinary two-second fuse/blast. Red color and timer persist in the existing save; pending red bombs prevent early cleanup/completion. Ongoing saves are not reset by releases.
 - Bomb saves remain version 1, with targetRevealPolicy=1 distinguishing the restored hidden-question rule. New saves preserve hidden/revealed/active/completed state; old automatically visible unanswered prompts are re-hidden where intact bricks remain, without discarding active answers or completed progress. Only actual reveals increment appearance counts.
 - Save/resume, restart, next-level flow, keyboard controls, mobile layout, and isolated bomb progress are implemented.
 
@@ -258,6 +264,13 @@ Persistent browser keys:
 Git synchronizes source code and assets only. Browser `localStorage` progress, API keys, environment variables, Codex plugins, browser-extension connections, and local tool installations must be configured separately on the company computer.
 
 ## Latest verification snapshot
+
+Verified on 2026-09-24 for v1.0.14:
+
+- Syntax checks, Node tests (131/131), and whitespace checks passed.
+- Targeted real Microsoft Edge Bullet Bill acceptance passed at 0.28125s/cell,
+  including constant-speed turns, hidden-brick release, red conversion, persistence,
+  desktop and 390px. No unrelated module browser suites were run.
 
 Verified on 2026-09-24 for v1.0.13:
 

@@ -34,7 +34,8 @@ const calculateLayout = new Function(
 
 assert.match(html, /<canvas id="bombCanvas" width="1280" height="720"/);
 assert.ok(html.includes('bomb-game.css?v=1.1'));
-assert.ok(html.includes('bomb-game.js?v=2.7'));
+assert.ok(html.includes('bomb-game.js?v=2.8'));
+assert.ok(html.includes('src/bomb-audio.js?v=1.0'));
 assert.ok(html.includes('./data/characters.js?v=1.0'));
 assert.ok(html.includes('./data/pinyin-readings.js?v=1.0'));
 assert.ok(!html.includes("stable-url.js"));

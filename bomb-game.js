@@ -20,6 +20,8 @@
   const messageNode = document.getElementById("bombMessage");
   const startButton = document.getElementById("startBombGame");
   const restartButton = document.getElementById("restartBombGame");
+  const soundToggle = document.getElementById("bombSoundToggle");
+  const sounds = window.createBombSoundPlayer();
   const openAllBricksButton = document.getElementById("openAllBricks");
   const startLayer = document.getElementById("bombStartLayer");
   const startTitle = document.getElementById("bombStartTitle");
@@ -1254,6 +1256,7 @@
   }
 
   function startGame() {
+    sounds.unlock();
     claimBombProgress();
     const resuming = awaitingContinue;
     awaitingContinue = false;
@@ -1515,6 +1518,7 @@
       ownerInside: true,
       exploded: false,
     });
+    sounds.play("place");
     stopEnemiesMovingIntoBombs();
     updateHud();
     saveBombProgress();
@@ -2208,6 +2212,7 @@
       setMessage("先完成上一个学习任务", 1.2);
     }
     if (collectedCorrectPinyin) {
+      sounds.play("correct");
       const targetWord = wordById(collectedCorrectPinyin.targetWordId);
       state.retryWordIds = state.retryWordIds.filter((id) => id !== collectedCorrectPinyin.targetWordId);
       clearPinyinChoices(collectedCorrectPinyin.targetWordId);
@@ -2220,6 +2225,7 @@
       damagePlayerForWrongPinyin(wrongPinyinText);
     }
     if (collectedCorrectWord) {
+      sounds.play("correct");
       state.retryWordIds = state.retryWordIds.filter((id) => id !== collectedCorrectWord.id);
       state.powerUps = state.powerUps.filter((powerUp) => powerUp.type !== "wordChoice" || powerUp.targetWordId !== collectedCorrectWord.id);
       resetActiveLearningTask();
@@ -2230,6 +2236,7 @@
       damagePlayerForWrongWord(collectedWrongWord);
     }
     if (extraLives > 0 || flameBoosts > 0) {
+      sounds.play("pickup");
       state.hp += extraLives;
       state.flameRange += flameBoosts;
       const messages = [];
@@ -2280,6 +2287,7 @@
   function explodeBomb(bomb) {
     if (bomb.exploded) return;
     bomb.exploded = true;
+    sounds.play("explode");
     const visibleFireFlowerKeys = new Set(
       state.powerUps
         .filter((powerUp) => powerUp.type === "fireFlower")
@@ -3520,6 +3528,21 @@
     startGame();
   });
   restartButton.addEventListener("click", restartGame);
+  if (!sounds.supported) {
+    soundToggle.disabled = true;
+    soundToggle.textContent = "🔇";
+    soundToggle.setAttribute("aria-label", "浏览器不支持音效");
+    soundToggle.title = "浏览器不支持音效";
+  } else {
+    soundToggle.addEventListener("click", () => {
+      const enabled = !sounds.isEnabled();
+      sounds.setEnabled(enabled);
+      soundToggle.textContent = enabled ? "🔊" : "🔇";
+      soundToggle.setAttribute("aria-label", enabled ? "关闭音效" : "开启音效");
+      soundToggle.setAttribute("aria-pressed", String(enabled));
+      soundToggle.title = enabled ? "关闭音效" : "开启音效";
+    });
+  }
   openAllBricksButton?.addEventListener("click", openAllBricks);
   FLY_STAR_PARTS.forEach((part) => {
     part.image.addEventListener("load", makeFlyStarSprite);

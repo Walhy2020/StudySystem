@@ -1,5 +1,5 @@
 import { PhoneticsEngine } from "./phonetics-engine.js?v=1.2";
-import { APP_VERSION, PHASE } from "./constants.js?v=1.17";
+import { APP_VERSION, PHASE } from "./constants.js?v=1.18";
 import { PhoneticsStorage } from "./phonetics-storage.js?v=1.1";
 import { cancelPhoneticSpeech, speakPhoneticExample } from "./phonetics-tts.js?v=1.2";
 import { displaySymbol, exampleEntries } from "./phonetics-display.js?v=1.0";

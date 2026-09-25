@@ -59,7 +59,7 @@ async function restoreBombSnapshot(snapshot) {
 }
 
 await page.goto(baseUrl);
-assert.equal(await page.locator("#appVersionLabel").textContent(), "v1.0.14", "system display version updated");
+assert.equal(await page.locator("#appVersionLabel").textContent(), "v1.0.15", "system display version updated");
 assert.equal(await page.locator('.module-tabs a[href="./bomb-game.html?v=1.0"]').count(), 0, "bomb entry is not a module tab");
 assert.equal(await page.locator('.topbar .top-actions #bombGameEntry').isVisible(), true, "header shows bomb-game entry");
 assert.equal(await page.locator('.topbar #resetProgress').count(), 0, "header does not contain Hanzi reset");
@@ -193,7 +193,8 @@ const resourcePaths = [
   "index.html",
   "bomb-game.html",
   "bomb-game.css?v=1.1",
-  "bomb-game.js?v=2.7",
+  "bomb-game.js?v=2.8",
+  "src/bomb-audio.js?v=1.0",
   "data/characters.js?v=1.0",
   "data/pinyin-readings.js?v=1.0",
   "assets/sprites/enemies-bosses.png",
@@ -232,7 +233,7 @@ const desktopLayout = await page.evaluate(() => {
     hudStartsAtLeft: hud.left - topbar.left <= 20,
     zonesSeparated: hud.right <= actions.left + 0.5,
     hudVisible: hudItems.length === 5 && hudItems.every(isVisibleInside),
-    actionsVisible: actionItems.length === 3 && actionItems.every(isVisibleInside),
+    actionsVisible: actionItems.length === 4 && actionItems.every(isVisibleInside),
     overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth ||
       document.documentElement.scrollHeight > document.documentElement.clientHeight,
   };
@@ -358,7 +359,7 @@ const mobileLayout = await page.evaluate(() => {
     noTitleSlot: document.querySelector(".bomb-title") === null && hud.top - topbar.top <= 9,
     zonesSeparated: hud.bottom <= actions.top + 0.5 && actions.top - hud.bottom <= 9,
     hudVisible: hudItems.length === 5 && hudItems.every(isVisibleInside),
-    actionsVisible: actionItems.length === 3 && actionItems.every(isVisibleInside),
+    actionsVisible: actionItems.length === 4 && actionItems.every(isVisibleInside),
     overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth ||
       document.documentElement.scrollHeight > document.documentElement.clientHeight,
   };

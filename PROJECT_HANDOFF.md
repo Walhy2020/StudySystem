@@ -7,7 +7,15 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.14** (2026-09-24). Bullet Bill now takes 0.28125 seconds
+System display version: **v1.0.15** (2026-09-25). Bomb maze now plays four distinct
+short synthesized sound effects for a successful bomb placement, an explosion, a useful
+power-up pickup, and a correct Hanzi/pinyin target choice. Sound starts after the player
+begins or resumes play. The header sound button supports keyboard and touch mute; unsupported
+audio disables the button without blocking gameplay. Mute is page-local and does not change
+the bomb progress schema. Bomb script cache: v2.8; sound script: v1.0. All seven update-notifier
+queries are v1.0.15. World 3 / following-camera remains pending.
+
+Previous v1.0.14 (2026-09-24). Bullet Bill takes 0.28125 seconds
 per cell: another 20% speed reduction from v1.0.13, or 64% of the original speed.
 Straight movement and turns remain constant-speed. Old saves keep their positions and
 fractional movement progress. Other actors are unchanged. Bomb script cache: v2.7;
@@ -264,6 +272,13 @@ Persistent browser keys:
 Git synchronizes source code and assets only. Browser `localStorage` progress, API keys, environment variables, Codex plugins, browser-extension connections, and local tool installations must be configured separately on the company computer.
 
 ## Latest verification snapshot
+
+Verified on 2026-09-25 for v1.0.15:
+
+- Syntax checks, Node tests, and whitespace checks passed.
+- Targeted real Microsoft Edge sound acceptance passed at desktop and 390px: four distinct
+  gameplay triggers, mute via keyboard/touch, no overflow or resource errors.
+- No unrelated module browser suites were run.
 
 Verified on 2026-09-24 for v1.0.14:
 

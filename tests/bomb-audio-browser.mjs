@@ -16,8 +16,9 @@ await context.addInitScript(() => {
     set(factory) {
       Object.defineProperty(window, "createBombSoundPlayer", {
         configurable: true,
-        value: () => {
-          const player = factory();
+        value: (...args) => {
+          const player = factory(...args);
+          if (args.length === 0) window.__testSoundPlayer = player;
           return {
             ...player,
             play(effect) {
@@ -43,14 +44,14 @@ async function open() {
   await page.waitForFunction(() => Boolean(window.__BOMB_GAME__));
 }
 
-async function restore(snapshot) {
+async function restore(snapshot, resume = true) {
   await page.goto(baseUrl + "bomb-game.css?audio-state-bridge=1");
   await page.evaluate(({ key, value }) => localStorage.setItem(key, JSON.stringify(value)), {
     key: progressKey,
     value: snapshot,
   });
   await open();
-  await page.locator("#overlayStartBombGame").click();
+  if (resume) await page.locator("#overlayStartBombGame").click();
 }
 
 async function events() {
@@ -62,8 +63,61 @@ try {
   await page.evaluate((key) => localStorage.removeItem(key), progressKey);
   await open();
   const initial = await page.evaluate(() => window.__BOMB_GAME__.getState());
+  assert.equal(await page.evaluate(() => window.__testSoundPlayer.getMusicWorld()), null,
+    "page load does not start background music");
+  const loudness = await page.evaluate(async () => {
+    const measures = {};
+    for (const effect of ["place", "explode", "pickup", "correct"]) {
+      let offline;
+      class RenderContext extends OfflineAudioContext {
+        constructor() { super(1, 44100, 44100); offline = this; }
+        get state() { return "running"; }
+      }
+      const player = window.createBombSoundPlayer(RenderContext);
+      player.unlock();
+      player.play(effect);
+      const samples = (await offline.startRendering()).getChannelData(0);
+      let peakRms = 0;
+      for (let start = 0; start < samples.length; start += 2205) {
+        let squareSum = 0;
+        for (let index = start; index < Math.min(start + 2205, samples.length); index += 1) {
+          squareSum += samples[index] ** 2;
+        }
+        peakRms = Math.max(peakRms, Math.sqrt(squareSum / 2205));
+      }
+      measures[effect] = peakRms;
+    }
+    return measures;
+  });
+  console.log("effectPeakRms", JSON.stringify(loudness));
+  assert.ok(Math.max(...Object.values(loudness)) / Math.min(...Object.values(loudness)) <= 1.3,
+    "all four sound effects have similar short-window RMS loudness");
+  await page.evaluate(() => { window.__soundEvents.length = 0; });
+  const musicLoudness = await page.evaluate(async () => {
+    const measures = [];
+    for (const world of [1, 2]) {
+      let offline;
+      class RenderContext extends OfflineAudioContext {
+        constructor() { super(1, 44100, 44100); offline = this; }
+        get state() { return "running"; }
+      }
+      const player = window.createBombSoundPlayer(RenderContext);
+      player.setMusic(world);
+      const samples = (await offline.startRendering()).getChannelData(0);
+      player.setMusic(null);
+      let squareSum = 0;
+      for (const sample of samples) squareSum += sample ** 2;
+      measures.push(Math.sqrt(squareSum / samples.length));
+    }
+    return measures;
+  });
+  console.log("musicRms", JSON.stringify(musicLoudness));
+  assert.ok(musicLoudness.every((value) => value > 0.001 && value < Math.min(...Object.values(loudness)) / 3),
+    "both soundtracks are audible but quieter than gameplay cues");
+  await page.evaluate(() => { window.__soundEvents.length = 0; });
   assert.deepEqual(await events(), [], "page load is silent");
   await page.locator("#overlayStartBombGame").click();
+  await page.waitForFunction(() => window.__testSoundPlayer.getMusicWorld() === 1);
   assert.deepEqual(await events(), [], "starting a game is silent");
   await page.locator("#bombCanvas").focus();
   await page.keyboard.press("Space");
@@ -88,6 +142,7 @@ try {
     else { await toggle.focus(); await page.keyboard.press("Enter"); }
     assert.equal(await toggle.getAttribute("aria-pressed"), "false");
     assert.equal(await toggle.getAttribute("aria-label"), "开启音效");
+    assert.equal(await page.evaluate(() => window.__testSoundPlayer.getMusicWorld()), null);
     await page.locator("#overlayStartBombGame").click();
     await page.locator("#bombCanvas").focus();
     await page.keyboard.press("Space");
@@ -118,8 +173,27 @@ try {
   assert.equal((await events()).filter((event) => event.effect === "correct").length, 1);
   assert.equal((await events()).at(-1).scheduled, true);
   assert.equal((await page.evaluate(() => window.__BOMB_GAME__.getState())).moonWordIds.includes(target.id), true);
+
+  const worldTwo = structuredClone(initial);
+  worldTwo.status = "playing";
+  worldTwo.startLayerHidden = true;
+  worldTwo.world = 2;
+  worldTwo.player.invulnerable = 20;
+  worldTwo.bombs = [];
+  await restore(worldTwo, false);
+  assert.equal(await page.evaluate(() => window.__testSoundPlayer.getMusicWorld()), null,
+    "restored second-world progress waits for Continue before music");
+  await page.locator("#overlayStartBombGame").click();
+  await page.waitForFunction(() => window.__testSoundPlayer.getMusicWorld() === 2);
+  await page.reload();
+  await page.waitForFunction(() => window.__BOMB_GAME__?.isAwaitingContinue());
+  assert.equal(await page.evaluate(() => window.__testSoundPlayer.getMusicWorld()), null,
+    "refresh pauses the second-world soundtrack");
+  await page.locator("#overlayStartBombGame").click();
+  await page.waitForFunction(() => window.__testSoundPlayer.getMusicWorld() === 2);
   assert.deepEqual(errors, [], "no script or resource errors");
-  console.log(JSON.stringify({ effects: ["place", "explode", "pickup", "correct"], mute: true, desktopAnd390: true, errors: 0 }));
+  console.log(JSON.stringify({ effects: ["place", "explode", "pickup", "correct"],
+    musicWorlds: [1, 2], mute: true, resume: true, desktopAnd390: true, errors: 0 }));
 } finally {
   await context.close();
   await browser.close();

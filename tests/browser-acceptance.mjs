@@ -165,9 +165,9 @@ async function pageActionGeometry(label) {
 await resetTestKey();
 assert.equal(await page.locator("#bootError").isHidden(), true);
 assert.equal(await page.locator("#appVersionLabel").isVisible(), true);
-assert.equal(await page.locator("#appVersionLabel").textContent(), "v1.0.15");
+assert.equal(await page.locator("#appVersionLabel").textContent(), "v1.0.16");
 const packageVersion = await page.evaluate(() => fetch("./package.json").then((response) => response.json()).then((metadata) => metadata.version));
-assert.equal(packageVersion, "1.0.15");
+assert.equal(packageVersion, "1.0.16");
 assert.equal(await page.locator("#appVersionLabel").textContent(), `v${packageVersion}`);
 assert.equal(await page.locator(".hp-counter, #hpIcons, #repairHint").count(), 0);
 assert.equal(await page.locator(".star-counter").isVisible(), true);
@@ -420,7 +420,7 @@ await page.screenshot({ path: "tests/browser-desktop.png", fullPage: true });
 await page.setViewportSize({ width: 390, height: 844 });
 await page.reload();
 assert.equal(await page.locator("#appVersionLabel").isVisible(), true);
-assert.equal(await page.locator("#appVersionLabel").textContent(), "v1.0.15");
+assert.equal(await page.locator("#appVersionLabel").textContent(), "v1.0.16");
 assert.equal(await page.locator(".hp-counter, #hpIcons, #repairHint").count(), 0);
 assert.equal(await page.locator(".star-counter").isVisible(), true);
 assert.equal(await page.locator("#starCount").isVisible(), true);
@@ -486,7 +486,7 @@ console.log(JSON.stringify({
   ttsStateUnchanged: true,
   idleAnswerControlsHidden: true,
   taskChoiceVisibility: true,
-  displayedVersion: "1.0.15",
+  displayedVersion: "1.0.16",
   desktopIdleCard: `${desktopIdleCard.buttonWidth}x${desktopIdleCard.buttonHeight} @ ${desktopIdleCard.fontSize}px`,
   desktopCharacterPx: desktopCharacterCard.fontSize,
   desktopCompletePx: desktopCompleteCard.fontSize,

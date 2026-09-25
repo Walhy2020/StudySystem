@@ -59,7 +59,7 @@ async function restoreBombSnapshot(snapshot) {
 }
 
 await page.goto(baseUrl);
-assert.equal(await page.locator("#appVersionLabel").textContent(), "v1.0.15", "system display version updated");
+assert.equal(await page.locator("#appVersionLabel").textContent(), "v1.0.16", "system display version updated");
 assert.equal(await page.locator('.module-tabs a[href="./bomb-game.html?v=1.0"]').count(), 0, "bomb entry is not a module tab");
 assert.equal(await page.locator('.topbar .top-actions #bombGameEntry').isVisible(), true, "header shows bomb-game entry");
 assert.equal(await page.locator('.topbar #resetProgress').count(), 0, "header does not contain Hanzi reset");
@@ -193,8 +193,8 @@ const resourcePaths = [
   "index.html",
   "bomb-game.html",
   "bomb-game.css?v=1.1",
-  "bomb-game.js?v=2.8",
-  "src/bomb-audio.js?v=1.0",
+  "bomb-game.js?v=2.9",
+  "src/bomb-audio.js?v=1.1",
   "data/characters.js?v=1.0",
   "data/pinyin-readings.js?v=1.0",
   "assets/sprites/enemies-bosses.png",
@@ -246,7 +246,7 @@ assert.equal(desktopLayout.zonesSeparated, true, "desktop HUD and actions do not
 assert.equal(desktopLayout.hudVisible, true, "all desktop HUD items remain contained and visible");
 assert.equal(desktopLayout.actionsVisible, true, "all desktop actions remain contained and visible");
 assert.equal(desktopLayout.overflow, false);
-await page.screenshot({ path: "tests/bomb-desktop.png", fullPage: true });
+await page.screenshot({ path: "tests/bomb-ready-desktop.png", fullPage: true });
 
 await page.locator("#startBombGame").focus();
 await page.keyboard.press("Space");
@@ -371,7 +371,7 @@ assert.equal(mobileLayout.zonesSeparated, true, "390px HUD and actions are tight
 assert.equal(mobileLayout.hudVisible, true, "all 390px HUD items remain contained and visible");
 assert.equal(mobileLayout.actionsVisible, true);
 assert.equal(mobileLayout.overflow, false);
-await page.screenshot({ path: "tests/bomb-390.png", fullPage: true });
+await page.screenshot({ path: "tests/bomb-ready-390.png", fullPage: true });
 
 await page.locator('a[href="./index.html"]').click();
 await page.waitForURL(/\/index\.html$/);
@@ -451,7 +451,7 @@ assert.equal(uniqueNewGame.runIds.length, 50, "Bomb run pool remains capped at 5
 assert.equal(new Set(uniqueNewGame.runIds).size, 50, "Bomb run pool contains unique IDs");
 assert.equal(new Set(uniqueNewGame.runChars).size, 50, "Bomb run pool contains unique characters");
 assert.equal(uniqueNewGame.runIds.includes("0004"), false, "mastered Hanzi is never used as fallback");
-await page.screenshot({ path: "tests/bomb-desktop.png", fullPage: true });
+await page.screenshot({ path: "tests/bomb-active-desktop.png", fullPage: true });
 
 await page.locator("#restartBombGame").focus();
 await page.keyboard.press("Enter");
@@ -478,7 +478,7 @@ assert.equal(new Set(uniqueMobile.summary.hiddenTargetIds).size, 5, "390px targe
 assert.equal(new Set(uniqueMobile.visibleChars).size, 5, "390px target characters are unique");
 assert.equal(uniqueMobile.summary.renderedLearningCardCount, 0);
 assert.equal(uniqueMobile.overflow, false);
-await page.screenshot({ path: "tests/bomb-390.png", fullPage: true });
+await page.screenshot({ path: "tests/bomb-active-390.png", fullPage: true });
 
 // A version-1 save polluted by the previous repeated/over-five strategy is repaired on restore.
 await page.setViewportSize({ width: 1440, height: 1000 });

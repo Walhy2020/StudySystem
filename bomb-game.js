@@ -1274,6 +1274,7 @@
     clearInputState();
     state.status = "playing";
     startLayer.classList.add("hidden");
+    sounds.setMusic(state.world);
     setMessage(resuming ? "继续" : "开始");
     canvas.focus();
     updateHud();
@@ -3301,6 +3302,8 @@
     const dt = Math.min(0.033, (now - lastTime) / 1000 || 0);
     lastTime = now;
     animationClock += dt;
+    sounds.setMusic(state.status === "playing" && !awaitingContinue && ownsProgress &&
+      !document.hidden && document.hasFocus() ? state.world : null);
     if (!document.hidden && ownsProgress) update(dt);
     render();
     requestAnimationFrame(loop);
@@ -3488,7 +3491,7 @@
     }
   });
 
-  window.addEventListener("blur", () => { clearInputState(); saveBombProgress(); });
+  window.addEventListener("blur", () => { sounds.setMusic(null); clearInputState(); saveBombProgress(); });
   window.addEventListener("storage", (event) => {
     if (event.key === BOMB_PROGRESS_KEY || event.key === null) syncBombProgress();
   });
@@ -3509,14 +3512,15 @@
   });
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) {
+      sounds.setMusic(null);
       clearInputState();
       saveBombProgress();
     } else {
       syncBombProgress();
     }
   });
-  window.addEventListener("pagehide", saveBombProgress);
-  window.addEventListener("studysystem:update-prompt", () => { clearInputState(); saveBombProgress(); });
+  window.addEventListener("pagehide", () => { sounds.setMusic(null); saveBombProgress(); });
+  window.addEventListener("studysystem:update-prompt", () => { sounds.setMusic(null); clearInputState(); saveBombProgress(); });
 
   startButton.addEventListener("click", startGame);
   overlayStartButton.addEventListener("click", () => {

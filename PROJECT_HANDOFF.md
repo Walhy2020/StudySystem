@@ -7,7 +7,15 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.15** (2026-09-25). Bomb maze now plays four distinct
+System display version: **v1.0.16** (2026-09-25). Bomb explosions now have a clearer attack,
+and all four gameplay cues are calibrated to similar loudness. The two existing worlds each
+have their own original, cheerful loop: music changes on entering the next world and stops
+when paused, unfocused, muted, finished, or superseded by another game window. It resumes
+only after the player continues. Background music is quieter than gameplay cues. No external
+sound asset or new storage key is used. Bomb script cache: v2.9; audio script: v1.1; all seven
+update-notifier queries are v1.0.16. World 3 / following-camera remains pending.
+
+Previous v1.0.15 (2026-09-25). Bomb maze plays four distinct
 short synthesized sound effects for a successful bomb placement, an explosion, a useful
 power-up pickup, and a correct Hanzi/pinyin target choice. Sound starts after the player
 begins or resumes play. The header sound button supports keyboard and touch mute; unsupported
@@ -272,6 +280,14 @@ Persistent browser keys:
 Git synchronizes source code and assets only. Browser `localStorage` progress, API keys, environment variables, Codex plugins, browser-extension connections, and local tool installations must be configured separately on the company computer.
 
 ## Latest verification snapshot
+
+Verified on 2026-09-25 for v1.0.16:
+
+- Syntax checks, Node tests, and whitespace checks passed.
+- Real Microsoft Edge offline rendering put all four cue peak 50ms RMS levels near 0.018
+  (within 4% in the acceptance run), while both world themes had whole-second RMS near 0.0016.
+- Targeted Edge gameplay checks covered both world themes, refresh/Continue, four cues,
+  mute, desktop and 390px, with no resource errors. No unrelated module browser suite was run.
 
 Verified on 2026-09-25 for v1.0.15:
 

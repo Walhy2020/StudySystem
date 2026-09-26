@@ -79,7 +79,7 @@
   const BOARD_H = ROWS * TILE;
   let BOARD_X = Math.floor((canvas.width - BOARD_W) / 2);
   const BOARD_Y = 108;
-  const BOMB_TIMER = 2;
+  const BOMB_TIMER = 1;
   const FLAME_TIME = 0.5;
   const PLAYER_MOVE_TIME = 0.18;
   const ENEMY_MOVE_TIME = 0.55;

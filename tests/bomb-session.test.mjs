@@ -278,21 +278,28 @@ test("导弹接触黑弹才转红并消失，范围和玩家离开权限不变�
   assert.equal(convert(missile), false);
 });
 
-test("红色炸弹使用普通两秒计时，爆炸后才允许清场", () => {
+test("普通和红色炸弹均等待一秒，红弹爆炸后才允许清场", () => {
   const state = { bombs: [{ isRed: true, time: 0, range: 3, exploded: false }] };
   const calls = [];
   const update = new Function("state", "calls", `
-    const BOMB_TIMER = 2;
+    const BOMB_TIMER = 1;
     const explodeBomb = bomb => { bomb.exploded = true; calls.push("explode"); };
     const autoOpenBricksAfterEnemyClear = () => calls.push("cleanup");
     const checkLevelComplete = () => calls.push("completion");
     ${extract("updateBombs")}
     return updateBombs;
   `)(state, calls);
-  update(1.9);
+  update(0.9);
   assert.deepEqual(calls, []);
   update(0.1);
   assert.deepEqual(calls, ["explode", "cleanup", "completion"]);
+  assert.deepEqual(state.bombs, []);
+  state.bombs.push({ isRed: false, time: 0, range: 3, exploded: false });
+  calls.length = 0;
+  update(0.9);
+  assert.deepEqual(calls, [], "ordinary bomb remains armed until one second");
+  update(0.1);
+  assert.deepEqual(calls, ["explode"], "ordinary bomb uses the same one-second fuse");
   assert.deepEqual(state.bombs, []);
 });
 

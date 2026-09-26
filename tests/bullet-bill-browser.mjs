@@ -95,7 +95,7 @@ try {
     completed.hiddenWordCrates = [];
     completed.powerUps = [];
     completed.enemies.forEach(enemy => { enemy.alive = false; enemy.move = null; });
-    completed.bombs = [{ gx: 1, gy: 1, time: 1.8, range: 1, ownerInside: false, exploded: false }];
+    completed.bombs = [{ gx: 1, gy: 1, time: 0.8, range: 1, ownerInside: false, exploded: false }];
     completed.player.invulnerable = 20;
     await restoreSnapshot(completed);
     await page.waitForFunction(({ world, subLevel }) => {
@@ -242,7 +242,7 @@ try {
   const redBlast = await page.evaluate(() => window.__BOMB_GAME__.getState().explosions[0].cells);
   const blackFixture = structuredClone(collisionFixture);
   blackFixture.enemies = [];
-  blackFixture.bombs[0].time = 1.8;
+  blackFixture.bombs[0].time = 0.8;
   await restoreSnapshot(blackFixture);
   await page.waitForFunction(() => window.__BOMB_GAME__.getState().explosions.length > 0);
   assert.deepEqual(await page.evaluate(() => window.__BOMB_GAME__.getState().explosions[0].cells), redBlast, "red/black bomb blast cells and brick blocking are identical");

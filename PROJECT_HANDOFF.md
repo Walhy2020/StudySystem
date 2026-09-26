@@ -7,7 +7,14 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.17** (2026-09-26). Newly placed black bombs and missile-converted
+System display version: **v1.0.18** (2026-09-26). Bombs again use their original two-second fuse.
+A Bullet Bill revealed from its brick stays visible but inactive for one second, then begins
+chasing at its unchanged constant speed. During that wait it cannot cause contact damage;
+the remaining wait survives save/Continue, while missiles already moving in older saves do
+not pause again. Bomb script cache: v2.11; all seven update-notifier queries are v1.0.18.
+World 3 / following-camera remains pending.
+
+Previous v1.0.17 (2026-09-26). Newly placed black bombs and missile-converted
 red bombs now wait one second before exploding. Missile conversion restarts that fuse; explosions
 and shells still chain-detonate other bombs immediately. Existing in-progress saves retain their
 stored fuse progress, using the new one-second threshold on Continue. Bomb script cache: v2.10;
@@ -255,7 +262,7 @@ In the ChatGPT/Codex desktop app, add the cloned repository as a local project a
 - Entry: `bomb-game.html`.
 - Each level has five distinct Hanzi targets: prioritize learning evidence, then fill from non-mastered words without repeating the same character. Odd/even sublevels alternate pinyin-to-Hanzi and Hanzi-to-pinyin questions.
 - All five questions start hidden inside separate bricks. Destroying a target brick reveals its question card; eliminating the last enemy opens remaining bricks except intact hidden Bullet Bill bricks, and reveals all pending questions. The player must bomb the retained missile brick; hidden/live missiles block completion even after five correct answers.
-- All ten levels start with their normal enemies and exactly one hidden Bullet Bill in a non-question brick; no visible missile spawns at entry and there is no random spawn chance. It continuously chases the player with no distance limit at a constant 0.28125s/cell (another 20% slower since v1.0.14), including turns, with no acceleration or pause. Bomb contact consumes the missile and recolors the existing bomb red, retaining its range and ordinary one-second fuse/blast. Red color and timer persist in the existing save; pending red bombs prevent early cleanup/completion. Ongoing saves are not reset by releases.
+- All ten levels start with their normal enemies and exactly one hidden Bullet Bill in a non-question brick; no visible missile spawns at entry and there is no random spawn chance. After its brick breaks, the visible missile waits one second before moving or causing contact damage. It then chases the player with no distance limit at a constant 0.28125s/cell (another 20% slower since v1.0.14), including turns, with no acceleration or turn pause. Bomb contact consumes the missile and recolors the existing bomb red, retaining its range and ordinary two-second fuse/blast. Red color and timer persist in the existing save; pending red bombs prevent early cleanup/completion. Ongoing saves are not reset by releases.
 - Bomb saves remain version 1, with targetRevealPolicy=1 distinguishing the restored hidden-question rule. New saves preserve hidden/revealed/active/completed state; old automatically visible unanswered prompts are re-hidden where intact bricks remain, without discarding active answers or completed progress. Only actual reveals increment appearance counts.
 - Save/resume, restart, next-level flow, keyboard controls, mobile layout, and isolated bomb progress are implemented.
 
@@ -286,6 +293,14 @@ Persistent browser keys:
 Git synchronizes source code and assets only. Browser `localStorage` progress, API keys, environment variables, Codex plugins, browser-extension connections, and local tool installations must be configured separately on the company computer.
 
 ## Latest verification snapshot
+
+Verified on 2026-09-26 for v1.0.18:
+
+- Syntax checks, 133 Node tests, and whitespace checks passed.
+- Focused real Microsoft Edge bomb, missile, and session acceptance passed at desktop
+  and 390px. A brick-revealed missile waits before moving; red/black bombs again use
+  the original two-second fuse. Continue freezes active countdowns until clicked.
+- No unrelated module browser suite was run.
 
 Verified on 2026-09-26 for v1.0.17:
 

@@ -118,7 +118,7 @@ try {
     pending.startLayerHidden = true;
     pending.player = { gx: 1, gy: 1, move: null, invulnerable: 0 };
     pending.enemies = [stationaryEnemy(pending.enemies[0], 1, 1)];
-    pending.bombs = [{ gx: 1, gy: 1, time: 0.8, range: 1, exploded: false }];
+    pending.bombs = [{ gx: 1, gy: 1, time: 1.8, range: 1, exploded: false }];
     await restore(first, pending);
     const frozen = await state(first);
     await first.locator("#bombCanvas").focus();

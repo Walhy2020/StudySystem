@@ -34,7 +34,7 @@ const calculateLayout = new Function(
 
 assert.match(html, /<canvas id="bombCanvas" width="1280" height="720"/);
 assert.ok(html.includes('bomb-game.css?v=1.1'));
-assert.ok(html.includes('bomb-game.js?v=2.10'));
+assert.ok(html.includes('bomb-game.js?v=2.11'));
 assert.ok(html.includes('src/bomb-audio.js?v=1.1'));
 assert.ok(html.includes('./data/characters.js?v=1.0'));
 assert.ok(html.includes('./data/pinyin-readings.js?v=1.0'));
@@ -58,7 +58,8 @@ assert.ok(js.includes('const WORLDS_PER_RUN = 2;'));
 assert.ok(js.includes('const LEVELS_PER_WORLD = 5;'));
 assert.ok(js.includes('const ROWS = 11;'));
 assert.ok(js.includes('const COLS_PER_LEVEL = 2;'));
-assert.ok(js.includes('const BOMB_TIMER = 1;'));
+assert.ok(js.includes('const BOMB_TIMER = 2;'));
+assert.ok(js.includes('const BULLET_BILL_LAUNCH_DELAY = 1;'));
 assert.ok(js.includes('const FLAME_TIME = 0.5;'));
 assert.ok(js.includes('const MAX_HP = 3;'));
 assert.ok(js.includes('bombLimit: 3'));

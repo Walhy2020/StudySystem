@@ -61,6 +61,7 @@ try {
   assert.deepEqual(constants, {
     frame: { sx: 560, sy: 48, sw: 16, sh: 16 },
     moveTime: 0.28125,
+    launchDelay: 1,
     hiddenCountPerLevel: 1,
   });
   const firstLevelBills = initial.enemies.filter((enemy) => enemy.type === "bullet-bill" && enemy.alive);
@@ -95,7 +96,7 @@ try {
     completed.hiddenWordCrates = [];
     completed.powerUps = [];
     completed.enemies.forEach(enemy => { enemy.alive = false; enemy.move = null; });
-    completed.bombs = [{ gx: 1, gy: 1, time: 0.8, range: 1, ownerInside: false, exploded: false }];
+    completed.bombs = [{ gx: 1, gy: 1, time: 1.8, range: 1, ownerInside: false, exploded: false }];
     completed.player.invulnerable = 20;
     await restoreSnapshot(completed);
     await page.waitForFunction(({ world, subLevel }) => {
@@ -139,6 +140,9 @@ try {
   const spawned = await page.evaluate(() => window.__BOMB_GAME__.getState());
   assert.equal(spawned.hiddenPowerUps.some(([, type]) => type === "bulletBill"), false, "brick reveal consumes the hidden Bullet Bill");
   assert.equal(spawned.enemies.filter((enemy) => enemy.type === "bullet-bill").length, 1, "destroying the brick spawns exactly one Bullet Bill");
+  const newlySpawnedMissile = spawned.enemies.find((enemy) => enemy.type === "bullet-bill");
+  assert.ok(newlySpawnedMissile.launchDelay > 0 && newlySpawnedMissile.launchDelay <= 1, "revealed missile gets a one-second launch wait");
+  assert.equal(newlySpawnedMissile.move, null, "revealed missile does not move immediately");
 
   const chaseFixture = structuredClone(spawned);
   const rows = chaseFixture.map.length;
@@ -159,6 +163,7 @@ try {
     straightSteps: 0,
     turnPause: 0,
     turnResetPending: false,
+    launchDelay: 1,
     chaseTimer: 0,
     stunTimer: 0,
     hitCooldown: 0,
@@ -173,6 +178,11 @@ try {
   chaseFixture.hiddenPowerUps = [];
   chaseFixture.hiddenWordCrates = [];
   await restoreSnapshot(chaseFixture);
+  const waitingMissile = await page.evaluate(() => window.__BOMB_GAME__.getState().enemies[0]);
+  assert.ok(waitingMissile.launchDelay > 0 && waitingMissile.move === null, "restored new missile is visible but stationary");
+  await page.waitForTimeout(350);
+  const stillWaiting = await page.evaluate(() => window.__BOMB_GAME__.getState().enemies[0]);
+  assert.ok(stillWaiting.launchDelay > 0 && stillWaiting.move === null && stillWaiting.gx === 1, "missile waits before starting its chase");
   await page.waitForFunction(() => {
     const state = window.__BOMB_GAME__.getState();
     return state.enemies.some((enemy) => enemy.type === "bullet-bill" && enemy.move);
@@ -205,6 +215,7 @@ try {
   assert.equal(persistentChaser.explosions.length, 0, "no distance-triggered explosion");
 
   const turnFixture = structuredClone(chaseFixture);
+  delete turnFixture.enemies[0].launchDelay;
   turnFixture.enemies[0].dir = "up";
   turnFixture.enemies[0].turnPause = 0.45;
   turnFixture.enemies[0].turnResetPending = true;
@@ -221,6 +232,7 @@ try {
   assert.ok(turningFrames.every(frame => frame.dir === "right" && frame.duration === 0.28125 && frame.turnPause === 0), "turning/restoring never inserts a pause or slowdown");
 
   const collisionFixture = structuredClone(chaseFixture);
+  delete collisionFixture.enemies[0].launchDelay;
   collisionFixture.map[5][5] = 2;
   collisionFixture.bombs = [{ gx: 3, gy: 5, time: 0, range: 3, ownerInside: false, exploded: false }];
   collisionFixture.enemyClearOpenedBricks = false;
@@ -242,7 +254,7 @@ try {
   const redBlast = await page.evaluate(() => window.__BOMB_GAME__.getState().explosions[0].cells);
   const blackFixture = structuredClone(collisionFixture);
   blackFixture.enemies = [];
-  blackFixture.bombs[0].time = 0.8;
+  blackFixture.bombs[0].time = 1.8;
   await restoreSnapshot(blackFixture);
   await page.waitForFunction(() => window.__BOMB_GAME__.getState().explosions.length > 0);
   assert.deepEqual(await page.evaluate(() => window.__BOMB_GAME__.getState().explosions[0].cells), redBlast, "red/black bomb blast cells and brick blocking are identical");

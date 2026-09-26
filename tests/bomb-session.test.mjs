@@ -174,6 +174,7 @@ test("导弹始终对小飞星寻路，速度降低20%且玩家速度不变", ()
 test("旧存档导弹保持当前位置和步内进度，去掉转弯等待并转换为匀速", () => {
   const normalize = new Function(`
     const BULLET_BILL_MOVE_TIME = 0.28125;
+    const BULLET_BILL_LAUNCH_DELAY = 1;
     const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
     ${extract("normalizeBulletBillMotion")}
     return normalizeBulletBillMotion;
@@ -183,6 +184,7 @@ test("旧存档导弹保持当前位置和步内进度，去掉转弯等待并�
   normalize(enemy);
   assert.equal(enemy.gx, 2.5);
   assert.deepEqual(enemy.move, { time: 0.140625, duration: 0.28125 });
+  assert.equal(enemy.launchDelay, 0, "an in-flight missile never pauses on restore");
   assert.equal(enemy.turnPause, 0);
   assert.equal(enemy.straightSteps, 0);
   assert.equal(enemy.turnResetPending, false);
@@ -191,6 +193,10 @@ test("旧存档导弹保持当前位置和步内进度，去掉转弯等待并�
   normalize(previousRelease);
   assert.equal(previousRelease.gx, 2.5);
   assert.deepEqual(previousRelease.move, { time: 0.140625, duration: 0.28125 });
+  assert.equal(previousRelease.launchDelay, 0, "old saves without launch delay keep moving");
+  const waiting = { type: "bullet-bill", move: null, launchDelay: 0.6 };
+  normalize(waiting);
+  assert.equal(waiting.launchDelay, 0.6, "remaining launch wait survives Continue");
   const mushroom = { ...enemy, type: "mushroom", move: { time: 0.1, duration: 0.55 } };
   normalize(mushroom);
   assert.deepEqual(mushroom.move, { time: 0.1, duration: 0.55 });
@@ -234,6 +240,17 @@ test("导弹直行转弯都不暂停不变速，走过十格仍持续追踪", ()
     ${extract("updateBulletBill")}
     return updateBulletBill;
   `)(calls);
+  const delayed = { alive: true, gx: 2, gy: 2, dir: "down", move: null, stepsTravelled: 0, launchDelay: 1 };
+  run(delayed, 0.4);
+  assert.equal(delayed.launchDelay, 0.6);
+  assert.equal(calls.starts.length, 0, "new missile remains still during the first 0.4 seconds");
+  assert.equal(calls.touched, 0, "new missile is not active during the launch wait");
+  run(delayed, 0.6);
+  assert.equal(delayed.launchDelay, 0);
+  assert.equal(calls.starts.length, 0, "missile does not start before one full second");
+  run(delayed, 0.01);
+  assert.deepEqual(calls.starts.at(-1), { direction: "down", duration: 0.28125 }, "missile starts at normal speed after the wait");
+  calls.starts.length = 0;
   const fresh = { alive: true, gx: 2, gy: 2, dir: "down", move: null, stepsTravelled: 0, straightSteps: 0, turnPause: 0 };
   run(fresh, 0.01);
   assert.deepEqual(calls.starts.at(-1), { direction: "down", duration: 0.28125 }, "first step uses reduced speed even when a direction is preset");
@@ -278,28 +295,46 @@ test("导弹接触黑弹才转红并消失，范围和玩家离开权限不变�
   assert.equal(convert(missile), false);
 });
 
-test("普通和红色炸弹均等待一秒，红弹爆炸后才允许清场", () => {
+test("导弹启动等待期间不会造成接触伤害", () => {
+  const state = { player: { gx: 2, gy: 2 }, enemies: [
+    { alive: true, type: "bullet-bill", gx: 2, gy: 2, stunTimer: 0, launchDelay: 0.5 },
+  ], shells: [] };
+  let hits = 0;
+  const check = new Function("state", "damagePlayer", `
+    const isCellBurning = () => false;
+    const damageEnemy = () => {};
+    ${extract("checkDamage")}
+    return checkDamage;
+  `)(state, () => { hits += 1; });
+  check();
+  assert.equal(hits, 0);
+  state.enemies[0].launchDelay = 0;
+  check();
+  assert.equal(hits, 1, "contact becomes dangerous only after activation");
+});
+
+test("普通和红色炸弹恢复两秒引线，红弹爆炸后才允许清场", () => {
   const state = { bombs: [{ isRed: true, time: 0, range: 3, exploded: false }] };
   const calls = [];
   const update = new Function("state", "calls", `
-    const BOMB_TIMER = 1;
+    const BOMB_TIMER = 2;
     const explodeBomb = bomb => { bomb.exploded = true; calls.push("explode"); };
     const autoOpenBricksAfterEnemyClear = () => calls.push("cleanup");
     const checkLevelComplete = () => calls.push("completion");
     ${extract("updateBombs")}
     return updateBombs;
   `)(state, calls);
-  update(0.9);
+  update(1.9);
   assert.deepEqual(calls, []);
   update(0.1);
   assert.deepEqual(calls, ["explode", "cleanup", "completion"]);
   assert.deepEqual(state.bombs, []);
   state.bombs.push({ isRed: false, time: 0, range: 3, exploded: false });
   calls.length = 0;
-  update(0.9);
-  assert.deepEqual(calls, [], "ordinary bomb remains armed until one second");
+  update(1.9);
+  assert.deepEqual(calls, [], "ordinary bomb remains armed until two seconds");
   update(0.1);
-  assert.deepEqual(calls, ["explode"], "ordinary bomb uses the same one-second fuse");
+  assert.deepEqual(calls, ["explode"], "ordinary bomb uses the same two-second fuse");
   assert.deepEqual(state.bombs, []);
 });
 

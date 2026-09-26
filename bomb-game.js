@@ -79,7 +79,7 @@
   const BOARD_H = ROWS * TILE;
   let BOARD_X = Math.floor((canvas.width - BOARD_W) / 2);
   const BOARD_Y = 108;
-  const BOMB_TIMER = 1;
+  const BOMB_TIMER = 2;
   const FLAME_TIME = 0.5;
   const PLAYER_MOVE_TIME = 0.18;
   const ENEMY_MOVE_TIME = 0.55;
@@ -89,6 +89,7 @@
   const SHELL_MOVE_TIME = 0.075;
   // 80% of the previous speed: 0.225 / 0.8 seconds per cell.
   const BULLET_BILL_MOVE_TIME = 0.28125;
+  const BULLET_BILL_LAUNCH_DELAY = 1;
   const BULLET_BILL_HIDDEN_COUNT_PER_LEVEL = 1;
   const ENEMY_CHASE_TIME = 2.6;
   const ENEMY_SIGHT_RANGE = 8 / 3;
@@ -1002,6 +1003,7 @@
       straightSteps: 0,
       turnPause: 0,
       turnResetPending: false,
+      launchDelay: BULLET_BILL_LAUNCH_DELAY,
       chaseTimer: 0,
       stunTimer: 0,
       hitCooldown: 0,
@@ -1678,6 +1680,10 @@
     enemy.straightSteps = 0;
     enemy.turnPause = 0;
     enemy.turnResetPending = false;
+    const savedLaunchDelay = Number(enemy.launchDelay);
+    enemy.launchDelay = enemy.move || !Number.isFinite(savedLaunchDelay)
+      ? 0
+      : clamp(savedLaunchDelay, 0, BULLET_BILL_LAUNCH_DELAY);
     if (enemy.move) {
       const progress = enemy.move.duration > 0 ? clamp(enemy.move.time / enemy.move.duration, 0, 1) : 0;
       enemy.move.duration = BULLET_BILL_MOVE_TIME;
@@ -1704,6 +1710,10 @@
 
   function updateBulletBill(enemy, dt) {
     enemy.stepsTravelled = Math.max(0, Number(enemy.stepsTravelled) || 0);
+    if (enemy.launchDelay > 0) {
+      enemy.launchDelay = Math.max(0, enemy.launchDelay - dt);
+      return;
+    }
     if (convertBombTouchedByBulletBill(enemy)) return;
 
     if (enemy.move) {
@@ -2487,7 +2497,7 @@
         damageEnemy(enemy);
         return;
       }
-      if (enemy.stunTimer > 0) return;
+      if (enemy.stunTimer > 0 || (enemy.type === "bullet-bill" && enemy.launchDelay > 0)) return;
       const dx = enemy.gx - state.player.gx;
       const dy = enemy.gy - state.player.gy;
       if (Math.hypot(dx, dy) < 0.58) {
@@ -3415,6 +3425,7 @@
       bulletBill: {
         frame: { ...BULLET_BILL_FRAME },
         moveTime: BULLET_BILL_MOVE_TIME,
+        launchDelay: BULLET_BILL_LAUNCH_DELAY,
         hiddenCountPerLevel: BULLET_BILL_HIDDEN_COUNT_PER_LEVEL,
       },
       nightTime: isNightTime(),

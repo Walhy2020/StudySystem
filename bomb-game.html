@@ -7,7 +7,7 @@
     <link rel="icon" href="data:," />
     <title>炸弹迷宫 - 马里奥学习系统</title>
 
-    <link rel="stylesheet" href="./bomb-game.css?v=1.1" />
+    <link rel="stylesheet" href="./bomb-game.css?v=1.2" />
   </head>
   <body>
     <div class="bomb-game-app">
@@ -22,8 +22,14 @@
         <nav class="bomb-actions">
           <button id="startBombGame" type="button">开始</button>
           <button id="restartBombGame" type="button">重开</button>
+          <button id="bombAvatarToggle" type="button" aria-expanded="false" aria-controls="bombAvatarMenu" aria-label="选择主角，当前小飞星">选择主角</button>
           <button id="bombSoundToggle" type="button" aria-label="关闭音效" aria-pressed="true" title="关闭音效">🔊</button>
           <a href="./index.html">返回</a>
+          <div class="bomb-avatar-menu" id="bombAvatarMenu" role="group" aria-label="选择游戏主角" hidden>
+            <button type="button" data-avatar="bomber" aria-pressed="false"><span class="avatar-option-icon" aria-hidden="true">💣</span><span>炸弹人</span></button>
+            <button type="button" data-avatar="fly-star" aria-pressed="true"><span class="avatar-option-icon" aria-hidden="true">⭐</span><span>小飞星</span></button>
+            <button type="button" data-avatar="super-mushroom" aria-pressed="false"><img src="./assets/sprites/super-mushroom-v1.png?v=1.0" width="48" height="48" alt="" /><span>超级蘑菇</span></button>
+          </div>
         </nav>
       </header>
 
@@ -43,7 +49,7 @@
   <script src="./data/pinyin-readings.js?v=1.0"></script>
 
   <script src="./src/bomb-audio.js?v=1.1"></script>
-  <script src="./bomb-game.js?v=2.11"></script>
-  <script type="module" src="./src/version-update.js?v=1.0.19"></script>
+  <script src="./bomb-game.js?v=2.12"></script>
+  <script type="module" src="./src/version-update.js?v=1.0.20"></script>
 </body>
 </html>

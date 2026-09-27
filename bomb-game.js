@@ -4,6 +4,7 @@
   const LEGACY_STORE_KEY = "mario-literacy-desktop-mvp-v1";
   const BOMB_PROGRESS_KEY = "mario-bomb-game-progress-v1";
   const BOMB_PROGRESS_VERSION = 1;
+  const AVATAR_LABELS = Object.freeze({ bomber: "炸弹人", "fly-star": "小飞星", "super-mushroom": "超级蘑菇" });
   const canvas = document.getElementById("bombCanvas");
   const ctx = canvas.getContext("2d");
   const appNode = document.querySelector(".bomb-game-app");
@@ -20,6 +21,8 @@
   const messageNode = document.getElementById("bombMessage");
   const startButton = document.getElementById("startBombGame");
   const restartButton = document.getElementById("restartBombGame");
+  const avatarToggle = document.getElementById("bombAvatarToggle");
+  const avatarMenu = document.getElementById("bombAvatarMenu");
   const soundToggle = document.getElementById("bombSoundToggle");
   const sounds = window.createBombSoundPlayer();
   const openAllBricksButton = document.getElementById("openAllBricks");
@@ -185,6 +188,8 @@
   greenMushroomImage.src = "./其他素材/P305/Mario SVG Bundle/PNG/11.png";
   const fireFlowerImage = new Image();
   fireFlowerImage.src = "./其他素材/P305/Mario SVG Bundle/PNG/253.png";
+  const superMushroomImage = new Image();
+  superMushroomImage.src = "./assets/sprites/super-mushroom-v1.png?v=1.0";
   const FLY_STAR_BOUNDS = { minX: 192, minY: 92, width: 2440, height: 1872 };
   const FLY_STAR_PARTS = [
     { file: "Part_06.png", x: 752, y: -709.5, width: 1120, height: 1235, pivotX: 1180, pivotY: 880, amplitude: 0.15 },
@@ -196,6 +201,8 @@
   ].map((part) => ({ ...part, image: new Image() }));
 
   let flyStarLayers = null;
+  let playerAvatar = "fly-star";
+  let avatarMenuOpen = false;
 
   let lastTime = performance.now();
   let animationClock = 0;
@@ -290,6 +297,7 @@
       enemies: plainArray(state.enemies),
       shells: plainArray(state.shells),
       player: plainObject(state.player),
+      playerAvatar,
       hiddenPowerUps: mapEntries(state.hiddenPowerUps),
       hiddenWordCrates: mapEntries(state.hiddenWordCrates),
       todayNewWords: plainArray(state.todayNewWords),
@@ -335,6 +343,37 @@
     if (ownsProgress) return;
     ownsProgress = true;
     saveBombProgress();
+  }
+
+  function updateAvatarUi() {
+    const label = AVATAR_LABELS[playerAvatar];
+    avatarToggle.setAttribute("aria-label", `选择主角，当前${label}`);
+    avatarToggle.title = `当前主角：${label}`;
+    avatarMenu.querySelectorAll("[data-avatar]").forEach((button) => {
+      button.setAttribute("aria-pressed", String(button.dataset.avatar === playerAvatar));
+    });
+  }
+
+  function setAvatarMenuOpen(open) {
+    avatarMenuOpen = Boolean(open);
+    avatarMenu.hidden = !avatarMenuOpen;
+    avatarToggle.setAttribute("aria-expanded", String(avatarMenuOpen));
+    if (avatarMenuOpen) {
+      clearInputState();
+      saveBombProgress();
+      avatarMenu.querySelector('[aria-pressed="true"]')?.focus();
+    }
+  }
+
+  function selectPlayerAvatar(avatar) {
+    if (!Object.hasOwn(AVATAR_LABELS, avatar)) return;
+    claimBombProgress();
+    playerAvatar = avatar;
+    updateAvatarUi();
+    setAvatarMenuOpen(false);
+    saveBombProgress();
+    if (state.status === "playing" && !awaitingContinue) canvas.focus();
+    else avatarToggle.focus();
   }
 
   function saveBombProgress() {
@@ -405,6 +444,8 @@
     state.enemies.forEach(normalizeBulletBillMotion);
     state.shells = plainArray(saved.shells);
     state.player = saved.player && typeof saved.player === "object" ? saved.player : makePlayer();
+    playerAvatar = Object.hasOwn(AVATAR_LABELS, saved.playerAvatar) ? saved.playerAvatar : "fly-star";
+    updateAvatarUi();
     state.hiddenPowerUps = new Map(Array.isArray(saved.hiddenPowerUps) ? saved.hiddenPowerUps : []);
     state.hiddenWordCrates = new Map(Array.isArray(saved.hiddenWordCrates) ? saved.hiddenWordCrates : []);
     state.todayNewWords = plainArray(saved.todayNewWords).map((word) => wordById(word.id)).filter(Boolean);
@@ -1258,6 +1299,7 @@
   }
 
   function startGame() {
+    setAvatarMenuOpen(false);
     sounds.unlock();
     claimBombProgress();
     const resuming = awaitingContinue;
@@ -1802,7 +1844,7 @@
     const id = state.enemies.reduce((maximum, enemy) => Math.max(maximum, Number(enemy.id) || 0), 0) + 1;
     state.enemies.push(makeBulletBillEnemy(id, gx, gy));
     spawnParticles("enemy", gx, gy);
-    setMessage("导弹出现，已锁定小飞星", 1.8);
+    setMessage(`导弹出现，已锁定${AVATAR_LABELS[playerAvatar]}`, 1.8);
     updateHud();
   }
 
@@ -2555,7 +2597,7 @@
   }
 
   function update(dt) {
-    if (awaitingContinue) return;
+    if (awaitingContinue || avatarMenuOpen) return;
     if (messageTimer > 0) {
       messageTimer -= dt;
       if (messageTimer <= 0 && state.status === "playing") {
@@ -3105,12 +3147,101 @@
     ctx.ellipse(center.x, center.y + 20, 19, 6.5, 0, 0, Math.PI * 2);
     ctx.fill();
 
+    if (playerAvatar === "bomber") {
+      drawBomber(center);
+      return;
+    }
+    if (playerAvatar === "super-mushroom") {
+      drawSuperMushroom(center);
+      return;
+    }
     if (flyStarLayers) {
       drawFlyStar(center);
       return;
     }
 
     drawFallbackFlyStar(center);
+  }
+
+  function drawBomber(center) {
+    const moving = state.status === "playing" && Boolean(state.player.move || heldDirections.size);
+    const bob = Math.sin(animationClock * (moving ? 11 : 4)) * (moving ? 2 : 1);
+    ctx.save();
+    ctx.translate(center.x, center.y - 5 + bob);
+    ctx.rotate(moving ? (lastDirection === "left" ? -0.06 : lastDirection === "right" ? 0.06 : 0) : 0);
+    ctx.fillStyle = "#172554";
+    for (const side of [-1, 1]) {
+      ctx.beginPath();
+      ctx.ellipse(side * 13, 23, 13, 7, side * 0.14, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = "#2563eb";
+    ctx.beginPath();
+    ctx.ellipse(0, 7, 18, 21, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#f8fafc";
+    for (const side of [-1, 1]) {
+      ctx.beginPath();
+      ctx.ellipse(side * 23, 9, 8, 10, side * 0.22, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = "#f8fafc";
+    ctx.strokeStyle = "#1e3a5f";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.ellipse(0, -18, 24, 24, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#fbd6a5";
+    ctx.beginPath();
+    ctx.ellipse(0, -15, 16, 13, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#18263a";
+    for (const side of [-1, 1]) {
+      ctx.beginPath();
+      ctx.ellipse(side * 6, -15, 2.7, 5, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.strokeStyle = "#1e3a5f";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(0, -41);
+    ctx.lineTo(0, -48);
+    ctx.stroke();
+    ctx.fillStyle = "#f43f5e";
+    ctx.beginPath();
+    ctx.arc(0, -49, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawSuperMushroom(center) {
+    const moving = state.status === "playing" && Boolean(state.player.move || heldDirections.size);
+    const bob = Math.sin(animationClock * (moving ? 9 : 4)) * (moving ? 2 : 1.5);
+    ctx.save();
+    ctx.translate(center.x, center.y - 8 + bob);
+    ctx.rotate(moving ? (lastDirection === "left" ? -0.06 : lastDirection === "right" ? 0.06 : 0) : 0);
+    if (superMushroomImage.complete && superMushroomImage.naturalWidth) {
+      const width = 65;
+      const height = width * superMushroomImage.naturalHeight / superMushroomImage.naturalWidth;
+      ctx.drawImage(superMushroomImage, -width / 2, -height / 2, width, height);
+    } else {
+      ctx.fillStyle = "#ff3333";
+      ctx.beginPath();
+      ctx.ellipse(0, -10, 30, 23, 0, Math.PI, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#ffe5b4";
+      ctx.beginPath();
+      ctx.ellipse(0, 6, 20, 17, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#172554";
+      for (const side of [-1, 1]) {
+        ctx.beginPath();
+        ctx.ellipse(side * 7, 5, 2, 5, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    ctx.restore();
   }
 
   function drawFlyStar(center) {
@@ -3312,7 +3443,7 @@
     const dt = Math.min(0.033, (now - lastTime) / 1000 || 0);
     lastTime = now;
     animationClock += dt;
-    sounds.setMusic(state.status === "playing" && !awaitingContinue && ownsProgress &&
+    sounds.setMusic(state.status === "playing" && !awaitingContinue && !avatarMenuOpen && ownsProgress &&
       !document.hidden && document.hasFocus() ? state.world : null);
     if (!document.hidden && ownsProgress) update(dt);
     render();
@@ -3360,6 +3491,7 @@
   window.__BOMB_GAME__ = Object.freeze({
     isProgressOwner: () => ownsProgress,
     isAwaitingContinue: () => awaitingContinue,
+    getSelectedAvatar: () => playerAvatar,
     getPlayerVisualState: () => ({ invulnerable: state.player.invulnerable > 0, hidden: isPlayerBlinkHidden() }),
     getState: () => serializeBombProgress(),
     getLearningWordIds: () => bombWordsFromLearning(loadLearningState()).map((word) => word.id),
@@ -3457,7 +3589,14 @@
   }
 
   window.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && avatarMenuOpen) {
+      event.preventDefault();
+      setAvatarMenuOpen(false);
+      avatarToggle.focus();
+      return;
+    }
     if (hasNativeKeyboardTarget(event.target)) return;
+    if (avatarMenuOpen) return;
     const direction = KEY_DIRS[event.code];
     if (direction) {
       event.preventDefault();
@@ -3543,6 +3682,19 @@
     startGame();
   });
   restartButton.addEventListener("click", restartGame);
+  avatarToggle.addEventListener("click", () => {
+    syncBombProgress();
+    setAvatarMenuOpen(!avatarMenuOpen);
+  });
+  avatarMenu.addEventListener("click", (event) => {
+    const option = event.target.closest("[data-avatar]");
+    if (option) selectPlayerAvatar(option.dataset.avatar);
+  });
+  document.addEventListener("pointerdown", (event) => {
+    if (avatarMenuOpen && !avatarToggle.contains(event.target) && !avatarMenu.contains(event.target)) {
+      setAvatarMenuOpen(false);
+    }
+  });
   if (!sounds.supported) {
     soundToggle.disabled = true;
     soundToggle.textContent = "🔇";
@@ -3564,6 +3716,7 @@
     part.image.src = `./其他素材/FlyStar/images/${part.file}`;
   });
 
+  updateAvatarUi();
   if (!restoreBombProgress()) {
     resetGame();
   }

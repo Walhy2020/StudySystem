@@ -7,7 +7,15 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.19** (2026-09-27). Scenario 04, Fruit Tasting,
+System display version: **v1.0.20** (2026-09-27). Bomb maze now offers a top-right
+character selector for the original Bomber, current Fly-Star, and Super Mushroom cropped
+from the Classic Items II theme artwork. Changing characters affects the on-map avatar
+immediately, pauses play while the selector is open, and preserves the choice in the
+existing bomb progress snapshot across Continue, levels, and restart. Older saves default
+to Fly-Star. Bomb CSS/JS caches: v1.2/v2.12; all seven update-notifier queries are v1.0.20.
+World 3 / following-camera remains pending.
+
+Previous v1.0.19 (2026-09-27). Scenario 04, Fruit Tasting,
 uses a red apple, yellow lemon, green pear, orange, banana, and strawberry to teach
 fruit names, colors, sweet/sour tastes and crisp texture. It has 36 word-aligned
 British-IPA lines, 18 response questions, 25 vocabulary candidates, and seven

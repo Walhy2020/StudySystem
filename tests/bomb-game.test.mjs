@@ -33,8 +33,19 @@ const calculateLayout = new Function(
 });
 
 assert.match(html, /<canvas id="bombCanvas" width="1280" height="720"/);
-assert.ok(html.includes('bomb-game.css?v=1.1'));
-assert.ok(html.includes('bomb-game.js?v=2.11'));
+assert.ok(html.includes('bomb-game.css?v=1.2'));
+assert.ok(html.includes('bomb-game.js?v=2.12'));
+assert.ok(html.includes('id="bombAvatarToggle"'));
+assert.ok(html.includes('id="bombAvatarMenu"'));
+for (const avatar of ["bomber", "fly-star", "super-mushroom"]) {
+  assert.ok(html.includes(`data-avatar="${avatar}"`), `avatar option: ${avatar}`);
+}
+assert.ok(html.includes("assets/sprites/super-mushroom-v1.png?v=1.0"));
+const mushroom = fs.readFileSync(path.join(root, "assets/sprites/super-mushroom-v1.png"));
+assert.equal(mushroom.subarray(0, 8).toString("hex"), "89504e470d0a1a0a");
+assert.equal(mushroom.readUInt32BE(16), 372);
+assert.equal(mushroom.readUInt32BE(20), 381);
+assert.equal(mushroom[25], 6, "mushroom PNG keeps its RGBA alpha channel");
 assert.ok(html.includes('src/bomb-audio.js?v=1.1'));
 assert.ok(html.includes('./data/characters.js?v=1.0'));
 assert.ok(html.includes('./data/pinyin-readings.js?v=1.0'));
@@ -103,6 +114,10 @@ assert.ok(js.includes('const HANZI_STORE_KEY = "mario-hanzi-refactor-v1";'));
 assert.ok(js.includes('const LEGACY_STORE_KEY = "mario-literacy-desktop-mvp-v1";'));
 assert.ok(js.includes('const BOMB_PROGRESS_KEY = "mario-bomb-game-progress-v1";'));
 assert.ok(js.includes('const BOMB_PROGRESS_VERSION = 1;'));
+assert.ok(js.includes('playerAvatar,'), "selected avatar is saved in the existing bomb snapshot");
+assert.ok(js.includes('saved.playerAvatar') && js.includes('"fly-star"'), "older saves retain the current fly-star default");
+assert.ok(js.includes('getSelectedAvatar: () => playerAvatar'));
+assert.ok(js.includes('if (awaitingContinue || avatarMenuOpen) return;'), "the character menu pauses gameplay");
 const writes = [...js.matchAll(/localStorage\.(setItem|removeItem)\(([^,\)]+)/g)].map((match) => match[2].trim());
 assert.deepEqual([...new Set(writes)], ["BOMB_PROGRESS_KEY"], "only bomb progress storage may be mutated");
 assert.ok(js.includes("const hanzi = readStoredObject(HANZI_STORE_KEY);"));
@@ -150,7 +165,7 @@ assert.ok(js.includes("viewportObserver.observe(topbarNode)"));
 assert.ok(js.includes("viewportObserver.observe(stageNode)"));
 assert.ok(js.includes("function hasNativeKeyboardTarget(target)"));
 assert.ok(js.includes("if (!(target instanceof Element) || target === canvas) return false;"));
-assert.ok(js.match(/window\.addEventListener\("keydown", \(event\) => \{\s+if \(hasNativeKeyboardTarget\(event\.target\)\) return;/));
+assert.ok(js.match(/window\.addEventListener\("keydown", \(event\) => \{[\s\S]+?if \(hasNativeKeyboardTarget\(event\.target\)\) return;/));
 assert.ok(js.match(/window\.addEventListener\("keyup", \(event\) => \{\s+const direction = KEY_DIRS\[event.code\];/));
 assert.ok(js.includes('heldDirections.delete(direction);'));
 assert.ok(js.includes('if (!hasNativeKeyboardTarget(event.target)) event.preventDefault();'));
@@ -168,6 +183,7 @@ assert.ok(css.includes("@media (max-width: 480px)"));
 
 const expectedAssets = [
   "assets/sprites/enemies-bosses.png",
+  "assets/sprites/super-mushroom-v1.png",
   "其他素材/P305/Mario SVG Bundle/PNG/109.png",
   "其他素材/P305/Mario SVG Bundle/PNG/11.png",
   "其他素材/P305/Mario SVG Bundle/PNG/253.png",

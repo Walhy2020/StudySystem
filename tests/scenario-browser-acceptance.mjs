@@ -39,7 +39,7 @@ const page = await desktopContext.newPage();
 watch(page);
 await page.goto(new URL("scenario-learning.html?test=scenario-desktop", baseUrl).href);
 assert.deepEqual(await page.locator(".scenario-nav > *").allTextContents(), ["汉字", "Book1", "主题学习", "情景模式", "总复习", "音标"]);
-assert.equal(await page.locator(".scenario-card").count(), 3);
+assert.equal(await page.locator(".scenario-card").count(), 4);
 assert.equal(await page.locator(".scenario-card.is-complete").count(), 0);
 assert.equal(await noOverflow(page), true);
 

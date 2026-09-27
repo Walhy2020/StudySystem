@@ -1,5 +1,5 @@
-import { SCENARIOS, scenarioById, scenarioLineById } from "./data/scenarios.js?v=1.4";
-import { initializeScenarioWords } from "./src/scenario-workshop.js?v=1.9";
+import { SCENARIOS, scenarioById, scenarioLineById } from "./data/scenarios.js?v=1.6";
+import { initializeScenarioWords } from "./src/scenario-workshop.js?v=1.11";
 import { createDialoguePlayback } from "./src/scenario-playback.js?v=1.1";
 
 export { SCENARIOS };
@@ -301,11 +301,11 @@ function initializePage() {
   function renderPractice() {
     if (practice.complete) return finishPractice();
     const question = practice.question();
-    const countingArt = scenario.id === "counting-pens" && scenario.focusObjects?.[question.prompt.focusObject];
-    dom.countingPracticeImage.hidden = !countingArt;
-    if (countingArt) {
-      dom.countingPracticeImage.src = countingArt.image;
-      dom.countingPracticeImage.alt = countingArt.label;
+    const practiceArt = ["counting-pens", "fruit-tasting"].includes(scenario.id) && scenario.focusObjects?.[question.prompt.focusObject];
+    dom.countingPracticeImage.hidden = !practiceArt;
+    if (practiceArt) {
+      dom.countingPracticeImage.src = practiceArt.image;
+      dom.countingPracticeImage.alt = practiceArt.label;
     } else {
       dom.countingPracticeImage.removeAttribute("src");
       dom.countingPracticeImage.alt = "";

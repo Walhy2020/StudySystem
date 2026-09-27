@@ -24,4 +24,8 @@
 .actor-stage[data-scenario-id="counting-pens"] .scenario-object-focus{width:62%;top:4%;border-radius:22px}
 .actor-stage[data-scenario-id="counting-pens"] .scene-actor{width:25%;height:48%;bottom:2%}
 @media(max-width:560px){.actor-stage[data-scenario-id="counting-pens"]{aspect-ratio:1}}
+.actor-stage[data-scenario-id="fruit-tasting"]{background-image:linear-gradient(#ffffff18,#ffffff18),url("./assets/scenarios/fruit-table-v2.png?v=1.0");background-position:center;background-size:cover}
+.actor-stage[data-scenario-id="fruit-tasting"] .scene-actor{width:27%;height:54%;bottom:1%}
+.actor-stage[data-scenario-id="fruit-tasting"] .scenario-object-focus{width:42%;top:4%;border-radius:24px}
+@media(max-width:560px){.actor-stage[data-scenario-id="fruit-tasting"]{aspect-ratio:1}.actor-stage[data-scenario-id="fruit-tasting"] .scene-actor{width:28%;height:52%}}
 .counting-practice-image{display:block;width:min(100%,260px);aspect-ratio:1;object-fit:contain;margin:0 auto 16px;border-radius:18px;background:#fff}

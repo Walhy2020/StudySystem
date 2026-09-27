@@ -1,13 +1,23 @@
 # StudySystem cross-device handoff
 
-Last updated: 2026-09-24
+Last updated: 2026-09-27
 Repository: `https://github.com/Walhy2020/StudySystem.git`
 Branch: `main`
 Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.18** (2026-09-26). Bombs again use their original two-second fuse.
+System display version: **v1.0.19** (2026-09-27). Scenario 04, Fruit Tasting,
+uses a red apple, yellow lemon, green pear, orange, banana, and strawberry to teach
+fruit names, colors, sweet/sour tastes and crisp texture. It has 36 word-aligned
+British-IPA lines, 18 response questions, 25 vocabulary candidates, and seven
+checked in-use imagegen PNGs. Completion
+and explicit learned-word marking stay isolated in the scenario progress key;
+the deduplicated total-word catalog now has 239 candidates. Scenario CSS/JS caches:
+v2.6; scenario data cache: v1.6; all seven update-notifier queries are v1.0.19.
+World 3 / following-camera remains pending.
+
+Previous v1.0.18 (2026-09-26). Bombs again use their original two-second fuse.
 A Bullet Bill revealed from its brick stays visible but inactive for one second, then begins
 chasing at its unchanged constant speed. During that wait it cannot cause contact damage;
 the remaining wait survives save/Continue, while missiles already moving in older saves do
@@ -158,13 +168,23 @@ Damage clears held directions and movement; OS key-repeat cannot restart movemen
 release and a fresh press. Bomb script cache is v1.6. Regression entry points:
 `tests/bomb-browser-acceptance.mjs` and `tests/bomb-session-browser.mjs` (real Microsoft Edge).
 
-Latest addition: Scenario 03, `counting-pens` (数一数 / Let's Count!), follows
+Latest addition: Scenario 04, `fruit-tasting` (水果尝一尝 / Fruit Tasting),
+uses an imagegen six-fruit table scene and six matching fruit focus pictures.
+Mia asks what fruit it is, what color it is, and how it tastes; Leo answers for
+a red sweet-and-crisp apple, yellow sour lemon, green sweet pear, orange, banana,
+and strawberry. The 36 lines have word-aligned British IPA and 18 illustrated
+response questions. Twenty-five word
+candidates are shown in the active-scenario New Words tab; none enter overall
+review until explicitly marked learned. Focused Edge check:
+`node tests/scenario-fruit-browser.mjs` at desktop and 390px.
+
+Scenario 03, `counting-pens` (数一数 / Let's Count!), follows
 `What number is it?` → `It is eight.` → `How many pens do you have?` → `I have eight pens.`
 It now has six counting groups: eight pens, three pencils, two keys, four mushrooms, five coins and six stars.
 Each group follows the same four-line pattern, for 24 word-aligned British-IPA lines, 12 illustrated response questions and 22 vocabulary candidates.
 The original pens image is retained; five new 1254×1254 cards reuse approved theme artwork with exact copy counts, built by `scripts/build-counting-cards.py` from `assets/scenarios/counting-objects-v1.json`.
 Playback, per-scenario refresh restoration and explicit learned-word marking use the existing scenario module.
-The deduplicated combined catalog now contains 227 candidate words after the Mid-Autumn addition; only explicitly learned words enter overall review.
+The deduplicated combined catalog now contains 239 candidate words; only explicitly learned words enter overall review.
 The dedicated Edge check is `node tests/scenario-counting-browser.mjs`; normal suite includes it.
 
 Clone once:
@@ -235,7 +255,9 @@ In the ChatGPT/Codex desktop app, add the cloned repository as a local project a
 - Entry: `scenario-learning.html`; authoritative lesson data is isolated in `data/scenarios.js`.
 - Scenario 01 is First Meeting: six dialogue lines with complete British IPA and Chinese translations.
 - Scenario 02 is What Is It?: fourteen continuous classroom dialogue lines adapted from the textbook's printed pages 6-7, covering a pen, yellow pencils, a red marker, green erasers, and the final red-eraser correction, with word-aligned British IPA, Chinese translations, and five response-choice questions.
-- The two delivered scenarios contain 20 dialogue lines and eight practice questions in total. The module has line-by-line learning, Previous/Next navigation, manual-only speech, and wrong-answer retry.
+- The four delivered scenarios contain 80 dialogue lines and 38 practice questions in total. The module has line-by-line learning, Previous/Next navigation, manual-only speech, and wrong-answer retry.
+- Scenario 03 is Let's Count!: 24 lines and 12 illustrated questions across six object groups.
+- Scenario 04 is Fruit Tasting: 36 lines and 18 illustrated questions about six fruits, their colors, and sweet, sour or crisp descriptions. The active `assets/scenarios/fruit-table-v2.png` and six fruit-focus PNGs were visually inspected; the original and expansion prompt sets are saved in `assets/scenarios/fruit-tasting-v1.prompt.md` and `assets/scenarios/fruit-expansion-v2.prompt.md`.
 - Completing every question in one scenario adds a green check only to that scenario card. Schema 3 stores each scenario's line, three-stage tab, and question independently under `scenarioProgress`, while preserving the top-level compatibility aliases and migrating the previous single-scenario state. Progress writes only `mario-scenario-learning-v1` and is not included in the theme learned-word library.
 - Scenario artwork and new lessons are now authored in conversation using the imagegen skill, not through a browser generator. See `SCENARIO_WORKSHOP.md` for the current workflow.
 - New-word matching uses the same shared total word library as overall review. Explicit word learning is stored as `learnedWords` under the existing scenario progress key; dialogue completion alone never marks vocabulary learned.
@@ -243,7 +265,7 @@ In the ChatGPT/Codex desktop app, add the cloned repository as a local project a
 - What Is It? uses `assets/scenarios/what-is-it-classroom-v1.png` (1254×1254 RGB PNG) as both its card artwork and classroom stage. It shows exactly one blue pen, three yellow pencils, one red marker, and three green erasers; Mia and Leo remain separate side overlays so the central stationery stays visible.
 - Each What Is It? line also drives a separate transparent stationery asset on a white circular focus card over the blackboard. When a stationery line starts speaking, its card performs three 1-second scale-breathing cycles and then returns to its normal size. The blue pen, three yellow pencils, red marker, three green erasers, and three red erasers are independently emphasized without covering the actors.
 - English and British IPA are rendered from the same per-word token data, so every displayed word has its own transcription directly underneath it in dialogue and practice choices.
-- New Words is the third tab beside Dialogue and Practice. It follows the active scenario instead of opening a combined library: Scenario 01 exposes 16 words and Scenario 02 exposes 19. Learning writes only `learnedWords` inside the scenario storage key.
+- New Words is the third tab beside Dialogue and Practice. It follows the active scenario instead of opening a combined library: Scenarios 01–04 expose 16, 19, 22, and 25 candidates respectively. Learning writes only `learnedWords` inside the scenario storage key.
 - Dialogue playback is user-started. “从头重播” reads only the first line and waits for manual Next; “从头连播” restarts at line one and advances on speech-end events. Mia enters first and Leo on line two. A saturated orange-gold contour halo with a tighter blur marks the speaking actor, breathing for three 1-second cycles, then staying steady until speech ends (steady with reduced motion); the right pane shows only the current sentence with British IPA beneath. Pause/navigation/mode switching invalidate stale callbacks; playback completion does not mark words learned. Mobile stacks stage and conversation. `src/scenario-playback.js` controls both modes.
 - The browser generation form and API backend were removed at the user's request. The page makes no generation API calls and needs no API Key; the active-scenario New Words tab and all browser learning progress are retained. Any private `.local-scenarios/` data remains untouched and ignored.
 
@@ -254,7 +276,7 @@ In the ChatGPT/Codex desktop app, add the cloned repository as a local project a
 - Space toggles the current review word's IPA breakdown, using the same click behavior. Entering a round focuses its IPA button; repeated keydown does not retrigger, and sound/answer/navigation controls keep native keyboard behavior. New questions begin collapsed.
 - This is an independent top-level module, not a child page inside Theme Learning.
 - The total word library aggregates words actually learned in Book1, Theme Learning, and Scenario Learning. It reads all three existing progress keys without writing across module boundaries and deduplicates by normalized English spelling.
-- The combined published catalog currently contains 227 unique candidate words. The library and each review round include only the subset actually learned in the current browser profile.
+- The combined published catalog currently contains 239 unique candidate words. The library and each review round include only the subset actually learned in the current browser profile.
 - Theme artwork remains preferred for duplicates, Book1 uses its original word pictures, and scenario words use focused object art when available or a Chinese-meaning choice card when no literal image exists. Reviews keep four unique choices, wrong-answer retry, restart, refresh persistence, desktop and 390px layouts.
 
 ### Bomb maze
@@ -293,6 +315,17 @@ Persistent browser keys:
 Git synchronizes source code and assets only. Browser `localStorage` progress, API keys, environment variables, Codex plugins, browser-extension connections, and local tool installations must be configured separately on the company computer.
 
 ## Latest verification snapshot
+
+Verified on 2026-09-27 for v1.0.19:
+
+- `pnpm run check`, all 136 Node tests, and `git diff --check` passed.
+- Focused real Microsoft Edge Fruit Tasting acceptance passed at 1440px and 390px:
+  36 aligned-IPA lines, 18 response questions, seven active fruit images returning HTTP 200,
+  explicit learned-word entry, refresh restoration, no horizontal overflow, and screenshots
+  inspected for apple, orange, strawberry and the completed practice state.
+- Existing First Meeting / What Is It? and Counting Pens Edge regressions passed at desktop
+  and 390px; existing tracked screenshots were protected by writing those outputs to ignored `tmp/`.
+- No unrelated full browser suite was run.
 
 Verified on 2026-09-26 for v1.0.18:
 

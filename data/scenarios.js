@@ -115,6 +115,42 @@ export const COUNTING_PRACTICE = Object.freeze([
   }),
 ]);
 
+export const FRUIT_TASTING_GROUPS = Object.freeze([
+  Object.freeze({ id: "apple", article: "an", articleIpa: "/ən/", fruitIpa: "/ˈæpəl/", chinese: "苹果", color: "red", colorIpa: "/red/", colorChinese: "红色", taste: "sweet and crisp", tasteIpa: "/swiːt ən krɪsp/", tasteChinese: "甜而脆", tasteTokens: Object.freeze([["sweet", "/swiːt/"], ["and", "/ən/"], ["crisp.", "/krɪsp/"]]), image: "fruit-red-apple-v1" }),
+  Object.freeze({ id: "lemon", article: "a", articleIpa: "/ə/", fruitIpa: "/ˈlemən/", chinese: "柠檬", color: "yellow", colorIpa: "/ˈjeləʊ/", colorChinese: "黄色", taste: "sour", tasteIpa: "/ˈsaʊə/", tasteChinese: "酸", image: "fruit-yellow-lemon-v1" }),
+  Object.freeze({ id: "pear", article: "a", articleIpa: "/ə/", fruitIpa: "/peə/", chinese: "梨", color: "green", colorIpa: "/ɡriːn/", colorChinese: "绿色", taste: "sweet", tasteIpa: "/swiːt/", tasteChinese: "甜", image: "fruit-green-pear-v1" }),
+  Object.freeze({ id: "orange", article: "an", articleIpa: "/ən/", fruitIpa: "/ˈɒrɪndʒ/", chinese: "橙子", color: "orange", colorIpa: "/ˈɒrɪndʒ/", colorChinese: "橙色", taste: "sweet", tasteIpa: "/swiːt/", tasteChinese: "甜", image: "fruit-orange-v1" }),
+  Object.freeze({ id: "banana", article: "a", articleIpa: "/ə/", fruitIpa: "/bəˈnɑːnə/", chinese: "香蕉", color: "yellow", colorIpa: "/ˈjeləʊ/", colorChinese: "黄色", taste: "sweet", tasteIpa: "/swiːt/", tasteChinese: "甜", image: "fruit-banana-v1" }),
+  Object.freeze({ id: "strawberry", article: "a", articleIpa: "/ə/", fruitIpa: "/ˈstrɔːbəri/", chinese: "草莓", color: "red", colorIpa: "/red/", colorChinese: "红色", taste: "sweet", tasteIpa: "/swiːt/", tasteChinese: "甜", image: "fruit-strawberry-v1" }),
+]);
+
+const fruitGroupLines = ({ id, article, articleIpa, fruitIpa, chinese, color, colorIpa, colorChinese, taste, tasteIpa, tasteChinese, tasteTokens }) => [
+  line(`${id}-fruit-question`, "Mia", "What fruit is this?", "/wɒt fruːt ɪz ðɪs/", "这是什么水果？", [["What", "/wɒt/"], ["fruit", "/fruːt/"], ["is", "/ɪz/"], ["this?", "/ðɪs/"]], id),
+  line(`${id}-fruit-answer`, "Leo", `It's ${article} ${id}.`, `/ɪts ${articleIpa.slice(1, -1)} ${fruitIpa.slice(1, -1)}/`, `这是${chinese}。`, [["It's", "/ɪts/"], [article, articleIpa], [`${id}.`, fruitIpa]], id),
+  line(`${id}-color-question`, "Mia", "What color is it?", "/wɒt ˈkʌlə ɪz ɪt/", "它是什么颜色？", [["What", "/wɒt/"], ["color", "/ˈkʌlə/"], ["is", "/ɪz/"], ["it?", "/ɪt/"]], id),
+  line(`${id}-color-answer`, "Leo", `It's ${color}.`, `/ɪts ${colorIpa.slice(1, -1)}/`, `它是${colorChinese}的。`, [["It's", "/ɪts/"], [`${color}.`, colorIpa]], id),
+  line(`${id}-taste-question`, "Mia", "How does it taste?", "/haʊ dʌz ɪt teɪst/", "它尝起来怎么样？", [["How", "/haʊ/"], ["does", "/dʌz/"], ["it", "/ɪt/"], ["taste?", "/teɪst/"]], id),
+  line(`${id}-taste-answer`, "Leo", `It tastes ${taste}.`, `/ɪt teɪsts ${tasteIpa.slice(1, -1)}/`, `它尝起来是${tasteChinese}的。`, [["It", "/ɪt/"], ["tastes", "/teɪsts/"], ...(tasteTokens || [[`${taste}.`, tasteIpa]])], id),
+];
+
+export const FRUIT_TASTING_LINES = Object.freeze(FRUIT_TASTING_GROUPS.flatMap(fruitGroupLines));
+export const FRUIT_TASTING_OBJECTS = Object.freeze(Object.fromEntries(FRUIT_TASTING_GROUPS.map(({ id, colorChinese, chinese, image }) => [
+  id, Object.freeze({ label: `${colorChinese}${chinese}`, image: `./assets/scenarios/${image}.png?v=1.0` }),
+])));
+export const FRUIT_TASTING_PRACTICE = Object.freeze(FRUIT_TASTING_GROUPS.flatMap(({ id, color, taste }) => [
+  Object.freeze({ id: `identify-${id}`, promptId: `${id}-fruit-question`, answerId: `${id}-fruit-answer`, optionIds: Object.freeze([`${id}-fruit-answer`, ...FRUIT_TASTING_GROUPS.filter(fruit => fruit.id !== id).slice(0, 2).map(fruit => `${fruit.id}-fruit-answer`)]) }),
+  Object.freeze({ id: `color-${id}`, promptId: `${id}-color-question`, answerId: `${id}-color-answer`, optionIds: Object.freeze([`${id}-color-answer`, ...FRUIT_TASTING_GROUPS.filter(fruit => fruit.color !== color).filter((fruit, index, fruits) => fruits.findIndex(other => other.color === fruit.color) === index).slice(0, 2).map(fruit => `${fruit.id}-color-answer`)]) }),
+  Object.freeze({ id: `taste-${id}`, promptId: `${id}-taste-question`, answerId: `${id}-taste-answer`, optionIds: Object.freeze([`${id}-taste-answer`, `${taste === "sour" ? "apple" : "lemon"}-taste-answer`, `${id}-fruit-answer`]) }),
+]));
+export const FRUIT_TASTING_VOCABULARY = Object.freeze([
+  ["what", "/wɒt/", "什么"], ["fruit", "/fruːt/", "水果"], ["is", "/ɪz/", "是"], ["this", "/ðɪs/", "这个"],
+  ["it", "/ɪt/", "它"], ["an", "/ən/", "一个"], ["apple", "/ˈæpəl/", "苹果"], ["color", "/ˈkʌlə/", "颜色"],
+  ["red", "/red/", "红色的"], ["how", "/haʊ/", "怎样"], ["does", "/dʌz/", "用于提问"], ["taste", "/teɪst/", "尝起来"],
+  ["tastes", "/teɪsts/", "尝起来（第三人称）"], ["sweet", "/swiːt/", "甜的"], ["a", "/ə/", "一个"], ["lemon", "/ˈlemən/", "柠檬"],
+  ["yellow", "/ˈjeləʊ/", "黄色的"], ["sour", "/ˈsaʊə/", "酸的"], ["pear", "/peə/", "梨"], ["green", "/ɡriːn/", "绿色的"],
+  ["and", "/ən/", "和"], ["crisp", "/krɪsp/", "脆的"], ["orange", "/ˈɒrɪndʒ/", "橙子；橙色的"], ["banana", "/bəˈnɑːnə/", "香蕉"], ["strawberry", "/ˈstrɔːbəri/", "草莓"],
+].map(([word, phonetic, chinese]) => Object.freeze({ word, phonetic, chinese })));
+
 export const SCENARIOS = Object.freeze([
   Object.freeze({
     id: "first-meeting",
@@ -154,6 +190,19 @@ export const SCENARIOS = Object.freeze([
       "eight-pens": Object.freeze({ label: "数字8和八支蓝色笔，每排四支，共两排", image: "./assets/scenarios/counting-pens-v1.png?v=1.0" }),
       ...Object.fromEntries(COUNTING_EXTRA_GROUPS.map(group => [group.id, Object.freeze({ label: `数字${group.count}和${group.count === 2 ? "两" : group.chineseNumber}${group.objectChinese}`, image: `./assets/scenarios/counting-${group.id}-v1.png?v=1.0` })])),
     }),
+  }),
+  Object.freeze({
+    id: "fruit-tasting",
+    number: 4,
+    chineseTitle: "水果尝一尝",
+    englishTitle: "Fruit Tasting",
+    description: "认识六种水果，练习询问颜色和味道，包括酸与甜脆。",
+    completionTitle: "水果尝一尝完成！",
+    completionText: "你已经会说出六种水果的名字、颜色和味道。",
+    lines: FRUIT_TASTING_LINES,
+    practice: FRUIT_TASTING_PRACTICE,
+    vocabulary: FRUIT_TASTING_VOCABULARY,
+    focusObjects: FRUIT_TASTING_OBJECTS,
   }),
 ]);
 

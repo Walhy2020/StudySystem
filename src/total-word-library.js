@@ -1,5 +1,5 @@
 import { BOOK1_ITEMS } from "../data/book1.js";
-import { SCENARIOS } from "../data/scenarios.js?v=1.4";
+import { SCENARIOS } from "../data/scenarios.js?v=1.6";
 
 export const TOTAL_WORD_SOURCE_KEYS = Object.freeze({
   theme: "mario-theme-learned-v1",
@@ -26,6 +26,9 @@ function read(storage, key) {
 const values = (value) => Array.isArray(value) ? value : [];
 
 function scenarioArt(word, scenarios) {
+  const fruitObject = { apple: "apple", lemon: "lemon", pear: "pear", orange: "orange", banana: "banana", strawberry: "strawberry" }[word];
+  const fruitArt = fruitObject && scenarios.find(({ id }) => id === "fruit-tasting")?.focusObjects?.[fruitObject];
+  if (fruitArt) return Object.freeze({ type: "image-url", src: fruitArt.image, alt: fruitArt.label });
   const countingScene = scenarios.find(({ id }) => id === "counting-pens");
   const countingObject = { keys: "two-keys", mushrooms: "four-mushrooms", coins: "five-coins", stars: "six-stars" }[word];
   if (countingObject && countingScene?.focusObjects?.[countingObject]) {

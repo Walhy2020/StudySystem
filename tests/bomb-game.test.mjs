@@ -34,7 +34,7 @@ const calculateLayout = new Function(
 
 assert.match(html, /<canvas id="bombCanvas" width="1280" height="720"/);
 assert.ok(html.includes('bomb-game.css?v=1.2'));
-assert.ok(html.includes('bomb-game.js?v=2.13'));
+assert.ok(html.includes('bomb-game.js?v=2.14'));
 assert.ok(js.includes('const SUPER_MUSHROOM_AVATAR_SCALE = 0.8;'));
 assert.ok(js.includes('const width = 65 * SUPER_MUSHROOM_AVATAR_SCALE;'));
 assert.ok(html.includes('id="bombAvatarToggle"'));

@@ -7,7 +7,16 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.21** (2026-09-27). The Super Mushroom's on-map avatar
+System display version: **v1.0.22** (2026-09-28). Player movement still takes 0.18 seconds
+per cell but now interpolates linearly, spends leftover frame time on the next cell, buffers
+a briefly tapped turn until the current cell ends, and falls back to another held direction
+when a requested turn is blocked. Pressing Space mid-step places a bomb at the next cell
+center, so removing the between-cell pause does not make bomb placement unreliable.
+Enemy speeds, map collision, keyboard focus protection and progress storage are unchanged.
+An in-progress player step from an older eased save keeps its on-screen position on Continue.
+Bomb JS cache: v2.14; all seven update-notifier queries are v1.0.22.
+
+Previous v1.0.21 (2026-09-27). The Super Mushroom's on-map avatar
 is 20% smaller than v1.0.20, including its image-loading fallback. The source artwork,
 other characters, collision and movement are unchanged. Bomb JS cache: v2.13;
 all seven update-notifier queries are v1.0.21.

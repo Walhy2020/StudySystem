@@ -212,6 +212,8 @@
   let progressSavePending = false;
   let lastRenderedLearningCardCount = 0;
   const heldDirections = new Set();
+  let queuedDirection = "";
+  let queuedBombPlacement = false;
 
   const state = {
     status: "ready",
@@ -445,6 +447,7 @@
     state.enemies.forEach(normalizeBulletBillMotion);
     state.shells = plainArray(saved.shells);
     state.player = saved.player && typeof saved.player === "object" ? saved.player : makePlayer();
+    normalizeRestoredPlayerMove(state.player);
     playerAvatar = Object.hasOwn(AVATAR_LABELS, saved.playerAvatar) ? saved.playerAvatar : "fly-star";
     updateAvatarUi();
     state.hiddenPowerUps = new Map(Array.isArray(saved.hiddenPowerUps) ? saved.hiddenPowerUps : []);
@@ -510,6 +513,8 @@
 
   function clearInputState() {
     heldDirections.clear();
+    queuedDirection = "";
+    queuedBombPlacement = false;
   }
 
   function coordKey(gx, gy) {
@@ -1469,9 +1474,15 @@
     return false;
   }
 
-  function preferredDirection() {
-    if (heldDirections.has(lastDirection)) return lastDirection;
-    return Array.from(heldDirections)[0] || "";
+  function preferredDirections() {
+    const candidates = [];
+    if (queuedDirection) candidates.push(queuedDirection);
+    queuedDirection = "";
+    if (heldDirections.has(lastDirection) && !candidates.includes(lastDirection)) candidates.push(lastDirection);
+    for (const direction of Array.from(heldDirections).reverse()) {
+      if (!candidates.includes(direction)) candidates.push(direction);
+    }
+    return candidates;
   }
 
   function startMove(actor, direction, duration) {
@@ -1507,6 +1518,17 @@
     return false;
   }
 
+  function normalizeRestoredPlayerMove(player) {
+    const move = player.move;
+    if (!move || !Number.isFinite(move.duration) || move.duration <= 0) return;
+    const deltaX = move.toX - move.fromX;
+    const deltaY = move.toY - move.fromY;
+    const ratio = deltaX
+      ? (player.gx - move.fromX) / deltaX
+      : deltaY ? (player.gy - move.fromY) / deltaY : NaN;
+    if (Number.isFinite(ratio)) move.time = clamp(ratio, 0, 1) * move.duration;
+  }
+
   function stopEnemyMoveBeforeBomb(enemy) {
     if (enemy.type === "bullet-bill") return false;
     if (!enemy.move) return false;
@@ -1526,6 +1548,24 @@
     });
   }
 
+  function startPreferredPlayerMove(player) {
+    for (const direction of preferredDirections()) {
+      const dir = DIRS[direction];
+      const targetX = Math.round(player.gx) + dir.x;
+      const targetY = Math.round(player.gy) + dir.y;
+      const shell = shellAt(targetX, targetY);
+      if (shell) {
+        pushShell(shell, direction);
+        return false;
+      }
+      if (isCellOpen(targetX, targetY, "player")) {
+        startMove(player, direction, PLAYER_MOVE_TIME);
+        return true;
+      }
+    }
+    return false;
+  }
+
   function updatePlayer(dt) {
     const player = state.player;
     player.invulnerable = Math.max(0, player.invulnerable - dt);
@@ -1535,24 +1575,27 @@
       }
     });
 
-    if (advanceMove(player, dt) || player.move) return;
-    const direction = preferredDirection();
-    if (!direction) return;
-    const dir = DIRS[direction];
-    const targetX = Math.round(player.gx) + dir.x;
-    const targetY = Math.round(player.gy) + dir.y;
-    const shell = shellAt(targetX, targetY);
-    if (shell) {
-      pushShell(shell, direction);
-      return;
-    }
-    if (isCellOpen(targetX, targetY, "player")) {
-      startMove(player, direction, PLAYER_MOVE_TIME);
+    let remaining = dt;
+    for (let transitions = 0; transitions < 3; transitions += 1) {
+      if (!player.move && !startPreferredPlayerMove(player)) return;
+      const stepTime = Math.min(remaining, Math.max(0, player.move.duration - player.move.time));
+      const finished = advanceMove(player, stepTime, true);
+      remaining -= stepTime;
+      if (!finished) return;
+      if (queuedBombPlacement) {
+        queuedBombPlacement = false;
+        placeBomb();
+      }
+      if (remaining <= 0) return;
     }
   }
 
   function placeBomb() {
-    if (state.status !== "playing" || state.bombs.length >= state.bombLimit || state.player.move) return;
+    if (state.status !== "playing" || state.bombs.length >= state.bombLimit) return;
+    if (state.player.move) {
+      queuedBombPlacement = true;
+      return;
+    }
     const gx = Math.round(state.player.gx);
     const gy = Math.round(state.player.gy);
     if (bombAt(gx, gy)) return;
@@ -3613,6 +3656,7 @@
       }
       heldDirections.add(direction);
       lastDirection = direction;
+      if (!event.repeat) queuedDirection = direction;
       return;
     }
     if (event.code === "Space") {

@@ -113,7 +113,7 @@ test("怪物碰撞沿真实路线退两格：直行、拐弯、半步、短路�
 test("无敌恰好1秒，与闪烁同步结束；存档暂停不会耗掉无敌时间", () => {
   const state = { player: { invulnerable: 1 }, bombs: [] };
   const app = new Function("state", `
-    const advanceMove = () => true;
+    const startPreferredPlayerMove = () => false;
     ${extract("updatePlayer")}
     ${extract("isPlayerBlinkHidden")}
     return { updatePlayer, isPlayerBlinkHidden };
@@ -126,6 +126,88 @@ test("无敌恰好1秒，与闪烁同步结束；存档暂停不会耗掉无敌�
   assert.equal(blink.size, 2);
   assert.equal(state.player.invulnerable, 0);
   assert.equal(app.isPlayerBlinkHidden(), false);
+});
+
+test("玩家匀速起步并连续跨格，短按转向和移动中落弹不会丢失", () => {
+  function harness(blocked = []) {
+    const map = Array.from({ length: 7 }, (_, y) => Array.from({ length: 7 }, (_, x) =>
+      x === 0 || y === 0 || x === 6 || y === 6 || blocked.some(([bx, by]) => bx === x && by === y) ? 1 : 0));
+    return new Function("map", `
+      const DIRS = { up:{x:0,y:-1}, down:{x:0,y:1}, left:{x:-1,y:0}, right:{x:1,y:0} };
+      const PLAYER_MOVE_TIME = 0.18;
+      const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
+      const state = { status:"playing", map, bombLimit:3, flameRange:1, bombs:[],
+        player:{ gx:2, gy:2, move:null, invulnerable:0 } };
+      const heldDirections = new Set();
+      let queuedDirection = "", queuedBombPlacement = false, lastDirection = "right";
+      const rememberPlayerCell = () => {}, shellAt = () => null, pushShell = () => {};
+      const bombAt = (gx, gy) => state.bombs.find(bomb => bomb.gx === gx && bomb.gy === gy);
+      const isCellOpen = (gx, gy) => map[gy]?.[gx] === 0 && !bombAt(gx, gy);
+      const sounds = { play() {} }, stopEnemiesMovingIntoBombs = () => {};
+      const updateHud = () => {}, saveBombProgress = () => {};
+      ${extract("preferredDirections")}
+      ${extract("startMove")}
+      ${extract("advanceMove")}
+      ${extract("startPreferredPlayerMove")}
+      ${extract("updatePlayer")}
+      ${extract("placeBomb")}
+      return { state, updatePlayer, placeBomb,
+        press(direction) { heldDirections.add(direction); lastDirection = direction; queuedDirection = direction; },
+        release(direction) { heldDirections.delete(direction); } };
+    `)(map);
+  }
+
+  const straight = harness();
+  straight.press("right");
+  straight.updatePlayer(0.03);
+  assert.ok(Math.abs(straight.state.player.gx - (2 + 0.03 / 0.18)) < 1e-10, "first update moves linearly");
+  straight.updatePlayer(0.16);
+  assert.ok(Math.abs(straight.state.player.gx - (3 + 0.01 / 0.18)) < 1e-10, "leftover frame time enters the next cell");
+  assert.ok(Math.abs(straight.state.player.move.time - 0.01) < 1e-10);
+
+  const turning = harness();
+  turning.press("right");
+  turning.updatePlayer(0.08);
+  turning.press("up");
+  turning.release("up");
+  turning.updatePlayer(0.11);
+  assert.equal(turning.state.player.gx, 3);
+  assert.ok(Math.abs(turning.state.player.gy - (2 - 0.01 / 0.18)) < 1e-10, "a released turn is buffered to the next cell");
+
+  const blockedTurn = harness([[3, 1]]);
+  blockedTurn.press("right");
+  blockedTurn.updatePlayer(0.08);
+  blockedTurn.press("up");
+  blockedTurn.release("up");
+  blockedTurn.updatePlayer(0.11);
+  assert.ok(blockedTurn.state.player.gx > 3, "a blocked turn does not interrupt the still-held direction");
+  assert.equal(blockedTurn.state.player.gy, 2);
+
+  const bombing = harness();
+  bombing.press("right");
+  bombing.updatePlayer(0.08);
+  bombing.placeBomb();
+  assert.equal(bombing.state.bombs.length, 0, "Space during motion waits for a cell center");
+  bombing.updatePlayer(0.11);
+  assert.deepEqual(bombing.state.bombs.map(({ gx, gy }) => [gx, gy]), [[3, 2]]);
+  assert.ok(bombing.state.player.gx > 3, "movement continues after placing the bomb");
+});
+
+test("旧缓动存档继续时保持玩家当前位置，不因改为匀速而跳格", () => {
+  const normalize = new Function(`
+    const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
+    ${extract("normalizeRestoredPlayerMove")}
+    return normalizeRestoredPlayerMove;
+  `)();
+  const horizontal = { gx: 2.125, gy: 3,
+    move: { fromX: 2, fromY: 3, toX: 3, toY: 3, time: 0.045, duration: 0.18 } };
+  normalize(horizontal);
+  assert.equal(horizontal.gx, 2.125);
+  assert.equal(horizontal.move.time, 0.0225, "old 25% eased time is matched to its 12.5% displayed position");
+  const vertical = { gx: 2, gy: 3.875,
+    move: { fromX: 2, fromY: 3, toX: 2, toY: 4, time: 0.135, duration: 0.18 } };
+  normalize(vertical);
+  assert.equal(vertical.move.time, 0.1575);
 });
 
 test("蘑菇移动速度精确降低10%，库巴和乌龟不变，包含存档中的移动", () => {

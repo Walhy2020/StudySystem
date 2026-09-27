@@ -194,7 +194,7 @@ const resourcePaths = [
   "index.html",
   "bomb-game.html",
   "bomb-game.css?v=1.2",
-  "bomb-game.js?v=2.12",
+  "bomb-game.js?v=2.13",
   "src/bomb-audio.js?v=1.1",
   "data/characters.js?v=1.0",
   "data/pinyin-readings.js?v=1.0",

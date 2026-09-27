@@ -5,6 +5,7 @@
   const BOMB_PROGRESS_KEY = "mario-bomb-game-progress-v1";
   const BOMB_PROGRESS_VERSION = 1;
   const AVATAR_LABELS = Object.freeze({ bomber: "炸弹人", "fly-star": "小飞星", "super-mushroom": "超级蘑菇" });
+  const SUPER_MUSHROOM_AVATAR_SCALE = 0.8;
   const canvas = document.getElementById("bombCanvas");
   const ctx = canvas.getContext("2d");
   const appNode = document.querySelector(".bomb-game-app");
@@ -3222,10 +3223,11 @@
     ctx.translate(center.x, center.y - 8 + bob);
     ctx.rotate(moving ? (lastDirection === "left" ? -0.06 : lastDirection === "right" ? 0.06 : 0) : 0);
     if (superMushroomImage.complete && superMushroomImage.naturalWidth) {
-      const width = 65;
+      const width = 65 * SUPER_MUSHROOM_AVATAR_SCALE;
       const height = width * superMushroomImage.naturalHeight / superMushroomImage.naturalWidth;
       ctx.drawImage(superMushroomImage, -width / 2, -height / 2, width, height);
     } else {
+      ctx.scale(SUPER_MUSHROOM_AVATAR_SCALE, SUPER_MUSHROOM_AVATAR_SCALE);
       ctx.fillStyle = "#ff3333";
       ctx.beginPath();
       ctx.ellipse(0, -10, 30, 23, 0, Math.PI, Math.PI * 2);

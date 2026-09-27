@@ -7,7 +7,12 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.20** (2026-09-27). Bomb maze now offers a top-right
+System display version: **v1.0.21** (2026-09-27). The Super Mushroom's on-map avatar
+is 20% smaller than v1.0.20, including its image-loading fallback. The source artwork,
+other characters, collision and movement are unchanged. Bomb JS cache: v2.13;
+all seven update-notifier queries are v1.0.21.
+
+Previous v1.0.20 (2026-09-27). Bomb maze now offers a top-right
 character selector for the original Bomber, current Fly-Star, and Super Mushroom cropped
 from the Classic Items II theme artwork. Changing characters affects the on-map avatar
 immediately, pauses play while the selector is open, and preserves the choice in the

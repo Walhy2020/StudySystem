@@ -7,7 +7,15 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.22** (2026-09-28). Player movement still takes 0.18 seconds
+System display version: **v1.0.23** (2026-09-28). Bomb maze's selectable Bomber now
+uses the unchanged 739×741 RGBA `11R-C.png` atlas from the legacy system, checked in as
+`assets/sprites/bomber-original-v1.png`. The game assembles its separate body and feet
+at runtime; the temporary hand-drawn character is removed. Brief turn taps now stay
+buffered for up to 0.55 seconds when the first junction is blocked, so the next open
+junction turns without another press. Player speed, collision, other avatars, and save
+schema are unchanged. Bomb JS cache: v2.15; all seven update-notifier queries are v1.0.23.
+
+Previous v1.0.22 (2026-09-28). Player movement still takes 0.18 seconds
 per cell but now interpolates linearly, spends leftover frame time on the next cell, buffers
 a briefly tapped turn until the current cell ends, and falls back to another held direction
 when a requested turn is blocked. Pressing Space mid-step places a bomb at the next cell

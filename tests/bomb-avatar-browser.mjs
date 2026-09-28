@@ -14,11 +14,15 @@ const context = await browser.newContext({ viewport: { width: 1440, height: 900 
 await context.addInitScript(() => {
   window.__mushroomDraws = 0;
   window.__mushroomDrawWidths = [];
+  window.__bomberDraws = 0;
   const original = CanvasRenderingContext2D.prototype.drawImage;
   CanvasRenderingContext2D.prototype.drawImage = function avatarDrawImage(image, ...args) {
     if (String(image?.src || "").includes("assets/sprites/super-mushroom-v1.png")) {
       window.__mushroomDraws += 1;
       window.__mushroomDrawWidths.push(args[2]);
+    }
+    if (image instanceof HTMLCanvasElement && image.width === 736 && image.height === 708) {
+      window.__bomberDraws += 1;
     }
     return original.call(this, image, ...args);
   };
@@ -66,6 +70,8 @@ try {
   assert.equal(await page.evaluate(() => window.__BOMB_GAME__.getSelectedAvatar()), "bomber");
   assert.equal(await page.locator("#bombAvatarMenu").isHidden(), true);
   await page.locator("#overlayStartBombGame").click();
+  await page.waitForFunction(() => window.__bomberDraws > 0);
+  await page.screenshot({ path: path.join(root, "tmp", "bomb-avatar-bomber-desktop.png") });
   const before = await page.evaluate(() => window.__BOMB_GAME__.getState());
   await page.locator("#bombAvatarToggle").click();
   await page.waitForTimeout(220);
@@ -83,7 +89,7 @@ try {
   assert.deepEqual(after.map, before.map, "avatar change does not restart the level");
   await page.waitForFunction(() => window.__mushroomDraws > 0);
   assert.deepEqual(await page.evaluate(() => [...new Set(window.__mushroomDrawWidths)]), [52], "mushroom image is 20% smaller than its previous 65px draw width");
-  await page.screenshot({ path: path.join(root, "tests", "bomb-avatar-mushroom-desktop.png") });
+  await page.screenshot({ path: path.join(root, "tmp", "bomb-avatar-mushroom-desktop.png") });
 
   await page.reload();
   await page.waitForFunction(() => Boolean(window.__BOMB_GAME__));
@@ -98,13 +104,18 @@ try {
   await assertLayout(390);
   await page.locator('[data-avatar="fly-star"]').tap();
   assert.equal(await page.evaluate(() => window.__BOMB_GAME__.getSelectedAvatar()), "fly-star");
+  await page.evaluate(() => { window.__bomberDraws = 0; });
+  await page.locator("#bombAvatarToggle").tap();
+  await page.locator('[data-avatar="bomber"]').tap();
+  await page.waitForFunction(() => window.__bomberDraws > 0);
+  await page.screenshot({ path: path.join(root, "tmp", "bomb-avatar-bomber-390.png") });
   await page.evaluate(() => { window.__mushroomDraws = 0; });
   await page.evaluate(() => { window.__mushroomDrawWidths = []; });
   await page.locator("#bombAvatarToggle").tap();
   await page.locator('[data-avatar="super-mushroom"]').tap();
   await page.waitForFunction(() => window.__mushroomDraws > 0);
   assert.deepEqual(await page.evaluate(() => [...new Set(window.__mushroomDrawWidths)]), [52], "mobile mushroom uses the same reduced sprite size");
-  await page.screenshot({ path: path.join(root, "tests", "bomb-avatar-mushroom-390.png") });
+  await page.screenshot({ path: path.join(root, "tmp", "bomb-avatar-mushroom-390.png") });
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
   const mushroomDraws = await page.evaluate(() => window.__mushroomDraws);
 
@@ -120,6 +131,9 @@ try {
   const sprite = await page.request.get(baseUrl + "assets/sprites/super-mushroom-v1.png?v=1.0");
   assert.equal(sprite.status(), 200);
   assert.match(sprite.headers()["content-type"] || "", /image\/png/);
+  const bomberSprite = await page.request.get(baseUrl + "assets/sprites/bomber-original-v1.png?v=1.0");
+  assert.equal(bomberSprite.status(), 200);
+  assert.match(bomberSprite.headers()["content-type"] || "", /image\/png/);
   assert.deepEqual(errors, []);
   console.log(JSON.stringify({ ok: true, browser: "Microsoft Edge", avatars: ["bomber", "fly-star", "super-mushroom"], viewports: [1440, 390], mushroomDraws }));
 } finally {

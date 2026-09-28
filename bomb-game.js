@@ -86,6 +86,7 @@
   const BOMB_TIMER = 2;
   const FLAME_TIME = 0.5;
   const PLAYER_MOVE_TIME = 0.18;
+  const PLAYER_TURN_BUFFER_TIME = 0.55;
   const ENEMY_MOVE_TIME = 0.55;
   const ENEMY_MOVE_RANDOM_TIME = 0.125;
   const MUSHROOM_SPEED_FACTOR = 0.9;
@@ -191,6 +192,10 @@
   fireFlowerImage.src = "./其他素材/P305/Mario SVG Bundle/PNG/253.png";
   const superMushroomImage = new Image();
   superMushroomImage.src = "./assets/sprites/super-mushroom-v1.png?v=1.0";
+  const bomberImage = new Image();
+  let bomberPieces = null;
+  bomberImage.onload = () => { bomberPieces = makeBomberPieces(bomberImage); };
+  bomberImage.src = "./assets/sprites/bomber-original-v1.png?v=1.0";
   const FLY_STAR_BOUNDS = { minX: 192, minY: 92, width: 2440, height: 1872 };
   const FLY_STAR_PARTS = [
     { file: "Part_06.png", x: 752, y: -709.5, width: 1120, height: 1235, pivotX: 1180, pivotY: 880, amplitude: 0.15 },
@@ -213,6 +218,7 @@
   let lastRenderedLearningCardCount = 0;
   const heldDirections = new Set();
   let queuedDirection = "";
+  let queuedDirectionRemaining = 0;
   let queuedBombPlacement = false;
 
   const state = {
@@ -514,6 +520,7 @@
   function clearInputState() {
     heldDirections.clear();
     queuedDirection = "";
+    queuedDirectionRemaining = 0;
     queuedBombPlacement = false;
   }
 
@@ -1477,7 +1484,6 @@
   function preferredDirections() {
     const candidates = [];
     if (queuedDirection) candidates.push(queuedDirection);
-    queuedDirection = "";
     if (heldDirections.has(lastDirection) && !candidates.includes(lastDirection)) candidates.push(lastDirection);
     for (const direction of Array.from(heldDirections).reverse()) {
       if (!candidates.includes(direction)) candidates.push(direction);
@@ -1560,6 +1566,10 @@
       }
       if (isCellOpen(targetX, targetY, "player")) {
         startMove(player, direction, PLAYER_MOVE_TIME);
+        if (direction === queuedDirection) {
+          queuedDirection = "";
+          queuedDirectionRemaining = 0;
+        }
         return true;
       }
     }
@@ -1568,6 +1578,10 @@
 
   function updatePlayer(dt) {
     const player = state.player;
+    if (queuedDirection) {
+      queuedDirectionRemaining -= dt;
+      if (queuedDirectionRemaining <= 0) queuedDirection = "";
+    }
     player.invulnerable = Math.max(0, player.invulnerable - dt);
     state.bombs.forEach((bomb) => {
       if (bomb.ownerInside && (Math.round(player.gx) !== bomb.gx || Math.round(player.gy) !== bomb.gy)) {
@@ -3209,54 +3223,82 @@
 
   function drawBomber(center) {
     const moving = state.status === "playing" && Boolean(state.player.move || heldDirections.size);
-    const bob = Math.sin(animationClock * (moving ? 11 : 4)) * (moving ? 2 : 1);
+    const stride = moving ? Math.sin(animationClock * 13) : 0;
     ctx.save();
-    ctx.translate(center.x, center.y - 5 + bob);
-    ctx.rotate(moving ? (lastDirection === "left" ? -0.06 : lastDirection === "right" ? 0.06 : 0) : 0);
-    ctx.fillStyle = "#172554";
-    for (const side of [-1, 1]) {
-      ctx.beginPath();
-      ctx.ellipse(side * 13, 23, 13, 7, side * 0.14, 0, Math.PI * 2);
-      ctx.fill();
+    ctx.translate(center.x, center.y - 7 + (moving ? Math.abs(stride) : 0));
+    if (bomberPieces) {
+      const footWidth = 19;
+      const footHeight = 19;
+      ctx.drawImage(bomberPieces.leftFoot, -24 - stride * 3, 17 - Math.max(0, stride) * 3, footWidth, footHeight);
+      ctx.drawImage(bomberPieces.rightFoot, 5 + stride * 3, 17 + Math.min(0, stride) * 3, footWidth, footHeight);
+      ctx.drawImage(bomberPieces.body, -29, -33, 58, 56);
+    } else {
+      ctx.font = "48px sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("💣", 0, 0);
     }
-    ctx.fillStyle = "#2563eb";
-    ctx.beginPath();
-    ctx.ellipse(0, 7, 18, 21, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "#f8fafc";
-    for (const side of [-1, 1]) {
-      ctx.beginPath();
-      ctx.ellipse(side * 23, 9, 8, 10, side * 0.22, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    ctx.fillStyle = "#f8fafc";
-    ctx.strokeStyle = "#1e3a5f";
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.ellipse(0, -18, 24, 24, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
-    ctx.fillStyle = "#fbd6a5";
-    ctx.beginPath();
-    ctx.ellipse(0, -15, 16, 13, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "#18263a";
-    for (const side of [-1, 1]) {
-      ctx.beginPath();
-      ctx.ellipse(side * 6, -15, 2.7, 5, 0, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    ctx.strokeStyle = "#1e3a5f";
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(0, -41);
-    ctx.lineTo(0, -48);
-    ctx.stroke();
-    ctx.fillStyle = "#f43f5e";
-    ctx.beginPath();
-    ctx.arc(0, -49, 5, 0, Math.PI * 2);
-    ctx.fill();
     ctx.restore();
+  }
+
+  function makeBomberPieces(image) {
+    // The unchanged legacy PNG is an atlas: body and two feet are separate alpha islands.
+    const source = document.createElement("canvas");
+    source.width = image.naturalWidth;
+    source.height = image.naturalHeight;
+    const sourceCtx = source.getContext("2d", { willReadFrequently: true });
+    sourceCtx.drawImage(image, 0, 0);
+    const { data } = sourceCtx.getImageData(0, 0, source.width, source.height);
+    const visited = new Uint8Array(source.width * source.height);
+    const queue = new Uint32Array(visited.length);
+
+    function pieceAt(seedX, seedY) {
+      const seed = seedY * source.width + seedX;
+      if (!data[seed * 4 + 3] || visited[seed]) return null;
+      let head = 0;
+      let tail = 1;
+      queue[0] = seed;
+      visited[seed] = 1;
+      let minX = seedX;
+      let maxX = seedX;
+      let minY = seedY;
+      let maxY = seedY;
+      while (head < tail) {
+        const index = queue[head++];
+        const x = index % source.width;
+        const y = (index - x) / source.width;
+        minX = Math.min(minX, x);
+        maxX = Math.max(maxX, x);
+        minY = Math.min(minY, y);
+        maxY = Math.max(maxY, y);
+        for (const neighbor of [x > 0 ? index - 1 : -1, x + 1 < source.width ? index + 1 : -1,
+          y > 0 ? index - source.width : -1, y + 1 < source.height ? index + source.width : -1]) {
+          if (neighbor < 0 || visited[neighbor] || !data[neighbor * 4 + 3]) continue;
+          visited[neighbor] = 1;
+          queue[tail++] = neighbor;
+        }
+      }
+      const piece = document.createElement("canvas");
+      piece.width = maxX - minX + 1;
+      piece.height = maxY - minY + 1;
+      const pieceCtx = piece.getContext("2d");
+      const pixels = pieceCtx.createImageData(piece.width, piece.height);
+      for (let i = 0; i < tail; i += 1) {
+        const index = queue[i];
+        const x = index % source.width;
+        const y = (index - x) / source.width;
+        const from = index * 4;
+        const to = ((y - minY) * piece.width + x - minX) * 4;
+        pixels.data.set(data.subarray(from, from + 4), to);
+      }
+      pieceCtx.putImageData(pixels, 0, 0);
+      return piece;
+    }
+
+    const leftFoot = pieceAt(50, 80);
+    const rightFoot = pieceAt(490, 80);
+    const body = pieceAt(300, 350);
+    return leftFoot && rightFoot && body ? { leftFoot, rightFoot, body } : null;
   }
 
   function drawSuperMushroom(center) {
@@ -3656,7 +3698,10 @@
       }
       heldDirections.add(direction);
       lastDirection = direction;
-      if (!event.repeat) queuedDirection = direction;
+      if (!event.repeat) {
+        queuedDirection = direction;
+        queuedDirectionRemaining = PLAYER_TURN_BUFFER_TIME;
+      }
       return;
     }
     if (event.code === "Space") {

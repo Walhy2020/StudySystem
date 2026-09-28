@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -34,7 +35,7 @@ const calculateLayout = new Function(
 
 assert.match(html, /<canvas id="bombCanvas" width="1280" height="720"/);
 assert.ok(html.includes('bomb-game.css?v=1.2'));
-assert.ok(html.includes('bomb-game.js?v=2.14'));
+assert.ok(html.includes('bomb-game.js?v=2.15'));
 assert.ok(js.includes('const SUPER_MUSHROOM_AVATAR_SCALE = 0.8;'));
 assert.ok(js.includes('const width = 65 * SUPER_MUSHROOM_AVATAR_SCALE;'));
 assert.ok(html.includes('id="bombAvatarToggle"'));
@@ -43,6 +44,17 @@ for (const avatar of ["bomber", "fly-star", "super-mushroom"]) {
   assert.ok(html.includes(`data-avatar="${avatar}"`), `avatar option: ${avatar}`);
 }
 assert.ok(html.includes("assets/sprites/super-mushroom-v1.png?v=1.0"));
+assert.ok(js.includes('assets/sprites/bomber-original-v1.png?v=1.0'));
+assert.ok(js.includes('makeBomberPieces(bomberImage)'));
+assert.ok(js.includes('const PLAYER_TURN_BUFFER_TIME = 0.55;'));
+const bomber = fs.readFileSync(path.join(root, "assets/sprites/bomber-original-v1.png"));
+assert.equal(bomber.subarray(0, 8).toString("hex"), "89504e470d0a1a0a");
+assert.equal(bomber.readUInt32BE(16), 739);
+assert.equal(bomber.readUInt32BE(20), 741);
+assert.equal(bomber[25], 6, "original Bomber atlas retains its RGBA alpha channel");
+assert.equal(createHash("sha256").update(bomber).digest("hex"),
+  "fb68ba88ebf085ddfec8e46285cc2c19926c629d7531119491ee6fc2647e7c47",
+  "Bomber atlas is byte-for-byte the original 11R-C.png");
 const mushroom = fs.readFileSync(path.join(root, "assets/sprites/super-mushroom-v1.png"));
 assert.equal(mushroom.subarray(0, 8).toString("hex"), "89504e470d0a1a0a");
 assert.equal(mushroom.readUInt32BE(16), 372);
@@ -186,6 +198,7 @@ assert.ok(css.includes("@media (max-width: 480px)"));
 const expectedAssets = [
   "assets/sprites/enemies-bosses.png",
   "assets/sprites/super-mushroom-v1.png",
+  "assets/sprites/bomber-original-v1.png",
   "其他素材/P305/Mario SVG Bundle/PNG/109.png",
   "其他素材/P305/Mario SVG Bundle/PNG/11.png",
   "其他素材/P305/Mario SVG Bundle/PNG/253.png",

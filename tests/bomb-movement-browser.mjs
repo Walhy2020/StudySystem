@@ -44,9 +44,9 @@ try {
     });
     assert.equal(fixture.moonWordIds.length, 5);
 
-    async function loadFixture() {
+    async function loadFixture(saved = fixture) {
       await page.goto(baseUrl + "bomb-game.css?movement-fixture=1");
-      await page.evaluate(({ key, saved }) => localStorage.setItem(key, JSON.stringify(saved)), { key: progressKey, saved: fixture });
+      await page.evaluate(({ key, saved }) => localStorage.setItem(key, JSON.stringify(saved)), { key: progressKey, saved });
       await page.goto(gameUrl);
       await page.waitForFunction(() => Boolean(window.__BOMB_GAME__));
       assert.equal(await page.evaluate(() => window.__BOMB_GAME__.isAwaitingContinue()), true);
@@ -54,7 +54,7 @@ try {
       const setup = await page.evaluate(() => window.__BOMB_GAME__.getState());
       assert.equal(setup.map[3][3], 0);
       assert.equal(setup.map[3][4], 0);
-      assert.equal(setup.map[2][4], 0);
+      assert.equal(setup.map[2][4], saved.map[2][4]);
       assert.deepEqual([setup.player.gx, setup.player.gy], [3, 3]);
     }
 
@@ -86,6 +86,28 @@ try {
     const turned = await page.evaluate(() => window.__BOMB_GAME__.getState().player);
     assert.equal(turned.gx, 4, "a quick turn waits until the cell center");
 
+    const earlyTurnFixture = structuredClone(fixture);
+    earlyTurnFixture.map[2][4] = 1;
+    await loadFixture(earlyTurnFixture);
+    await page.keyboard.down("ArrowRight");
+    await page.evaluate(async () => {
+      await new Promise(resolve => {
+        const tapTurn = () => {
+          const player = window.__BOMB_GAME__.getState().player;
+          if (player.move?.direction === "right" && player.gx >= 3.3 && player.gx <= 3.7) {
+            window.dispatchEvent(new KeyboardEvent("keydown", { code: "ArrowUp", key: "ArrowUp", bubbles: true }));
+            window.dispatchEvent(new KeyboardEvent("keyup", { code: "ArrowUp", key: "ArrowUp", bubbles: true }));
+            resolve();
+          } else requestAnimationFrame(tapTurn);
+        };
+        tapTurn();
+      });
+    });
+    await page.waitForFunction(() => window.__BOMB_GAME__.getState().player.gy < 3);
+    await page.keyboard.up("ArrowRight");
+    const earlyTurn = await page.evaluate(() => window.__BOMB_GAME__.getState().player);
+    assert.equal(earlyTurn.gx, 5, "an early tap survives the blocked first junction and turns at the next one");
+
     await loadFixture();
     await page.keyboard.down("ArrowRight");
     const target = await page.evaluate(async () => {
@@ -115,7 +137,7 @@ try {
     assert.deepEqual([afterButtonKey.gx, afterButtonKey.gy], [beforeButtonKey.gx, beforeButtonKey.gy], "focused controls keep native arrow behavior");
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     assert.deepEqual(errors, []);
-    results.push({ width, continuous: continuous.gx, turn: [turned.gx, turned.gy], bomb: target });
+    results.push({ width, continuous: continuous.gx, turn: [turned.gx, turned.gy], earlyTurn: [earlyTurn.gx, earlyTurn.gy], bomb: target });
     await context.close();
   }
   console.log(JSON.stringify({ ok: true, browser: "Microsoft Edge", results }));

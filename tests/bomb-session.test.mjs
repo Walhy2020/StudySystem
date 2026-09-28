@@ -113,6 +113,7 @@ test("怪物碰撞沿真实路线退两格：直行、拐弯、半步、短路�
 test("无敌恰好1秒，与闪烁同步结束；存档暂停不会耗掉无敌时间", () => {
   const state = { player: { invulnerable: 1 }, bombs: [] };
   const app = new Function("state", `
+    let queuedDirection = "", queuedDirectionRemaining = 0;
     const startPreferredPlayerMove = () => false;
     ${extract("updatePlayer")}
     ${extract("isPlayerBlinkHidden")}
@@ -135,11 +136,12 @@ test("玩家匀速起步并连续跨格，短按转向和移动中落弹不会�
     return new Function("map", `
       const DIRS = { up:{x:0,y:-1}, down:{x:0,y:1}, left:{x:-1,y:0}, right:{x:1,y:0} };
       const PLAYER_MOVE_TIME = 0.18;
+      const PLAYER_TURN_BUFFER_TIME = 0.55;
       const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
       const state = { status:"playing", map, bombLimit:3, flameRange:1, bombs:[],
         player:{ gx:2, gy:2, move:null, invulnerable:0 } };
       const heldDirections = new Set();
-      let queuedDirection = "", queuedBombPlacement = false, lastDirection = "right";
+      let queuedDirection = "", queuedDirectionRemaining = 0, queuedBombPlacement = false, lastDirection = "right";
       const rememberPlayerCell = () => {}, shellAt = () => null, pushShell = () => {};
       const bombAt = (gx, gy) => state.bombs.find(bomb => bomb.gx === gx && bomb.gy === gy);
       const isCellOpen = (gx, gy) => map[gy]?.[gx] === 0 && !bombAt(gx, gy);
@@ -152,7 +154,8 @@ test("玩家匀速起步并连续跨格，短按转向和移动中落弹不会�
       ${extract("updatePlayer")}
       ${extract("placeBomb")}
       return { state, updatePlayer, placeBomb,
-        press(direction) { heldDirections.add(direction); lastDirection = direction; queuedDirection = direction; },
+        press(direction) { heldDirections.add(direction); lastDirection = direction; queuedDirection = direction;
+          queuedDirectionRemaining = PLAYER_TURN_BUFFER_TIME; },
         release(direction) { heldDirections.delete(direction); } };
     `)(map);
   }
@@ -182,6 +185,16 @@ test("玩家匀速起步并连续跨格，短按转向和移动中落弹不会�
   blockedTurn.updatePlayer(0.11);
   assert.ok(blockedTurn.state.player.gx > 3, "a blocked turn does not interrupt the still-held direction");
   assert.equal(blockedTurn.state.player.gy, 2);
+
+  const earlyTurn = harness([[3, 1]]);
+  earlyTurn.press("right");
+  earlyTurn.updatePlayer(0.08);
+  earlyTurn.press("up");
+  earlyTurn.release("up");
+  earlyTurn.updatePlayer(0.11);
+  earlyTurn.updatePlayer(0.18);
+  assert.equal(earlyTurn.state.player.gx, 4, "brief turn remains queued past the blocked junction");
+  assert.equal(earlyTurn.state.player.move?.direction, "up", "the next open junction takes the buffered turn");
 
   const bombing = harness();
   bombing.press("right");

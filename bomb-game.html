@@ -7,28 +7,36 @@
     <link rel="icon" href="data:," />
     <title>炸弹迷宫 - 马里奥学习系统</title>
 
-    <link rel="stylesheet" href="./bomb-game.css?v=1.2" />
+    <link rel="stylesheet" href="./bomb-game.css?v=1.3" />
   </head>
   <body>
     <div class="bomb-game-app">
       <header class="bomb-topbar">
         <div class="bomb-hud" aria-label="游戏状态">
           <span class="hud-pill">❤️ <strong id="bombHp">3</strong></span>
-          <span class="hud-pill">💣 <strong id="bombAmmo">3</strong></span>
+          <span class="hud-pill"><span id="attackHudIcon" aria-hidden="true">💣</span><strong id="bombAmmo">3</strong></span>
           <span class="hud-pill">🍄 <strong id="mushroomLeft">0</strong></span>
           <span class="hud-pill">关卡 <strong id="bombLevel">1-1/5</strong></span>
-          <span class="hud-pill">威力 <strong id="bombPower">1</strong></span>
+          <span class="hud-pill"><span id="attackRangeLabel">威力</span><strong id="bombPower">1</strong></span>
         </div>
         <nav class="bomb-actions">
           <button id="startBombGame" type="button">开始</button>
           <button id="restartBombGame" type="button">重开</button>
           <button id="bombAvatarToggle" type="button" aria-expanded="false" aria-controls="bombAvatarMenu" aria-label="选择主角，当前小飞星">选择主角</button>
+          <button id="bombAttackToggle" type="button" aria-expanded="false" aria-controls="bombAttackMenu" aria-label="选择攻击方式，当前炸弹">攻击</button>
           <button id="bombSoundToggle" type="button" aria-label="关闭音效" aria-pressed="true" title="关闭音效">🔊</button>
           <a href="./index.html">返回</a>
           <div class="bomb-avatar-menu" id="bombAvatarMenu" role="group" aria-label="选择游戏主角" hidden>
             <button type="button" data-avatar="bomber" aria-pressed="false"><span class="avatar-option-icon" aria-hidden="true">💣</span><span>炸弹人</span></button>
             <button type="button" data-avatar="fly-star" aria-pressed="true"><span class="avatar-option-icon" aria-hidden="true">⭐</span><span>小飞星</span></button>
             <button type="button" data-avatar="super-mushroom" aria-pressed="false"><img src="./assets/sprites/super-mushroom-v1.png?v=1.0" width="48" height="48" alt="" /><span>超级蘑菇</span></button>
+          </div>
+          <div class="bomb-attack-menu" id="bombAttackMenu" role="group" aria-label="选择攻击方式" hidden>
+            <button type="button" data-attack-mode="bomb" aria-pressed="true">💣 炸弹</button>
+            <button type="button" data-attack-mode="mushroom" aria-pressed="false">🍄 扔小蘑菇</button>
+            <label for="mushroomThrowDistance">投掷距离 <output id="mushroomThrowDistanceValue" for="mushroomThrowDistance">3 格</output></label>
+            <input id="mushroomThrowDistance" type="range" min="1" max="8" step="1" value="3" aria-label="小蘑菇投掷距离，单位格" />
+            <p class="bomb-attack-help">空格投掷，朝最后移动的方向</p>
           </div>
         </nav>
       </header>
@@ -49,7 +57,7 @@
   <script src="./data/pinyin-readings.js?v=1.0"></script>
 
   <script src="./src/bomb-audio.js?v=1.1"></script>
-  <script src="./bomb-game.js?v=2.15"></script>
-  <script type="module" src="./src/version-update.js?v=1.0.23"></script>
+  <script src="./bomb-game.js?v=2.16"></script>
+  <script type="module" src="./src/version-update.js?v=1.0.24"></script>
 </body>
 </html>

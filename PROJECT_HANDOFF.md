@@ -7,7 +7,18 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.23** (2026-09-28). Bomb maze's selectable Bomber now
+System display version: **v1.0.24** (2026-09-28). Bomb maze adds a selectable
+Mushroom Throw attack alongside the existing bomb attack. Space throws a small red
+mushroom in the last movement direction; it travels 1–8 configurable cells (default 3),
+stops at the first wall, brick, or enemy, breaks bricks and damages enemies without
+creating player-harming flames. Mushroom mode does not seed or show Fire Flowers;
+existing bomb-mode Fire Flowers and bomb rules remain unchanged. Attack mode, throw
+distance and in-flight mushrooms use the existing bomb progress key, with old saves
+defaulting to bomb mode. Bomb CSS/JS caches: v1.3/v2.16; all seven update-notifier
+queries are v1.0.24.
+Focused Edge check: `node tests/bomb-mushroom-attack-browser.mjs` (desktop and 390px).
+
+Previous v1.0.23 (2026-09-28). Bomb maze's selectable Bomber now
 uses the unchanged 739×741 RGBA `11R-C.png` atlas from the legacy system, checked in as
 `assets/sprites/bomber-original-v1.png`. The game assembles its separate body and feet
 at runtime; the temporary hand-drawn character is removed. Brief turn taps now stay

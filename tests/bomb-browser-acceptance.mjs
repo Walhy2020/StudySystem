@@ -194,8 +194,8 @@ const primaryBefore = await page.evaluate(({ hanziKey, legacyKey }) => ({
 const resourcePaths = [
   "index.html",
   "bomb-game.html",
-  "bomb-game.css?v=1.2",
-  "bomb-game.js?v=2.15",
+  "bomb-game.css?v=1.3",
+  "bomb-game.js?v=2.16",
   "src/bomb-audio.js?v=1.1",
   "data/characters.js?v=1.0",
   "data/pinyin-readings.js?v=1.0",

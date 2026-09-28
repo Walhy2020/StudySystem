@@ -5,6 +5,11 @@
   const BOMB_PROGRESS_KEY = "mario-bomb-game-progress-v1";
   const BOMB_PROGRESS_VERSION = 1;
   const AVATAR_LABELS = Object.freeze({ bomber: "炸弹人", "fly-star": "小飞星", "super-mushroom": "超级蘑菇" });
+  const ATTACK_LABELS = Object.freeze({ bomb: "炸弹", mushroom: "小蘑菇" });
+  const DEFAULT_THROW_DISTANCE = 3;
+  const MIN_THROW_DISTANCE = 1;
+  const MAX_THROW_DISTANCE = 8;
+  const MUSHROOM_THROW_STEP_TIME = 0.09;
   const SUPER_MUSHROOM_AVATAR_SCALE = 0.8;
   const canvas = document.getElementById("bombCanvas");
   const ctx = canvas.getContext("2d");
@@ -24,6 +29,12 @@
   const restartButton = document.getElementById("restartBombGame");
   const avatarToggle = document.getElementById("bombAvatarToggle");
   const avatarMenu = document.getElementById("bombAvatarMenu");
+  const attackToggle = document.getElementById("bombAttackToggle");
+  const attackMenu = document.getElementById("bombAttackMenu");
+  const throwDistanceInput = document.getElementById("mushroomThrowDistance");
+  const throwDistanceValue = document.getElementById("mushroomThrowDistanceValue");
+  const attackHudIcon = document.getElementById("attackHudIcon");
+  const attackRangeLabel = document.getElementById("attackRangeLabel");
   const soundToggle = document.getElementById("bombSoundToggle");
   const sounds = window.createBombSoundPlayer();
   const openAllBricksButton = document.getElementById("openAllBricks");
@@ -209,6 +220,7 @@
   let flyStarLayers = null;
   let playerAvatar = "fly-star";
   let avatarMenuOpen = false;
+  let attackMenuOpen = false;
 
   let lastTime = performance.now();
   let animationClock = 0;
@@ -225,6 +237,7 @@
     status: "ready",
     map: [],
     bombs: [],
+    mushroomShots: [],
     explosions: [],
     particles: [],
     powerUps: [],
@@ -235,6 +248,8 @@
     hp: MAX_HP,
     bombLimit: 3,
     flameRange: 1,
+    attackMode: "bomb",
+    throwDistance: DEFAULT_THROW_DISTANCE,
     fireFlowersSpawned: 0,
     hiddenPowerUps: new Map(),
     hiddenWordCrates: new Map(),
@@ -294,12 +309,15 @@
       hp: state.hp,
       bombLimit: state.bombLimit,
       flameRange: state.flameRange,
+      attackMode: state.attackMode,
+      throwDistance: state.throwDistance,
       fireFlowersSpawned: state.fireFlowersSpawned,
       dayClock: state.dayClock,
       enemyClearOpenedBricks: state.enemyClearOpenedBricks,
       playSource: state.playSource,
       map: plainArray(state.map),
       bombs: plainArray(state.bombs),
+      mushroomShots: plainArray(state.mushroomShots),
       explosions: plainArray(state.explosions),
       particles: plainArray(state.particles),
       powerUps: plainArray(state.powerUps),
@@ -363,7 +381,27 @@
     });
   }
 
+  function updateAttackUi() {
+    const mushroomMode = state.attackMode === "mushroom";
+    attackToggle.setAttribute("aria-label", `选择攻击方式，当前${ATTACK_LABELS[state.attackMode]}`);
+    attackToggle.title = `当前攻击：${ATTACK_LABELS[state.attackMode]}`;
+    attackMenu.querySelectorAll("[data-attack-mode]").forEach((button) => {
+      button.setAttribute("aria-pressed", String(button.dataset.attackMode === state.attackMode));
+    });
+    throwDistanceInput.value = String(state.throwDistance);
+    throwDistanceInput.disabled = !mushroomMode;
+    throwDistanceValue.textContent = `${state.throwDistance} 格`;
+    throwDistanceInput.setAttribute("aria-valuetext", `${state.throwDistance} 格`);
+    updateHud();
+  }
+
+  function clearFireFlowersForMushroomMode() {
+    state.hiddenPowerUps = new Map([...state.hiddenPowerUps].filter(([, type]) => type !== "fireFlower"));
+    state.powerUps = state.powerUps.filter((powerUp) => powerUp.type !== "fireFlower");
+  }
+
   function setAvatarMenuOpen(open) {
+    if (open && attackMenuOpen) setAttackMenuOpen(false);
     avatarMenuOpen = Boolean(open);
     avatarMenu.hidden = !avatarMenuOpen;
     avatarToggle.setAttribute("aria-expanded", String(avatarMenuOpen));
@@ -372,6 +410,30 @@
       saveBombProgress();
       avatarMenu.querySelector('[aria-pressed="true"]')?.focus();
     }
+  }
+
+  function setAttackMenuOpen(open) {
+    if (open && avatarMenuOpen) setAvatarMenuOpen(false);
+    attackMenuOpen = Boolean(open);
+    attackMenu.hidden = !attackMenuOpen;
+    attackToggle.setAttribute("aria-expanded", String(attackMenuOpen));
+    if (attackMenuOpen) {
+      clearInputState();
+      saveBombProgress();
+      attackMenu.querySelector('[aria-pressed="true"]')?.focus();
+    }
+  }
+
+  function selectAttackMode(mode) {
+    if (!Object.hasOwn(ATTACK_LABELS, mode)) return;
+    claimBombProgress();
+    state.attackMode = mode;
+    if (mode === "mushroom") clearFireFlowersForMushroomMode();
+    updateAttackUi();
+    setAttackMenuOpen(false);
+    saveBombProgress();
+    if (state.status === "playing" && !awaitingContinue) canvas.focus();
+    else attackToggle.focus();
   }
 
   function selectPlayerAvatar(avatar) {
@@ -440,12 +502,19 @@
     state.hp = Math.max(0, Math.min(MAX_HP + 20, Number(saved.hp) || MAX_HP));
     state.bombLimit = Math.max(1, Math.min(10, Number(saved.bombLimit) || 3));
     state.flameRange = Math.max(1, Math.min(99, Number(saved.flameRange) || 1));
+    state.attackMode = Object.hasOwn(ATTACK_LABELS, saved.attackMode) ? saved.attackMode : "bomb";
+    state.throwDistance = clamp(Math.round(Number(saved.throwDistance) || DEFAULT_THROW_DISTANCE),
+      MIN_THROW_DISTANCE, MAX_THROW_DISTANCE);
     state.fireFlowersSpawned = Math.max(0, Number(saved.fireFlowersSpawned) || 0);
     state.dayClock = Math.max(0, Number(saved.dayClock) || 0);
     state.enemyClearOpenedBricks = Boolean(saved.enemyClearOpenedBricks);
     state.playSource = saved.playSource || null;
     state.map = saved.map;
     state.bombs = plainArray(saved.bombs);
+    state.mushroomShots = plainArray(saved.mushroomShots).filter((shot) =>
+      Object.hasOwn(DIRS, shot?.direction) && Number.isInteger(shot.gx) && Number.isInteger(shot.gy) &&
+      isInside(shot.gx, shot.gy) && Number.isFinite(shot.progress) && Number.isInteger(shot.steps) &&
+      Number.isInteger(shot.range) && shot.range >= MIN_THROW_DISTANCE && shot.range <= MAX_THROW_DISTANCE);
     state.explosions = plainArray(saved.explosions);
     state.particles = plainArray(saved.particles);
     state.powerUps = plainArray(saved.powerUps);
@@ -456,7 +525,9 @@
     normalizeRestoredPlayerMove(state.player);
     playerAvatar = Object.hasOwn(AVATAR_LABELS, saved.playerAvatar) ? saved.playerAvatar : "fly-star";
     updateAvatarUi();
+    updateAttackUi();
     state.hiddenPowerUps = new Map(Array.isArray(saved.hiddenPowerUps) ? saved.hiddenPowerUps : []);
+    if (state.attackMode === "mushroom") clearFireFlowersForMushroomMode();
     state.hiddenWordCrates = new Map(Array.isArray(saved.hiddenWordCrates) ? saved.hiddenWordCrates : []);
     state.todayNewWords = plainArray(saved.todayNewWords).map((word) => wordById(word.id)).filter(Boolean);
     state.bombRunWordIds = plainArray(saved.bombRunWordIds);
@@ -1142,7 +1213,7 @@
       state.hiddenPowerUps.set(coordKey(greenMushroomCell.x, greenMushroomCell.y), "greenMushroom");
     }
 
-    const count = Math.min(maxFireFlowersForLevel(), candidates.length);
+    const count = state.attackMode === "mushroom" ? 0 : Math.min(maxFireFlowersForLevel(), candidates.length);
     for (let index = 0; index < count; index += 1) {
       const cell = candidates.shift();
       state.hiddenPowerUps.set(coordKey(cell.x, cell.y), "fireFlower");
@@ -1263,6 +1334,7 @@
     state.status = "ready";
     state.map = createMap();
     state.bombs = [];
+    state.mushroomShots = [];
     state.explosions = [];
     state.particles = [];
     state.powerUps = [];
@@ -1313,6 +1385,7 @@
 
   function startGame() {
     setAvatarMenuOpen(false);
+    setAttackMenuOpen(false);
     sounds.unlock();
     claimBombProgress();
     const resuming = awaitingContinue;
@@ -1355,10 +1428,13 @@
 
   function updateHud() {
     hpNode.textContent = state.hp;
-    ammoNode.textContent = Math.max(0, state.bombLimit - state.bombs.length);
+    const mushroomMode = state.attackMode === "mushroom";
+    attackHudIcon.textContent = mushroomMode ? "🍄" : "💣";
+    ammoNode.textContent = mushroomMode ? "∞" : Math.max(0, state.bombLimit - state.bombs.length);
     mushroomNode.textContent = state.enemies.filter((enemy) => enemy.alive).length;
     if (levelNode) levelNode.textContent = `${state.world}-${state.subLevel}/${LEVELS_PER_WORLD} ${difficultyLabelForSubLevel()}`;
-    if (powerNode) powerNode.textContent = state.flameRange;
+    attackRangeLabel.textContent = mushroomMode ? "距离" : "威力";
+    if (powerNode) powerNode.textContent = mushroomMode ? state.throwDistance : state.flameRange;
     if (moonNode) moonNode.textContent = `${state.moonWordIds.length}/${BOMB_MOONS_PER_LEVEL}`;
     moonIconNode?.classList.toggle("is-lit", state.moonWordIds.length > 0);
     if (scoreNode) scoreNode.textContent = state.score;
@@ -1605,11 +1681,16 @@
   }
 
   function placeBomb() {
-    if (state.status !== "playing" || state.bombs.length >= state.bombLimit) return;
+    if (state.status !== "playing") return;
     if (state.player.move) {
       queuedBombPlacement = true;
       return;
     }
+    if (state.attackMode === "mushroom") {
+      throwMushroom();
+      return;
+    }
+    if (state.bombs.length >= state.bombLimit) return;
     const gx = Math.round(state.player.gx);
     const gy = Math.round(state.player.gy);
     if (bombAt(gx, gy)) return;
@@ -1625,6 +1706,65 @@
     stopEnemiesMovingIntoBombs();
     updateHud();
     saveBombProgress();
+  }
+
+  function throwMushroom() {
+    if (state.mushroomShots.length >= 3) return;
+    const direction = Object.hasOwn(DIRS, lastDirection) ? lastDirection : "right";
+    state.mushroomShots.push({
+      gx: Math.round(state.player.gx),
+      gy: Math.round(state.player.gy),
+      direction,
+      steps: 0,
+      progress: 0,
+      range: state.throwDistance,
+    });
+    sounds.play("place");
+    saveBombProgress();
+  }
+
+  function impactMushroomShot(shot, gx, gy, hitCrate = false) {
+    shot.done = true;
+    sounds.play("explode");
+    if (hitCrate) {
+      openCrateCell(gx, gy);
+    } else {
+      state.enemies.forEach((enemy) => {
+        if (!enemy.alive || Math.round(enemy.gx) !== gx || Math.round(enemy.gy) !== gy) return;
+        if (enemy.type === "bullet-bill") defeatEnemy(enemy);
+        else damageEnemy(enemy);
+      });
+    }
+    spawnParticles("blast", gx, gy);
+    updateHud();
+    checkLevelComplete();
+  }
+
+  function updateMushroomShots(dt) {
+    for (const shot of state.mushroomShots) {
+      if (shot.done) continue;
+      shot.progress += dt;
+      while (shot.progress >= MUSHROOM_THROW_STEP_TIME && !shot.done) {
+        shot.progress -= MUSHROOM_THROW_STEP_TIME;
+        const dir = DIRS[shot.direction];
+        const gx = shot.gx + dir.x;
+        const gy = shot.gy + dir.y;
+        if (!isInside(gx, gy) || state.map[gy][gx] === TILE_HARD) {
+          impactMushroomShot(shot, shot.gx, shot.gy);
+          break;
+        }
+        shot.gx = gx;
+        shot.gy = gy;
+        shot.steps += 1;
+        const hitCrate = state.map[gy][gx] === TILE_CRATE;
+        const hitEnemy = state.enemies.some((enemy) => enemy.alive &&
+          Math.round(enemy.gx) === gx && Math.round(enemy.gy) === gy);
+        if (hitCrate || hitEnemy || shot.steps >= shot.range) {
+          impactMushroomShot(shot, gx, gy, hitCrate);
+        }
+      }
+    }
+    state.mushroomShots = state.mushroomShots.filter((shot) => !shot.done);
   }
 
   function blocksEnemySight(gx, gy) {
@@ -2655,7 +2795,7 @@
   }
 
   function update(dt) {
-    if (awaitingContinue || avatarMenuOpen) return;
+    if (awaitingContinue || avatarMenuOpen || attackMenuOpen) return;
     if (messageTimer > 0) {
       messageTimer -= dt;
       if (messageTimer <= 0 && state.status === "playing") {
@@ -2667,6 +2807,7 @@
     if (state.status !== "playing") return;
     state.dayClock += dt;
     updatePlayer(dt);
+    updateMushroomShots(dt);
     updateShells(dt);
     collectPowerUps();
     updateEnemies(dt);
@@ -2972,6 +3113,28 @@
       ctx.beginPath();
       ctx.arc(10, -32, 4, 0, Math.PI * 2);
       ctx.fill();
+      ctx.restore();
+    });
+  }
+
+  function drawMushroomShots() {
+    state.mushroomShots.forEach((shot) => {
+      const dir = DIRS[shot.direction];
+      if (!dir) return;
+      const fraction = clamp(shot.progress / MUSHROOM_THROW_STEP_TIME, 0, 1);
+      const center = cellCenter(shot.gx + dir.x * fraction, shot.gy + dir.y * fraction);
+      ctx.save();
+      ctx.translate(center.x, center.y - Math.sin(fraction * Math.PI) * 12);
+      ctx.shadowColor = "rgba(254, 202, 87, 0.85)";
+      ctx.shadowBlur = 10;
+      if (superMushroomImage.complete && superMushroomImage.naturalWidth) {
+        ctx.drawImage(superMushroomImage, -15, -15, 30, 30);
+      } else {
+        ctx.font = "28px sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("🍄", 0, 0);
+      }
       ctx.restore();
     });
   }
@@ -3515,6 +3678,7 @@
     drawDayNightOverlay();
     drawEnemyVisions();
     drawBombs();
+    drawMushroomShots();
     drawExplosions();
     drawPowerUps();
     drawShells();
@@ -3530,7 +3694,7 @@
     const dt = Math.min(0.033, (now - lastTime) / 1000 || 0);
     lastTime = now;
     animationClock += dt;
-    sounds.setMusic(state.status === "playing" && !awaitingContinue && !avatarMenuOpen && ownsProgress &&
+    sounds.setMusic(state.status === "playing" && !awaitingContinue && !avatarMenuOpen && !attackMenuOpen && ownsProgress &&
       !document.hidden && document.hasFocus() ? state.world : null);
     if (!document.hidden && ownsProgress) update(dt);
     render();
@@ -3682,8 +3846,14 @@
       avatarToggle.focus();
       return;
     }
+    if (event.key === "Escape" && attackMenuOpen) {
+      event.preventDefault();
+      setAttackMenuOpen(false);
+      attackToggle.focus();
+      return;
+    }
     if (hasNativeKeyboardTarget(event.target)) return;
-    if (avatarMenuOpen) return;
+    if (avatarMenuOpen || attackMenuOpen) return;
     const direction = KEY_DIRS[event.code];
     if (direction) {
       event.preventDefault();
@@ -3781,9 +3951,26 @@
     const option = event.target.closest("[data-avatar]");
     if (option) selectPlayerAvatar(option.dataset.avatar);
   });
+  attackToggle.addEventListener("click", () => {
+    syncBombProgress();
+    setAttackMenuOpen(!attackMenuOpen);
+  });
+  attackMenu.addEventListener("click", (event) => {
+    const option = event.target.closest("[data-attack-mode]");
+    if (option) selectAttackMode(option.dataset.attackMode);
+  });
+  throwDistanceInput.addEventListener("input", () => {
+    claimBombProgress();
+    state.throwDistance = clamp(Number(throwDistanceInput.value), MIN_THROW_DISTANCE, MAX_THROW_DISTANCE);
+    updateAttackUi();
+    saveBombProgress();
+  });
   document.addEventListener("pointerdown", (event) => {
     if (avatarMenuOpen && !avatarToggle.contains(event.target) && !avatarMenu.contains(event.target)) {
       setAvatarMenuOpen(false);
+    }
+    if (attackMenuOpen && !attackToggle.contains(event.target) && !attackMenu.contains(event.target)) {
+      setAttackMenuOpen(false);
     }
   });
   if (!sounds.supported) {
@@ -3808,6 +3995,7 @@
   });
 
   updateAvatarUi();
+  updateAttackUi();
   if (!restoreBombProgress()) {
     resetGame();
   }

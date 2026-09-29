@@ -4,6 +4,8 @@
       72, 76, 79, 76, 74, 77, 81, 77, 79, 81, 84, 81, 79, 76, 72, null], bass: [48, 53, 55, 48] },
     { beat: 0.3, melody: [67, 71, 74, 79, 76, 74, 71, 74, 69, 72, 76, 81, 79, 76, 74, null,
       67, 71, 74, 79, 81, 79, 76, 74, 72, 76, 79, 76, 74, 71, 67, null], bass: [43, 48, 50, 43] },
+    { beat: 0.26, melody: [74, 78, 81, 86, 83, 81, 78, 81, 76, 79, 83, 88, 86, 83, 81, null,
+      74, 78, 81, 86, 88, 86, 83, 81, 79, 83, 86, 83, 81, 78, 74, null], bass: [50, 55, 57, 50] },
   ];
 
   function createBombSoundPlayer(AudioContextClass = window.AudioContext || window.webkitAudioContext) {

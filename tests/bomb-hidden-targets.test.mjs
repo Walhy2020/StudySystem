@@ -11,7 +11,7 @@ const extract = (name) => {
 const coordKey = (x, y) => x + "," + y;
 const words = Array.from({ length: 5 }, (_, index) => ({ id: String(index + 1) }));
 
-test("两个世界十个关卡均固定预留一枚隐藏导弹，不受随机概率影响", () => {
+test("前十关各一枚隐藏导弹，第三世界逐关为二至六枚", () => {
   const state = { world: 1, subLevel: 1 };
   const math = Object.create(Math);
   const helpers = new Function("state", "Math", `
@@ -21,10 +21,33 @@ test("两个世界十个关卡均固定预留一枚隐藏导弹，不受随机�
   `)(state, math);
   for (const random of [0, 0.3499, 0.35, 0.9999]) {
     math.random = () => random;
-    for (state.world = 1; state.world <= 2; state.world++) {
+    for (state.world = 1; state.world <= 3; state.world++) {
       for (state.subLevel = 1; state.subLevel <= 5; state.subLevel++) {
-        assert.equal(helpers.bulletBillBrickCapacityForLevel(), 1);
+        assert.equal(helpers.bulletBillBrickCapacityForLevel(), state.world === 3 ? state.subLevel + 1 : 1);
       }
+    }
+  }
+});
+
+test("第三世界各关多两只普通怪物，旧世界敌人数量不变", () => {
+  const state = { world: 1, subLevel: 1 };
+  const createEnemies = new Function("state", "Math", "getDimensions", `
+    let COLS = 17, ROWS = 11;
+    const difficultyIndexForSubLevel = () => state.subLevel + 1;
+    ${extract("createEnemies")}
+    return () => {
+      ({ COLS, ROWS } = getDimensions(state.world, state.subLevel));
+      return createEnemies();
+    };
+  `)(state, Math, (world, subLevel) => ({
+    COLS: world === 3 ? 27 + (subLevel - 1) * 2 : 17 + (subLevel - 1) * 2,
+    ROWS: world === 3 ? 15 : 11,
+  }));
+  for (state.world = 1; state.world <= 3; state.world += 1) {
+    for (state.subLevel = 1; state.subLevel <= 5; state.subLevel += 1) {
+      const enemies = createEnemies();
+      assert.equal(enemies.length, state.subLevel + 1 + (state.world === 3 ? 2 : 0));
+      assert.equal(enemies.filter(enemy => enemy.type === "koopa-green").length, 1);
     }
   }
 });
@@ -97,14 +120,18 @@ test("五题完成后仍需手动炸出隐藏导弹，且活导弹死亡后才�
   assert.equal(advances, 1);
 });
 
-test("每种地图尺寸在最稀疏随机结果下仍有五个藏题砖，不占出生安全区", () => {
-  for (const COLS of [13, 15, 17, 19, 21]) {
+test("十五关的地图在最稀疏随机结果下仍藏五题和足量导弹，敌人出生格安全", () => {
+  const levels = [
+    ...[17, 19, 21, 23, 25].map((cols, index) => ({ world: 1, subLevel: index + 1, cols, rows: 11 })),
+    ...[27, 29, 31, 33, 35].map((cols, index) => ({ world: 3, subLevel: index + 1, cols, rows: 15 })),
+  ];
+  for (const { world, subLevel, cols: COLS, rows: ROWS } of levels) {
     for (const random of [0, 0.5, 0.999999]) {
-      const state = {};
+      const state = { world, subLevel };
       const math = Object.create(Math);
       math.random = () => random;
-      const helpers = new Function("state", "Math", "COLS", "coordKey", "pendingLevelWords", `
-        const ROWS = 11, TILE_CRATE = 2, TILE_FLOOR = 0, TILE_HARD = 1;
+      const helpers = new Function("state", "Math", "COLS", "ROWS", "coordKey", "pendingLevelWords", `
+        const TILE_CRATE = 2, TILE_FLOOR = 0, TILE_HARD = 1;
         const BOMB_MOONS_PER_LEVEL = 5;
         const maxFireFlowersForLevel = () => 2;
         ${source.match(/const BULLET_BILL_HIDDEN_COUNT_PER_LEVEL = [^;]+;/)[0]}
@@ -112,19 +139,28 @@ test("每种地图尺寸在最稀疏随机结果下仍有五个藏题砖，不�
         ${extract("createMap")}
         ${extract("seedHiddenPowerUps")}
         return { createMap, seedHiddenPowerUps };
-      `)(state, math, COLS, coordKey, () => words);
+      `)(state, math, COLS, ROWS, coordKey, () => words);
       state.map = helpers.createMap();
       helpers.seedHiddenPowerUps();
       assert.equal(state.hiddenWordCrates.size, 5);
       assert.deepEqual([...state.hiddenWordCrates.values()], words.map(word => word.id));
-      assert.equal(state.hiddenPowerUps.size, 4);
-      assert.equal([...state.hiddenPowerUps.values()].filter(type => type === "bulletBill").length, 1);
+      const missiles = world === 3 ? subLevel + 1 : 1;
+      assert.equal(state.hiddenPowerUps.size, 3 + missiles);
+      assert.equal([...state.hiddenPowerUps.values()].filter(type => type === "bulletBill").length, missiles);
       for (const [key] of state.hiddenWordCrates) {
         const [x, y] = key.split(",").map(Number);
         assert.equal(state.map[y][x], 2);
         assert.equal(state.hiddenPowerUps.has(key), false, "target/reward cannot share a brick");
       }
       for (const [x, y] of [[1,1],[1,2],[2,1]]) assert.equal(state.map[y][x], 0);
+      if (world === 3) {
+        const center = Math.floor(COLS / 2);
+        const middle = Math.floor(ROWS / 2);
+        for (const [x, y] of [[COLS - 2, ROWS - 2], [COLS - 2, 1], [1, ROWS - 2],
+          [center, middle], [center - 3, 1], [center + 3, ROWS - 2], [1, middle], [COLS - 2, middle]]) {
+          assert.equal(state.map[y][x], 0, `enemy start ${x},${y} is open`);
+        }
+      }
     }
   }
 });

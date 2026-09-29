@@ -35,7 +35,7 @@ const calculateLayout = new Function(
 
 assert.match(html, /<canvas id="bombCanvas" width="1280" height="720"/);
 assert.ok(html.includes('bomb-game.css?v=1.3'));
-assert.ok(html.includes('bomb-game.js?v=2.16'));
+assert.ok(html.includes('bomb-game.js?v=2.17'));
 assert.ok(html.includes('id="bombAttackToggle"'));
 assert.ok(html.includes('id="mushroomThrowDistance"'));
 assert.ok(js.includes('const MUSHROOM_THROW_STEP_TIME = 0.09;'));
@@ -63,7 +63,7 @@ assert.equal(mushroom.subarray(0, 8).toString("hex"), "89504e470d0a1a0a");
 assert.equal(mushroom.readUInt32BE(16), 372);
 assert.equal(mushroom.readUInt32BE(20), 381);
 assert.equal(mushroom[25], 6, "mushroom PNG keeps its RGBA alpha channel");
-assert.ok(html.includes('src/bomb-audio.js?v=1.1'));
+assert.ok(html.includes('src/bomb-audio.js?v=1.2'));
 assert.ok(html.includes('./data/characters.js?v=1.0'));
 assert.ok(html.includes('./data/pinyin-readings.js?v=1.0'));
 assert.ok(!html.includes("stable-url.js"));
@@ -82,9 +82,14 @@ assert.ok(index.match(/<div class="map-actions"[^>]*>[\s\S]*?id="resetProgress"[
 assert.ok(!index.match(/<div class="map-actions"[^>]*>[\s\S]*?bombGameEntry[\s\S]*?<\/div>/));
 assert.ok(server.includes('path.endswith(".html")'));
 
-assert.ok(js.includes('const WORLDS_PER_RUN = 2;'));
+assert.ok(js.includes('const WORLDS_PER_RUN = 3;'));
 assert.ok(js.includes('const LEVELS_PER_WORLD = 5;'));
-assert.ok(js.includes('const ROWS = 11;'));
+assert.ok(js.includes('let ROWS = 11;'));
+assert.ok(js.includes('const THIRD_WORLD_BASE_COLS = 27;'));
+assert.ok(js.includes('const THIRD_WORLD_ROWS = 15;'));
+assert.ok(js.includes('ROWS = world >= 3 ? THIRD_WORLD_ROWS : 11;'));
+assert.ok(js.includes('return state.world >= 3 ? state.subLevel + 1 : BULLET_BILL_HIDDEN_COUNT_PER_LEVEL;'));
+assert.ok(js.includes('const camera = worldCamera();'));
 assert.ok(js.includes('const COLS_PER_LEVEL = 2;'));
 assert.ok(js.includes('const BOMB_TIMER = 2;'));
 assert.ok(js.includes('const BULLET_BILL_LAUNCH_DELAY = 1;'));

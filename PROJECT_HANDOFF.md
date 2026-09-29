@@ -1,13 +1,24 @@
 # StudySystem cross-device handoff
 
-Last updated: 2026-09-27
+Last updated: 2026-09-29
 Repository: `https://github.com/Walhy2020/StudySystem.git`
 Branch: `main`
 Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.24** (2026-09-28). Bomb maze adds a selectable
+System display version: **v1.0.25** (2026-09-29). Bomb maze now has a third world,
+3-1 through 3-5, for 15 levels total. World 3 maps grow from 27x15 to 35x15
+cells while keeping the 48px tile size; the canvas clips and follows the player
+instead of shrinking the board. It has two extra ordinary enemies per level and
+2/3/4/5/6 hidden Bullet Bills across its five levels. Its background melody is
+distinct from worlds 1 and 2. Existing worlds retain their previous dimensions,
+enemy and missile counts; an old completed 2-5 save opens ready at 3-1, while
+in-progress saves stay intact. Bomb JS/audio caches: v2.17/v1.2; all seven
+update-notifier queries are v1.0.25. Focused Edge check:
+`node tests/bomb-third-world-browser.mjs` (desktop and 390px).
+
+Previous v1.0.24 (2026-09-28). Bomb maze adds a selectable
 Mushroom Throw attack alongside the existing bomb attack. Space throws a small red
 mushroom in the last movement direction; it travels 1–8 configurable cells (default 3),
 stops at the first wall, brick, or enemy, breaks bricks and damages enemies without

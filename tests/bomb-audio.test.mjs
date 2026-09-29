@@ -59,6 +59,11 @@ test("四种游戏音效在手势解锁后各自调度，静音与缺失音频�
   assert.equal(player.getMusicWorld(), 2);
   assert.equal(timers.size, 1, "switching worlds replaces the scheduler");
   assert.notEqual(notes.at(-2), firstWorldNote, "each world starts with a distinct melody");
+  const secondWorldNote = notes.at(-2);
+  player.setMusic(3);
+  assert.equal(player.getMusicWorld(), 3);
+  assert.equal(timers.size, 1, "third world keeps one scheduler");
+  assert.notEqual(notes.at(-2), secondWorldNote, "third world has its own melody");
   player.setEnabled(false);
   assert.equal(player.getMusicWorld(), null);
   assert.equal(timers.size, 0, "muting stops the background loop");

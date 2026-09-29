@@ -84,16 +84,20 @@
   }
 
   const BASE_COLS = 15;
-  const WORLDS_PER_RUN = 2;
+  const WORLDS_PER_RUN = 3;
   const LEVELS_PER_WORLD = 5;
   const COLS_PER_LEVEL = 2;
   let COLS = BASE_COLS;
-  const ROWS = 11;
+  let ROWS = 11;
   const TILE = 48;
   let BOARD_W = COLS * TILE;
-  const BOARD_H = ROWS * TILE;
+  let BOARD_H = ROWS * TILE;
   let BOARD_X = Math.floor((canvas.width - BOARD_W) / 2);
   const BOARD_Y = 108;
+  const THIRD_WORLD_BASE_COLS = 27;
+  const THIRD_WORLD_ROWS = 15;
+  const THIRD_WORLD_BOARD_X = 112;
+  const WORLD_VIEWPORT = Object.freeze({ x: 98, y: 94, width: 1182, height: 626 });
   const BOMB_TIMER = 2;
   const FLAME_TIME = 0.5;
   const PLAYER_MOVE_TIME = 0.18;
@@ -487,7 +491,7 @@
     }
     const savedWorld = Math.max(1, Math.min(WORLDS_PER_RUN, Number(saved.world) || 1));
     const savedSubLevel = Math.max(1, Math.min(LEVELS_PER_WORLD, Number(saved.subLevel) || 1));
-    setLevelDimensions(savedSubLevel);
+    setLevelDimensions(savedWorld, savedSubLevel);
     if (!isValidSavedMap(saved.map)) {
       localStorage.removeItem(BOMB_PROGRESS_KEY);
       lastStoredProgress = null;
@@ -553,6 +557,9 @@
     startLayer.classList.toggle("hidden", !awaitingContinue && Boolean(saved.startLayerHidden));
     clearInputState();
     updateHud();
+    if (state.status === "win" && savedWorld === 2 && savedSubLevel === LEVELS_PER_WORLD) {
+      advanceSubLevel();
+    }
     return true;
   }
 
@@ -564,10 +571,14 @@
     return DIFFICULTY_LABELS[difficultyIndexForSubLevel(subLevel) - 1] || "A";
   }
 
-  function setLevelDimensions(subLevel) {
-    COLS = BASE_COLS + (difficultyIndexForSubLevel(subLevel) - 1) * COLS_PER_LEVEL;
+  function setLevelDimensions(world, subLevel) {
+    COLS = world >= 3
+      ? THIRD_WORLD_BASE_COLS + (subLevel - 1) * COLS_PER_LEVEL
+      : BASE_COLS + (difficultyIndexForSubLevel(subLevel) - 1) * COLS_PER_LEVEL;
+    ROWS = world >= 3 ? THIRD_WORLD_ROWS : 11;
     BOARD_W = COLS * TILE;
-    BOARD_X = Math.floor((canvas.width - BOARD_W) / 2);
+    BOARD_H = ROWS * TILE;
+    BOARD_X = world >= 3 ? THIRD_WORLD_BOARD_X : Math.floor((canvas.width - BOARD_W) / 2);
   }
 
   function maxFireFlowersForLevel() {
@@ -575,7 +586,7 @@
   }
 
   function bulletBillBrickCapacityForLevel() {
-    return BULLET_BILL_HIDDEN_COUNT_PER_LEVEL;
+    return state.world >= 3 ? state.subLevel + 1 : BULLET_BILL_HIDDEN_COUNT_PER_LEVEL;
   }
 
   function makePlayer() {
@@ -603,6 +614,19 @@
     return {
       x: BOARD_X + gx * TILE + TILE / 2,
       y: BOARD_Y + gy * TILE + TILE / 2,
+    };
+  }
+
+  function worldCamera() {
+    if (state.world < 3) return { x: 0, y: 0 };
+    const player = cellCenter(state.player.gx, state.player.gy);
+    const right = WORLD_VIEWPORT.x + WORLD_VIEWPORT.width;
+    const bottom = WORLD_VIEWPORT.y + WORLD_VIEWPORT.height;
+    return {
+      x: clamp(WORLD_VIEWPORT.x + WORLD_VIEWPORT.width / 2 - player.x,
+        right - (BOARD_X + BOARD_W + 14), WORLD_VIEWPORT.x - BOARD_X + 14),
+      y: clamp(WORLD_VIEWPORT.y + WORLD_VIEWPORT.height / 2 - player.y,
+        bottom - (BOARD_Y + BOARD_H + 14), WORLD_VIEWPORT.y - BOARD_Y + 14),
     };
   }
 
@@ -1089,6 +1113,12 @@
       `${center},${middle}`, `${center},${middle - 1}`, `${center},${middle + 1}`,
       `${center - 1},${middle}`, `${center + 1},${middle}`,
     ]);
+    if (state.world >= 3) {
+      [
+        `${Math.max(3, center - 3)},1`, `${Math.min(COLS - 4, center + 3)},${ROWS - 2}`,
+        `1,${middle}`, `${right},${middle}`,
+      ].forEach((cell) => protectedCells.add(cell));
+    }
 
     for (let y = 0; y < ROWS; y += 1) {
       for (let x = 0; x < COLS; x += 1) {
@@ -1153,7 +1183,7 @@
       { gx: right, gy: middle },
     ];
     const difficultyIndex = difficultyIndexForSubLevel();
-    const enemyCount = Math.min(starts.length, Math.max(0, difficultyIndex - 1));
+    const enemyCount = Math.min(starts.length, Math.max(0, difficultyIndex - 1 + (state.world >= 3 ? 2 : 0)));
     const enemies = starts.slice(0, enemyCount).map((start, index) => ({
       id: index + 1,
       type: index === 1 ? "bowser" : "mushroom",
@@ -1330,7 +1360,7 @@
     awaitingContinue = false;
     startButton.textContent = "开始";
     refreshDailyNewWords();
-    setLevelDimensions(state.subLevel);
+    setLevelDimensions(state.world, state.subLevel);
     state.status = "ready";
     state.map = createMap();
     state.bombs = [];
@@ -3582,10 +3612,12 @@
     if (!word) return;
     const isHanziMode = Boolean(hanziWord);
     const targetRound = Math.max(1, bombTargetRoundForId(word.id));
-    const panelWidth = Math.min(112, Math.max(70, BOARD_X - 22));
+    const panelWidth = state.world >= 3 ? 90 : Math.min(112, Math.max(70, BOARD_X - 22));
     const panelHeight = 128;
-    const x = Math.max(8, BOARD_X - panelWidth - 12);
-    const y = BOARD_Y + BOARD_H / 2 - panelHeight / 2;
+    const x = state.world >= 3 ? 8 : Math.max(8, BOARD_X - panelWidth - 12);
+    const y = state.world >= 3
+      ? WORLD_VIEWPORT.y + (WORLD_VIEWPORT.height - panelHeight) / 2
+      : BOARD_Y + BOARD_H / 2 - panelHeight / 2;
 
     ctx.save();
     ctx.fillStyle = "rgba(15, 23, 42, 0.9)";
@@ -3674,6 +3706,14 @@
 
   function render() {
     drawBackground();
+    if (state.world >= 3) {
+      const camera = worldCamera();
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(WORLD_VIEWPORT.x, WORLD_VIEWPORT.y, WORLD_VIEWPORT.width, WORLD_VIEWPORT.height);
+      ctx.clip();
+      ctx.translate(camera.x, camera.y);
+    }
     drawBoard();
     drawDayNightOverlay();
     drawEnemyVisions();
@@ -3686,6 +3726,7 @@
     drawPlayer();
     drawParticles();
     drawOverlayFrame();
+    if (state.world >= 3) ctx.restore();
     drawActivePinyinPanel();
     drawLearningMoons();
   }
@@ -3745,6 +3786,24 @@
     getSelectedAvatar: () => playerAvatar,
     getPlayerVisualState: () => ({ invulnerable: state.player.invulnerable > 0, hidden: isPlayerBlinkHidden() }),
     getState: () => serializeBombProgress(),
+    getLevelLayout: () => {
+      const camera = worldCamera();
+      const player = cellCenter(state.player.gx, state.player.gy);
+      return {
+        world: state.world,
+        subLevel: state.subLevel,
+        cols: COLS,
+        rows: ROWS,
+        tile: TILE,
+        boardWidth: BOARD_W,
+        boardHeight: BOARD_H,
+        viewport: state.world >= 3 ? { ...WORLD_VIEWPORT } : null,
+        camera,
+        playerScreen: { x: player.x + camera.x, y: player.y + camera.y },
+        enemyCount: state.enemies.length,
+        hiddenBulletBills: [...state.hiddenPowerUps.values()].filter((type) => type === "bulletBill").length,
+      };
+    },
     getLearningWordIds: () => bombWordsFromLearning(loadLearningState()).map((word) => word.id),
     getLearningSource: () => {
       loadLearningState();
@@ -3809,7 +3868,7 @@
         frame: { ...BULLET_BILL_FRAME },
         moveTime: BULLET_BILL_MOVE_TIME,
         launchDelay: BULLET_BILL_LAUNCH_DELAY,
-        hiddenCountPerLevel: BULLET_BILL_HIDDEN_COUNT_PER_LEVEL,
+        hiddenCountPerLevel: bulletBillBrickCapacityForLevel(),
       },
       nightTime: isNightTime(),
       canvasWidth: canvas.width,

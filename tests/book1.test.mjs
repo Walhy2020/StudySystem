@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFile, stat } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { BOOK1_GROUPS, BOOK1_ITEMS, BOOK1_META, book1ItemsForGroup, book1WordSlug } from "../data/book1.js";
+import { BOOK1_THEMES } from "../data/book1-themes.js";
 import {
   BOOK1_STORAGE_KEY,
   LEGACY_ENGLISH_STORAGE_KEY,
@@ -42,6 +43,17 @@ test("Book1 的104张单词图逐词存在、非空且 slug 与旧规则一致",
     const metadata = await stat(path);
     assert.ok(metadata.size > 0, `${item.word} 图片为空`);
   }
+});
+
+test("Book1 主题恰好覆盖原130项且配图对应单词", () => {
+  assert.equal(BOOK1_THEMES.length, 13);
+  assert.equal(BOOK1_THEMES[0].items.filter((item) => item.type === "letter").length, 26);
+  const ids = BOOK1_THEMES.flatMap((theme) => theme.items.map((item) => item.id));
+  assert.equal(ids.length, 130);
+  assert.equal(new Set(ids).size, 130);
+  assert.deepEqual(new Set(ids), new Set(BOOK1_ITEMS.map((item) => item.id)));
+  assert.ok(BOOK1_THEMES.slice(1).every((theme) => theme.items.every((item) => item.type === "word")));
+  assert.ok(BOOK1_THEMES.slice(1).every((theme) => theme.items.some((item) => item.image === theme.cover)));
 });
 
 test("旧英文存储只读迁移 books.opw1，完全忽略 opw2", () => {
@@ -98,10 +110,11 @@ test("旧单Book格式仍可迁移，测试命名空间可以禁用旧数据读�
 
 test("Book1 页面只引用独立资源和独立存储入口", async () => {
   const html = await readFile(new URL("../book-learning.html", import.meta.url), "utf8");
-  const app = await readFile(new URL("../book-learning.js", import.meta.url), "utf8");
-  assert.match(html, /book-learning\.css\?v=1\.1/);
-  assert.match(html, /book-learning\.js\?v=1\.0/);
+  const app = await readFile(new URL("../book-learning-themes.js", import.meta.url), "utf8");
+  assert.match(html, /book-learning\.css\?v=2\.0/);
+  assert.match(html, /book-learning-themes\.js\?v=1\.0/);
   assert.match(html, /Oxford Phonics World 1/);
   assert.doesNotMatch(html + app, /Book2|opw2|Oxford Phonics World 2/i);
   assert.match(app, /Book1Storage/);
+  assert.match(html, /id="learnStage"[\s\S]*id="reviewStage"[\s\S]*id="practiceStage"/);
 });

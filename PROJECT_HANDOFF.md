@@ -7,7 +7,19 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.28** (2026-09-29). New bomb levels place Bowser
+System display version: **v1.0.29** (2026-09-29). Book1 now groups its unchanged
+104 words by topic, alongside an A–Z letter topic. Each topic uses three stages:
+picture-and-word learning, picture-first hidden-answer review, and word-to-picture
+practice with wrong-answer retry. The explicit 学习完毕 action adds the topic's words
+to the existing Book1 learned records, so they enter the shared total-word library;
+old opw1 progress, stable item IDs, images, and isolated storage key are preserved.
+Book1 CSS/app caches: v2.0/v1.0; all seven update-notifier queries are v1.0.29.
+Focused Edge check: `node tests/book1-browser-acceptance.mjs` on desktop and 390px.
+Verified: syntax check, 143/143 Node tests, all 104 image URLs HTTP 200,
+three stages, full practice round, legacy opw1-only import, desktop/mobile no
+horizontal overflow, and whitespace check. Unrelated tracked screenshots remain untouched.
+
+Previous v1.0.28 (2026-09-29). New bomb levels place Bowser
 on a randomly chosen walkable cell with at least two exits, away from the player
 spawn and other enemies. From world 3 onward, each level has two more ordinary
 enemies than v1.0.27; 3-1 through 3-5 now start with 6/7/8/9/10 monsters in

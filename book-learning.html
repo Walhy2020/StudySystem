@@ -6,7 +6,7 @@
   <meta http-equiv="Cache-Control" content="no-cache,no-store,must-revalidate" />
   <link rel="icon" href="data:," />
   <title>马里奥学习系统 · Book1</title>
-  <link rel="stylesheet" href="./book-learning.css?v=1.1" />
+  <link rel="stylesheet" href="./book-learning.css?v=2.0" />
 </head>
 <body>
   <div class="book-shell">
@@ -24,64 +24,46 @@
 
     <main>
       <section class="book-hero" aria-labelledby="bookTitle">
-        <div><span class="book-kicker">Oxford Phonics World 1</span><h2 id="bookTitle">从 A 学到 Z</h2><p>26 个字母组，每组学习一个字母和四个单词。</p></div>
+        <div><span class="book-kicker">Oxford Phonics World 1</span><h2 id="bookTitle">Book1 主题学习</h2><p>104 个原版单词按内容分组；字母 A–Z 也保留在独立主题中。</p></div>
         <div class="book-summary"><strong id="learnedCount">0</strong><span>已学习 / 130</span></div>
       </section>
 
-      <section class="letter-picker" aria-label="Book1 字母组">
-        <div class="letter-list" id="letterList"></div>
+      <section class="book-theme-picker" id="themePicker" aria-label="Book1 主题选择">
+        <div class="book-picker-heading"><span class="book-kicker">CHOOSE A TOPIC</span><h2>选择一个主题</h2><p>先看图认识，再遮住答案复习，最后完成看词选图练习。</p></div>
+        <div class="book-theme-list" id="themeList"></div>
       </section>
 
-      <section class="book-workspace">
-        <section class="book-stage" aria-live="polite">
-          <header class="group-heading">
-            <button id="previousGroup" type="button" aria-label="上一个字母组">Previous</button>
-            <div><span id="unitLabel">Unit 1 · Pages 4-11</span><h2 id="groupLabel">Aa</h2></div>
-            <button id="nextGroup" type="button" aria-label="下一个字母组">Next</button>
-          </header>
-
-          <div class="learning-card" id="learningCard" tabindex="0" role="button" aria-label="朗读当前学习项">
-            <div class="mastered-mark" id="masteredMark" hidden aria-label="完全认识">★</div>
-            <div class="book-picture" id="bookPicture"></div>
-            <div class="book-word-copy">
-              <span class="item-kind" id="itemKind">LETTER</span>
-              <strong id="currentWord">A</strong>
-              <span class="book-phonetic" id="currentPhonetic">/a/</span>
-              <span class="book-translation" id="currentTranslation">字母A</span>
-            </div>
+      <section class="book-learning-view" id="learningView" hidden aria-labelledby="stageTitle">
+        <header class="book-learning-head">
+          <div><button class="back-themes" id="backToThemes" type="button">← 返回主题</button><span class="book-kicker" id="activeThemeLabel"></span><h2 id="stageTitle">第一部分 · 认识单词</h2></div>
+          <div class="book-stage-switch" aria-label="学习阶段">
+            <button class="stage-button is-active" id="learnStage" type="button" aria-pressed="true">1 认识单词</button>
+            <button class="stage-button" id="reviewStage" type="button" aria-pressed="false">2 复习单词</button>
+            <button class="stage-button" id="practiceStage" type="button" aria-pressed="false">3 互动练习</button>
           </div>
-
-          <div class="book-actions" aria-label="Book1 学习操作">
-            <button class="start-action" id="startGroup" type="button">开始本组</button>
-            <button class="review-action" id="startReview" type="button">复习 Book1</button>
-            <button class="icon-action sound-action" id="speakWord" type="button" aria-label="朗读当前内容" title="朗读当前内容"><span aria-hidden="true">🔊</span></button>
-            <button class="icon-action correct-action" id="markCorrect" type="button" aria-label="认识" title="认识"><span aria-hidden="true">√</span></button>
-            <button class="icon-action wrong-action" id="markWrong" type="button" aria-label="不认识" title="不认识"><span aria-hidden="true">×</span></button>
-            <button class="icon-action mastery-action" id="markMastered" type="button" aria-label="完全认识" title="完全认识"><span aria-hidden="true">★</span></button>
-          </div>
-          <p class="book-feedback" id="bookFeedback" role="status">选择字母组，然后开始学习。</p>
-        </section>
-
-        <aside class="book-side">
-          <section class="book-panel">
-            <h2>本组内容</h2>
-            <div class="group-items" id="groupItems"></div>
+        </header>
+        <div class="book-activity">
+          <section class="book-picture-panel" aria-label="主题配图">
+            <div class="picture-caption"><span id="scenePrompt">点击一张图片</span><strong id="sessionProgress">0 个单词</strong></div>
+            <div class="book-picture-grid" id="pictureGrid"></div>
           </section>
-          <section class="book-panel">
-            <h2>Book1 进度</h2>
-            <div class="book-stats">
-              <div><span>已学习</span><strong id="progressLearned">0</strong></div>
-              <div><span>完全认识</span><strong id="progressMastered">0</strong></div>
-              <div><span>错词</span><strong id="progressWrong">0</strong></div>
-              <div><span>本轮</span><strong id="roundProgress">0/0</strong></div>
-            </div>
-            <p class="migration-note" id="migrationNote" hidden>已只读导入旧系统的 Book1 进度。</p>
+          <section class="book-info-panel" id="learnPanel">
+            <div class="book-word-card book-placeholder" id="wordCard" role="status"></div>
+            <div class="book-completion" id="completionPanel"><button class="primary-action" id="completeTheme" type="button">学习完毕</button><p id="completionStatus"></p></div>
           </section>
-        </aside>
+          <section class="book-info-panel" id="practicePanel" hidden>
+            <span class="book-kicker">LISTEN &amp; TOUCH</span><p class="practice-progress" id="roundProgress">第 1/1 题</p>
+            <h3 id="practiceInstruction">找到对应的图片</h3><button class="primary-action" id="playInstruction" type="button">🔊 播放指令</button>
+            <p class="practice-feedback" id="practiceFeedback" role="status"></p>
+            <button class="primary-action" id="nextPractice" type="button" hidden>下一题</button>
+          </section>
+          <section class="book-info-panel" id="resultPanel" hidden><span class="result-star" aria-hidden="true">★</span><h3>本主题练习完成！</h3><p id="resultScore">0/0</p><button class="primary-action" id="restartRound" type="button">再来一轮</button></section>
+        </div>
+        <aside class="book-progress-panel"><h2>Book1 进度</h2><div class="book-stats"><div><span>已学习</span><strong id="progressLearned">0</strong></div><div><span>完全认识</span><strong id="progressMastered">0</strong></div><div><span>错词</span><strong id="progressWrong">0</strong></div><div><span>本主题</span><strong id="topicProgress">0/0</strong></div></div><p class="migration-note" id="migrationNote" hidden>已只读导入旧系统的 Book1 进度。</p></aside>
       </section>
     </main>
   </div>
-  <script type="module" src="./book-learning.js?v=1.0"></script>
-  <script type="module" src="./src/version-update.js?v=1.0.28"></script>
+  <script type="module" src="./book-learning-themes.js?v=1.0"></script>
+  <script type="module" src="./src/version-update.js?v=1.0.29"></script>
 </body>
 </html>

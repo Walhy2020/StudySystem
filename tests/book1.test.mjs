@@ -45,15 +45,17 @@ test("Book1 的104张单词图逐词存在、非空且 slug 与旧规则一致",
   }
 });
 
-test("Book1 主题恰好覆盖原130项且配图对应单词", () => {
-  assert.equal(BOOK1_THEMES.length, 13);
-  assert.equal(BOOK1_THEMES[0].items.filter((item) => item.type === "letter").length, 26);
+test("Book1 按原书 A-Z 分为26组，每组1字母配4单词", () => {
+  assert.equal(BOOK1_THEMES.length, 26);
+  assert.deepEqual(BOOK1_THEMES.map((theme) => theme.title), BOOK1_GROUPS.map((group) => `${group.upper}${group.lower} 字母组`));
+  assert.ok(BOOK1_THEMES.every((theme, index) => theme.id === BOOK1_GROUPS[index].id));
+  assert.ok(BOOK1_THEMES.every((theme, index) => theme.items[0].id === `opw1:letter-${BOOK1_GROUPS[index].upper}`));
+  assert.ok(BOOK1_THEMES.every((theme) => theme.items.length === 5 && theme.items.filter((item) => item.type === "word").length === 4));
   const ids = BOOK1_THEMES.flatMap((theme) => theme.items.map((item) => item.id));
   assert.equal(ids.length, 130);
   assert.equal(new Set(ids).size, 130);
   assert.deepEqual(new Set(ids), new Set(BOOK1_ITEMS.map((item) => item.id)));
-  assert.ok(BOOK1_THEMES.slice(1).every((theme) => theme.items.every((item) => item.type === "word")));
-  assert.ok(BOOK1_THEMES.slice(1).every((theme) => theme.items.some((item) => item.image === theme.cover)));
+  assert.ok(BOOK1_THEMES.every((theme) => theme.items[1].image === theme.cover));
 });
 
 test("旧英文存储只读迁移 books.opw1，完全忽略 opw2", () => {
@@ -112,7 +114,7 @@ test("Book1 页面只引用独立资源和独立存储入口", async () => {
   const html = await readFile(new URL("../book-learning.html", import.meta.url), "utf8");
   const app = await readFile(new URL("../book-learning-themes.js", import.meta.url), "utf8");
   assert.match(html, /book-learning\.css\?v=2\.0/);
-  assert.match(html, /book-learning-themes\.js\?v=1\.0/);
+  assert.match(html, /book-learning-themes\.js\?v=1\.1/);
   assert.match(html, /Oxford Phonics World 1/);
   assert.doesNotMatch(html + app, /Book2|opw2|Oxford Phonics World 2/i);
   assert.match(app, /Book1Storage/);

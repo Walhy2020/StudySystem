@@ -7,7 +7,16 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.29** (2026-09-29). Book1 now groups its unchanged
+System display version: **v1.0.30** (2026-09-29). Book1's selection now follows
+the original textbook A–Z order: each of 26 groups contains its letter and the
+four words printed with that letter. The three-stage learning/review/practice
+flow remains; original IDs, word images, Book1 storage and legacy progress are
+unchanged. Book1 app cache: v1.1; all seven update-notifier queries are v1.0.30.
+Focused Edge check: `node tests/book1-browser-acceptance.mjs` at desktop and
+390px. Verified: syntax, 143 Node tests, 104 image URLs HTTP 200, A/early and
+X/legacy groups, three stages, full five-item practice, no horizontal overflow.
+
+Previous v1.0.29 (2026-09-29). Book1 now groups its unchanged
 104 words by topic, alongside an A–Z letter topic. Each topic uses three stages:
 picture-and-word learning, picture-first hidden-answer review, and word-to-picture
 practice with wrong-answer retry. The explicit 学习完毕 action adds the topic's words

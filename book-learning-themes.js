@@ -100,7 +100,7 @@ function render() {
   dom.progressWrong.textContent = state.wrongIds.length;
   dom.migrationNote.hidden = state.migration?.sourceBookId !== "opw1";
   if (!theme) return;
-  dom.activeThemeLabel.textContent = `${theme.english} · ${theme.items.length} 项`;
+  dom.activeThemeLabel.textContent = `${theme.title} · ${theme.english}`;
   dom.stageTitle.textContent = ({ learn: "第一部分 · 认识单词", review: "第二部分 · 复习单词", practice: "第三部分 · 互动练习" })[stage];
   for (const name of ["learn", "review", "practice"]) {
     dom[`${name}Stage`].classList.toggle("is-active", stage === name);

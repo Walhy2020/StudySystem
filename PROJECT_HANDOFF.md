@@ -7,7 +7,17 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.25** (2026-09-29). Bomb maze now has a third world,
+System display version: **v1.0.26** (2026-09-29). Bomb maze pinyin-to-Hanzi
+questions no longer use another character with any matching pronunciation as a
+wrong choice (for example, bǐ cannot pit 笔 against 比). Hanzi-to-pinyin choices
+also exclude overlapping readings of polyphonic characters. New pinyin-mode
+levels select five targets with distinct readings; a restored old level replaces
+unfinished duplicate-reading targets and removes ambiguous wrong choices while
+preserving completed progress. Only bomb-game.js changed (cache v2.18); all
+seven update-notifier queries are v1.0.26. Focused Edge check:
+`node tests/bomb-homophone-browser.mjs` (desktop and 390px).
+
+Previous v1.0.25 (2026-09-29). Bomb maze now has a third world,
 3-1 through 3-5, for 15 levels total. World 3 maps grow from 27x15 to 35x15
 cells while keeping the 48px tile size; the canvas clips and follows the player
 instead of shrinking the board. It has two extra ordinary enemies per level and

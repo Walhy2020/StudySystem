@@ -664,6 +664,15 @@
     return pinyinReadings(word).join(" / ");
   }
 
+  function sharesPinyinReading(firstWord, secondWord) {
+    if (!firstWord || !secondWord) return false;
+    const readings = new Set(pinyinReadings(firstWord)
+      .map((reading) => String(reading).trim().normalize("NFC").toLowerCase())
+      .filter(Boolean));
+    return pinyinReadings(secondWord).some((reading) =>
+      readings.has(String(reading).trim().normalize("NFC").toLowerCase()));
+  }
+
   function currentLearningMode() {
     return state.subLevel % 2 === 1 ? LEARNING_MODES.pinyin : LEARNING_MODES.hanzi;
   }
@@ -1065,6 +1074,8 @@
       inspected += 1;
       const character = wordById(id)?.char;
       if (!character || selectedCharacters.has(character)) continue;
+      if (currentLearningMode() === LEARNING_MODES.pinyin &&
+          levelIds.some((selectedId) => sharesPinyinReading(wordById(selectedId), wordById(id)))) continue;
       levelIds.push(id);
       selectedCharacters.add(character);
     }
@@ -1077,7 +1088,9 @@
     const selectedCharacters = new Set();
     const addId = (id) => {
       const word = wordById(id);
-      if (!word || !runSet.has(id) || selectedCharacters.has(word.char) || levelIds.length >= BOMB_MOONS_PER_LEVEL) return;
+      if (!word || !runSet.has(id) || selectedCharacters.has(word.char) || levelIds.length >= BOMB_MOONS_PER_LEVEL ||
+          (currentLearningMode() === LEARNING_MODES.pinyin &&
+            levelIds.some((selectedId) => sharesPinyinReading(wordById(selectedId), word)))) return;
       levelIds.push(id);
       selectedCharacters.add(word.char);
     };
@@ -1286,7 +1299,20 @@
 
   function normalizeRestoredLevelTargets(preserveRevealed = true) {
     refreshDailyNewWords();
-    const targetIds = uniqueWordIdsByCharacter(state.todayNewWords.map((word) => word.id));
+    const mode = currentLearningMode();
+    const originalIds = uniqueWordIdsByCharacter(state.todayNewWords.map((word) => word.id));
+    const completedIds = uniqueWordIdsByCharacter(state.moonWordIds).filter((id) => originalIds.includes(id));
+    const activeId = state.activePinyinWordId || state.powerUps.find((powerUp) => powerUp.type === "wordChoice")?.targetWordId;
+    const orderedIds = mode === LEARNING_MODES.pinyin
+      ? uniqueIds(completedIds.concat(activeId || [], originalIds)).filter((id) => originalIds.includes(id))
+      : originalIds;
+    const targetIds = [];
+    orderedIds.forEach((id) => {
+      if (mode === LEARNING_MODES.pinyin && !completedIds.includes(id) &&
+          targetIds.some((previousId) => sharesPinyinReading(wordById(previousId), wordById(id)))) return;
+      targetIds.push(id);
+    });
+    originalIds.filter((id) => !targetIds.includes(id) && !completedIds.includes(id)).forEach(retryWordNextLevel);
     fillLevelTargetIds(targetIds);
     state.todayNewWords = targetIds.slice(0, BOMB_MOONS_PER_LEVEL).map(wordById).filter(Boolean);
 
@@ -1299,7 +1325,6 @@
       resetActiveLearningTask();
     }
 
-    const mode = currentLearningMode();
     const legacyPinyinTargetId = mode === LEARNING_MODES.hanzi
       ? state.powerUps.find((powerUp) => powerUp.type === "pinyinPart")?.wordId || null
       : null;
@@ -1309,6 +1334,8 @@
         ? powerUp.targetWordId
         : powerUp.wordId;
       if (!pendingSet.has(targetId) || powerUp.type === "pinyinPart") return false;
+      if ((powerUp.type === "wordChoice" || powerUp.type === "pinyinChoice") && !powerUp.correct &&
+          sharesPinyinReading(wordById(targetId), wordById(powerUp.wordId))) return false;
       if (mode === LEARNING_MODES.pinyin) {
         return powerUp.type !== "hanziPrompt" && powerUp.type !== "pinyinChoice";
       }
@@ -2255,7 +2282,8 @@
   function spawnWordChoices(targetWordId) {
     const targetWord = wordById(targetWordId);
     if (!targetWord) return;
-    const distractors = bombDistractorWordsForTarget(targetWordId).slice(0, 2);
+    const distractors = bombDistractorWordsForTarget(targetWordId)
+      .filter((word) => !sharesPinyinReading(targetWord, word)).slice(0, 2);
     const choices = [targetWord].concat(distractors).sort(() => Math.random() - 0.5);
     const cells = randomOpenRewardCells(choices.length, true);
     choices.forEach((word, index) => {
@@ -2276,7 +2304,7 @@
     const distractors = [];
     bombDistractorWordsForTarget(targetWordId).forEach((word) => {
       const label = pinyinReadingsLabel(word);
-      if (!label || labels.has(label) || distractors.length >= 2) return;
+      if (!label || labels.has(label) || sharesPinyinReading(targetWord, word) || distractors.length >= 2) return;
       labels.add(label);
       distractors.push(word);
     });

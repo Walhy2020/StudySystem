@@ -1,6 +1,7 @@
 import { BOOK1_ITEMS, BOOK1_META } from "./data/book1.js";
 import { BOOK1_THEMES, book1ThemeById } from "./data/book1-themes.js";
 import { Book1Storage, book1StorageOptionsFromLocation } from "./src/book1-storage.js";
+import { splitPhonetic, PHONETIC_STRESS_MARKS } from "./src/phonetic-segmenter.js";
 
 const storage = new Book1Storage(localStorage, book1StorageOptionsFromLocation(location));
 let state = storage.load();
@@ -12,30 +13,12 @@ let questionIndex = 0;
 let answered = false;
 let mistakes = 0;
 let speechTimer = 0;
-const ids = ["themePicker", "themeList", "learningView", "backToThemes", "activeThemeLabel", "stageTitle", "learnStage", "reviewStage", "practiceStage", "scenePrompt", "sessionProgress", "pictureGrid", "learnPanel", "wordCard", "completionPanel", "completeTheme", "completionStatus", "practicePanel", "roundProgress", "practiceInstruction", "playInstruction", "nextPractice", "practiceFeedback", "resultPanel", "resultScore", "restartRound", "learnedCount", "progressLearned", "progressMastered", "progressWrong", "topicProgress", "migrationNote"];
+const ids = ["themePicker", "themeList", "learningView", "backToThemes", "activeThemeLabel", "stageTitle", "learnStage", "reviewStage", "practiceStage", "scenePrompt", "sessionProgress", "pictureGrid", "learnPanel", "wordCard", "completionPanel", "completeTheme", "completionStatus", "practicePanel", "roundProgress", "practiceInstruction", "playInstruction", "nextPractice", "practiceFeedback", "resultPanel", "resultScore", "restartRound", "learnedCount", "migrationNote"];
 const dom = Object.fromEntries(ids.map((id) => [id, document.getElementById(id)]));
 const esc = (value) => String(value).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
 const learned = (id) => state.learnedIds.includes(id);
-const mastered = (id) => state.masteredIds.includes(id);
 const chosen = () => theme?.items.find((item) => item.id === selectedId);
 function save() { state = storage.save(state); }
-
-function mark(item, outcome) {
-  const entry = state.records[item.id] || { correctCount: 0, errorCount: 0, status: "new" };
-  if (outcome === "wrong") {
-    entry.errorCount += 1;
-    entry.status = "wrong";
-    if (!state.wrongIds.includes(item.id)) state.wrongIds.unshift(item.id);
-  } else {
-    entry.correctCount += 1;
-    entry.status = outcome === "mastered" || mastered(item.id) ? "mastered" : "known";
-    state.wrongIds = state.wrongIds.filter((id) => id !== item.id);
-  }
-  state.records[item.id] = entry;
-  if (!learned(item.id)) state.learnedIds.push(item.id);
-  if (outcome === "mastered" && !mastered(item.id)) state.masteredIds.push(item.id);
-  save(); render();
-}
 
 function stopSpeech() { clearTimeout(speechTimer); window.speechSynthesis?.cancel?.(); }
 function speak(item) {
@@ -82,22 +65,23 @@ function renderGrid() {
 function renderCard() {
   const item = chosen();
   if (!item) {
-    dom.wordCard.innerHTML = `<p>${stage === "review" ? "点击左边图片，再点击显示查看答案。" : "点击左边图片认识单词。"}</p>`;
+    dom.wordCard.innerHTML = `<span class="book-tap-icon" aria-hidden="true">☝</span><h3>${stage === "review" ? "复习单词" : "点一个目标"}</h3><p>${stage === "review" ? "点击左边图片，先回忆单词，再点击显示。" : "英文、音标和中文会显示在这里。"}</p>`;
     return;
   }
   if (stage === "review" && !revealed) {
-    dom.wordCard.innerHTML = '<p>先想一想这是什么单词</p><button class="primary-action" type="button" data-action="reveal">显示</button>';
+    dom.wordCard.innerHTML = '<h3>想一想这个单词</h3><p>先看左边图片，回忆单词，再点击显示核对。</p><button class="primary-action" type="button" data-action="reveal">显示</button>';
     return;
   }
-  dom.wordCard.innerHTML = `<span class="card-kind">${item.type === "letter" ? "LETTER" : "BOOK1 WORD"}</span><strong class="card-word">${esc(item.word)}</strong><span class="card-phonetic">${esc(item.phonetic)}</span><span class="card-translation">${esc(item.translation)}</span><div class="card-actions"><button type="button" data-action="speak" aria-label="朗读 ${esc(item.word)}" title="朗读 ${esc(item.word)}">🔊</button><button type="button" data-action="correct">✓ 认识</button><button type="button" data-action="wrong">× 再复习</button><button type="button" data-action="mastered">★ 完全认识</button></div>`;
+  const index = theme.items.findIndex((entry) => entry.id === item.id);
+  const phonemes = splitPhonetic(item.phonetic).map((symbol) => PHONETIC_STRESS_MARKS[symbol]
+    ? `<span class="book-phoneme-chip is-stress" aria-label="${esc(PHONETIC_STRESS_MARKS[symbol])}">${esc(symbol)}</span>`
+    : `<span class="book-phoneme-chip">${esc(symbol)}</span>`).join("");
+  dom.wordCard.innerHTML = `<h3 class="card-word">${esc(item.word)}</h3><button class="card-phonetic" type="button" data-action="phonetic" aria-expanded="false" aria-controls="bookPhonemeBreakdown" aria-label="拆分 ${esc(item.word)} 的音标 ${esc(item.phonetic)}">${esc(item.phonetic)}</button><div class="book-phoneme-breakdown" id="bookPhonemeBreakdown" hidden>${phonemes}</div><span class="card-translation">${esc(item.translation)}</span><div class="book-word-navigation"><button class="book-sound-button" type="button" data-action="speak" aria-label="朗读 ${esc(item.word)}" title="朗读 ${esc(item.word)}">🔊</button><button class="book-nav-button" type="button" data-action="previous" aria-label="Previous word"${index === 0 ? " disabled" : ""}>Previous</button><button class="book-nav-button" type="button" data-action="next" aria-label="Next word"${index === theme.items.length - 1 ? " disabled" : ""}>Next</button></div>`;
 }
 function render() {
   renderPicker();
   dom.themePicker.hidden = Boolean(theme); dom.learningView.hidden = !theme;
   dom.learnedCount.textContent = state.learnedIds.length;
-  dom.progressLearned.textContent = state.learnedIds.length;
-  dom.progressMastered.textContent = state.masteredIds.length;
-  dom.progressWrong.textContent = state.wrongIds.length;
   dom.migrationNote.hidden = state.migration?.sourceBookId !== "opw1";
   if (!theme) return;
   dom.activeThemeLabel.textContent = `${theme.title} · ${theme.english}`;
@@ -107,15 +91,16 @@ function render() {
     dom[`${name}Stage`].setAttribute("aria-pressed", String(stage === name));
   }
   const count = theme.items.filter((item) => learned(item.id)).length;
-  dom.topicProgress.textContent = `${count}/${theme.items.length}`;
   dom.sessionProgress.textContent = stage === "practice" ? `${Math.min(questionIndex + 1, theme.items.length)}/${theme.items.length}` : `${count}/${theme.items.length} 已学习`;
   dom.scenePrompt.textContent = stage === "practice" ? "根据右边单词选择图片" : "点击一张图片";
   dom.learnPanel.hidden = stage === "practice";
   dom.practicePanel.hidden = stage !== "practice" || questionIndex >= theme.items.length;
   dom.resultPanel.hidden = stage !== "practice" || questionIndex < theme.items.length;
   dom.completionPanel.hidden = stage !== "learn";
-  dom.completionStatus.textContent = count === theme.items.length ? "本主题已学习完毕 ✓" : "完成后会将本主题单词加入总词库。";
+  dom.completionStatus.textContent = count === theme.items.length ? "本组已学习完毕。" : "点击后，本组四个单词会加入总词库。";
   dom.completeTheme.disabled = count === theme.items.length;
+  dom.completeTheme.classList.toggle("is-complete", count === theme.items.length);
+  dom.completeTheme.textContent = count === theme.items.length ? "✓ 已学习完毕" : "学习完毕";
   renderGrid();
   if (stage !== "practice") renderCard();
   if (stage === "practice" && questionIndex < theme.items.length) {
@@ -140,7 +125,7 @@ dom.pictureGrid.addEventListener("click", (event) => {
   if (stage === "practice") {
     if (answered) return;
     if (item.id !== theme.items[questionIndex].id) { mistakes += 1; render(); return; }
-    answered = true; mark(item, "correct"); return;
+    answered = true; render(); return;
   }
   selectedId = item.id; revealed = stage === "learn"; render();
 });
@@ -150,7 +135,25 @@ dom.wordCard.addEventListener("click", (event) => {
   if (!item || !action) return;
   if (action === "reveal") { revealed = true; renderCard(); }
   else if (action === "speak") speak(item);
-  else if (["correct", "wrong", "mastered"].includes(action)) mark(item, action);
+  else if (action === "phonetic") {
+    const button = dom.wordCard.querySelector('[data-action="phonetic"]');
+    const breakdown = dom.wordCard.querySelector("#bookPhonemeBreakdown");
+    const expanded = button.getAttribute("aria-expanded") !== "true";
+    button.setAttribute("aria-expanded", String(expanded));
+    breakdown.hidden = !expanded;
+  } else if (action === "previous" || action === "next") {
+    const index = theme.items.findIndex((entry) => entry.id === item.id);
+    const next = theme.items[index + (action === "previous" ? -1 : 1)];
+    if (!next) return;
+    stopSpeech(); selectedId = next.id; revealed = stage === "learn"; render();
+  }
+});
+window.addEventListener("keydown", (event) => {
+  if (event.key !== " " || event.repeat || !theme || stage === "practice" || (stage === "review" && !revealed)) return;
+  if (event.target instanceof Element && event.target.closest("button,a,input,textarea,select,[role='button'],[contenteditable='true']")) return;
+  const button = dom.wordCard.querySelector('[data-action="phonetic"]');
+  if (!button) return;
+  event.preventDefault(); button.click();
 });
 dom.completeTheme.addEventListener("click", () => {
   for (const item of theme.items) {

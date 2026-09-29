@@ -7,7 +7,19 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.30** (2026-09-29). Book1's selection now follows
+System display version: **v1.0.31** (2026-09-29). Book1's word card now follows
+the Theme Learning interaction: word, clickable phonetic breakdown, meaning,
+manual speech and Previous/Next. The per-item ✓/×/★ controls and bottom Book1
+progress panel are gone. Practice alone does not add words to the shared library;
+the explicit 学习完毕 action still adds the four words in the letter group. Existing
+Book1 records remain intact, including legacy imports. Book1 CSS/app caches:
+v2.1/v1.2; all seven update-notifier queries are v1.0.31. Focused Edge check:
+`node tests/book1-browser-acceptance.mjs` at desktop and 390px.
+Verified: syntax check, 143/143 Node tests, focused real Edge interaction,
+all 104 original word images HTTP 200, no desktop/mobile horizontal overflow,
+legacy opw1 progress retained, and no Book1 progress panel at either viewport.
+
+Previous v1.0.30 (2026-09-29). Book1's selection now follows
 the original textbook A–Z order: each of 26 groups contains its letter and the
 four words printed with that letter. The three-stage learning/review/practice
 flow remains; original IDs, word images, Book1 storage and legacy progress are

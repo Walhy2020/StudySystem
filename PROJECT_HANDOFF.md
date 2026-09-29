@@ -7,7 +7,22 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.27** (2026-09-29). Theme Learning now has a
+System display version: **v1.0.28** (2026-09-29). New bomb levels place Bowser
+on a randomly chosen walkable cell with at least two exits, away from the player
+spawn and other enemies. From world 3 onward, each level has two more ordinary
+enemies than v1.0.27; 3-1 through 3-5 now start with 6/7/8/9/10 monsters in
+total, including the green Koopa. Existing in-progress saves retain their maps
+and enemy positions. Bomb effect output gain rose from 0.16 to 0.8, and music
+output gain from 0.055 to 0.44; mute behavior and the softer-music balance remain.
+Bomb JS/audio caches: v2.19/v1.3; all seven update-notifier queries are v1.0.28.
+Focused Edge checks: `tests/bomb-third-world-browser.mjs` and
+`tests/bomb-audio-browser.mjs` at desktop and 390px.
+Verified: syntax check, 142/142 Node tests, third-world initial counts
+6/7/8/9/10, six distinct Bowser starts in each viewport, four balanced sound
+effects and three audible world tracks without single-effect clipping, mute and
+Continue, and whitespace check passed. No unrelated browser suite was run.
+
+Previous v1.0.27 (2026-09-29). Theme Learning now has a
 separate word-review stage between learning and interactive practice. Selecting
 a scene picture keeps the right word card concealed until the learner presses
 Display; selecting another picture conceals the next answer again. Counting

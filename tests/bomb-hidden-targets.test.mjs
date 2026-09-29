@@ -29,25 +29,29 @@ test("前十关各一枚隐藏导弹，第三世界逐关为二至六枚", () =>
   }
 });
 
-test("第三世界各关多两只普通怪物，旧世界敌人数量不变", () => {
-  const state = { world: 1, subLevel: 1 };
-  const createEnemies = new Function("state", "Math", "getDimensions", `
+test("第三世界各关再增加两只怪物，旧世界数量不变且库巴不占出生点", () => {
+  const state = { world: 1, subLevel: 1, map: [] };
+  const createEnemies = new Function("state", "Math", "getDimensions", "coordKey", `
     let COLS = 17, ROWS = 11;
+    const TILE_FLOOR = 0;
     const difficultyIndexForSubLevel = () => state.subLevel + 1;
     ${extract("createEnemies")}
     return () => {
       ({ COLS, ROWS } = getDimensions(state.world, state.subLevel));
+      state.map = Array.from({ length: ROWS }, () => Array(COLS).fill(TILE_FLOOR));
       return createEnemies();
     };
   `)(state, Math, (world, subLevel) => ({
     COLS: world === 3 ? 27 + (subLevel - 1) * 2 : 17 + (subLevel - 1) * 2,
     ROWS: world === 3 ? 15 : 11,
-  }));
+  }), coordKey);
   for (state.world = 1; state.world <= 3; state.world += 1) {
     for (state.subLevel = 1; state.subLevel <= 5; state.subLevel += 1) {
       const enemies = createEnemies();
-      assert.equal(enemies.length, state.subLevel + 1 + (state.world === 3 ? 2 : 0));
+      assert.equal(enemies.length, state.subLevel + 1 + (state.world >= 3 ? 4 : 0));
       assert.equal(enemies.filter(enemy => enemy.type === "koopa-green").length, 1);
+      assert.equal(new Set(enemies.map(enemy => coordKey(enemy.gx, enemy.gy))).size, enemies.length);
+      assert.ok(enemies.every(enemy => enemy.gx !== 1 || enemy.gy !== 1));
     }
   }
 });

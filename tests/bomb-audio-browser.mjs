@@ -1,9 +1,14 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { loadChromium } from "./playwright-runtime.mjs";
 
 const chromium = await loadChromium();
 const baseUrl = process.env.HANZI_BASE_URL || "http://127.0.0.1:5177/";
 const progressKey = "mario-bomb-game-progress-v1";
+const output = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "tmp");
+fs.mkdirSync(output, { recursive: true });
 const browser = await chromium.launch({
   headless: true,
   executablePath: "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe",
@@ -66,7 +71,7 @@ try {
   assert.equal(await page.evaluate(() => window.__testSoundPlayer.getMusicWorld()), null,
     "page load does not start background music");
   const loudness = await page.evaluate(async () => {
-    const measures = {};
+    const measures = { rms: {}, peaks: {} };
     for (const effect of ["place", "explode", "pickup", "correct"]) {
       let offline;
       class RenderContext extends OfflineAudioContext {
@@ -78,24 +83,32 @@ try {
       player.play(effect);
       const samples = (await offline.startRendering()).getChannelData(0);
       let peakRms = 0;
+      let peak = 0;
       for (let start = 0; start < samples.length; start += 2205) {
         let squareSum = 0;
         for (let index = start; index < Math.min(start + 2205, samples.length); index += 1) {
           squareSum += samples[index] ** 2;
+          peak = Math.max(peak, Math.abs(samples[index]));
         }
         peakRms = Math.max(peakRms, Math.sqrt(squareSum / 2205));
       }
-      measures[effect] = peakRms;
+      measures.rms[effect] = peakRms;
+      measures.peaks[effect] = peak;
     }
     return measures;
   });
-  console.log("effectPeakRms", JSON.stringify(loudness));
-  assert.ok(Math.max(...Object.values(loudness)) / Math.min(...Object.values(loudness)) <= 1.3,
+  console.log("effectPeakRms", JSON.stringify(loudness.rms));
+  console.log("effectSamplePeaks", JSON.stringify(loudness.peaks));
+  assert.ok(Object.values(loudness.rms).every((value) => value >= 0.07),
+    "effects are audible at ordinary system volume");
+  assert.ok(Object.values(loudness.peaks).every((value) => value < 0.95),
+    "individual effects do not clip");
+  assert.ok(Math.max(...Object.values(loudness.rms)) / Math.min(...Object.values(loudness.rms)) <= 1.3,
     "all four sound effects have similar short-window RMS loudness");
   await page.evaluate(() => { window.__soundEvents.length = 0; });
   const musicLoudness = await page.evaluate(async () => {
     const measures = [];
-    for (const world of [1, 2]) {
+    for (const world of [1, 2, 3]) {
       let offline;
       class RenderContext extends OfflineAudioContext {
         constructor() { super(1, 44100, 44100); offline = this; }
@@ -112,8 +125,8 @@ try {
     return measures;
   });
   console.log("musicRms", JSON.stringify(musicLoudness));
-  assert.ok(musicLoudness.every((value) => value > 0.001 && value < Math.min(...Object.values(loudness)) / 3),
-    "both soundtracks are audible but quieter than gameplay cues");
+  assert.ok(musicLoudness.every((value) => value > 0.008 && value < Math.min(...Object.values(loudness.rms)) / 3),
+    "all world soundtracks are audible but quieter than gameplay cues");
   await page.evaluate(() => { window.__soundEvents.length = 0; });
   assert.deepEqual(await events(), [], "page load is silent");
   await page.locator("#overlayStartBombGame").click();
@@ -137,7 +150,7 @@ try {
     assert.equal(await toggle.getAttribute("aria-label"), "关闭音效");
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
     await page.waitForTimeout(200);
-    await page.screenshot({ path: `tests/bomb-audio-${width}.png`, fullPage: true });
+    await page.screenshot({ path: path.join(output, `bomb-audio-${width}.png`), fullPage: true });
     if (width === 390) await toggle.tap();
     else { await toggle.focus(); await page.keyboard.press("Enter"); }
     assert.equal(await toggle.getAttribute("aria-pressed"), "false");
@@ -193,7 +206,7 @@ try {
   await page.waitForFunction(() => window.__testSoundPlayer.getMusicWorld() === 2);
   assert.deepEqual(errors, [], "no script or resource errors");
   console.log(JSON.stringify({ effects: ["place", "explode", "pickup", "correct"],
-    musicWorlds: [1, 2], mute: true, resume: true, desktopAnd390: true, errors: 0 }));
+    musicWorlds: [1, 2, 3], mute: true, resume: true, desktopAnd390: true, errors: 0 }));
 } finally {
   await context.close();
   await browser.close();

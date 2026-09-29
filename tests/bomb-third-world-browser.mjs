@@ -73,7 +73,12 @@ try {
     assert.equal(opening.layout.cols, 27);
     assert.equal(opening.layout.rows, 15);
     assert.equal(opening.layout.tile, 48);
-    assert.equal(opening.layout.enemyCount, 4);
+    assert.equal(opening.layout.enemyCount, 6);
+    const openingEnemies = opening.state.enemies;
+    assert.equal(openingEnemies.filter((enemy) => enemy.type === "bowser").length, 1);
+    assert.equal(new Set(openingEnemies.map((enemy) => `${enemy.gx},${enemy.gy}`)).size, openingEnemies.length);
+    assert.ok(openingEnemies.every((enemy) => opening.state.map[enemy.gy]?.[enemy.gx] === 0));
+    assert.ok(openingEnemies.every((enemy) => enemy.gx !== 1 || enemy.gy !== 1));
     assert.equal(opening.layout.hiddenBulletBills, 2);
     assert.equal(opening.targets.hiddenTargetIds.length, 5);
     assert.equal(opening.state.status, "ready", "old 2-5 win opens at a safe 3-1 start gate");
@@ -161,10 +166,73 @@ try {
       assert.ok(level.layout.playerScreen.x <= level.layout.viewport.x + level.layout.viewport.width);
       assert.ok(level.layout.playerScreen.y <= level.layout.viewport.y + level.layout.viewport.height);
     }
+    const bowserStarts = new Set();
+    let levelReady = null;
+    for (let attempt = 0; attempt < 6; attempt += 1) {
+      await page.goto(baseUrl + `bomb-game.css?third-world-random-${attempt}=1`);
+      await page.evaluate(({ key, value }) => localStorage.setItem(key, JSON.stringify(value)),
+        { key: progressKey, value: oldWin });
+      await page.goto(gameUrl);
+      await page.waitForFunction(() => window.__BOMB_GAME__?.getLevelLayout().world === 3);
+      levelReady = await page.evaluate(() => window.__BOMB_GAME__.getState());
+      const bowser = levelReady.enemies.find((enemy) => enemy.type === "bowser");
+      assert.ok(bowser);
+      assert.notDeepEqual([bowser.gx, bowser.gy], [1, 1]);
+      assert.equal(levelReady.map[bowser.gy][bowser.gx], 0);
+      bowserStarts.add(`${bowser.gx},${bowser.gy}`);
+    }
+    assert.ok(bowserStarts.size >= 2, "Bowser does not reuse one fixed corner across new levels");
+    const thirdWorldCounts = [levelReady.enemies.length];
+    for (let subLevel = 2; subLevel <= 5; subLevel += 1) {
+      const completed = structuredClone(levelReady);
+      completed.status = "playing";
+      completed.startLayerHidden = true;
+      completed.enemies = [{ ...completed.enemies[0], alive: false }];
+      completed.moonWordIds = completed.todayNewWords.map((word) => word.id);
+      completed.hiddenPowerUps = [];
+      completed.hiddenWordCrates = [];
+      completed.powerUps = [];
+      completed.bombs = [];
+      completed.explosions = [];
+      completed.player.invulnerable = 20;
+      await page.goto(baseUrl + `bomb-game.css?third-world-complete-${subLevel}=1`);
+      await page.evaluate(({ key, value }) => localStorage.setItem(key, JSON.stringify(value)),
+        { key: progressKey, value: completed });
+      await page.goto(gameUrl);
+      await page.waitForFunction(() => Boolean(window.__BOMB_GAME__));
+      await page.locator("#overlayStartBombGame").click();
+      await page.locator("#bombCanvas").focus();
+      await page.keyboard.press("Space");
+      try {
+        await page.waitForFunction((expected) => window.__BOMB_GAME__?.getLevelLayout().subLevel === expected,
+          subLevel, { timeout: 5000 });
+      } catch (error) {
+        const actual = await page.evaluate(() => {
+          const state = window.__BOMB_GAME__.getState();
+          return { world: state.world, subLevel: state.subLevel, status: state.status,
+            completed: state.moonWordIds.length, enemies: state.enemies.length,
+            alive: state.enemies.filter((enemy) => enemy.alive).length,
+            hiddenPowerUps: state.hiddenPowerUps.length, hiddenWordCrates: state.hiddenWordCrates.length,
+            awaitingContinue: window.__BOMB_GAME__.isAwaitingContinue() };
+        });
+        console.error("third-world advance diagnostic", JSON.stringify({ expected: subLevel, actual }));
+        throw error;
+      }
+      levelReady = await page.evaluate(() => window.__BOMB_GAME__.getState());
+      assert.equal(levelReady.world, 3);
+      assert.equal(levelReady.status, "ready");
+      assert.equal(levelReady.enemies.length, subLevel + 5);
+      assert.equal(new Set(levelReady.enemies.map((enemy) => `${enemy.gx},${enemy.gy}`)).size,
+        levelReady.enemies.length);
+      assert.ok(levelReady.enemies.every((enemy) => levelReady.map[enemy.gy]?.[enemy.gx] === 0));
+      thirdWorldCounts.push(levelReady.enemies.length);
+    }
+    assert.deepEqual(thirdWorldCounts, [6, 7, 8, 9, 10]);
     assert.deepEqual(errors, []);
     results.push({ width, world: opening.layout.world, levels: opening.constants.levelsPerWorld,
       openingCols: opening.layout.cols, rows: opening.layout.rows,
-      enemies: opening.layout.enemyCount, missiles: opening.layout.hiddenBulletBills,
+      enemies: opening.layout.enemyCount, thirdWorldCounts, bowserSpawnVariants: bowserStarts.size,
+      missiles: opening.layout.hiddenBulletBills,
       camera: moved.camera, savedCamera: resumed.camera });
     await context.close();
   }

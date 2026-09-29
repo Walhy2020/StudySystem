@@ -1,4 +1,6 @@
 (function () {
+  const EFFECT_OUTPUT_GAIN = 0.8;
+  const MUSIC_OUTPUT_GAIN = 0.44;
   const MUSIC_TRACKS = [
     { beat: 0.27, melody: [72, 76, 79, 76, 74, 77, 81, 77, 76, 79, 84, 79, 74, 76, 79, null,
       72, 76, 79, 76, 74, 77, 81, 77, 79, 81, 84, 81, 79, 76, 72, null], bass: [48, 53, 55, 48] },
@@ -25,7 +27,7 @@
         if (!context) {
           context = new AudioContextClass();
           master = context.createGain();
-          master.gain.value = 0.16;
+          master.gain.value = EFFECT_OUTPUT_GAIN;
           master.connect(context.destination);
           musicBus = context.createGain();
           musicBus.gain.value = 0;
@@ -128,7 +130,7 @@
       }
       musicStep = 0;
       nextNoteTime = context.currentTime + 0.05;
-      musicBus.gain.setTargetAtTime(0.055, context.currentTime, 0.04);
+      musicBus.gain.setTargetAtTime(MUSIC_OUTPUT_GAIN, context.currentTime, 0.04);
       scheduleMusic();
       musicTimer = window.setInterval(scheduleMusic, 60);
     }
@@ -154,7 +156,7 @@
 
     function setEnabled(value) {
       enabled = Boolean(value);
-      if (master && context) master.gain.setValueAtTime(enabled ? 0.16 : 0, context.currentTime);
+      if (master && context) master.gain.setValueAtTime(enabled ? EFFECT_OUTPUT_GAIN : 0, context.currentTime);
       if (!enabled) setMusic(null);
       else unlock();
     }

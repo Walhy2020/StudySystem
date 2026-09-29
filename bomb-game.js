@@ -1129,6 +1129,7 @@
     if (state.world >= 3) {
       [
         `${Math.max(3, center - 3)},1`, `${Math.min(COLS - 4, center + 3)},${ROWS - 2}`,
+        `${Math.max(3, center - 3)},${ROWS - 2}`, `${Math.min(COLS - 4, center + 3)},1`,
         `1,${middle}`, `${right},${middle}`,
       ].forEach((cell) => protectedCells.add(cell));
     }
@@ -1195,14 +1196,38 @@
       { gx: 1, gy: middle },
       { gx: right, gy: middle },
     ];
+    if (state.world >= 3) starts.push(
+      { gx: Math.max(3, center - 3), gy: ROWS - 2 },
+      { gx: Math.min(COLS - 4, center + 3), gy: 1 },
+    );
     const difficultyIndex = difficultyIndexForSubLevel();
-    const enemyCount = Math.min(starts.length, Math.max(0, difficultyIndex - 1 + (state.world >= 3 ? 2 : 0)));
+    const enemyCount = Math.min(starts.length, Math.max(0, difficultyIndex - 1 + (state.world >= 3 ? 4 : 0)));
+    const bowserStartIndex = enemyCount >= 2 ? 1 : -1;
+    const bowserReservedCells = new Set(starts.slice(0, enemyCount)
+      .filter((_, index) => index !== bowserStartIndex)
+      .map(({ gx, gy }) => coordKey(gx, gy)));
+    bowserReservedCells.add(coordKey(Math.min(COLS - 4, Math.max(3, center - 1)), middle));
+    const bowserCandidates = [];
+    if (bowserStartIndex >= 0) {
+      for (let gy = 1; gy < ROWS - 1; gy += 1) {
+        for (let gx = 1; gx < COLS - 1; gx += 1) {
+          if (state.map[gy][gx] !== TILE_FLOOR || Math.abs(gx - 1) + Math.abs(gy - 1) < 5 ||
+              bowserReservedCells.has(coordKey(gx, gy))) continue;
+          const exits = [[gx - 1, gy], [gx + 1, gy], [gx, gy - 1], [gx, gy + 1]]
+            .filter(([x, y]) => state.map[y]?.[x] === TILE_FLOOR).length;
+          if (exits >= 2) bowserCandidates.push({ gx, gy });
+        }
+      }
+    }
+    const bowserStart = bowserCandidates.length
+      ? bowserCandidates[Math.floor(Math.random() * bowserCandidates.length)]
+      : starts[bowserStartIndex];
     const enemies = starts.slice(0, enemyCount).map((start, index) => ({
       id: index + 1,
-      type: index === 1 ? "bowser" : "mushroom",
-      hp: index === 1 ? 2 : 1,
-      gx: start.gx,
-      gy: start.gy,
+      type: index === bowserStartIndex ? "bowser" : "mushroom",
+      hp: index === bowserStartIndex ? 2 : 1,
+      gx: index === bowserStartIndex ? bowserStart.gx : start.gx,
+      gy: index === bowserStartIndex ? bowserStart.gy : start.gy,
       dir: index % 2 ? "left" : "up",
       move: null,
       chaseTimer: 0,

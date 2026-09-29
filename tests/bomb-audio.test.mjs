@@ -4,11 +4,15 @@ import { runInNewContext } from "node:vm";
 import test from "node:test";
 
 const source = readFileSync(new URL("../src/bomb-audio.js", import.meta.url), "utf8");
-const parameter = () => ({ value: 0, setValueAtTime() {}, exponentialRampToValueAtTime() {}, setTargetAtTime() {} });
+const parameter = () => ({ value: 0,
+  setValueAtTime(value) { this.value = value; },
+  exponentialRampToValueAtTime(value) { this.value = value; },
+  setTargetAtTime(value) { this.value = value; } });
 
 test("四种游戏音效在手势解锁后各自调度，静音与缺失音频接口可降级", () => {
   const events = [];
   const notes = [];
+  const gains = [];
   const timers = new Map();
   class FakeAudioContext {
     constructor() {
@@ -19,7 +23,7 @@ test("四种游戏音效在手势解锁后各自调度，静音与缺失音频�
       this.destination = {};
     }
     resume() { this.state = "running"; return Promise.resolve(); }
-    createGain() { return { gain: parameter(), connect() {} }; }
+    createGain() { const node = { gain: parameter(), connect() {} }; gains.push(node.gain); return node; }
     createOscillator() {
       return { frequency: { ...parameter(), setValueAtTime(value) { notes.push(value); } },
         connect() {}, start() { events.push("tone"); }, stop() {} };
@@ -38,6 +42,7 @@ test("四种游戏音效在手势解锁后各自调度，静音与缺失音频�
   assert.equal(events.length, 0, "opening the page does not create or play audio");
   assert.equal(player.play("place"), false, "audio waits for a user gesture");
   assert.equal(player.unlock(), true);
+  assert.equal(gains[0].value, 0.8, "sound effects use the boosted output gain");
   assert.equal(player.play("place"), true);
   assert.equal(player.play("explode"), true);
   assert.equal(player.play("pickup"), true);
@@ -46,10 +51,13 @@ test("四种游戏音效在手势解锁后各自调度，静音与缺失音频�
   assert.equal(events.filter((event) => event === "noise").length, 1, "explosion includes a noise burst");
   assert.equal(events.filter((event) => event === "tone").length, 8);
   player.setEnabled(false);
+  assert.equal(gains[0].value, 0);
   assert.equal(player.play("place"), false);
   player.setEnabled(true);
+  assert.equal(gains[0].value, 0.8, "unmuting restores the boosted gain");
   assert.equal(player.play("place"), true);
   player.setMusic(1);
+  assert.equal(gains[1].value, 0.44, "background music remains below the boosted effects");
   assert.equal(player.getMusicWorld(), 1);
   assert.equal(timers.size, 1, "one scheduler runs for the current world");
   const firstWorldNote = notes.at(-2);
@@ -65,6 +73,7 @@ test("四种游戏音效在手势解锁后各自调度，静音与缺失音频�
   assert.equal(timers.size, 1, "third world keeps one scheduler");
   assert.notEqual(notes.at(-2), secondWorldNote, "third world has its own melody");
   player.setEnabled(false);
+  assert.equal(gains[1].value, 0);
   assert.equal(player.getMusicWorld(), null);
   assert.equal(timers.size, 0, "muting stops the background loop");
 

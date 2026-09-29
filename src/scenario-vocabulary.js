@@ -1,4 +1,4 @@
-import { THEME_CONFIGS } from "../theme-learning.js?v=2.16";
+import { THEME_CONFIGS } from "../theme-learning.js?v=2.17";
 import { buildThemeCatalog } from "./theme-overview.js?v=1.13";
 import { totalLearnedWordSet } from "./total-word-library.js?v=1.4";
 import { FIRST_MEETING_VOCABULARY } from "../data/scenarios.js?v=1.6";

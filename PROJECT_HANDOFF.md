@@ -7,7 +7,19 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.26** (2026-09-29). Bomb maze pinyin-to-Hanzi
+System display version: **v1.0.27** (2026-09-29). Theme Learning now has a
+separate word-review stage between learning and interactive practice. Selecting
+a scene picture keeps the right word card concealed until the learner presses
+Display; selecting another picture conceals the next answer again. Counting
+English labels, ordinal labels and nursery-rhyme words/lyrics are hidden while
+reviewing so they do not reveal the answer. Review does not alter the learned-word
+store or completion state. Theme CSS/JS caches: v3.5/v2.17; all seven
+update-notifier queries are v1.0.27. Focused Edge check:
+`node tests/theme-word-review-browser.mjs` (desktop and 390px).
+Verified: syntax check, 142/142 Node tests, targeted real Edge review flow
+across Body, Numbers 1–10, Ordinals and Twinkle, and whitespace check passed.
+
+Previous v1.0.26 (2026-09-29). Bomb maze pinyin-to-Hanzi
 questions no longer use another character with any matching pronunciation as a
 wrong choice (for example, bǐ cannot pit 笔 against 比). Hanzi-to-pinyin choices
 also exclude overlapping readings of polyphonic characters. New pinyin-mode

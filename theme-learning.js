@@ -440,10 +440,12 @@ function initializePage() {
   renderCountingScenes();
   const dom = Object.fromEntries([...document.querySelectorAll("[id]")].map((node) => [node.id, node]));
   const scenes = [...document.querySelectorAll(".theme-scene")];
+  const targetLabels = new Map([...document.querySelectorAll(".scene-target")].map((node) => [node, node.getAttribute("aria-label")]));
   let activeThemeId = null;
   let activeSeriesId = null;
   let session = null;
   let stage = "learn";
+  let reviewCurrentId = null;
   let feedbackTimer = 0;
   let advanceTimer = 0;
   const speaker = createEnglishSpeaker();
@@ -538,7 +540,7 @@ function initializePage() {
     updateLearningCompletion();
   }
   function toggleCurrentPhonetic() {
-    if (stage !== "learn") return false;
+    if (stage !== "learn" && stage !== "review") return false;
     const toggle = dom.wordCard.querySelector("#phoneticToggle");
     const breakdown = dom.wordCard.querySelector("#phonemeBreakdown");
     if (!toggle || !breakdown) return false;
@@ -573,6 +575,18 @@ function initializePage() {
     dom.wordCard.className = "word-card-placeholder";
     dom.wordCard.innerHTML = '<span class="tap-icon" aria-hidden="true">☝</span><h3>' + config.learnPlaceholderTitle + '</h3><p>' + config.learnPlaceholderText + '</p>';
   }
+  function renderReviewPlaceholder(selected = false) {
+    dom.wordCard.className = "word-card-placeholder word-review-placeholder";
+    dom.wordCard.innerHTML = selected
+      ? '<h3>想一想这个单词</h3><p>先看左边的图片，回忆单词，再点击显示核对。</p><button class="primary-action review-reveal" id="revealReviewWord" type="button">显示</button>'
+      : '<span class="tap-icon" aria-hidden="true">☝</span><h3>复习单词</h3><p>点击左边的图片，先自己回忆单词。</p>';
+    if (selected) dom.wordCard.querySelector("#revealReviewWord").addEventListener("click", () => {
+      const word = session?.word(reviewCurrentId);
+      if (!word || stage !== "review") return;
+      renderWord(word);
+      dom.scenePrompt.textContent = "已显示答案，点击其他图片继续复习";
+    });
+  }
   function renderQuestion() {
     const config = activeConfig();
     const target = session.target();
@@ -602,26 +616,41 @@ function initializePage() {
   function setStage(next) {
     if (!session) return;
     stage = next;
+    reviewCurrentId = null;
     clearTimeout(feedbackTimer);
     clearTimeout(advanceTimer);
     speaker.cancel();
     clearTargetStates();
     const practice = next === "practice";
+    const review = next === "review";
     const config = activeConfig();
+    dom.learningView.classList.toggle("is-word-review", review);
+    const reviewTargets = review ? activeTargets() : [];
+    for (const [node, label] of targetLabels) {
+      const index = reviewTargets.indexOf(node);
+      if (label) node.setAttribute("aria-label", index >= 0 ? "目标 " + (index + 1) + "，点击后核对单词" : label);
+    }
     dom.learnPanel.hidden = practice;
+    dom.completeThemeLearning.closest(".theme-learning-completion").hidden = review;
     dom.practicePanel.hidden = !practice;
     dom.resultPanel.hidden = true;
-    dom.learnStage.classList.toggle("is-active", !practice);
+    dom.learnStage.classList.toggle("is-active", !practice && !review);
+    dom.reviewWordStage.classList.toggle("is-active", review);
     dom.practiceStage.classList.toggle("is-active", practice);
-    dom.learnStage.setAttribute("aria-pressed", String(!practice));
+    dom.learnStage.setAttribute("aria-pressed", String(!practice && !review));
+    dom.reviewWordStage.setAttribute("aria-pressed", String(review));
     dom.practiceStage.setAttribute("aria-pressed", String(practice));
-    dom.stageTitle.textContent = practice ? "第二部分 · 互动练习" : "第一部分 · 认识单词";
-    dom.scenePrompt.textContent = practice ? config.practicePrompt : config.learnPrompt;
+    dom.stageTitle.textContent = practice ? "第三部分 · 互动练习" : review ? "第二部分 · 复习单词" : "第一部分 · 认识单词";
+    dom.scenePrompt.textContent = practice ? config.practicePrompt : review ? "点击图片，回忆单词后再显示" : config.learnPrompt;
     if (practice) {
       session.startRound();
       renderQuestion();
       speakInstruction();
+    } else if (review) {
+      renderReviewPlaceholder();
+      dom.sessionProgress.textContent = "看图复习";
     } else {
+      renderLearnPlaceholder(config);
       dom.sessionProgress.textContent = "已认识 " + session.seen.size + "/" + session.words.length;
     }
   }
@@ -642,6 +671,14 @@ function initializePage() {
       dom.scenePrompt.textContent = "已选择：" + (word.ariaLabel || word.chinese + " " + word.word);
       dom.sessionProgress.textContent = "已认识 " + session.seen.size + "/" + session.words.length;
 
+      return;
+    }
+    if (stage === "review") {
+      reviewCurrentId = id;
+      targetNode.classList.add("is-selected");
+      targetNode.setAttribute("aria-pressed", "true");
+      renderReviewPlaceholder(true);
+      dom.scenePrompt.textContent = "已选择图片，点击显示核对";
       return;
     }
     if (session.complete) return;
@@ -718,7 +755,7 @@ function initializePage() {
     target.setAttribute("aria-pressed", "false");
     target.addEventListener("click", () => selectTarget(target.dataset.target));
     target.addEventListener("keydown", (event) => {
-      if (event.key === " " && stage === "learn" && dom.wordCard.querySelector("#phoneticToggle")) {
+      if (event.key === " " && (stage === "learn" || stage === "review") && dom.wordCard.querySelector("#phoneticToggle")) {
         event.preventDefault();
         if (!event.repeat) toggleCurrentPhonetic();
         return;
@@ -729,13 +766,14 @@ function initializePage() {
     });
   });
   document.addEventListener("keydown", (event) => {
-    if (event.defaultPrevented || event.key !== " " || event.repeat || stage !== "learn" || !session || dom.learningView.hidden) return;
+    if (event.defaultPrevented || event.key !== " " || event.repeat || (stage !== "learn" && stage !== "review") || !session || dom.learningView.hidden) return;
     const target = event.target instanceof Element ? event.target : null;
     if (target?.closest("button,a,input,select,textarea,[contenteditable='true']")) return;
     if (toggleCurrentPhonetic()) event.preventDefault();
   });  dom.backToThemes.addEventListener("click", returnToPicker);
   dom.backToSeries.addEventListener("click", returnToSeries);
   dom.learnStage.addEventListener("click", () => setStage("learn"));
+  dom.reviewWordStage.addEventListener("click", () => setStage("review"));
   dom.practiceStage.addEventListener("click", () => setStage("practice"));
   dom.playInstruction.addEventListener("click", speakInstruction);
   dom.restartRound.addEventListener("click", () => setStage("practice"));

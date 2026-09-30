@@ -380,7 +380,7 @@ try {
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
     await page.screenshot({ path: `tmp/bullet-bill-retained-brick-${width}.png`, fullPage: true });
     await page.locator("#bombCanvas").focus();
-    await page.keyboard.press("Space");
+    await page.keyboard.press("B");
     await page.waitForFunction(() => window.__BOMB_GAME__.getState().bombs.length === 1);
     await page.waitForFunction(() => window.__BOMB_GAME__.getState().enemies.some(enemy => enemy.type === "bullet-bill" && enemy.alive));
     const manuallyRevealed = await page.evaluate(() => window.__BOMB_GAME__.getState());

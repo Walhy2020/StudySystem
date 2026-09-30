@@ -5,7 +5,12 @@
   const BOMB_PROGRESS_KEY = "mario-bomb-game-progress-v1";
   const BOMB_PROGRESS_VERSION = 1;
   const AVATAR_LABELS = Object.freeze({ bomber: "炸弹人", "fly-star": "小飞星", "super-mushroom": "超级蘑菇" });
-  const ATTACK_LABELS = Object.freeze({ bomb: "炸弹", mushroom: "小蘑菇" });
+  const ATTACK_LABELS = Object.freeze({ bomb: "冰炸弹", mushroom: "小蘑菇" });
+  const COMBAT_RULES_VERSION = 2;
+  const ICE_FREEZE_TIME = 3;
+  const BOWSER_FIRE_COOLDOWN = 3;
+  const FIREBALL_SPEED = 3;
+  const ATTACK_KEYS = ["Space", ..."BJKLZXCVFGHQERTYUIOPNM".split("").map(key => `Key${key}`)];
   const DEFAULT_THROW_DISTANCE = 3;
   const MIN_THROW_DISTANCE = 1;
   const MAX_THROW_DISTANCE = 8;
@@ -33,6 +38,8 @@
   const attackMenu = document.getElementById("bombAttackMenu");
   const throwDistanceInput = document.getElementById("mushroomThrowDistance");
   const throwDistanceValue = document.getElementById("mushroomThrowDistanceValue");
+  const mushroomKeyInput = document.getElementById("mushroomAttackKey");
+  const iceBombKeyInput = document.getElementById("iceBombAttackKey");
   const attackHudIcon = document.getElementById("attackHudIcon");
   const attackRangeLabel = document.getElementById("attackRangeLabel");
   const soundToggle = document.getElementById("bombSoundToggle");
@@ -125,7 +132,7 @@
   const MAX_HP = 3;
   const DAILY_NEW_LIMIT = 3;
   const BOMB_MOONS_PER_LEVEL = 5;
-  const FIRE_FLOWERS_PER_LEVEL = 2;
+  const FIRE_FLOWERS_PER_LEVEL = 1;
   const BOMB_WORDS_PER_RUN = (WORLDS_PER_RUN - FIRST_WORLD + 1) * LEVELS_PER_WORLD * BOMB_MOONS_PER_LEVEL;
   const DIFFICULTY_LABELS = ["A", "B", "C", "D", "E", "F", "G", "H", "I"];
   const START_DIFFICULTY_INDEX = 2;
@@ -213,6 +220,28 @@
   greenMushroomImage.src = "./其他素材/P305/Mario SVG Bundle/PNG/11.png";
   const fireFlowerImage = new Image();
   fireFlowerImage.src = "./其他素材/P305/Mario SVG Bundle/PNG/253.png";
+  let iceFlowerSprite = null;
+  fireFlowerImage.addEventListener("load", () => {
+    const sprite = document.createElement("canvas");
+    sprite.width = fireFlowerImage.naturalWidth;
+    sprite.height = fireFlowerImage.naturalHeight;
+    const painter = sprite.getContext("2d");
+    painter.drawImage(fireFlowerImage, 0, 0);
+    const pixels = painter.getImageData(0, 0, sprite.width, sprite.height);
+    for (let i = 0; i < pixels.data.length; i += 4) {
+      const r = pixels.data[i];
+      const g = pixels.data[i + 1];
+      const b = pixels.data[i + 2];
+      // Recolor only warm petals; preserve the original silhouette, eyes and green stem.
+      if (pixels.data[i + 3] && r > b * 1.25 && r >= g * 0.9) {
+        pixels.data[i] = Math.round(b * 0.65);
+        pixels.data[i + 1] = Math.round(r * 0.82);
+        pixels.data[i + 2] = r;
+      }
+    }
+    painter.putImageData(pixels, 0, 0);
+    iceFlowerSprite = sprite;
+  });
   const superMushroomImage = new Image();
   superMushroomImage.src = "./assets/sprites/super-mushroom-v1.png?v=1.0";
   const bomberImage = new Image();
@@ -250,6 +279,7 @@
     map: [],
     bombs: [],
     mushroomShots: [],
+    fireballs: [],
     explosions: [],
     particles: [],
     powerUps: [],
@@ -258,8 +288,10 @@
     player: null,
     score: 0,
     hp: MAX_HP,
-    bombLimit: 3,
-    flameRange: 1,
+    bombLimit: 1,
+    flameRange: 2,
+    mushroomKey: "Space",
+    iceBombKey: "KeyB",
     attackMode: "bomb",
     throwDistance: DEFAULT_THROW_DISTANCE,
     fireFlowersSpawned: 0,
@@ -310,6 +342,7 @@
   function serializeBombProgress() {
     return {
       version: BOMB_PROGRESS_VERSION,
+      combatRulesVersion: COMBAT_RULES_VERSION,
       progressSessionId,
       targetRevealPolicy: 1,
       savedAt: Date.now(),
@@ -322,6 +355,8 @@
       bombLimit: state.bombLimit,
       flameRange: state.flameRange,
       attackMode: state.attackMode,
+      mushroomKey: state.mushroomKey,
+      iceBombKey: state.iceBombKey,
       throwDistance: state.throwDistance,
       fireFlowersSpawned: state.fireFlowersSpawned,
       dayClock: state.dayClock,
@@ -330,6 +365,7 @@
       map: plainArray(state.map),
       bombs: plainArray(state.bombs),
       mushroomShots: plainArray(state.mushroomShots),
+      fireballs: plainArray(state.fireballs),
       explosions: plainArray(state.explosions),
       particles: plainArray(state.particles),
       powerUps: plainArray(state.powerUps),
@@ -394,22 +430,15 @@
   }
 
   function updateAttackUi() {
-    const mushroomMode = state.attackMode === "mushroom";
-    attackToggle.setAttribute("aria-label", `选择攻击方式，当前${ATTACK_LABELS[state.attackMode]}`);
-    attackToggle.title = `当前攻击：${ATTACK_LABELS[state.attackMode]}`;
-    attackMenu.querySelectorAll("[data-attack-mode]").forEach((button) => {
-      button.setAttribute("aria-pressed", String(button.dataset.attackMode === state.attackMode));
-    });
+    attackToggle.setAttribute("aria-label", "设置小蘑菇与冰炸弹快捷键");
+    attackToggle.title = "双攻击设置";
+    mushroomKeyInput.value = state.mushroomKey;
+    iceBombKeyInput.value = state.iceBombKey;
     throwDistanceInput.value = String(state.throwDistance);
-    throwDistanceInput.disabled = !mushroomMode;
+    throwDistanceInput.disabled = false;
     throwDistanceValue.textContent = `${state.throwDistance} 格`;
     throwDistanceInput.setAttribute("aria-valuetext", `${state.throwDistance} 格`);
     updateHud();
-  }
-
-  function clearFireFlowersForMushroomMode() {
-    state.hiddenPowerUps = new Map([...state.hiddenPowerUps].filter(([, type]) => type !== "fireFlower"));
-    state.powerUps = state.powerUps.filter((powerUp) => powerUp.type !== "fireFlower");
   }
 
   function setAvatarMenuOpen(open) {
@@ -432,20 +461,8 @@
     if (attackMenuOpen) {
       clearInputState();
       saveBombProgress();
-      attackMenu.querySelector('[aria-pressed="true"]')?.focus();
+      mushroomKeyInput.focus();
     }
-  }
-
-  function selectAttackMode(mode) {
-    if (!Object.hasOwn(ATTACK_LABELS, mode)) return;
-    claimBombProgress();
-    state.attackMode = mode;
-    if (mode === "mushroom") clearFireFlowersForMushroomMode();
-    updateAttackUi();
-    setAttackMenuOpen(false);
-    saveBombProgress();
-    if (state.status === "playing" && !awaitingContinue) canvas.focus();
-    else attackToggle.focus();
   }
 
   function selectPlayerAvatar(avatar) {
@@ -507,8 +524,9 @@
       resetGame();
       state.score = Math.max(0, Number(saved.score) || 0);
       state.hp = clamp(Number(saved.hp) || MAX_HP, 1, MAX_HP + 20);
-      state.bombLimit = clamp(Number(saved.bombLimit) || 3, 1, 10);
-      state.flameRange = clamp(Number(saved.flameRange) || 1, 1, 99);
+      state.bombLimit = saved.combatRulesVersion === COMBAT_RULES_VERSION ? clamp(Number(saved.bombLimit) || 1, 1, 99) : 1;
+      state.flameRange = saved.combatRulesVersion === COMBAT_RULES_VERSION ? clamp(Number(saved.flameRange) || 2, 2, 99) : 2;
+      restoreAttackKeys(saved);
       state.bombTargetRoundCounts = plainObject(saved.bombTargetRoundCounts);
       state.bombSeenWordIds = plainArray(saved.bombSeenWordIds).filter((id) => wordById(id));
       state.bombAppearanceHistory = plainArray(saved.bombAppearanceHistory);
@@ -534,8 +552,9 @@
     state.round = Number(saved.round) || 1;
     state.score = Number(saved.score) || 0;
     state.hp = Math.max(0, Math.min(MAX_HP + 20, Number(saved.hp) || MAX_HP));
-    state.bombLimit = Math.max(1, Math.min(10, Number(saved.bombLimit) || 3));
-    state.flameRange = Math.max(1, Math.min(99, Number(saved.flameRange) || 1));
+    state.bombLimit = Math.max(1, Math.min(99, Number(saved.bombLimit) || 1));
+    state.flameRange = Math.max(2, Math.min(99, Number(saved.flameRange) || 2));
+    restoreAttackKeys(saved);
     state.attackMode = Object.hasOwn(ATTACK_LABELS, saved.attackMode) ? saved.attackMode : "bomb";
     state.throwDistance = clamp(Math.round(Number(saved.throwDistance) || DEFAULT_THROW_DISTANCE),
       MIN_THROW_DISTANCE, MAX_THROW_DISTANCE);
@@ -545,6 +564,8 @@
     state.playSource = saved.playSource || null;
     state.map = saved.map;
     state.bombs = plainArray(saved.bombs);
+    state.fireballs = plainArray(saved.fireballs).filter(ball =>
+      [ball.gx, ball.gy, ball.vx, ball.vy, ball.life].every(Number.isFinite) && ball.life > 0);
     state.mushroomShots = plainArray(saved.mushroomShots).filter((shot) =>
       Object.hasOwn(DIRS, shot?.direction) && Number.isInteger(shot.gx) && Number.isInteger(shot.gy) &&
       isInside(shot.gx, shot.gy) && Number.isFinite(shot.progress) && Number.isInteger(shot.steps) &&
@@ -561,8 +582,8 @@
     updateAvatarUi();
     updateAttackUi();
     state.hiddenPowerUps = new Map(Array.isArray(saved.hiddenPowerUps) ? saved.hiddenPowerUps : []);
-    if (state.attackMode === "mushroom") clearFireFlowersForMushroomMode();
     state.hiddenWordCrates = new Map(Array.isArray(saved.hiddenWordCrates) ? saved.hiddenWordCrates : []);
+    migrateCombatRules(saved);
     state.todayNewWords = plainArray(saved.todayNewWords).map((word) => wordById(word.id)).filter(Boolean);
     state.bombRunWordIds = plainArray(saved.bombRunWordIds);
     state.bombWordCursor = Math.max(0, Number(saved.bombWordCursor) || 0);
@@ -611,6 +632,62 @@
 
   function maxFireFlowersForLevel() {
     return FIRE_FLOWERS_PER_LEVEL;
+  }
+
+  function restoreAttackKeys(saved) {
+    state.mushroomKey = ATTACK_KEYS.includes(saved.mushroomKey) ? saved.mushroomKey : "Space";
+    state.iceBombKey = ATTACK_KEYS.includes(saved.iceBombKey) && saved.iceBombKey !== state.mushroomKey
+      ? saved.iceBombKey : state.mushroomKey === "KeyB" ? "Space" : "KeyB";
+  }
+
+  function migrateCombatRules(saved) {
+    if (saved.combatRulesVersion === COMBAT_RULES_VERSION) return;
+    state.bombLimit = 1;
+    state.flameRange = 2;
+    state.enemies.forEach(enemy => {
+      if (!enemy.alive || enemy.type === "bullet-bill") return;
+      const oldMax = enemy.type === "bowser" ? 2 : 1;
+      const newMax = enemy.type === "bowser" ? 15 : 3;
+      enemy.hp = Math.max(1, newMax - Math.max(0, oldMax - (Number(enemy.hp) || oldMax)));
+      enemy.freezeTimer = 0;
+      enemy.fireCooldown = BOWSER_FIRE_COOLDOWN;
+    });
+    state.bombs.forEach(bomb => { if (!bomb.isRed && !bomb.fromBulletBill) bomb.isIce = true; });
+    let flowerKept = false;
+    state.powerUps = state.powerUps.filter(item => {
+      if (item.type !== "fireFlower") return true;
+      if (flowerKept) return false;
+      flowerKept = true;
+      item.type = "iceFlower";
+      return true;
+    });
+    for (const [key, type] of state.hiddenPowerUps) {
+      if (type !== "fireFlower") continue;
+      state.hiddenPowerUps.delete(key);
+      if (!flowerKept && !state.fireFlowersSpawned) {
+        state.hiddenPowerUps.set(key, "iceFlower");
+        flowerKept = true;
+      }
+    }
+    const needs = ["iceBomb"];
+    if (!flowerKept && !state.fireFlowersSpawned) needs.push("iceFlower");
+    for (const type of needs) {
+      let placed = false;
+      for (let y = 1; y < ROWS - 1 && !placed; y += 1) {
+        for (let x = 1; x < COLS - 1; x += 1) {
+          const key = coordKey(x, y);
+          if (state.map[y][x] === TILE_CRATE && !state.hiddenPowerUps.has(key) && !state.hiddenWordCrates.has(key)) {
+            state.hiddenPowerUps.set(key, type);
+            placed = true;
+            break;
+          }
+        }
+      }
+      if (!placed) {
+        const cell = randomOpenRewardCells(1, true)[0];
+        if (cell) spawnPowerUp(type, cell.x, cell.y);
+      }
+    }
   }
 
   function bulletBillBrickCapacityForLevel() {
@@ -1183,7 +1260,7 @@
     }
     // Even the sparsest random board must have room for five hidden questions and rewards.
     let crates = map.flat().filter((tile) => tile === TILE_CRATE).length;
-    const minimumCrates = BOMB_MOONS_PER_LEVEL + maxFireFlowersForLevel() + 1 + bulletBillBrickCapacityForLevel();
+    const minimumCrates = BOMB_MOONS_PER_LEVEL + maxFireFlowersForLevel() + 2 + bulletBillBrickCapacityForLevel();
     for (let y = 1; y < ROWS - 1 && crates < minimumCrates; y += 1) {
       for (let x = 1; x < COLS - 1 && crates < minimumCrates; x += 1) {
         if (map[y][x] === TILE_FLOOR && !protectedCells.has(coordKey(x, y))) {
@@ -1270,7 +1347,9 @@
     const enemies = starts.slice(0, enemyCount).map((start, index) => ({
       id: index + 1,
       type: index === bowserStartIndex ? "bowser" : "mushroom",
-      hp: index === bowserStartIndex ? 2 : 1,
+      hp: index === bowserStartIndex ? 15 : 3,
+      freezeTimer: 0,
+      fireCooldown: BOWSER_FIRE_COOLDOWN,
       gx: index === bowserStartIndex ? bowserStart.gx : start.gx,
       gy: index === bowserStartIndex ? bowserStart.gy : start.gy,
       dir: index % 2 ? "left" : "up",
@@ -1286,7 +1365,8 @@
       enemies.push({
         id: enemies.length + 1,
         type: "koopa-green",
-        hp: 1,
+        hp: 3,
+        freezeTimer: 0,
         gx: Math.min(COLS - 4, Math.max(3, center - 1)),
         gy: middle,
         dir: "right",
@@ -1326,10 +1406,9 @@
       state.hiddenPowerUps.set(coordKey(greenMushroomCell.x, greenMushroomCell.y), "greenMushroom");
     }
 
-    const count = state.attackMode === "mushroom" ? 0 : Math.min(maxFireFlowersForLevel(), candidates.length);
-    for (let index = 0; index < count; index += 1) {
+    for (const type of ["iceFlower", "iceBomb"]) {
       const cell = candidates.shift();
-      state.hiddenPowerUps.set(coordKey(cell.x, cell.y), "fireFlower");
+      if (cell) state.hiddenPowerUps.set(coordKey(cell.x, cell.y), type);
     }
     for (let index = 0; index < bulletBillBrickCapacityForLevel(); index += 1) {
       const cell = candidates.shift();
@@ -1462,6 +1541,7 @@
     state.map = createMap();
     state.bombs = [];
     state.mushroomShots = [];
+    state.fireballs = [];
     state.explosions = [];
     state.particles = [];
     state.powerUps = [];
@@ -1499,8 +1579,8 @@
     state.subLevel = 1;
     state.score = 0;
     state.hp = MAX_HP;
-    state.bombLimit = 3;
-    state.flameRange = 1;
+    state.bombLimit = 1;
+    state.flameRange = 2;
     state.shells = [];
     state.moonWordIds = [];
     state.enemyClearOpenedBricks = false;
@@ -1555,13 +1635,12 @@
 
   function updateHud() {
     hpNode.textContent = state.hp;
-    const mushroomMode = state.attackMode === "mushroom";
-    attackHudIcon.textContent = mushroomMode ? "🍄" : "💣";
-    ammoNode.textContent = mushroomMode ? "∞" : Math.max(0, state.bombLimit - state.bombs.length);
+    attackHudIcon.textContent = "🧊";
+    ammoNode.textContent = Math.max(0, state.bombLimit - state.bombs.filter(bomb => bomb.isIce).length);
     mushroomNode.textContent = state.enemies.filter((enemy) => enemy.alive).length;
     if (levelNode) levelNode.textContent = `${state.world}-${state.subLevel}/${LEVELS_PER_WORLD} ${difficultyLabelForSubLevel()}`;
-    attackRangeLabel.textContent = mushroomMode ? "距离" : "威力";
-    if (powerNode) powerNode.textContent = mushroomMode ? state.throwDistance : state.flameRange;
+    attackRangeLabel.textContent = "冰长";
+    if (powerNode) powerNode.textContent = state.flameRange;
     if (moonNode) moonNode.textContent = `${state.moonWordIds.length}/${BOMB_MOONS_PER_LEVEL}`;
     moonIconNode?.classList.toggle("is-lit", state.moonWordIds.length > 0);
     if (scoreNode) scoreNode.textContent = state.score;
@@ -1818,11 +1897,7 @@
       queuedBombPlacement = true;
       return;
     }
-    if (state.attackMode === "mushroom") {
-      throwMushroom();
-      return;
-    }
-    if (state.bombs.length >= state.bombLimit) return;
+    if (state.bombs.filter(bomb => bomb.isIce).length >= state.bombLimit) return;
     const gx = Math.round(state.player.gx);
     const gy = Math.round(state.player.gy);
     if (bombAt(gx, gy)) return;
@@ -1831,6 +1906,7 @@
       gy,
       time: 0,
       range: state.flameRange,
+      isIce: true,
       ownerInside: true,
       exploded: false,
     });
@@ -1841,6 +1917,7 @@
   }
 
   function throwMushroom() {
+    if (state.status !== "playing") return;
     if (state.mushroomShots.length >= 3) return;
     const direction = Object.hasOwn(DIRS, lastDirection) ? lastDirection : "right";
     state.mushroomShots.push({
@@ -1864,7 +1941,7 @@
       state.enemies.forEach((enemy) => {
         if (!enemy.alive || Math.round(enemy.gx) !== gx || Math.round(enemy.gy) !== gy) return;
         if (enemy.type === "bullet-bill") defeatEnemy(enemy);
-        else damageEnemy(enemy);
+        else damageEnemy(enemy, true);
       });
     }
     spawnParticles("blast", gx, gy);
@@ -2106,6 +2183,7 @@
     // Reuse the player's bomb, including its range and escape permission; only recolor it.
     if (!touchedBomb.isRed) {
       touchedBomb.isRed = true;
+      touchedBomb.isIce = false;
       touchedBomb.time = 0;
     }
     setMessage("导弹变成红色炸弹，威力不变", 1.4);
@@ -2137,6 +2215,9 @@
   function updateEnemies(dt) {
     state.enemies.forEach((enemy) => {
       if (!enemy.alive) return;
+      const wasFrozen = enemy.freezeTimer > 0;
+      enemy.freezeTimer = Math.max(0, (Number(enemy.freezeTimer) || 0) - dt);
+      if (wasFrozen) return;
       if (enemy.type === "bullet-bill") {
         updateBulletBill(enemy, dt);
         return;
@@ -2155,6 +2236,7 @@
         enemy.move = null;
         return;
       }
+      if (enemy.type === "bowser") updateBowserFire(enemy, dt);
       if (stopEnemyMoveBeforeBomb(enemy)) return;
       // Scale displacement, including a move already in progress in a restored save.
       if (advanceMove(enemy, enemy.type === "mushroom" ? dt * MUSHROOM_SPEED_FACTOR : dt) || enemy.move) return;
@@ -2181,7 +2263,41 @@
     });
   }
 
+  function updateBowserFire(enemy, dt) {
+    enemy.fireCooldown = Math.max(0, (Number(enemy.fireCooldown) || 0) - dt);
+    if (enemy.fireCooldown > 0 || !canEnemySeePlayer(enemy)) return;
+    const dx = state.player.gx - enemy.gx;
+    const dy = state.player.gy - enemy.gy;
+    const distance = Math.hypot(dx, dy);
+    if (distance < 0.1) return;
+    state.fireballs.push({ gx: enemy.gx, gy: enemy.gy,
+      vx: dx / distance * FIREBALL_SPEED, vy: dy / distance * FIREBALL_SPEED, life: 5 });
+    enemy.fireCooldown = BOWSER_FIRE_COOLDOWN;
+    saveBombProgress();
+  }
+
+  function updateFireballs(dt) {
+    state.fireballs = state.fireballs.filter(ball => {
+      ball.life -= dt;
+      // Small swept steps also keep restored/high-speed projectiles from crossing a wall or player.
+      const steps = Math.max(1, Math.ceil(Math.hypot(ball.vx, ball.vy) * dt / 0.15));
+      for (let i = 0; i < steps; i += 1) {
+        ball.gx += ball.vx * dt / steps;
+        ball.gy += ball.vy * dt / steps;
+        const gx = Math.round(ball.gx);
+        const gy = Math.round(ball.gy);
+        if (!isInside(gx, gy) || state.map[gy][gx] !== TILE_FLOOR || bombAt(gx, gy)) return false;
+        if (Math.hypot(ball.gx - state.player.gx, ball.gy - state.player.gy) < 0.58) {
+          damagePlayer("monster");
+          return false;
+        }
+      }
+      return ball.life > 0;
+    });
+  }
+
   function updateBombs(dt) {
+    const bombCountBefore = state.bombs.length;
     state.bombs.forEach((bomb) => {
       bomb.time += dt;
       if (bomb.time >= BOMB_TIMER) {
@@ -2190,6 +2306,7 @@
     });
     const specialBombExploded = state.bombs.some(bomb => (bomb.isRed || bomb.fromBulletBill) && bomb.exploded);
     state.bombs = state.bombs.filter((bomb) => !bomb.exploded);
+    if (state.bombs.length !== bombCountBefore) updateHud();
     if (specialBombExploded) {
       autoOpenBricksAfterEnemyClear();
       checkLevelComplete();
@@ -2483,7 +2600,7 @@
         spawnBulletBill(gx, gy);
         return;
       }
-      if (hiddenType === "fireFlower") {
+      if (hiddenType === "iceFlower") {
         state.fireFlowersSpawned += 1;
       }
       spawnPowerUp(hiddenType, gx, gy);
@@ -2495,7 +2612,7 @@
     const hitKeys = new Set(cells.map((cell) => coordKey(cell.gx, cell.gy)));
     let destroyed = 0;
     state.powerUps = state.powerUps.filter((powerUp) => {
-      if (powerUp.type !== "fireFlower") {
+      if (powerUp.type !== "iceFlower") {
         return true;
       }
       const key = coordKey(powerUp.gx, powerUp.gy);
@@ -2507,7 +2624,7 @@
       return false;
     });
     if (destroyed > 0) {
-      setMessage("火焰花被炸掉", 1.2);
+      setMessage("冰花被炸掉", 1.2);
     }
     return destroyed;
   }
@@ -2522,6 +2639,7 @@
     });
     let extraLives = 0;
     let flameBoosts = 0;
+    let bombBoosts = 0;
     let collectedPinyin = null;
     let collectedHanziPrompt = null;
     let collectedCorrectPinyin = null;
@@ -2607,9 +2725,13 @@
         extraLives += 1;
         spawnParticles("life", powerUp.gx, powerUp.gy);
       }
-      if (powerUp.type === "fireFlower") {
+      if (powerUp.type === "iceFlower") {
         flameBoosts += 1;
         spawnParticles("blast", powerUp.gx, powerUp.gy);
+      }
+      if (powerUp.type === "iceBomb") {
+        bombBoosts += 1;
+        spawnParticles("pinyin", powerUp.gx, powerUp.gy);
       }
       return false;
     });
@@ -2654,13 +2776,15 @@
       retryWordNextLevel(wrongWordTargetId);
       damagePlayerForWrongWord(collectedWrongWord);
     }
-    if (extraLives > 0 || flameBoosts > 0) {
+    if (extraLives > 0 || flameBoosts > 0 || bombBoosts > 0) {
       sounds.play("pickup");
       state.hp += extraLives;
       state.flameRange += flameBoosts;
+      state.bombLimit += bombBoosts;
       const messages = [];
       if (extraLives > 0) messages.push(`+${extraLives} 命`);
-      if (flameBoosts > 0) messages.push(`威力 +${flameBoosts}`);
+      if (flameBoosts > 0) messages.push(`冰冻长度 +${flameBoosts}`);
+      if (bombBoosts > 0) messages.push(`冰炸弹数量 +${bombBoosts}`);
       setMessage(messages.join("  "));
       updateHud();
     }
@@ -2709,7 +2833,7 @@
     sounds.play("explode");
     const visibleFireFlowerKeys = new Set(
       state.powerUps
-        .filter((powerUp) => powerUp.type === "fireFlower")
+        .filter((powerUp) => powerUp.type === "iceFlower")
         .map((powerUp) => coordKey(powerUp.gx, powerUp.gy))
     );
     const cells = [{ gx: bomb.gx, gy: bomb.gy }];
@@ -2738,8 +2862,9 @@
     });
 
     state.explosions.push({ cells, blockedCells, life: FLAME_TIME, maxLife: FLAME_TIME,
+      isIce: Boolean(bomb.isIce), frozenEnemyIds: [],
       fromBulletBill: Boolean(bomb.fromBulletBill) });
-    destroyFireFlowersInCells(cells, visibleFireFlowerKeys);
+    if (!bomb.isIce) destroyFireFlowersInCells(cells, visibleFireFlowerKeys);
     state.bombs.forEach((other) => {
       if (!other.exploded && cells.some((cell) => cell.gx === other.gx && cell.gy === other.gy)) {
         other.time = BOMB_TIMER;
@@ -2763,7 +2888,7 @@
   }
 
   function isCellBurning(gx, gy) {
-    return state.explosions.some((explosion) => explosion.cells.some((cell) => cell.gx === gx && cell.gy === gy));
+    return state.explosions.some((explosion) => !explosion.isIce && explosion.cells.some((cell) => cell.gx === gx && cell.gy === gy));
   }
 
   function rememberPlayerCell(gx, gy) {
@@ -2874,6 +2999,7 @@
       } else {
         droppedBomb.range = Math.max(droppedBomb.range, BULLET_BILL_DROP_RANGE);
         droppedBomb.fromBulletBill = true;
+        droppedBomb.isIce = false;
         droppedBomb.time = 0;
       }
       sounds.play("place");
@@ -2886,9 +3012,9 @@
     checkLevelComplete();
   }
 
-  function damageEnemy(enemy) {
+  function damageEnemy(enemy, mushroomHit = false) {
     if (enemy.type === "bullet-bill") return;
-    if (!enemy.alive || enemy.hitCooldown > 0) return;
+    if (!enemy.alive || (!mushroomHit && enemy.hitCooldown > 0)) return;
     enemy.hitCooldown = ENEMY_HIT_COOLDOWN;
     enemy.hp -= 1;
     if (enemy.hp <= 0) {
@@ -2906,7 +3032,7 @@
     enemy.gx = Math.round(enemy.gx);
     enemy.gy = Math.round(enemy.gy);
     enemy.move = null;
-    enemy.stunTimer = TOUGH_ENEMY_STUN_TIME;
+    enemy.stunTimer = mushroomHit ? 0.18 : TOUGH_ENEMY_STUN_TIME;
     spawnParticles("stun", enemy.gx, enemy.gy);
     setMessage(enemy.type === "bowser" ? "库巴眩晕" : "敌人眩晕");
   }
@@ -2922,11 +3048,21 @@
       if (!enemy.alive) return;
       const gx = Math.round(enemy.gx);
       const gy = Math.round(enemy.gy);
+      state.explosions.forEach(explosion => {
+        if (!explosion.isIce || !explosion.cells.some(cell => cell.gx === gx && cell.gy === gy)) return;
+        explosion.frozenEnemyIds ||= [];
+        if (explosion.frozenEnemyIds.includes(enemy.id)) return;
+        explosion.frozenEnemyIds.push(enemy.id);
+        enemy.freezeTimer = ICE_FREEZE_TIME;
+        enemy.gx = gx;
+        enemy.gy = gy;
+        enemy.move = null;
+      });
       if (enemy.type !== "bullet-bill" && isCellBurning(gx, gy)) {
         damageEnemy(enemy);
         return;
       }
-      if (enemy.stunTimer > 0 || (enemy.type === "bullet-bill" && enemy.launchDelay > 0)) return;
+      if (enemy.freezeTimer > 0 || enemy.stunTimer > 0 || (enemy.type === "bullet-bill" && enemy.launchDelay > 0)) return;
       const dx = enemy.gx - state.player.gx;
       const dy = enemy.gy - state.player.gy;
       if (Math.hypot(dx, dy) < 0.58) {
@@ -3000,6 +3136,7 @@
     updateShells(dt);
     collectPowerUps();
     updateEnemies(dt);
+    updateFireballs(dt);
     updateBombs(dt);
     checkDamage();
     scheduleBombProgressSave();
@@ -3137,27 +3274,31 @@
         drawWordChoice(center, powerUp, bob);
         return;
       }
-      const isFireFlower = powerUp.type === "fireFlower";
-      const image = isFireFlower ? fireFlowerImage : greenMushroomImage;
+      if (powerUp.type === "iceBomb") {
+        drawIceBomb(center.x, center.y + bob, 0.82);
+        return;
+      }
+      const isFireFlower = powerUp.type === "iceFlower";
+      const image = isFireFlower ? iceFlowerSprite : greenMushroomImage;
       const size = isFireFlower ? 42 : 38;
 
       ctx.save();
-      ctx.shadowColor = isFireFlower ? "rgba(251, 191, 36, 0.75)" : "rgba(34, 197, 94, 0.72)";
+      ctx.shadowColor = isFireFlower ? "rgba(56, 189, 248, 0.85)" : "rgba(34, 197, 94, 0.72)";
       ctx.shadowBlur = 10;
       ctx.fillStyle = "rgba(0, 0, 0, 0.24)";
       ctx.beginPath();
       ctx.ellipse(center.x, center.y + 16, 14, 5, 0, 0, Math.PI * 2);
       ctx.fill();
 
-      if (image.complete && image.naturalWidth) {
+      if (image && (image === iceFlowerSprite || (image.complete && image.naturalWidth))) {
         ctx.imageSmoothingEnabled = true;
         ctx.drawImage(image, center.x - size / 2, center.y - size / 2 - 2 + bob, size, size);
       } else if (isFireFlower) {
-        ctx.fillStyle = "#dc2626";
+        ctx.fillStyle = "#38bdf8";
         ctx.beginPath();
         ctx.arc(center.x, center.y - 8 + bob, 11, 0, Math.PI * 2);
         ctx.fill();
-        ctx.fillStyle = "#fde047";
+        ctx.fillStyle = "#e0f2fe";
         ctx.beginPath();
         ctx.arc(center.x, center.y - 8 + bob, 6, 0, Math.PI * 2);
         ctx.fill();
@@ -3294,6 +3435,10 @@
     state.bombs.forEach((bomb) => {
       const center = cellCenter(bomb.gx, bomb.gy);
       const pulse = 1 + Math.sin(animationClock * 12 + bomb.time * 8) * 0.08;
+      if (bomb.isIce) {
+        drawIceBomb(center.x, center.y + 3, pulse);
+        return;
+      }
       ctx.save();
       ctx.translate(center.x, center.y + 3);
       ctx.scale(pulse, pulse);
@@ -3321,6 +3466,34 @@
       ctx.fill();
       ctx.restore();
     });
+  }
+
+  function drawIceBomb(x, y, scale = 1) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(scale, scale);
+    ctx.shadowColor = "#38bdf8";
+    ctx.shadowBlur = 9;
+    const gradient = ctx.createRadialGradient(-7, -8, 2, 0, 0, 19);
+    gradient.addColorStop(0, "#e0f2fe");
+    gradient.addColorStop(0.5, "#38bdf8");
+    gradient.addColorStop(1, "#0369a1");
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(0, 0, 18, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#e0f2fe";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(6, -16);
+    ctx.quadraticCurveTo(15, -26, 9, -30);
+    ctx.stroke();
+    ctx.font = "bold 23px sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText("❄", 0, 1);
+    ctx.restore();
   }
 
   function drawMushroomShots() {
@@ -3353,9 +3526,9 @@
         const radius = TILE * (0.42 + (1 - ratio) * 0.18);
         const gradient = ctx.createRadialGradient(center.x, center.y, 4, center.x, center.y, radius);
         gradient.addColorStop(0, "rgba(255, 255, 255, 0.95)");
-        gradient.addColorStop(0.28, "rgba(253, 224, 71, 0.9)");
-        gradient.addColorStop(0.72, "rgba(249, 115, 22, 0.78)");
-        gradient.addColorStop(1, "rgba(239, 68, 68, 0)");
+        gradient.addColorStop(0.28, explosion.isIce ? "rgba(186, 230, 253, 0.95)" : "rgba(253, 224, 71, 0.9)");
+        gradient.addColorStop(0.72, explosion.isIce ? "rgba(14, 165, 233, 0.85)" : "rgba(249, 115, 22, 0.78)");
+        gradient.addColorStop(1, explosion.isIce ? "rgba(56, 189, 248, 0)" : "rgba(239, 68, 68, 0)");
         ctx.fillStyle = gradient;
         ctx.beginPath();
         ctx.arc(center.x, center.y, radius, 0, Math.PI * 2);
@@ -3554,6 +3727,54 @@
       ctx.fillStyle = "#f5deb3";
       ctx.fillRect(center.x - 15, center.y - 6 + bob, 30, 24);
       drawSleepMarks(center, enemy);
+    });
+  }
+
+  function drawCombatEffects() {
+    state.enemies.forEach(enemy => {
+      if (!enemy.alive) return;
+      const center = cellCenter(enemy.gx, enemy.gy);
+      ctx.save();
+      if (enemy.freezeTimer > 0) {
+        ctx.fillStyle = "rgba(125, 211, 252, 0.48)";
+        ctx.strokeStyle = "#e0f2fe";
+        ctx.lineWidth = 2;
+        roundRectPath(center.x - 23, center.y - 30, 46, 53, 7);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "20px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("❄", center.x, center.y - 5);
+      }
+      if (enemy.type === "bowser") {
+        const remaining = clamp((Number(enemy.fireCooldown) || 0) / BOWSER_FIRE_COOLDOWN, 0, 1);
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = "rgba(255,255,255,0.55)";
+        ctx.beginPath();
+        ctx.arc(center.x, center.y - 44, 10, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.strokeStyle = remaining > 0 ? "#fb923c" : "#fef08a";
+        ctx.beginPath();
+        ctx.arc(center.x, center.y - 44, 10, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (1 - remaining));
+        ctx.stroke();
+      }
+      ctx.restore();
+    });
+    state.fireballs.forEach(ball => {
+      const center = cellCenter(ball.gx, ball.gy);
+      ctx.save();
+      ctx.shadowColor = "#f97316";
+      ctx.shadowBlur = 13;
+      ctx.fillStyle = "#ef4444";
+      ctx.beginPath();
+      ctx.arc(center.x, center.y, 10, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#fde68a";
+      ctx.beginPath();
+      ctx.arc(center.x, center.y, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
     });
   }
 
@@ -3916,6 +4137,7 @@
     drawPowerUps();
     drawShells();
     drawEnemies();
+    drawCombatEffects();
     drawPlayer();
     drawParticles();
     drawOverlayFrame();
@@ -4129,13 +4351,14 @@
       }
       return;
     }
-    if (event.code === "Space") {
+    if (event.code === state.mushroomKey || event.code === state.iceBombKey) {
       event.preventDefault();
       if (event.repeat) return;
       syncBombProgress();
       if (awaitingContinue) return;
       claimBombProgress();
-      placeBomb();
+      if (event.code === state.mushroomKey) throwMushroom();
+      else placeBomb();
       return;
     }
     if (event.code === "Enter") {
@@ -4210,10 +4433,23 @@
     syncBombProgress();
     setAttackMenuOpen(!attackMenuOpen);
   });
-  attackMenu.addEventListener("click", (event) => {
-    const option = event.target.closest("[data-attack-mode]");
-    if (option) selectAttackMode(option.dataset.attackMode);
-  });
+  for (const input of [mushroomKeyInput, iceBombKeyInput]) {
+    for (const key of ATTACK_KEYS) {
+      const option = document.createElement("option");
+      option.value = key;
+      option.textContent = key === "Space" ? "空格" : key.slice(3);
+      input.append(option);
+    }
+    input.addEventListener("change", () => {
+      claimBombProgress();
+      const field = input === mushroomKeyInput ? "mushroomKey" : "iceBombKey";
+      const other = field === "mushroomKey" ? "iceBombKey" : "mushroomKey";
+      if (input.value === state[other]) state[other] = state[field];
+      state[field] = input.value;
+      updateAttackUi();
+      saveBombProgress();
+    });
+  }
   throwDistanceInput.addEventListener("input", () => {
     claimBombProgress();
     state.throwDistance = clamp(Number(throwDistanceInput.value), MIN_THROW_DISTANCE, MAX_THROW_DISTANCE);

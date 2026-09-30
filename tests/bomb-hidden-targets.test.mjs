@@ -17,6 +17,7 @@ test("世界3至6的导弹数量逐世界、逐小关增加", () => {
   const helpers = new Function("state", "Math", `
     ${source.match(/const BULLET_BILL_HIDDEN_COUNT_PER_LEVEL = [^;]+;/)[0]}
     const FIRST_WORLD = 3;
+    const BOWSER_FIRE_COOLDOWN = 3;
     ${extract("bulletBillBrickCapacityForLevel")}
     return { bulletBillBrickCapacityForLevel };
   `)(state, math);
@@ -35,6 +36,7 @@ test("世界3至6逐世界增加怪物且库巴不占出生点", () => {
   const createEnemies = new Function("state", "Math", "getDimensions", "coordKey", `
     let COLS = 17, ROWS = 11;
     const FIRST_WORLD = 3;
+    const BOWSER_FIRE_COOLDOWN = 3;
     const TILE_FLOOR = 0;
     const difficultyIndexForSubLevel = () => state.subLevel + 1;
     ${extract("createEnemies")}
@@ -50,6 +52,8 @@ test("世界3至6逐世界增加怪物且库巴不占出生点", () => {
   for (state.world = 3; state.world <= 6; state.world += 1) {
     for (state.subLevel = 1; state.subLevel <= 5; state.subLevel += 1) {
       const enemies = createEnemies();
+      assert.equal(enemies.find(enemy => enemy.type === "bowser").hp, 15);
+      assert.ok(enemies.filter(enemy => enemy.type !== "bowser").every(enemy => enemy.hp === 3));
       assert.equal(enemies.length, state.subLevel + 5 + (state.world - 3) * 2);
       assert.equal(enemies.filter(enemy => enemy.type === "koopa-green").length, 1);
       assert.equal(new Set(enemies.map(enemy => coordKey(enemy.gx, enemy.gy))).size, enemies.length);

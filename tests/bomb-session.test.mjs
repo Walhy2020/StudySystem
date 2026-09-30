@@ -229,6 +229,7 @@ test("蘑菇移动速度精确降低10%，库巴和乌龟不变，包含存档�
     let elapsed;
     new Function("state", "advanceMove", `
       const MUSHROOM_SPEED_FACTOR = 0.9;
+      const updateBowserFire = () => {};
       const isNightTime = () => false, stopEnemyMoveBeforeBomb = () => false;
       ${extract("updateEnemies")}
       updateEnemies(0.1);
@@ -385,7 +386,7 @@ test("导弹接触黑弹才转红并消失，范围和玩家离开权限不变�
   assert.equal(convert(missile), false, "planning a step toward a bomb is not contact");
   missile.gx = 3;
   assert.equal(convert(missile), true);
-  assert.deepEqual(bomb, { gx: 3, gy: 5, time: 0, range: 4, ownerInside: true, exploded: false, isRed: true });
+  assert.deepEqual(bomb, { gx: 3, gy: 5, time: 0, range: 4, ownerInside: true, exploded: false, isRed: true, isIce: false });
   assert.equal(missile.alive, false);
   assert.equal(missile.move, null);
   bomb.time = 1;
@@ -397,7 +398,7 @@ test("导弹接触黑弹才转红并消失，范围和玩家离开权限不变�
 test("导弹启动等待期间不会造成接触伤害", () => {
   const state = { player: { gx: 2, gy: 2 }, enemies: [
     { alive: true, type: "bullet-bill", gx: 2, gy: 2, stunTimer: 0, launchDelay: 0.5 },
-  ], shells: [] };
+  ], shells: [], explosions: [] };
   let hits = 0;
   const check = new Function("state", "damagePlayer", `
     const isCellBurning = () => false;
@@ -417,6 +418,7 @@ test("普通和红色炸弹恢复两秒引线，红弹爆炸后才允许清场",
   const calls = [];
   const update = new Function("state", "calls", `
     const BOMB_TIMER = 2;
+    const updateHud = () => {};
     const explodeBomb = bomb => { bomb.exploded = true; calls.push("explode"); };
     const autoOpenBricksAfterEnemyClear = () => calls.push("cleanup");
     const checkLevelComplete = () => calls.push("completion");

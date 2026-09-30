@@ -116,7 +116,7 @@ try {
           const player = window.__BOMB_GAME__.getState().player;
           if (player.move?.direction === "right" && player.gx >= 3.3 && player.gx <= 3.7) {
             const target = [player.move.toX, player.move.toY];
-            window.dispatchEvent(new KeyboardEvent("keydown", { code: "Space", key: " ", bubbles: true }));
+            window.dispatchEvent(new KeyboardEvent("keydown", { code: "KeyB", key: "b", bubbles: true }));
             resolve(target);
           } else requestAnimationFrame(queueBomb);
         };
@@ -126,7 +126,7 @@ try {
     await page.keyboard.up("ArrowRight");
     await page.waitForFunction(() => window.__BOMB_GAME__.getState().bombs.length === 1);
     const dropped = await page.evaluate(() => window.__BOMB_GAME__.getState().bombs[0]);
-    assert.deepEqual([dropped.gx, dropped.gy], target, "Space during movement drops at the next cell center");
+    assert.deepEqual([dropped.gx, dropped.gy], target, "B during movement drops at the next cell center");
     await page.waitForFunction(() => !window.__BOMB_GAME__.getState().player.move);
 
     await page.locator("#bombSoundToggle").focus();

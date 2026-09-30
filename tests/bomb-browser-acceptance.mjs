@@ -199,8 +199,8 @@ const primaryBefore = await page.evaluate(({ hanziKey, legacyKey }) => ({
 const resourcePaths = [
   "index.html",
   "bomb-game.html",
-  "bomb-game.css?v=1.3",
-  "bomb-game.js?v=2.21",
+  "bomb-game.css?v=1.4",
+  "bomb-game.js?v=2.22",
   "src/bomb-audio.js?v=1.4",
   "data/characters.js?v=1.0",
   "data/pinyin-readings.js?v=1.0",
@@ -299,10 +299,10 @@ await page.waitForFunction(() => !window.__BOMB_GAME__.getState().player.move);
 const stateBeforeBomb = await page.evaluate(() => window.__BOMB_GAME__.getState());
 assert.equal(stateBeforeBomb.status, "playing", "game remains active before placing a bomb");
 const bombsBefore = stateBeforeBomb.bombs.length;
-await page.keyboard.press("Space");
+await page.keyboard.press("B");
 await page.waitForTimeout(120);
 const stateAfterBomb = await page.evaluate(() => window.__BOMB_GAME__.getState());
-assert.ok(stateAfterBomb.bombs.length > bombsBefore, "Space places a bomb");
+assert.ok(stateAfterBomb.bombs.length > bombsBefore, "B releases an ice bomb");
 const saveBeforeRefresh = await page.evaluate(({ bombKey }) => JSON.parse(localStorage.getItem(bombKey)), { bombKey: BOMB_KEY });
 assert.equal(saveBeforeRefresh.version, 1);
 assert.ok(saveBeforeRefresh.bombs.length > 0);
@@ -685,7 +685,7 @@ assert.deepEqual(failedResponses, []);
 console.log(JSON.stringify({
   ok: true,
   entryAndReturn: "Tab+Enter",
-  controls: ["canvas Enter", "Arrow keys", "WASD", "canvas Space", "button Space", "restart Enter"],
+  controls: ["canvas Enter", "Arrow keys", "WASD", "canvas B", "button Space", "restart Enter"],
   removedTopbarCopy: ["炸弹迷宫 heading", "炸开砖块 subtitle"],
   restoredVersion1Save: true,
   storageWrites: [BOMB_KEY],

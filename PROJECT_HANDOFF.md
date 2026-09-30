@@ -7,7 +7,26 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.33** (2026-09-30). Bomb maze now starts at 3-1;
+System display version: **v1.0.34** (2026-09-30). Bomb maze supports both attacks
+at once: configurable Space for small mushrooms (damage 1), B for player ice bombs.
+Initial ice-bomb capacity/range are 1/2. Ice bursts open crates and freeze enemies for
+three seconds without damaging the player or enemy HP; frozen enemies cannot move,
+shoot or inflict contact damage. Each level hides exactly one Ice Flower (range +1,
+recolored original artwork) and one Ice Bomb pickup (capacity +1). Ordinary enemy HP
+is 3, Bowser HP is 15. Visible players trigger Bowser fireballs at a three-second
+cooldown; an overhead ring shows cooldown, and walls/crates block sight/projectiles.
+Settings, cooldown, fireballs and freeze timers survive the existing Continue gate.
+Old saves migrate once with combatRulesVersion=2, retaining level/learning progress;
+player ice stats restart at 1/2 and old flowers become one Ice Flower. Existing missile
+special red/black bombs remain unchanged. Bomb CSS/JS caches: v1.4/v2.22; all seven
+update-notifier queries: v1.0.34. Focused Edge check:
+`node tests/bomb-ice-combat-browser.mjs` (1440/390, isolated storage and ignored tmp screenshots).
+Verified: syntax check, repository Node baseline, focused real Edge dual-input/damage,
+freeze/Continue, both pickups, old-save migration, Bowser first/repeated shots and
+occluded sight, plus desktop/mobile overflow and whitespace checks. No unrelated
+module browser suites were run; existing tracked screenshots were preserved.
+
+Previous v1.0.33 (2026-09-30). Bomb maze now starts at 3-1;
 worlds 1 and 2 are retired for new play. Worlds 3–6 contain five levels each
 (20 playable levels). World 3 keeps its existing 27–35 by 15-cell maps and
 6–10 enemies; worlds 4–6 expand to 29–37, 31–39 and 33–41 columns, with

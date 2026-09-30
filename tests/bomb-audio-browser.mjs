@@ -133,7 +133,7 @@ try {
   await page.waitForFunction(() => window.__testSoundPlayer.getMusicWorld() === 3);
   assert.deepEqual(await events(), [], "starting a game is silent");
   await page.locator("#bombCanvas").focus();
-  await page.keyboard.press("Space");
+  await page.keyboard.press("B");
   await page.waitForFunction(() => window.__soundEvents.some((event) => event.effect === "place"));
   assert.deepEqual((await events()).map((event) => event.effect), ["place"]);
   await page.waitForFunction(() => window.__soundEvents.some((event) => event.effect === "explode"), null, { timeout: 5000 });
@@ -158,7 +158,7 @@ try {
     assert.equal(await page.evaluate(() => window.__testSoundPlayer.getMusicWorld()), null);
     await page.locator("#overlayStartBombGame").click();
     await page.locator("#bombCanvas").focus();
-    await page.keyboard.press("Space");
+    await page.keyboard.press("B");
     await page.waitForFunction(() => window.__soundEvents.length > 0);
     assert.deepEqual(await events(), [{ effect: "place", scheduled: false }], "mute suppresses audio while gameplay continues");
   }
@@ -171,7 +171,7 @@ try {
   pickup.bombs = [];
   pickup.explosions = [];
   pickup.enemyClearOpenedBricks = true;
-  pickup.powerUps = [{ type: "fireFlower", gx: 1, gy: 1 }];
+  pickup.powerUps = [{ type: "iceFlower", gx: 1, gy: 1 }];
   await restore(pickup);
   await page.waitForFunction(() => window.__soundEvents.some((event) => event.effect === "pickup"));
   assert.equal((await events()).filter((event) => event.effect === "pickup").length, 1);

@@ -41,6 +41,10 @@ try {
       saved.world = 2;
       saved.subLevel = 5;
       saved.status = "win";
+      saved.score = 123;
+      saved.hp = 2;
+      saved.bombLimit = 4;
+      saved.flameRange = 3;
       saved.map = Array.from({ length: 11 }, (_, y) => Array.from({ length: 25 }, (_, x) =>
         x === 0 || y === 0 || x === 24 || y === 10 ? 1 : 0));
       return saved;
@@ -51,10 +55,13 @@ try {
     await page.goto(gameUrl);
     await page.waitForFunction(() => Boolean(window.__BOMB_GAME__));
     const oldPlaying = await page.evaluate(() => window.__BOMB_GAME__.getLevelLayout());
-    assert.equal(oldPlaying.world, 2, "in-progress world 2 is not advanced");
-    assert.equal(oldPlaying.cols, 25);
-    assert.equal(oldPlaying.rows, 11);
-    assert.equal(await page.evaluate(() => window.__BOMB_GAME__.isAwaitingContinue()), true);
+    assert.equal(oldPlaying.world, 3, "retired world 2 safely enters world 3");
+    assert.equal(oldPlaying.cols, 27);
+    assert.equal(oldPlaying.rows, 15);
+    assert.equal(await page.evaluate(() => window.__BOMB_GAME__.isAwaitingContinue()), false);
+    const migrated = await page.evaluate(() => window.__BOMB_GAME__.getState());
+    assert.equal(migrated.status, "ready");
+    assert.deepEqual([migrated.score, migrated.hp, migrated.bombLimit, migrated.flameRange], [123, 2, 4, 3]);
     await page.goto(baseUrl + "bomb-game.css?third-world-seed=1");
     await page.evaluate(({ key, value }) => localStorage.setItem(key, JSON.stringify(value)),
       { key: progressKey, value: oldWin });
@@ -67,7 +74,8 @@ try {
       constants: window.__BOMB_GAME__.getConstants(),
       targets: window.__BOMB_GAME__.getBoardTargetSummary(),
     }));
-    assert.equal(opening.constants.worlds, 3);
+    assert.equal(opening.constants.worlds, 6);
+    assert.equal(opening.constants.wordsPerRun, 100);
     assert.equal(opening.constants.levelsPerWorld, 5);
     assert.equal(opening.layout.subLevel, 1);
     assert.equal(opening.layout.cols, 27);
@@ -81,7 +89,7 @@ try {
     assert.ok(openingEnemies.every((enemy) => enemy.gx !== 1 || enemy.gy !== 1));
     assert.equal(opening.layout.hiddenBulletBills, 2);
     assert.equal(opening.targets.hiddenTargetIds.length, 5);
-    assert.equal(opening.state.status, "ready", "old 2-5 win opens at a safe 3-1 start gate");
+    assert.equal(opening.state.status, "ready", "retired 2-5 save opens at a safe 3-1 start gate");
     assert.equal(await page.locator("#bombStartLayer").isVisible(), true);
 
     await page.locator("#overlayStartBombGame").click();
@@ -228,12 +236,61 @@ try {
       thirdWorldCounts.push(levelReady.enemies.length);
     }
     assert.deepEqual(thirdWorldCounts, [6, 7, 8, 9, 10]);
+    const nextWorlds = [];
+    for (const world of [3, 4, 5, 6]) {
+      const completed = structuredClone(opening.state);
+      completed.world = world;
+      completed.subLevel = 5;
+      const cols = 27 + (world - 3 + 4) * 2;
+      completed.map = Array.from({ length: 15 }, (_, y) => Array.from({ length: cols }, (_, x) =>
+        x === 0 || y === 0 || x === cols - 1 || y === 14 ? 1 : 0));
+      completed.status = "playing";
+      completed.startLayerHidden = true;
+      completed.player = { gx: 1, gy: 1, move: null, invulnerable: 20, trail: [{ gx: 1, gy: 1 }] };
+      completed.enemies = [{ ...completed.enemies[0], alive: false, move: null }];
+      completed.moonWordIds = completed.todayNewWords.map(word => word.id);
+      completed.powerUps = [];
+      completed.hiddenWordCrates = [];
+      completed.hiddenPowerUps = [];
+      completed.bombs = [{ gx: 1, gy: 1, time: 1.95, range: 1, ownerInside: false, exploded: false }];
+      completed.explosions = [];
+      await page.goto(baseUrl + `bomb-game.css?world-transition-${width}-${world}=1`);
+      await page.evaluate(({ key, value }) => localStorage.setItem(key, JSON.stringify(value)),
+        { key: progressKey, value: completed });
+      await page.goto(gameUrl);
+      await page.waitForFunction(() => Boolean(window.__BOMB_GAME__));
+      await page.locator("#overlayStartBombGame").click();
+      if (world < 6) {
+        await page.waitForFunction(expected => window.__BOMB_GAME__?.getLevelLayout().world === expected,
+          world + 1);
+        const next = await page.evaluate(() => ({
+          layout: window.__BOMB_GAME__.getLevelLayout(),
+          state: window.__BOMB_GAME__.getState(),
+        }));
+        assert.equal(next.layout.subLevel, 1);
+        assert.equal(next.layout.cols, 27 + (world - 2) * 2);
+        assert.equal(next.layout.rows, 15);
+        assert.equal(next.layout.tile, 48);
+        assert.equal(next.layout.enemyCount, 6 + (world - 2) * 2);
+        assert.equal(next.layout.hiddenBulletBills, world);
+        assert.equal(next.state.hiddenWordCrates.length, 5);
+        assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+        if (next.layout.world === 6) {
+          await page.screenshot({ path: path.join(output, `bomb-sixth-world-${width}.png`) });
+        }
+        nextWorlds.push({ world: next.layout.world, enemies: next.layout.enemyCount,
+          missiles: next.layout.hiddenBulletBills });
+      } else {
+        await page.waitForFunction(() => window.__BOMB_GAME__?.getState().status === "win");
+        assert.equal((await page.evaluate(() => window.__BOMB_GAME__.getState())).world, 6);
+      }
+    }
     assert.deepEqual(errors, []);
     results.push({ width, world: opening.layout.world, levels: opening.constants.levelsPerWorld,
       openingCols: opening.layout.cols, rows: opening.layout.rows,
       enemies: opening.layout.enemyCount, thirdWorldCounts, bowserSpawnVariants: bowserStarts.size,
       missiles: opening.layout.hiddenBulletBills,
-      camera: moved.camera, savedCamera: resumed.camera });
+      camera: moved.camera, savedCamera: resumed.camera, nextWorlds });
     await context.close();
   }
   process.stdout.write(JSON.stringify({ ok: true, results }) + "\n");

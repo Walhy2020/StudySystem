@@ -108,7 +108,7 @@ try {
   await page.evaluate(() => { window.__soundEvents.length = 0; });
   const musicLoudness = await page.evaluate(async () => {
     const measures = [];
-    for (const world of [1, 2, 3]) {
+    for (const world of [3, 4, 5, 6]) {
       let offline;
       class RenderContext extends OfflineAudioContext {
         constructor() { super(1, 44100, 44100); offline = this; }
@@ -130,7 +130,7 @@ try {
   await page.evaluate(() => { window.__soundEvents.length = 0; });
   assert.deepEqual(await events(), [], "page load is silent");
   await page.locator("#overlayStartBombGame").click();
-  await page.waitForFunction(() => window.__testSoundPlayer.getMusicWorld() === 1);
+  await page.waitForFunction(() => window.__testSoundPlayer.getMusicWorld() === 3);
   assert.deepEqual(await events(), [], "starting a game is silent");
   await page.locator("#bombCanvas").focus();
   await page.keyboard.press("Space");
@@ -187,26 +187,29 @@ try {
   assert.equal((await events()).at(-1).scheduled, true);
   assert.equal((await page.evaluate(() => window.__BOMB_GAME__.getState())).moonWordIds.includes(target.id), true);
 
-  const worldTwo = structuredClone(initial);
-  worldTwo.status = "playing";
-  worldTwo.startLayerHidden = true;
-  worldTwo.world = 2;
-  worldTwo.player.invulnerable = 20;
-  worldTwo.bombs = [];
-  await restore(worldTwo, false);
+  const worldFour = structuredClone(initial);
+  worldFour.status = "playing";
+  worldFour.startLayerHidden = true;
+  worldFour.world = 4;
+  worldFour.map = worldFour.map.map(row => [...row.slice(0, -1), 0, 0, 1]);
+  worldFour.map[0].fill(1);
+  worldFour.map.at(-1).fill(1);
+  worldFour.player.invulnerable = 20;
+  worldFour.bombs = [];
+  await restore(worldFour, false);
   assert.equal(await page.evaluate(() => window.__testSoundPlayer.getMusicWorld()), null,
-    "restored second-world progress waits for Continue before music");
+    "restored fourth-world progress waits for Continue before music");
   await page.locator("#overlayStartBombGame").click();
-  await page.waitForFunction(() => window.__testSoundPlayer.getMusicWorld() === 2);
+  await page.waitForFunction(() => window.__testSoundPlayer.getMusicWorld() === 4);
   await page.reload();
   await page.waitForFunction(() => window.__BOMB_GAME__?.isAwaitingContinue());
   assert.equal(await page.evaluate(() => window.__testSoundPlayer.getMusicWorld()), null,
-    "refresh pauses the second-world soundtrack");
+    "refresh pauses the fourth-world soundtrack");
   await page.locator("#overlayStartBombGame").click();
-  await page.waitForFunction(() => window.__testSoundPlayer.getMusicWorld() === 2);
+  await page.waitForFunction(() => window.__testSoundPlayer.getMusicWorld() === 4);
   assert.deepEqual(errors, [], "no script or resource errors");
   console.log(JSON.stringify({ effects: ["place", "explode", "pickup", "correct"],
-    musicWorlds: [1, 2, 3], mute: true, resume: true, desktopAnd390: true, errors: 0 }));
+    musicWorlds: [3, 4, 5, 6], mute: true, resume: true, desktopAnd390: true, errors: 0 }));
 } finally {
   await context.close();
   await browser.close();

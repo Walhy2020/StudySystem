@@ -35,7 +35,7 @@ const calculateLayout = new Function(
 
 assert.match(html, /<canvas id="bombCanvas" width="1280" height="720"/);
 assert.ok(html.includes('bomb-game.css?v=1.3'));
-assert.ok(html.includes('bomb-game.js?v=2.20'));
+assert.ok(html.includes('bomb-game.js?v=2.21'));
 assert.ok(html.includes('id="bombAttackToggle"'));
 assert.ok(html.includes('id="mushroomThrowDistance"'));
 assert.ok(js.includes('const MUSHROOM_THROW_STEP_TIME = 0.09;'));
@@ -63,7 +63,7 @@ assert.equal(mushroom.subarray(0, 8).toString("hex"), "89504e470d0a1a0a");
 assert.equal(mushroom.readUInt32BE(16), 372);
 assert.equal(mushroom.readUInt32BE(20), 381);
 assert.equal(mushroom[25], 6, "mushroom PNG keeps its RGBA alpha channel");
-assert.ok(html.includes('src/bomb-audio.js?v=1.3'));
+assert.ok(html.includes('src/bomb-audio.js?v=1.4'));
 assert.ok(html.includes('./data/characters.js?v=1.0'));
 assert.ok(html.includes('./data/pinyin-readings.js?v=1.0'));
 assert.ok(!html.includes("stable-url.js"));
@@ -82,13 +82,14 @@ assert.ok(index.match(/<div class="map-actions"[^>]*>[\s\S]*?id="resetProgress"[
 assert.ok(!index.match(/<div class="map-actions"[^>]*>[\s\S]*?bombGameEntry[\s\S]*?<\/div>/));
 assert.ok(server.includes('path.endswith(".html")'));
 
-assert.ok(js.includes('const WORLDS_PER_RUN = 3;'));
+assert.ok(js.includes('const FIRST_WORLD = 3;'));
+assert.ok(js.includes('const WORLDS_PER_RUN = 6;'));
 assert.ok(js.includes('const LEVELS_PER_WORLD = 5;'));
 assert.ok(js.includes('let ROWS = 11;'));
 assert.ok(js.includes('const THIRD_WORLD_BASE_COLS = 27;'));
 assert.ok(js.includes('const THIRD_WORLD_ROWS = 15;'));
 assert.ok(js.includes('ROWS = world >= 3 ? THIRD_WORLD_ROWS : 11;'));
-assert.ok(js.includes('return state.world >= 3 ? state.subLevel + 1 : BULLET_BILL_HIDDEN_COUNT_PER_LEVEL;'));
+assert.ok(js.includes('state.subLevel + 1 + (state.world - FIRST_WORLD)'));
 assert.ok(js.includes('const camera = worldCamera();'));
 assert.ok(js.includes('const COLS_PER_LEVEL = 2;'));
 assert.ok(js.includes('const BOMB_TIMER = 2;'));
@@ -98,7 +99,7 @@ assert.ok(js.includes('const MAX_HP = 3;'));
 assert.ok(js.includes('bombLimit: 3'));
 assert.ok(js.includes('flameRange: 1'));
 assert.ok(js.includes('const BOMB_MOONS_PER_LEVEL = 5;'));
-assert.ok(js.includes('const BOMB_WORDS_PER_RUN = WORLDS_PER_RUN * LEVELS_PER_WORLD * BOMB_MOONS_PER_LEVEL;'));
+assert.ok(js.includes('const BOMB_WORDS_PER_RUN = (WORLDS_PER_RUN - FIRST_WORLD + 1) * LEVELS_PER_WORLD * BOMB_MOONS_PER_LEVEL;'));
 assert.ok(js.includes("function fillLevelTargetIds(levelIds)"));
 assert.ok(js.includes("function uniqueWordIdsByCharacter(ids)"));
 assert.ok(js.includes("while (levelIds.length < BOMB_MOONS_PER_LEVEL && inspected < runIds.length)"));
@@ -166,7 +167,7 @@ assert.ok(js.includes('if (!isNightTime() || enemy.type === "koopa-green" || ene
 assert.match(js, /function isNightTime\(\) \{\s+return false;\s+\}/);
 assert.ok(js.includes('type: index === bowserStartIndex ? "bowser" : "mushroom",'));
 assert.ok(js.includes("hp: index === bowserStartIndex ? 2 : 1,"));
-assert.ok(js.includes('difficultyIndex - 1 + (state.world >= 3 ? 4 : 0)'));
+assert.ok(js.includes('state.subLevel + 4 + (state.world - FIRST_WORLD) * 2'));
 assert.ok(js.includes('bowserCandidates[Math.floor(Math.random() * bowserCandidates.length)]'));
 assert.ok(js.includes('type: "koopa-green",'));
 assert.ok(js.includes("spawnShell(gx, gy);"));

@@ -84,7 +84,8 @@
   }
 
   const BASE_COLS = 15;
-  const WORLDS_PER_RUN = 3;
+  const FIRST_WORLD = 3;
+  const WORLDS_PER_RUN = 6;
   const LEVELS_PER_WORLD = 5;
   const COLS_PER_LEVEL = 2;
   let COLS = BASE_COLS;
@@ -125,8 +126,8 @@
   const DAILY_NEW_LIMIT = 3;
   const BOMB_MOONS_PER_LEVEL = 5;
   const FIRE_FLOWERS_PER_LEVEL = 2;
-  const BOMB_WORDS_PER_RUN = WORLDS_PER_RUN * LEVELS_PER_WORLD * BOMB_MOONS_PER_LEVEL;
-  const DIFFICULTY_LABELS = ["A", "B", "C", "D", "E", "F"];
+  const BOMB_WORDS_PER_RUN = (WORLDS_PER_RUN - FIRST_WORLD + 1) * LEVELS_PER_WORLD * BOMB_MOONS_PER_LEVEL;
+  const DIFFICULTY_LABELS = ["A", "B", "C", "D", "E", "F", "G", "H", "I"];
   const START_DIFFICULTY_INDEX = 2;
   const LEARNING_MODES = {
     pinyin: "pinyin",
@@ -279,7 +280,7 @@
     playSource: null,
     dayClock: 0,
     enemyClearOpenedBricks: false,
-    world: 1,
+    world: FIRST_WORLD,
     subLevel: 1,
     round: 1,
   };
@@ -496,7 +497,29 @@
     if (!saved || saved.version !== BOMB_PROGRESS_VERSION) {
       return false;
     }
-    const savedWorld = Math.max(1, Math.min(WORLDS_PER_RUN, Number(saved.world) || 1));
+    if (Number(saved.world) < FIRST_WORLD) {
+      // Retired worlds cannot reuse their smaller saved maps. Begin safely at 3-1,
+      // retaining earned run stats and the player's attack/avatar preference.
+      state.attackMode = Object.hasOwn(ATTACK_LABELS, saved.attackMode) ? saved.attackMode : "bomb";
+      state.throwDistance = clamp(Math.round(Number(saved.throwDistance) || DEFAULT_THROW_DISTANCE),
+        MIN_THROW_DISTANCE, MAX_THROW_DISTANCE);
+      playerAvatar = Object.hasOwn(AVATAR_LABELS, saved.playerAvatar) ? saved.playerAvatar : "fly-star";
+      resetGame();
+      state.score = Math.max(0, Number(saved.score) || 0);
+      state.hp = clamp(Number(saved.hp) || MAX_HP, 1, MAX_HP + 20);
+      state.bombLimit = clamp(Number(saved.bombLimit) || 3, 1, 10);
+      state.flameRange = clamp(Number(saved.flameRange) || 1, 1, 99);
+      state.bombTargetRoundCounts = plainObject(saved.bombTargetRoundCounts);
+      state.bombSeenWordIds = plainArray(saved.bombSeenWordIds).filter((id) => wordById(id));
+      state.bombAppearanceHistory = plainArray(saved.bombAppearanceHistory);
+      updateAvatarUi();
+      updateAttackUi();
+      updateHud();
+      setMessage("前两个世界已暂停，从 3-1 开始", 3);
+      saveBombProgress();
+      return true;
+    }
+    const savedWorld = Math.max(FIRST_WORLD, Math.min(WORLDS_PER_RUN, Number(saved.world) || FIRST_WORLD));
     const savedSubLevel = Math.max(1, Math.min(LEVELS_PER_WORLD, Number(saved.subLevel) || 1));
     setLevelDimensions(savedWorld, savedSubLevel);
     if (!isValidSavedMap(saved.map)) {
@@ -564,14 +587,12 @@
     startLayer.classList.toggle("hidden", !awaitingContinue && Boolean(saved.startLayerHidden));
     clearInputState();
     updateHud();
-    if (state.status === "win" && savedWorld === 2 && savedSubLevel === LEVELS_PER_WORLD) {
-      advanceSubLevel();
-    }
     return true;
   }
 
   function difficultyIndexForSubLevel(subLevel = state.subLevel) {
-    return clamp(START_DIFFICULTY_INDEX + subLevel - 1, 1, DIFFICULTY_LABELS.length);
+    return clamp(START_DIFFICULTY_INDEX + subLevel - 1 + Math.max(0, state.world - FIRST_WORLD),
+      1, DIFFICULTY_LABELS.length);
   }
 
   function difficultyLabelForSubLevel(subLevel = state.subLevel) {
@@ -580,7 +601,7 @@
 
   function setLevelDimensions(world, subLevel) {
     COLS = world >= 3
-      ? THIRD_WORLD_BASE_COLS + (subLevel - 1) * COLS_PER_LEVEL
+      ? THIRD_WORLD_BASE_COLS + (world - FIRST_WORLD + subLevel - 1) * COLS_PER_LEVEL
       : BASE_COLS + (difficultyIndexForSubLevel(subLevel) - 1) * COLS_PER_LEVEL;
     ROWS = world >= 3 ? THIRD_WORLD_ROWS : 11;
     BOARD_W = COLS * TILE;
@@ -593,7 +614,9 @@
   }
 
   function bulletBillBrickCapacityForLevel() {
-    return state.world >= 3 ? state.subLevel + 1 : BULLET_BILL_HIDDEN_COUNT_PER_LEVEL;
+    return state.world >= FIRST_WORLD
+      ? state.subLevel + 1 + (state.world - FIRST_WORLD)
+      : BULLET_BILL_HIDDEN_COUNT_PER_LEVEL;
   }
 
   function makePlayer() {
@@ -1140,6 +1163,12 @@
         `1,${middle}`, `${right},${middle}`,
       ].forEach((cell) => protectedCells.add(cell));
     }
+    if (state.world > FIRST_WORLD) {
+      [
+        `${center},1`, `${center},${ROWS - 2}`, `3,${middle}`, `${right - 2},${middle}`,
+        `${Math.max(3, center - 6)},3`, `${Math.min(COLS - 4, center + 6)},${ROWS - 4}`,
+      ].forEach((cell) => protectedCells.add(cell));
+    }
 
     for (let y = 0; y < ROWS; y += 1) {
       for (let x = 0; x < COLS; x += 1) {
@@ -1208,8 +1237,16 @@
       { gx: Math.max(3, center - 3), gy: ROWS - 2 },
       { gx: Math.min(COLS - 4, center + 3), gy: 1 },
     );
+    if (state.world > FIRST_WORLD) starts.push(
+      { gx: center, gy: 1 },
+      { gx: center, gy: ROWS - 2 },
+      { gx: 3, gy: middle },
+      { gx: right - 2, gy: middle },
+      { gx: Math.max(3, center - 6), gy: 3 },
+      { gx: Math.min(COLS - 4, center + 6), gy: ROWS - 4 },
+    );
     const difficultyIndex = difficultyIndexForSubLevel();
-    const enemyCount = Math.min(starts.length, Math.max(0, difficultyIndex - 1 + (state.world >= 3 ? 4 : 0)));
+    const enemyCount = Math.min(starts.length, state.subLevel + 4 + (state.world - FIRST_WORLD) * 2);
     const bowserStartIndex = enemyCount >= 2 ? 1 : -1;
     const bowserReservedCells = new Set(starts.slice(0, enemyCount)
       .filter((_, index) => index !== bowserStartIndex)
@@ -1458,7 +1495,7 @@
     state.bombTargetRoundCounts = bombTargetRoundCounts();
     refreshDailyNewWords();
     state.playSource = null;
-    state.world = 1;
+    state.world = FIRST_WORLD;
     state.subLevel = 1;
     state.score = 0;
     state.hp = MAX_HP;

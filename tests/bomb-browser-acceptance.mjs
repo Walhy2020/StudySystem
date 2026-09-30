@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { mkdir } from "node:fs/promises";
 import { APP_VERSION } from "../src/constants.js";
 import { loadChromium } from "./playwright-runtime.mjs";
 
@@ -9,6 +10,7 @@ const bombUrl = baseUrl + "bomb-game.html?test=bomb-browser";
 const BOMB_KEY = "mario-bomb-game-progress-v1";
 const HANZI_KEY = "mario-hanzi-refactor-v1";
 const LEGACY_KEY = "mario-literacy-desktop-mvp-v1";
+await mkdir("tmp", { recursive: true });
 
 const browser = await chromium.launch({
   headless: true,
@@ -122,8 +124,8 @@ await page.goto(bombUrl);
 await page.waitForFunction(() => Boolean(window.__BOMB_GAME__));
 const primaryIds = await page.evaluate(() => window.__BOMB_GAME__.getLearningWordIds());
 assert.equal(await page.evaluate(() => window.__BOMB_GAME__.getLearningSource()), "hanzi");
-assert.equal(primaryIds.length, 50, "one run is capped at 50 learning words");
-assert.equal(new Set(primaryIds).size, 50, "evidence-backed selection contains unique IDs");
+assert.equal(primaryIds.length, 59, "the 100-word run capacity includes all 59 available learned words");
+assert.equal(new Set(primaryIds).size, 59, "evidence-backed selection contains unique IDs");
 assert.ok(primaryIds.every((id) => Number(id) >= 2 && Number(id) <= 61), "every selected word has real learning evidence");
 assert.ok(!primaryIds.includes("0001"), "unlearned word is excluded");
 assert.ok(!primaryIds.includes("0004"), "fully mastered word is excluded");
@@ -168,19 +170,22 @@ assert.deepEqual({
 }, {
   progressKey: BOMB_KEY,
   progressVersion: 1,
-  worlds: 2,
+  worlds: 6,
   levelsPerWorld: 5,
-  rows: 11,
+  rows: 15,
   bombTimer: 2,
   flameTime: 0.5,
   moonsPerLevel: 5,
-  wordsPerRun: 50,
+  wordsPerRun: 100,
   koopaMoveTime: 1,
   bulletBill: {
     frame: { sx: 560, sy: 48, sw: 16, sh: 16 },
     moveTime: 0.28125,
     launchDelay: 1,
-    hiddenCountPerLevel: 1,
+    hiddenCountPerLevel: 2,
+    sightRange: 8,
+    forgetTime: 1,
+    droppedBombRange: 10,
   },
   nightTime: false,
   canvas: [1280, 720],
@@ -195,8 +200,8 @@ const resourcePaths = [
   "index.html",
   "bomb-game.html",
   "bomb-game.css?v=1.3",
-  "bomb-game.js?v=2.19",
-  "src/bomb-audio.js?v=1.3",
+  "bomb-game.js?v=2.21",
+  "src/bomb-audio.js?v=1.4",
   "data/characters.js?v=1.0",
   "data/pinyin-readings.js?v=1.0",
   "assets/sprites/enemies-bosses.png",
@@ -225,7 +230,8 @@ const desktopLayout = await page.evaluate(() => {
   const hud = document.querySelector(".bomb-hud").getBoundingClientRect();
   const actions = document.querySelector(".bomb-actions").getBoundingClientRect();
   const hudItems = [...document.querySelectorAll(".bomb-hud .hud-pill")].map((node) => node.getBoundingClientRect());
-  const actionItems = [...document.querySelectorAll(".bomb-actions button, .bomb-actions a")].map((node) => node.getBoundingClientRect());
+  const actionItems = [...document.querySelectorAll(".bomb-actions button, .bomb-actions a")]
+    .map((node) => node.getBoundingClientRect()).filter((rect) => rect.width > 0 && rect.height > 0);
   const isVisibleInside = (rect) => rect.width > 0 && rect.height > 0 &&
     rect.left >= topbar.left - 0.5 && rect.right <= topbar.right + 0.5 &&
     rect.top >= topbar.top - 0.5 && rect.bottom <= topbar.bottom + 0.5;
@@ -237,7 +243,7 @@ const desktopLayout = await page.evaluate(() => {
     hudStartsAtLeft: hud.left - topbar.left <= 20,
     zonesSeparated: hud.right <= actions.left + 0.5,
     hudVisible: hudItems.length === 5 && hudItems.every(isVisibleInside),
-    actionsVisible: actionItems.length === 4 && actionItems.every(isVisibleInside),
+    actionsVisible: actionItems.length === 6 && actionItems.every(isVisibleInside),
     overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth ||
       document.documentElement.scrollHeight > document.documentElement.clientHeight,
   };
@@ -250,7 +256,7 @@ assert.equal(desktopLayout.zonesSeparated, true, "desktop HUD and actions do not
 assert.equal(desktopLayout.hudVisible, true, "all desktop HUD items remain contained and visible");
 assert.equal(desktopLayout.actionsVisible, true, "all desktop actions remain contained and visible");
 assert.equal(desktopLayout.overflow, false);
-await page.screenshot({ path: "tests/bomb-ready-desktop.png", fullPage: true });
+await page.screenshot({ path: "tmp/bomb-ready-desktop.png", fullPage: true });
 
 await page.locator("#startBombGame").focus();
 await page.keyboard.press("Space");
@@ -306,7 +312,7 @@ const restarted = await page.evaluate(() => {
   const current = window.__BOMB_GAME__.getState();
   return { status: current.status, world: current.world, subLevel: current.subLevel, hp: current.hp, bombs: current.bombs.length };
 });
-assert.deepEqual(restarted, { status: "playing", world: 1, subLevel: 1, hp: 3, bombs: 0 }, "Enter on restart performs a full native restart");
+assert.deepEqual(restarted, { status: "playing", world: 3, subLevel: 1, hp: 3, bombs: 0 }, "Enter on restart performs a full native restart");
 await page.waitForFunction(() => window.__BOMB_GAME__.getBoardTargetSummary().renderedLearningCardCount === 0);
 const restartedTargets = await page.evaluate(() => window.__BOMB_GAME__.getBoardTargetSummary());
 assert.equal(restartedTargets.levelTargetIds.length, 5, "restart rebuilds five target instances");
@@ -352,7 +358,8 @@ const mobileLayout = await page.evaluate(() => {
   const hud = document.querySelector(".bomb-hud").getBoundingClientRect();
   const actions = document.querySelector(".bomb-actions").getBoundingClientRect();
   const hudItems = [...document.querySelectorAll(".bomb-hud .hud-pill")].map((node) => node.getBoundingClientRect());
-  const actionItems = [...document.querySelectorAll(".bomb-actions button, .bomb-actions a")].map((node) => node.getBoundingClientRect());
+  const actionItems = [...document.querySelectorAll(".bomb-actions button, .bomb-actions a")]
+    .map((node) => node.getBoundingClientRect()).filter((rect) => rect.width > 0 && rect.height > 0);
   const isVisibleInside = (rect) => rect.width > 0 && rect.height > 0 &&
     rect.left >= topbar.left - 0.5 && rect.right <= topbar.right + 0.5 &&
     rect.top >= topbar.top - 0.5 && rect.bottom <= topbar.bottom + 0.5;
@@ -363,7 +370,7 @@ const mobileLayout = await page.evaluate(() => {
     noTitleSlot: document.querySelector(".bomb-title") === null && hud.top - topbar.top <= 9,
     zonesSeparated: hud.bottom <= actions.top + 0.5 && actions.top - hud.bottom <= 9,
     hudVisible: hudItems.length === 5 && hudItems.every(isVisibleInside),
-    actionsVisible: actionItems.length === 4 && actionItems.every(isVisibleInside),
+    actionsVisible: actionItems.length === 6 && actionItems.every(isVisibleInside),
     overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth ||
       document.documentElement.scrollHeight > document.documentElement.clientHeight,
   };
@@ -375,7 +382,7 @@ assert.equal(mobileLayout.zonesSeparated, true, "390px HUD and actions are tight
 assert.equal(mobileLayout.hudVisible, true, "all 390px HUD items remain contained and visible");
 assert.equal(mobileLayout.actionsVisible, true);
 assert.equal(mobileLayout.overflow, false);
-await page.screenshot({ path: "tests/bomb-ready-390.png", fullPage: true });
+await page.screenshot({ path: "tmp/bomb-ready-390.png", fullPage: true });
 
 await page.locator('a[href="./index.html"]').click();
 await page.waitForURL(/\/index\.html$/);
@@ -451,11 +458,11 @@ assert.deepEqual(uniqueNewGame.summary.hiddenTargetIds, uniqueNewGame.summary.le
 assert.equal(new Set(uniqueNewGame.visibleChars).size, 5, "the rendered target cards show five different characters");
 assert.equal(uniqueNewGame.summary.targetEntityCount, 5);
 assert.equal(uniqueNewGame.summary.renderedLearningCardCount, 0);
-assert.equal(uniqueNewGame.runIds.length, 50, "Bomb run pool remains capped at 50 unique words");
-assert.equal(new Set(uniqueNewGame.runIds).size, 50, "Bomb run pool contains unique IDs");
-assert.equal(new Set(uniqueNewGame.runChars).size, 50, "Bomb run pool contains unique characters");
+assert.equal(uniqueNewGame.runIds.length, 100, "the twenty-level run is capped at 100 unique words");
+assert.equal(new Set(uniqueNewGame.runIds).size, 100, "Bomb run pool contains unique IDs");
+assert.equal(new Set(uniqueNewGame.runChars).size, 100, "Bomb run pool contains unique characters");
 assert.equal(uniqueNewGame.runIds.includes("0004"), false, "mastered Hanzi is never used as fallback");
-await page.screenshot({ path: "tests/bomb-active-desktop.png", fullPage: true });
+await page.screenshot({ path: "tmp/bomb-active-desktop.png", fullPage: true });
 
 await page.locator("#restartBombGame").focus();
 await page.keyboard.press("Enter");
@@ -482,7 +489,7 @@ assert.equal(new Set(uniqueMobile.summary.hiddenTargetIds).size, 5, "390px targe
 assert.equal(new Set(uniqueMobile.visibleChars).size, 5, "390px target characters are unique");
 assert.equal(uniqueMobile.summary.renderedLearningCardCount, 0);
 assert.equal(uniqueMobile.overflow, false);
-await page.screenshot({ path: "tests/bomb-active-390.png", fullPage: true });
+await page.screenshot({ path: "tmp/bomb-active-390.png", fullPage: true });
 
 // A version-1 save polluted by the previous repeated/over-five strategy is repaired on restore.
 await page.setViewportSize({ width: 1440, height: 1000 });
@@ -761,10 +768,10 @@ async function assertBrickRevealAndEnemyClear(mode) {
     await page.setViewportSize({ width, height: width === 390 ? 844 : 1000 });
     await assertRevealedTargetText(mode);
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
-    await page.screenshot({ path: `tests/bomb-revealed-${mode}-${width}.png`, fullPage: true });
+    await page.screenshot({ path: `tmp/bomb-revealed-${mode}-${width}.png`, fullPage: true });
   }
   await page.setViewportSize(previousViewport);
-  await page.screenshot({ path: "tests/bomb-revealed-" + mode + ".png", fullPage: true });
+  await page.screenshot({ path: "tmp/bomb-revealed-" + mode + ".png", fullPage: true });
   await restoreBombSnapshot(cleared);
   assert.equal((await page.evaluate(() => window.__BOMB_GAME__.getBoardTargetSummary())).visibleInitialTargetIds.length, 5, "cleared save keeps all pending questions visible");
 }

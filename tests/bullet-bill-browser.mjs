@@ -64,25 +64,16 @@ try {
     frame: { sx: 560, sy: 48, sw: 16, sh: 16 },
     moveTime: 0.28125,
     launchDelay: 1,
-    hiddenCountPerLevel: 1,
+    hiddenCountPerLevel: 2,
     sightRange: 8,
     forgetTime: 1,
     droppedBombRange: 10,
   });
   const firstLevelBills = initial.enemies.filter((enemy) => enemy.type === "bullet-bill" && enemy.alive);
-  assert.equal(firstLevelBills.length, 0, "level 1-1 never opens with a visible Bullet Bill");
-  assert.equal(initial.enemies.filter(enemy => enemy.alive && enemy.type === "mushroom").length, 1, "normal first-level mushroom is restored");
-  assert.equal(initial.hiddenPowerUps.filter(([, type]) => type === "bulletBill").length, 1, "exactly one missile starts hidden inside a brick");
-  const [initialBrickKey] = initial.hiddenPowerUps.find(([, type]) => type === "bulletBill");
-  const [initialBrickX, initialBrickY] = initialBrickKey.split(",").map(Number);
-  const hiddenBrickColor = await page.evaluate(({ gx, gy }) => {
-    const canvas = document.querySelector("#bombCanvas");
-    const layout = window.__BOMB_GAME__.getLevelLayout();
-    const x = (canvas.width - layout.boardWidth) / 2 + gx * layout.tile + layout.tile / 2;
-    const y = 108 + gy * layout.tile + layout.tile / 2;
-    return [...canvas.getContext("2d").getImageData(x, y, 1, 1).data];
-  }, { gx: initialBrickX, gy: initialBrickY });
-  assert.ok(hiddenBrickColor.slice(0, 3).every(channel => channel < 75), "hidden missile brick is visibly black");
+  assert.equal(firstLevelBills.length, 0, "level 3-1 never opens with a visible Bullet Bill");
+  assert.equal(initial.enemies.filter(enemy => enemy.alive && enemy.type === "mushroom").length, 4, "normal third-world mushrooms are present");
+  assert.equal(initial.hiddenPowerUps.filter(([, type]) => type === "bulletBill").length, 2, "3-1 starts with two missiles hidden inside bricks");
+  let hiddenBrickColor = null;
   await page.locator("#overlayStartBombGame").click();
   await page.waitForTimeout(1200);
   const runningStart = await page.evaluate(() => window.__BOMB_GAME__.getState());
@@ -90,13 +81,13 @@ try {
   assert.equal(runningStart.enemyClearOpenedBricks, false, "no automatic clearing at start");
   assert.ok(runningStart.map.flat().some(tile => tile === 2));
 
-  // Exercise actual next-level generation across both worlds, not just a constant check.
+  // Exercise actual next-level generation across worlds 3 and 4, not just a constant check.
   let generatedLevel = structuredClone(initial);
   for (let levelIndex = 0; levelIndex < 10; levelIndex++) {
-    assert.equal(generatedLevel.world, Math.floor(levelIndex / 5) + 1);
+    assert.equal(generatedLevel.world, Math.floor(levelIndex / 5) + 3);
     assert.equal(generatedLevel.subLevel, levelIndex % 5 + 1);
     const missiles = generatedLevel.hiddenPowerUps.filter(([, type]) => type === "bulletBill");
-    assert.equal(missiles.length, 1, `level ${generatedLevel.world}-${generatedLevel.subLevel} hides exactly one missile`);
+    assert.equal(missiles.length, generatedLevel.subLevel + generatedLevel.world - 2);
     const [x, y] = missiles[0][0].split(",").map(Number);
     assert.equal(generatedLevel.map[y][x], 2);
     assert.equal(generatedLevel.hiddenWordCrates.length, 5);
@@ -123,6 +114,7 @@ try {
 
   const spawnFixture = structuredClone(initial);
   const [brickKey] = spawnFixture.hiddenPowerUps.find(([, type]) => type === "bulletBill");
+  spawnFixture.hiddenPowerUps = [[brickKey, "bulletBill"]];
   const [brickX, brickY] = brickKey.split(",").map(Number);
   const neighbor = [
     [brickX - 1, brickY],
@@ -358,6 +350,17 @@ try {
     cleanupFixture.player = { gx: 3, gy: 5, move: null, invulnerable: 20, trail: [{ gx: 3, gy: 5 }] };
     cleanupFixture.enemies = [{ ...initial.enemies.find(enemy => enemy.type === "mushroom"), gx: 10, gy: 7, move: null, hp: 1, stunTimer: 1, hitCooldown: 0 }];
     await restoreSnapshot(cleanupFixture);
+    await page.waitForTimeout(100);
+    hiddenBrickColor = await page.evaluate(() => {
+      const canvas = document.querySelector("#bombCanvas");
+      const layout = window.__BOMB_GAME__.getLevelLayout();
+      const x = 112 + 4 * layout.tile + layout.tile / 2 + layout.camera.x;
+      const y = 108 + 5 * layout.tile + layout.tile / 2 + layout.camera.y;
+      return [...canvas.getContext("2d").getImageData(x, y, 1, 1).data];
+    });
+    assert.equal(hiddenBrickColor[3], 255, `${width}px hidden missile brick is actually rendered`);
+    assert.ok(hiddenBrickColor.slice(0, 3).every(channel => channel < 75),
+      `${width}px hidden missile brick is visibly black`);
     await page.waitForFunction(() => window.__BOMB_GAME__.getState().enemyClearOpenedBricks);
     const cleared = await page.evaluate(() => window.__BOMB_GAME__.getState());
     assert.equal(cleared.map.flat().filter(tile => tile === 2).length, 1, "only the hidden missile brick remains");
@@ -389,7 +392,7 @@ try {
   const visualFixture = structuredClone(initial);
   visualFixture.status = "ready";
   visualFixture.startLayerHidden = true;
-  visualFixture.messageText = "第一关：1 枚导弹藏在砖块里";
+  visualFixture.messageText = "3-1：2 枚导弹藏在砖块里";
   visualFixture.bombs = [];
   for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: width === 390 ? 844 : 1000 });
@@ -403,8 +406,8 @@ try {
   assert.deepEqual(errors, [], "Bullet Bill acceptance has no page or resource errors");
   console.log(JSON.stringify({
     firstLevelVisibleBills: 0,
-    firstLevelHiddenBills: 1,
-    allTenLevelsHideOneMissile: true,
+    firstLevelHiddenBills: 2,
+    allTenLevelsHaveWorldScaledMissiles: true,
     brickSpawn: true,
     enemyClearRetainsMissileBrick: true,
     retainedBrickSurvivesReload: true,

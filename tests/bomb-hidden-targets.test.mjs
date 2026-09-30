@@ -11,28 +11,30 @@ const extract = (name) => {
 const coordKey = (x, y) => x + "," + y;
 const words = Array.from({ length: 5 }, (_, index) => ({ id: String(index + 1) }));
 
-test("前十关各一枚隐藏导弹，第三世界逐关为二至六枚", () => {
-  const state = { world: 1, subLevel: 1 };
+test("世界3至6的导弹数量逐世界、逐小关增加", () => {
+  const state = { world: 3, subLevel: 1 };
   const math = Object.create(Math);
   const helpers = new Function("state", "Math", `
     ${source.match(/const BULLET_BILL_HIDDEN_COUNT_PER_LEVEL = [^;]+;/)[0]}
+    const FIRST_WORLD = 3;
     ${extract("bulletBillBrickCapacityForLevel")}
     return { bulletBillBrickCapacityForLevel };
   `)(state, math);
   for (const random of [0, 0.3499, 0.35, 0.9999]) {
     math.random = () => random;
-    for (state.world = 1; state.world <= 3; state.world++) {
+    for (state.world = 3; state.world <= 6; state.world++) {
       for (state.subLevel = 1; state.subLevel <= 5; state.subLevel++) {
-        assert.equal(helpers.bulletBillBrickCapacityForLevel(), state.world === 3 ? state.subLevel + 1 : 1);
+        assert.equal(helpers.bulletBillBrickCapacityForLevel(), state.subLevel + state.world - 2);
       }
     }
   }
 });
 
-test("第三世界各关再增加两只怪物，旧世界数量不变且库巴不占出生点", () => {
-  const state = { world: 1, subLevel: 1, map: [] };
+test("世界3至6逐世界增加怪物且库巴不占出生点", () => {
+  const state = { world: 3, subLevel: 1, map: [] };
   const createEnemies = new Function("state", "Math", "getDimensions", "coordKey", `
     let COLS = 17, ROWS = 11;
+    const FIRST_WORLD = 3;
     const TILE_FLOOR = 0;
     const difficultyIndexForSubLevel = () => state.subLevel + 1;
     ${extract("createEnemies")}
@@ -42,13 +44,13 @@ test("第三世界各关再增加两只怪物，旧世界数量不变且库巴�
       return createEnemies();
     };
   `)(state, Math, (world, subLevel) => ({
-    COLS: world === 3 ? 27 + (subLevel - 1) * 2 : 17 + (subLevel - 1) * 2,
-    ROWS: world === 3 ? 15 : 11,
+    COLS: 27 + (world - 3 + subLevel - 1) * 2,
+    ROWS: 15,
   }), coordKey);
-  for (state.world = 1; state.world <= 3; state.world += 1) {
+  for (state.world = 3; state.world <= 6; state.world += 1) {
     for (state.subLevel = 1; state.subLevel <= 5; state.subLevel += 1) {
       const enemies = createEnemies();
-      assert.equal(enemies.length, state.subLevel + 1 + (state.world >= 3 ? 4 : 0));
+      assert.equal(enemies.length, state.subLevel + 5 + (state.world - 3) * 2);
       assert.equal(enemies.filter(enemy => enemy.type === "koopa-green").length, 1);
       assert.equal(new Set(enemies.map(enemy => coordKey(enemy.gx, enemy.gy))).size, enemies.length);
       assert.ok(enemies.every(enemy => enemy.gx !== 1 || enemy.gy !== 1));
@@ -124,11 +126,10 @@ test("五题完成后仍需手动炸出隐藏导弹，且活导弹死亡后才�
   assert.equal(advances, 1);
 });
 
-test("十五关的地图在最稀疏随机结果下仍藏五题和足量导弹，敌人出生格安全", () => {
-  const levels = [
-    ...[17, 19, 21, 23, 25].map((cols, index) => ({ world: 1, subLevel: index + 1, cols, rows: 11 })),
-    ...[27, 29, 31, 33, 35].map((cols, index) => ({ world: 3, subLevel: index + 1, cols, rows: 15 })),
-  ];
+test("二十关地图在最稀疏随机结果下仍藏五题和足量导弹，敌人出生格安全", () => {
+  const levels = [3, 4, 5, 6].flatMap((world) => [1, 2, 3, 4, 5].map((subLevel) => ({
+    world, subLevel, cols: 27 + (world - 3 + subLevel - 1) * 2, rows: 15,
+  })));
   for (const { world, subLevel, cols: COLS, rows: ROWS } of levels) {
     for (const random of [0, 0.5, 0.999999]) {
       const state = { world, subLevel };
@@ -137,6 +138,7 @@ test("十五关的地图在最稀疏随机结果下仍藏五题和足量导弹�
       const helpers = new Function("state", "Math", "COLS", "ROWS", "coordKey", "pendingLevelWords", `
         const TILE_CRATE = 2, TILE_FLOOR = 0, TILE_HARD = 1;
         const BOMB_MOONS_PER_LEVEL = 5;
+        const FIRST_WORLD = 3;
         const maxFireFlowersForLevel = () => 2;
         ${source.match(/const BULLET_BILL_HIDDEN_COUNT_PER_LEVEL = [^;]+;/)[0]}
         ${extract("bulletBillBrickCapacityForLevel")}
@@ -148,7 +150,7 @@ test("十五关的地图在最稀疏随机结果下仍藏五题和足量导弹�
       helpers.seedHiddenPowerUps();
       assert.equal(state.hiddenWordCrates.size, 5);
       assert.deepEqual([...state.hiddenWordCrates.values()], words.map(word => word.id));
-      const missiles = world === 3 ? subLevel + 1 : 1;
+      const missiles = subLevel + world - 2;
       assert.equal(state.hiddenPowerUps.size, 3 + missiles);
       assert.equal([...state.hiddenPowerUps.values()].filter(type => type === "bulletBill").length, missiles);
       for (const [key] of state.hiddenWordCrates) {
@@ -157,12 +159,20 @@ test("十五关的地图在最稀疏随机结果下仍藏五题和足量导弹�
         assert.equal(state.hiddenPowerUps.has(key), false, "target/reward cannot share a brick");
       }
       for (const [x, y] of [[1,1],[1,2],[2,1]]) assert.equal(state.map[y][x], 0);
-      if (world === 3) {
+      if (world >= 3) {
         const center = Math.floor(COLS / 2);
         const middle = Math.floor(ROWS / 2);
         for (const [x, y] of [[COLS - 2, ROWS - 2], [COLS - 2, 1], [1, ROWS - 2],
           [center, middle], [center - 3, 1], [center + 3, ROWS - 2], [1, middle], [COLS - 2, middle]]) {
           assert.equal(state.map[y][x], 0, `enemy start ${x},${y} is open`);
+        }
+      }
+      if (world > 3) {
+        const center = Math.floor(COLS / 2);
+        const middle = Math.floor(ROWS / 2);
+        for (const [x, y] of [[center, 1], [center, ROWS - 2], [3, middle], [COLS - 4, middle],
+          [center - 6, 3], [center + 6, ROWS - 4]]) {
+          assert.equal(state.map[y][x], 0, `new-world enemy start ${x},${y} is open`);
         }
       }
     }

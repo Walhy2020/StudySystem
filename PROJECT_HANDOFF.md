@@ -7,7 +7,20 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.32** (2026-09-30). Bomb maze now draws missile-bearing
+System display version: **v1.0.33** (2026-09-30). Bomb maze now starts at 3-1;
+worlds 1 and 2 are retired for new play. Worlds 3–6 contain five levels each
+(20 playable levels). World 3 keeps its existing 27–35 by 15-cell maps and
+6–10 enemies; worlds 4–6 expand to 29–37, 31–39 and 33–41 columns, with
+8–12, 10–14 and 12–16 enemies, and one additional hidden missile per world.
+Tiles remain 48px and the camera follows the player. Each new world has its own
+background melody. Old world-1/2 saves enter a paused 3-1 start with score,
+health, bomb capacity, blast range and selected controls retained; world-3
+saves keep their current board. The existing map-wide random placement of
+Hanzi and pinyin answer choices is unchanged (the proposed nearby-placement
+rule was withdrawn). Bomb JS/audio caches: v2.21/v1.4; all seven update-notifier
+queries are v1.0.33. Focused Edge check: `node tests/bomb-third-world-browser.mjs`.
+
+Previous v1.0.32 (2026-09-30). Bomb maze now draws missile-bearing
 bricks black. A revealed Bullet Bill patrols black until it sees the player within
 eight cells along a clear line; it turns red and pursues, then returns to black
 after one second without sight. A mushroom attack that destroys it leaves a
@@ -416,7 +429,7 @@ In the ChatGPT/Codex desktop app, add the cloned repository as a local project a
 - Entry: `bomb-game.html`.
 - Each level has five distinct Hanzi targets: prioritize learning evidence, then fill from non-mastered words without repeating the same character. Odd/even sublevels alternate pinyin-to-Hanzi and Hanzi-to-pinyin questions.
 - All five questions start hidden inside separate bricks. Destroying a target brick reveals its question card; eliminating the last enemy opens remaining bricks except intact hidden Bullet Bill bricks, and reveals all pending questions. The player must bomb the retained missile brick; hidden/live missiles block completion even after five correct answers.
-- All ten levels start with their normal enemies and exactly one hidden Bullet Bill in a non-question brick; no visible missile spawns at entry and there is no random spawn chance. After its brick breaks, the visible missile waits one second before moving or causing contact damage. It then chases the player with no distance limit at a constant 0.28125s/cell (another 20% slower since v1.0.14), including turns, with no acceleration or turn pause. Bomb contact consumes the missile and recolors the existing bomb red, retaining its range and ordinary two-second fuse/blast. Red color and timer persist in the existing save; pending red bombs prevent early cleanup/completion. Ongoing saves are not reset by releases.
+- Playable levels run from 3-1 through 6-5. Every level starts with hidden Bullet Bills in non-question bricks; the count rises by sublevel and by world (2–6 in world 3, up to 5–9 in world 6). No visible missile spawns at entry and there is no random spawn chance. After its brick breaks, the visible missile waits one second before moving or causing contact damage. It then moves at a constant 0.28125s/cell; sight of the player turns it red and starts pursuit, while one second out of sight returns it to black patrol. Bomb contact consumes the missile and recolors the existing bomb red without increasing range; a mushroom attack destroys it and drops a range-10 black bomb. Pending missile bombs and blasts prevent early cleanup/completion. World-3 saves retain their board; retired world-1/2 saves start safely at 3-1 with earned run stats retained.
 - Bomb saves remain version 1, with targetRevealPolicy=1 distinguishing the restored hidden-question rule. New saves preserve hidden/revealed/active/completed state; old automatically visible unanswered prompts are re-hidden where intact bricks remain, without discarding active answers or completed progress. Only actual reveals increment appearance counts.
 - Save/resume, restart, next-level flow, keyboard controls, mobile layout, and isolated bomb progress are implemented.
 

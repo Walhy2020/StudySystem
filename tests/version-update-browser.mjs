@@ -81,7 +81,7 @@ try {
     assert.equal(await page.evaluate(() => localStorage.getItem("update-check-sentinel")), "preserved");
     if (name === "bomb-game") {
       assert.equal(await page.evaluate(() => window.__BOMB_GAME__.isAwaitingContinue()), true, "bomb reload waits for Continue");
-      assert.equal((await page.evaluate(() => window.__BOMB_GAME__.getState())).world, 1);
+      assert.equal((await page.evaluate(() => window.__BOMB_GAME__.getState())).world, 3);
     }
     await context.close();
   }

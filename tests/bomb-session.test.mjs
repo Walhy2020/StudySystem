@@ -238,7 +238,7 @@ test("蘑菇移动速度精确降低10%，库巴和乌龟不变，包含存档�
   assert.match(source, /const MUSHROOM_SPEED_FACTOR = 0\.9;/);
 });
 
-test("导弹始终对小飞星寻路，速度降低20%且玩家速度不变", () => {
+test("导弹锁定目标时寻路，速度降低20%且玩家速度不变", () => {
   const map = Array.from({ length: 7 }, (_, y) => Array.from({ length: 7 }, (_, x) =>
     x === 0 || y === 0 || x === 6 || y === 6 ? 1 : 0));
   map[1][2] = 1;
@@ -250,10 +250,11 @@ test("导弹始终对小飞星寻路，速度降低20%且玩家速度不变", ()
     const isInside = (gx, gy) => gx >= 0 && gy >= 0 && gx < 7 && gy < 7;
     const shellAt = () => false;
     ${extract("isBulletBillCellOpen")}
+    ${extract("chooseBulletBillPatrolDirection")}
     ${extract("chooseBulletBillDirection")}
     return chooseBulletBillDirection;
   `)(state);
-  const enemy = { gx: 1, gy: 1, dir: "right" };
+  const enemy = { gx: 1, gy: 1, dir: "right", lastSeen: { gx: 4, gy: 1 } };
   assert.equal(chooseDirection(enemy), "down", "blocked direct route turns through the maze");
   map[1][2] = 0;
   assert.equal(chooseDirection(enemy), "right", "open direct route keeps heading toward the player");
@@ -270,6 +271,8 @@ test("旧存档导弹保持当前位置和步内进度，去掉转弯等待并�
   const normalize = new Function(`
     const BULLET_BILL_MOVE_TIME = 0.28125;
     const BULLET_BILL_LAUNCH_DELAY = 1;
+    const BULLET_BILL_FORGET_TIME = 1;
+    const isInside = () => true;
     const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
     ${extract("normalizeBulletBillMotion")}
     return normalizeBulletBillMotion;
@@ -317,12 +320,13 @@ test("导弹跨格采用匀速插值，不在每格边界重复减速", () => {
   assert.equal(eased.gx, 0.125, "other actors retain the existing eased movement");
 });
 
-test("导弹直行转弯都不暂停不变速，走过十格仍持续追踪", () => {
+test("导弹直行转弯都不暂停不变速，走过十格仍持续移动", () => {
   const calls = { starts: [], exploded: 0, touched: 0 };
   const run = new Function("calls", `
     const BULLET_BILL_MOVE_TIME = 0.28125;
     const DIRS = { up:{x:0,y:-1}, down:{x:0,y:1}, left:{x:-1,y:0}, right:{x:1,y:0} };
     const bombAt = () => null;
+    const updateBulletBillAlert = () => {};
     const convertBombTouchedByBulletBill = () => { calls.touched++; return false; };
     const chooseBulletBillDirection = () => "down";
     const advanceMove = enemy => { enemy.move = null; return true; };

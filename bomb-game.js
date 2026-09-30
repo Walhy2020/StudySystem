@@ -111,6 +111,9 @@
   const BULLET_BILL_MOVE_TIME = 0.28125;
   const BULLET_BILL_LAUNCH_DELAY = 1;
   const BULLET_BILL_HIDDEN_COUNT_PER_LEVEL = 1;
+  const BULLET_BILL_SIGHT_RANGE = 8;
+  const BULLET_BILL_FORGET_TIME = 1;
+  const BULLET_BILL_DROP_RANGE = 10;
   const ENEMY_CHASE_TIME = 2.6;
   const ENEMY_SIGHT_RANGE = 8 / 3;
   const ENEMY_VISION_HALF_ANGLE = Math.PI / 3;
@@ -197,6 +200,10 @@
     { sx: 176, sy: 0, sw: 16, sh: 32 },
   ];
   const BULLET_BILL_FRAME = { sx: 560, sy: 48, sw: 16, sh: 16 };
+  const redBulletBillFrame = document.createElement("canvas");
+  redBulletBillFrame.width = BULLET_BILL_FRAME.sw;
+  redBulletBillFrame.height = BULLET_BILL_FRAME.sh;
+  let redBulletBillFrameReady = false;
 
 
   const crateBrickImage = new Image();
@@ -1173,6 +1180,7 @@
       turnPause: 0,
       turnResetPending: false,
       launchDelay: BULLET_BILL_LAUNCH_DELAY,
+      alertTimer: 0,
       chaseTimer: 0,
       stunTimer: 0,
       hitCooldown: 0,
@@ -1543,7 +1551,9 @@
   }
 
   function autoOpenBricksAfterEnemyClear() {
-    if (state.enemyClearOpenedBricks || state.enemies.length === 0 || livingEnemyCount() > 0 || state.bombs.some(bomb => bomb.isRed && !bomb.exploded)) {
+    if (state.enemyClearOpenedBricks || state.enemies.length === 0 || livingEnemyCount() > 0 ||
+        state.bombs.some(bomb => (bomb.isRed && !bomb.exploded) || bomb.fromBulletBill) ||
+        state.explosions.some(explosion => explosion.fromBulletBill)) {
       return;
     }
     state.enemyClearOpenedBricks = true;
@@ -1608,7 +1618,10 @@
   function checkLevelComplete() {
     if (state.status !== "playing" && state.status !== "ready") return;
     const learningDone = state.moonWordIds.length >= BOMB_MOONS_PER_LEVEL;
-    if (learningDone && livingEnemyCount() === 0 && !hasHiddenBulletBillBrick() && !state.bombs.some(bomb => bomb.isRed && !bomb.exploded) && (state.enemies.length > 0 || crateCount() === 0)) {
+    if (learningDone && livingEnemyCount() === 0 && !hasHiddenBulletBillBrick() &&
+        !state.bombs.some(bomb => (bomb.isRed && !bomb.exploded) || bomb.fromBulletBill) &&
+        !state.explosions.some(explosion => explosion.fromBulletBill) &&
+        (state.enemies.length > 0 || crateCount() === 0)) {
       advanceSubLevel();
     }
   }
@@ -1959,11 +1972,42 @@
     return isInside(cellX, cellY) && state.map[cellY]?.[cellX] === TILE_FLOOR && !shellAt(cellX, cellY);
   }
 
-  function chooseBulletBillDirection(enemy) {
+  function canBulletBillSeePlayer(enemy) {
+    const ex = Math.round(enemy.gx);
+    const ey = Math.round(enemy.gy);
+    const px = Math.round(state.player.gx);
+    const py = Math.round(state.player.gy);
+    return Math.hypot(px - ex, py - ey) <= BULLET_BILL_SIGHT_RANGE && hasLineOfSight(ex, ey, px, py);
+  }
+
+  function updateBulletBillAlert(enemy, dt) {
+    if (canBulletBillSeePlayer(enemy)) {
+      enemy.alertTimer = BULLET_BILL_FORGET_TIME;
+      enemy.lastSeen = { gx: Math.round(state.player.gx), gy: Math.round(state.player.gy) };
+    } else {
+      enemy.alertTimer = Math.max(0, enemy.alertTimer - dt);
+      if (enemy.alertTimer === 0) enemy.lastSeen = null;
+    }
+  }
+
+  function chooseBulletBillPatrolDirection(enemy) {
     const startX = Math.round(enemy.gx);
     const startY = Math.round(enemy.gy);
-    const targetX = Math.round(state.player.gx);
-    const targetY = Math.round(state.player.gy);
+    const options = Object.keys(DIRS).filter((direction) => {
+      const dir = DIRS[direction];
+      return isBulletBillCellOpen(startX + dir.x, startY + dir.y);
+    });
+    if (options.includes(enemy.dir)) return enemy.dir;
+    const reverse = { up: "down", down: "up", left: "right", right: "left" }[enemy.dir];
+    return options.find((direction) => direction !== reverse) || options[0] || "";
+  }
+
+  function chooseBulletBillDirection(enemy, target = enemy.lastSeen) {
+    const startX = Math.round(enemy.gx);
+    const startY = Math.round(enemy.gy);
+    const targetX = target?.gx;
+    const targetY = target?.gy;
+    if (!Number.isInteger(targetX) || !Number.isInteger(targetY)) return chooseBulletBillPatrolDirection(enemy);
     if (startX === targetX && startY === targetY) return "";
 
     const directionNames = Object.keys(DIRS).sort((left, right) => {
@@ -2006,6 +2050,9 @@
     enemy.launchDelay = enemy.move || !Number.isFinite(savedLaunchDelay)
       ? 0
       : clamp(savedLaunchDelay, 0, BULLET_BILL_LAUNCH_DELAY);
+    enemy.alertTimer = clamp(Number(enemy.alertTimer) || 0, 0, BULLET_BILL_FORGET_TIME);
+    if (!Number.isInteger(enemy.lastSeen?.gx) || !Number.isInteger(enemy.lastSeen?.gy) ||
+        !isInside(enemy.lastSeen.gx, enemy.lastSeen.gy) || enemy.alertTimer === 0) enemy.lastSeen = null;
     if (enemy.move) {
       const progress = enemy.move.duration > 0 ? clamp(enemy.move.time / enemy.move.duration, 0, 1) : 0;
       enemy.move.duration = BULLET_BILL_MOVE_TIME;
@@ -2032,6 +2079,7 @@
 
   function updateBulletBill(enemy, dt) {
     enemy.stepsTravelled = Math.max(0, Number(enemy.stepsTravelled) || 0);
+    updateBulletBillAlert(enemy, dt);
     if (enemy.launchDelay > 0) {
       enemy.launchDelay = Math.max(0, enemy.launchDelay - dt);
       return;
@@ -2103,9 +2151,9 @@
         explodeBomb(bomb);
       }
     });
-    const redBombExploded = state.bombs.some(bomb => bomb.isRed && bomb.exploded);
+    const specialBombExploded = state.bombs.some(bomb => (bomb.isRed || bomb.fromBulletBill) && bomb.exploded);
     state.bombs = state.bombs.filter((bomb) => !bomb.exploded);
-    if (redBombExploded) {
+    if (specialBombExploded) {
       autoOpenBricksAfterEnemyClear();
       checkLevelComplete();
     }
@@ -2124,7 +2172,7 @@
     const id = state.enemies.reduce((maximum, enemy) => Math.max(maximum, Number(enemy.id) || 0), 0) + 1;
     state.enemies.push(makeBulletBillEnemy(id, gx, gy));
     spawnParticles("enemy", gx, gy);
-    setMessage(`导弹出现，已锁定${AVATAR_LABELS[playerAvatar]}`, 1.8);
+    setMessage("导弹出现，正在警戒", 1.8);
     updateHud();
   }
 
@@ -2652,7 +2700,8 @@
       }
     });
 
-    state.explosions.push({ cells, blockedCells, life: FLAME_TIME, maxLife: FLAME_TIME });
+    state.explosions.push({ cells, blockedCells, life: FLAME_TIME, maxLife: FLAME_TIME,
+      fromBulletBill: Boolean(bomb.fromBulletBill) });
     destroyFireFlowersInCells(cells, visibleFireFlowerKeys);
     state.bombs.forEach((other) => {
       if (!other.exploded && cells.some((cell) => cell.gx === other.gx && cell.gy === other.gy)) {
@@ -2665,10 +2714,15 @@
   }
 
   function updateExplosions(dt) {
+    const hadBulletBillBlast = state.explosions.some((explosion) => explosion.fromBulletBill);
     state.explosions.forEach((explosion) => {
       explosion.life -= dt;
     });
     state.explosions = state.explosions.filter((explosion) => explosion.life > 0);
+    if (hadBulletBillBlast && !state.explosions.some((explosion) => explosion.fromBulletBill)) {
+      autoOpenBricksAfterEnemyClear();
+      checkLevelComplete();
+    }
   }
 
   function isCellBurning(gx, gy) {
@@ -2772,9 +2826,24 @@
   function defeatEnemy(enemy) {
     if (!enemy.alive) return;
     enemy.alive = false;
+    if (enemy.type === "bullet-bill") {
+      const gx = Math.round(enemy.gx);
+      const gy = Math.round(enemy.gy);
+      let droppedBomb = bombAt(gx, gy);
+      if (!droppedBomb) {
+        droppedBomb = { gx, gy, time: 0, range: BULLET_BILL_DROP_RANGE, ownerInside: false,
+          exploded: false, fromBulletBill: true };
+        state.bombs.push(droppedBomb);
+      } else {
+        droppedBomb.range = Math.max(droppedBomb.range, BULLET_BILL_DROP_RANGE);
+        droppedBomb.fromBulletBill = true;
+        droppedBomb.time = 0;
+      }
+      sounds.play("place");
+    }
     state.score += 100;
     spawnParticles("enemy", enemy.gx, enemy.gy);
-    setMessage("+100");
+    setMessage(enemy.type === "bullet-bill" ? "+100 · 导弹留下威力10炸弹" : "+100");
     autoOpenBricksAfterEnemyClear();
     updateHud();
     checkLevelComplete();
@@ -2953,6 +3022,23 @@
       ctx.fillRect(x + 6, y + 6, TILE - 12, 4);
       ctx.strokeStyle = "rgba(15, 23, 42, 0.32)";
       ctx.strokeRect(x + 2.5, y + 2.5, TILE - 5, TILE - 5);
+      return;
+    }
+
+    if (state.hiddenPowerUps.get(coordKey(gx, gy)) === "bulletBill") {
+      const darkBrick = ctx.createLinearGradient(x, y, x, y + TILE);
+      darkBrick.addColorStop(0, "#252b36");
+      darkBrick.addColorStop(1, "#070b12");
+      ctx.fillStyle = darkBrick;
+      ctx.fillRect(x + 3, y + 3, TILE - 6, TILE - 6);
+      ctx.strokeStyle = "#475569";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x + 5, y + 5, TILE - 10, TILE - 10);
+      ctx.fillStyle = "rgba(148, 163, 184, 0.18)";
+      ctx.fillRect(x + 9, y + 10, TILE - 18, 3);
+      ctx.fillRect(x + 9, y + 23, TILE - 18, 2);
+      ctx.fillRect(x + 9, y + 35, TILE - 18, 2);
+      ctx.lineWidth = 1;
       return;
     }
 
@@ -3315,17 +3401,22 @@
     ctx.imageSmoothingEnabled = false;
     ctx.translate(center.x, center.y - 2 + bob);
     ctx.rotate(rotation);
-    ctx.drawImage(
-      enemySprite,
-      BULLET_BILL_FRAME.sx,
-      BULLET_BILL_FRAME.sy,
-      BULLET_BILL_FRAME.sw,
-      BULLET_BILL_FRAME.sh,
-      -27,
-      -24,
-      54,
-      54
-    );
+    if (enemy.alertTimer > 0) {
+      if (!redBulletBillFrameReady) {
+        const redCtx = redBulletBillFrame.getContext("2d");
+        redCtx.drawImage(enemySprite, BULLET_BILL_FRAME.sx, BULLET_BILL_FRAME.sy,
+          BULLET_BILL_FRAME.sw, BULLET_BILL_FRAME.sh, 0, 0,
+          BULLET_BILL_FRAME.sw, BULLET_BILL_FRAME.sh);
+        redCtx.globalCompositeOperation = "source-atop";
+        redCtx.fillStyle = "rgba(238, 34, 45, 0.6)";
+        redCtx.fillRect(0, 0, BULLET_BILL_FRAME.sw, BULLET_BILL_FRAME.sh);
+        redBulletBillFrameReady = true;
+      }
+      ctx.drawImage(redBulletBillFrame, -27, -24, 54, 54);
+    } else {
+      ctx.drawImage(enemySprite, BULLET_BILL_FRAME.sx, BULLET_BILL_FRAME.sy,
+        BULLET_BILL_FRAME.sw, BULLET_BILL_FRAME.sh, -27, -24, 54, 54);
+    }
     ctx.restore();
   }
 
@@ -3404,6 +3495,18 @@
           drawMushroom(center, bob, enemy);
         }
         drawSleepMarks(center, enemy);
+        return;
+      }
+
+      if (enemy.type === "bullet-bill") {
+        ctx.save();
+        ctx.translate(center.x, center.y + bob);
+        ctx.rotate(({ left: 0, right: Math.PI, up: Math.PI / 2, down: -Math.PI / 2 })[enemy.dir] || 0);
+        ctx.fillStyle = enemy.alertTimer > 0 ? "#dc2626" : "#111827";
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 24, 15, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
         return;
       }
 
@@ -3922,6 +4025,9 @@
         moveTime: BULLET_BILL_MOVE_TIME,
         launchDelay: BULLET_BILL_LAUNCH_DELAY,
         hiddenCountPerLevel: bulletBillBrickCapacityForLevel(),
+        sightRange: BULLET_BILL_SIGHT_RANGE,
+        forgetTime: BULLET_BILL_FORGET_TIME,
+        droppedBombRange: BULLET_BILL_DROP_RANGE,
       },
       nightTime: isNightTime(),
       canvasWidth: canvas.width,

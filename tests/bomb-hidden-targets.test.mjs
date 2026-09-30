@@ -63,7 +63,7 @@ test("怪物清场保留导弹砖，五题仍全揭示；已揭示导弹不保�
       enemies: [{ alive: false }], enemyClearOpenedBricks: false,
       hiddenPowerUps: new Map(hiddenMissile ? [["5,0", "bulletBill"]] : []),
       hiddenWordCrates: new Map(words.map((word, x) => [coordKey(x, 0), word.id])),
-      powerUps: [], bombs: [], score: 0,
+      powerUps: [], bombs: [], explosions: [], score: 0,
     };
     const cleanup = new Function("state", "coordKey", `
       const ROWS = 1, COLS = 7, TILE_CRATE = 2, TILE_FLOOR = 0;
@@ -96,7 +96,7 @@ test("怪物清场保留导弹砖，五题仍全揭示；已揭示导弹不保�
 
 test("五题完成后仍需手动炸出隐藏导弹，且活导弹死亡后才过关", () => {
   const state = {
-    status: "playing", map: [[2]], bombs: [], moonWordIds: words.map(w => w.id),
+    status: "playing", map: [[2]], bombs: [], explosions: [], moonWordIds: words.map(w => w.id),
     hiddenPowerUps: new Map([["0,0", "bulletBill"]]), enemies: [{ alive: false }],
   };
   let advances = 0;

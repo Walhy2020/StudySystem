@@ -1,13 +1,23 @@
 # StudySystem cross-device handoff
 
-Last updated: 2026-09-29
+Last updated: 2026-09-30
 Repository: `https://github.com/Walhy2020/StudySystem.git`
 Branch: `main`
 Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.31** (2026-09-29). Book1's word card now follows
+System display version: **v1.0.32** (2026-09-30). Bomb maze now draws missile-bearing
+bricks black. A revealed Bullet Bill patrols black until it sees the player within
+eight cells along a clear line; it turns red and pursues, then returns to black
+after one second without sight. A mushroom attack that destroys it leaves a
+regular black bomb with range 10; missile contact with an existing player bomb
+still converts that bomb to red without increasing its range. The dropped bomb
+and blast finish before enemy-clear brick cleanup or level completion. Existing
+game saves remain compatible. Bomb JS cache: v2.20; all seven update-notifier
+queries are v1.0.32. Focused Edge check: `node tests/bullet-bill-browser.mjs`.
+
+Previous v1.0.31 (2026-09-29). Book1's word card now follows
 the Theme Learning interaction: word, clickable phonetic breakdown, meaning,
 manual speech and Previous/Next. The per-item ✓/×/★ controls and bottom Book1
 progress panel are gone. Practice alone does not add words to the shared library;

@@ -1,10 +1,12 @@
 import assert from "node:assert/strict";
+import { mkdir } from "node:fs/promises";
 import { loadChromium } from "./playwright-runtime.mjs";
 
 const chromium = await loadChromium();
 const baseUrl = process.env.HANZI_BASE_URL || "http://127.0.0.1:5177/";
 const bombUrl = baseUrl + "bomb-game.html?test=bullet-bill";
 const progressKey = "mario-bomb-game-progress-v1";
+await mkdir("tmp", { recursive: true });
 const browser = await chromium.launch({
   headless: true,
   executablePath: "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe",
@@ -63,11 +65,24 @@ try {
     moveTime: 0.28125,
     launchDelay: 1,
     hiddenCountPerLevel: 1,
+    sightRange: 8,
+    forgetTime: 1,
+    droppedBombRange: 10,
   });
   const firstLevelBills = initial.enemies.filter((enemy) => enemy.type === "bullet-bill" && enemy.alive);
   assert.equal(firstLevelBills.length, 0, "level 1-1 never opens with a visible Bullet Bill");
   assert.equal(initial.enemies.filter(enemy => enemy.alive && enemy.type === "mushroom").length, 1, "normal first-level mushroom is restored");
   assert.equal(initial.hiddenPowerUps.filter(([, type]) => type === "bulletBill").length, 1, "exactly one missile starts hidden inside a brick");
+  const [initialBrickKey] = initial.hiddenPowerUps.find(([, type]) => type === "bulletBill");
+  const [initialBrickX, initialBrickY] = initialBrickKey.split(",").map(Number);
+  const hiddenBrickColor = await page.evaluate(({ gx, gy }) => {
+    const canvas = document.querySelector("#bombCanvas");
+    const layout = window.__BOMB_GAME__.getLevelLayout();
+    const x = (canvas.width - layout.boardWidth) / 2 + gx * layout.tile + layout.tile / 2;
+    const y = 108 + gy * layout.tile + layout.tile / 2;
+    return [...canvas.getContext("2d").getImageData(x, y, 1, 1).data];
+  }, { gx: initialBrickX, gy: initialBrickY });
+  assert.ok(hiddenBrickColor.slice(0, 3).every(channel => channel < 75), "hidden missile brick is visibly black");
   await page.locator("#overlayStartBombGame").click();
   await page.waitForTimeout(1200);
   const runningStart = await page.evaluate(() => window.__BOMB_GAME__.getState());
@@ -215,6 +230,8 @@ try {
   assert.equal(persistentChaser.explosions.length, 0, "no distance-triggered explosion");
 
   const turnFixture = structuredClone(chaseFixture);
+  turnFixture.player.gx = 5;
+  turnFixture.player.trail = [{ gx: 5, gy: 5 }];
   delete turnFixture.enemies[0].launchDelay;
   turnFixture.enemies[0].dir = "up";
   turnFixture.enemies[0].turnPause = 0.45;
@@ -230,6 +247,55 @@ try {
     return samples;
   });
   assert.ok(turningFrames.every(frame => frame.dir === "right" && frame.duration === 0.28125 && frame.turnPause === 0), "turning/restoring never inserts a pause or slowdown");
+
+  const visibleFixture = structuredClone(chaseFixture);
+  visibleFixture.player.gx = 6;
+  visibleFixture.player.trail = [{ gx: 6, gy: 5 }];
+  await restoreSnapshot(visibleFixture);
+  await page.waitForFunction(() => window.__BOMB_GAME__.getState().enemies[0].alertTimer > 0);
+  const alerted = await page.evaluate(() => window.__BOMB_GAME__.getState().enemies[0]);
+  assert.equal(alerted.lastSeen.gx, 6, "clear eight-cell sight locks onto player");
+  await page.screenshot({ path: "tmp/bullet-bill-alert-red-1440.png", fullPage: true });
+  const obscuredFixture = structuredClone(visibleFixture);
+  obscuredFixture.map[5][3] = 1;
+  obscuredFixture.enemies[0].alertTimer = 1;
+  obscuredFixture.enemies[0].lastSeen = { gx: 6, gy: 5 };
+  await restoreSnapshot(obscuredFixture);
+  await page.waitForTimeout(350);
+  const stillAlert = await page.evaluate(() => window.__BOMB_GAME__.getState().enemies[0]);
+  assert.ok(stillAlert.alertTimer > 0 && stillAlert.lastSeen?.gx === 6, "missile remains red during one-second lost-sight grace");
+  await page.waitForFunction(() => window.__BOMB_GAME__.getState().enemies[0].alertTimer === 0);
+  const forgotten = await page.evaluate(() => window.__BOMB_GAME__.getState().enemies[0]);
+  assert.equal(forgotten.lastSeen, null, "missile returns to black patrol after one second out of sight");
+  await page.screenshot({ path: "tmp/bullet-bill-patrol-black-1440.png", fullPage: true });
+
+  const hitFixture = structuredClone(visibleFixture);
+  hitFixture.player = { gx: 1, gy: 3, move: null, invulnerable: 20, trail: [{ gx: 1, gy: 3 }] };
+  hitFixture.enemies[0].gx = 5;
+  hitFixture.enemies[0].gy = 5;
+  hitFixture.enemies[0].launchDelay = 1;
+  hitFixture.enemies[0].alertTimer = 0;
+  hitFixture.enemies[0].lastSeen = null;
+  hitFixture.map[5][8] = 2;
+  hitFixture.map[5][9] = 2;
+  hitFixture.mushroomShots = [{ gx: 4, gy: 5, direction: "right", steps: 0, progress: 0.08, range: 5 }];
+  hitFixture.enemyClearOpenedBricks = false;
+  await restoreSnapshot(hitFixture);
+  await page.waitForFunction(() => window.__BOMB_GAME__.getState().bombs.some(bomb => bomb.fromBulletBill));
+  const dropped = await page.evaluate(() => window.__BOMB_GAME__.getState());
+  assert.equal(dropped.enemies[0].alive, false, "mushroom attack removes missile");
+  assert.equal(dropped.bombs.length, 1, "attacked missile leaves exactly one bomb");
+  assert.equal(dropped.bombs[0].range, 10, "dropped bomb has power ten");
+  assert.equal(dropped.bombs[0].isRed, undefined, "attack drop does not alter player-bomb conversion rule");
+  assert.equal(dropped.map[5][8], 2, "enemy-clear cleanup waits for dropped bomb");
+  await page.reload();
+  await page.waitForFunction(() => window.__BOMB_GAME__?.isAwaitingContinue());
+  assert.equal((await page.evaluate(() => window.__BOMB_GAME__.getState())).bombs[0].range, 10, "dropped bomb survives reload");
+  await page.locator("#overlayStartBombGame").click();
+  await page.waitForFunction(() => window.__BOMB_GAME__.getState().explosions.some(blast => blast.fromBulletBill));
+  const droppedBlast = await page.evaluate(() => window.__BOMB_GAME__.getState().explosions.find(blast => blast.fromBulletBill).cells);
+  assert.ok(droppedBlast.some(cell => cell.gx === 8 && cell.gy === 5), "power-ten blast reaches the brick");
+  assert.ok(!droppedBlast.some(cell => cell.gx === 9 && cell.gy === 5), "brick stops the blast");
 
   const collisionFixture = structuredClone(chaseFixture);
   delete collisionFixture.enemies[0].launchDelay;
@@ -265,7 +331,7 @@ try {
     preview.startLayerHidden = true;
     preview.bombs.push({ gx: 7, gy: 5, time: 0, range: 3, ownerInside: false, exploded: false });
     await restoreSnapshot(preview, false);
-    await page.screenshot({ path: `tests/bullet-bill-red-bomb-${width}.png`, fullPage: true });
+    await page.screenshot({ path: `tmp/bullet-bill-red-bomb-${width}.png`, fullPage: true });
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
   }
 
@@ -309,7 +375,7 @@ try {
       await page.keyboard.press("Enter");
     }
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
-    await page.screenshot({ path: `tests/bullet-bill-retained-brick-${width}.png`, fullPage: true });
+    await page.screenshot({ path: `tmp/bullet-bill-retained-brick-${width}.png`, fullPage: true });
     await page.locator("#bombCanvas").focus();
     await page.keyboard.press("Space");
     await page.waitForFunction(() => window.__BOMB_GAME__.getState().bombs.length === 1);
@@ -330,7 +396,7 @@ try {
     await restoreSnapshot(visualFixture, false);
     assert.equal((await page.evaluate(() => window.__BOMB_GAME__.getState())).enemies.some(enemy => enemy.type === "bullet-bill" && enemy.alive), false);
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `${width}px has no horizontal overflow`);
-    await page.screenshot({ path: `tests/bullet-bill-${width}.png`, fullPage: true });
+    await page.screenshot({ path: `tmp/bullet-bill-${width}.png`, fullPage: true });
   }
   const spriteStatus = await page.evaluate(() => fetch("./assets/sprites/enemies-bosses.png").then((response) => response.status));
   assert.equal(spriteStatus, 200, "Bullet Bill sprite sheet is served successfully");
@@ -348,6 +414,9 @@ try {
     linearMotionSamples: motionSamples.length,
     constantSpeedAndInstantTurns: true,
     survivesBeyondTenCells: true,
+    blackMissileBrick: hiddenBrickColor,
+    redSightAndOneSecondForget: true,
+    attackDropsPowerTenBomb: true,
     spriteFrame: constants.frame,
     desktopAndMobile: true,
   }, null, 2));

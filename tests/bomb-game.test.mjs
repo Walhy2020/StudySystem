@@ -35,7 +35,7 @@ const calculateLayout = new Function(
 
 assert.match(html, /<canvas id="bombCanvas" width="1280" height="720"/);
 assert.ok(html.includes('bomb-game.css?v=1.3'));
-assert.ok(html.includes('bomb-game.js?v=2.19'));
+assert.ok(html.includes('bomb-game.js?v=2.20'));
 assert.ok(html.includes('id="bombAttackToggle"'));
 assert.ok(html.includes('id="mushroomThrowDistance"'));
 assert.ok(js.includes('const MUSHROOM_THROW_STEP_TIME = 0.09;'));
@@ -177,7 +177,10 @@ assert.ok(!js.includes("BULLET_BILL_SPAWN_CHANCE"));
 assert.ok(!js.includes("BULLET_BILL_TEST_FIRST_LEVEL"));
 assert.ok(js.includes('if (hiddenType === "bulletBill")'));
 assert.ok(js.includes('type: "bullet-bill",'));
-assert.ok(js.includes("function chooseBulletBillDirection(enemy)"));
+assert.ok(js.includes("function chooseBulletBillDirection(enemy, target = enemy.lastSeen)"));
+assert.ok(js.includes("const BULLET_BILL_SIGHT_RANGE = 8;"));
+assert.ok(js.includes("const BULLET_BILL_FORGET_TIME = 1;"));
+assert.ok(js.includes("const BULLET_BILL_DROP_RANGE = 10;"));
 assert.ok(js.includes("function convertBombTouchedByBulletBill(enemy)"));
 assert.ok(js.includes('if (enemy.type === "bullet-bill") return;'));
 assert.ok(!js.includes("function explodeBulletBill("));

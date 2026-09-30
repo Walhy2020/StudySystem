@@ -7,7 +7,22 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.35** (2026-09-30). Bowser has 50 HP and fires along
+System display version: **v1.0.36** (2026-09-30). Small mushrooms deal one damage
+without adding stun, snapping the enemy to a cell or cancelling its movement; ice
+freezing and special-bomb stun remain unchanged. Bowser starts with 40 HP and his
+cooldown ring (background, progress and ready state) is green. Old 50/15-HP saves
+rebalance once with bowserRulesVersion=2, preserving damage already dealt (living
+Bowsers retain at least one HP); dead Bowsers stay dead. Ice upgrades, level and
+learning progress are unchanged. Bomb JS cache: v2.24; update-notifier queries on
+all seven pages: v1.0.36. Focused checks: tests/bomb-damage.test.mjs and
+`node tests/bomb-bowser-browser.mjs` (1440/390, ignored tmp screenshots).
+
+Verified: one-damage mushroom hits preserve movement, freeze and firing cooldown;
+green-ring rendering, 40-HP new games, 15/50-HP save migration without repeat healing,
+and the existing autonomous firing/brick-opening behavior passed at both widths.
+No unrelated module browser checks were run; existing tracked screenshots remain untouched.
+
+Previous v1.0.35 (2026-09-30). Bowser has 50 HP and fires along
 his current facing every three seconds without a player-visibility requirement.
 Fireballs open the first crate hit, revealing its original contents, and stop there;
 hard walls/bombs still block them. Bowser keeps roaming and can leave an enclosure

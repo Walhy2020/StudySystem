@@ -343,7 +343,7 @@
     return {
       version: BOMB_PROGRESS_VERSION,
       combatRulesVersion: COMBAT_RULES_VERSION,
-      bowserRulesVersion: 1,
+      bowserRulesVersion: 2,
       progressSessionId,
       targetRevealPolicy: 1,
       savedAt: Date.now(),
@@ -585,11 +585,12 @@
     state.hiddenPowerUps = new Map(Array.isArray(saved.hiddenPowerUps) ? saved.hiddenPowerUps : []);
     state.hiddenWordCrates = new Map(Array.isArray(saved.hiddenWordCrates) ? saved.hiddenWordCrates : []);
     migrateCombatRules(saved);
-    if (saved.combatRulesVersion === COMBAT_RULES_VERSION && saved.bowserRulesVersion !== 1) {
-      // Upgrade existing living Bowsers once, preserving damage already dealt and dead enemies.
+    if (saved.combatRulesVersion === COMBAT_RULES_VERSION && saved.bowserRulesVersion !== 2) {
+      // Rebalance living Bowsers once without resetting damage or resurrecting dead enemies.
+      const oldMax = saved.bowserRulesVersion === 1 ? 50 : 15;
       state.enemies.forEach(enemy => {
         if (enemy.type === "bowser" && enemy.alive) {
-          enemy.hp = 50 - (15 - clamp(Number(enemy.hp) || 15, 1, 15));
+          enemy.hp = Math.max(1, 40 - (oldMax - clamp(Number(enemy.hp) || oldMax, 1, oldMax)));
         }
       });
     }
@@ -656,7 +657,7 @@
     state.enemies.forEach(enemy => {
       if (!enemy.alive || enemy.type === "bullet-bill") return;
       const oldMax = enemy.type === "bowser" ? 2 : 1;
-      const newMax = enemy.type === "bowser" ? 50 : 3;
+      const newMax = enemy.type === "bowser" ? 40 : 3;
       enemy.hp = Math.max(1, newMax - Math.max(0, oldMax - (Number(enemy.hp) || oldMax)));
       enemy.freezeTimer = 0;
       enemy.fireCooldown = BOWSER_FIRE_COOLDOWN;
@@ -1356,7 +1357,7 @@
     const enemies = starts.slice(0, enemyCount).map((start, index) => ({
       id: index + 1,
       type: index === bowserStartIndex ? "bowser" : "mushroom",
-      hp: index === bowserStartIndex ? 50 : 3,
+      hp: index === bowserStartIndex ? 40 : 3,
       freezeTimer: 0,
       fireCooldown: BOWSER_FIRE_COOLDOWN,
       gx: index === bowserStartIndex ? bowserStart.gx : start.gx,
@@ -3040,10 +3041,14 @@
       return;
     }
 
+    if (mushroomHit) {
+      setMessage(enemy.type === "bowser" ? "库巴 -1" : "敌人 -1");
+      return;
+    }
     enemy.gx = Math.round(enemy.gx);
     enemy.gy = Math.round(enemy.gy);
     enemy.move = null;
-    enemy.stunTimer = mushroomHit ? 0.18 : TOUGH_ENEMY_STUN_TIME;
+    enemy.stunTimer = TOUGH_ENEMY_STUN_TIME;
     spawnParticles("stun", enemy.gx, enemy.gy);
     setMessage(enemy.type === "bowser" ? "库巴眩晕" : "敌人眩晕");
   }
@@ -3761,11 +3766,11 @@
       if (enemy.type === "bowser") {
         const remaining = clamp((Number(enemy.fireCooldown) || 0) / BOWSER_FIRE_COOLDOWN, 0, 1);
         ctx.lineWidth = 4;
-        ctx.strokeStyle = "rgba(255,255,255,0.55)";
+        ctx.strokeStyle = "rgba(34,197,94,0.4)";
         ctx.beginPath();
         ctx.arc(center.x, center.y - 44, 10, 0, Math.PI * 2);
         ctx.stroke();
-        ctx.strokeStyle = remaining > 0 ? "#fb923c" : "#fef08a";
+        ctx.strokeStyle = remaining > 0 ? "#22c55e" : "#86efac";
         ctx.beginPath();
         ctx.arc(center.x, center.y - 44, 10, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (1 - remaining));
         ctx.stroke();

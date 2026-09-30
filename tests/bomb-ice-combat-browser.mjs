@@ -37,7 +37,7 @@ try {
     const seed = await read();
     assert.deepEqual([seed.bombLimit, seed.flameRange, seed.mushroomKey, seed.iceBombKey], [1, 2, "Space", "KeyB"]);
     for (const type of ["iceFlower", "iceBomb"]) assert.equal(seed.hiddenPowerUps.filter(([, t]) => t === type).length, 1);
-    assert.equal(seed.enemies.find(e => e.type === "bowser").hp, 15);
+    assert.equal(seed.enemies.find(e => e.type === "bowser").hp, 50);
     assert.ok(seed.enemies.filter(e => e.type !== "bowser").every(e => e.hp === 3));
     if (width === 390) await page.locator("#bombAttackToggle").tap();
     else await page.locator("#bombAttackToggle").click();
@@ -73,9 +73,9 @@ try {
       assert.equal(await page.evaluate(() => window.__BOMB_GAME__.isAwaitingContinue()), true);
       await page.locator("#overlayStartBombGame").click(); await page.locator("#bombCanvas").focus();
     }
-    for (const hp of [3, 2, 1, 15]) {
+    for (const hp of [3, 2, 1, 50]) {
       const shot = structuredClone(fixture); shot.enemies[0].hp = hp;
-      if (hp === 15) shot.enemies[0].type = "bowser";
+      if (hp === 50) shot.enemies[0].type = "bowser";
       await load(shot); await page.keyboard.press("Space"); await advance(0.2);
       assert.equal((await read()).enemies[0].hp, hp - 1);
       assert.equal((await read()).enemies[0].alive, hp > 1);
@@ -108,7 +108,7 @@ try {
     await screenshot("ice-flower");
     const fire = structuredClone(fixture); fire.player.gx = 4;
     fire.enemies = [{ ...seed.enemies.find(e => e.type === "bowser"), gx: 2, gy: 3,
-      dir: "right", hp: 15, stunTimer: 0, fireCooldown: 3, freezeTimer: 0,
+      dir: "right", hp: 50, stunTimer: 0, fireCooldown: 3, freezeTimer: 0,
       move: { fromX: 2, fromY: 3, toX: 2, toY: 3, time: 0, duration: 1000 } }];
     await load(fire); await advance(2.9); assert.equal((await read()).fireballs.length, 0);
     await advance(0.15); assert.equal((await read()).fireballs.length, 1);
@@ -120,7 +120,8 @@ try {
     assert.equal((await read()).fireballs.length, 1, "a second shot fires at the next three-second interval");
     assert.ok((await read()).enemies[0].fireCooldown > 2.8);
     const wall = structuredClone(fire); wall.map[3][3] = 2;
-    await load(wall); await advance(3.2); assert.equal((await read()).fireballs.length, 0);
+    await load(wall); await advance(3.25);
+    assert.equal((await read()).map[3][3], 0, "Bowser shoots and breaks a brick even without seeing the player");
     const old = structuredClone(fixture); delete old.combatRulesVersion;
     old.bombLimit = 3; old.flameRange = 1; old.enemies[0].hp = 1;
     old.map[6][6] = 2; old.map[6][7] = 2;
@@ -131,7 +132,7 @@ try {
     assert.deepEqual(migrated.moonWordIds, old.moonWordIds);
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     assert.deepEqual(errors, []);
-    results.push({ width, dualKeys: true, iceFreeze: 3, enemyHp: 3, bowserHp: 15,
+    results.push({ width, dualKeys: true, iceFreeze: 3, enemyHp: 3, bowserHp: 50,
       capacity: 1, range: 2, eachItem: 1, fireCooldown: 3, migration: true });
     await context.close();
   }

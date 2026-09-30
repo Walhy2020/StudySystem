@@ -7,7 +7,22 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.34** (2026-09-30). Bomb maze supports both attacks
+System display version: **v1.0.35** (2026-09-30). Bowser has 50 HP and fires along
+his current facing every three seconds without a player-visibility requirement.
+Fireballs open the first crate hit, revealing its original contents, and stop there;
+hard walls/bombs still block them. Bowser keeps roaming and can leave an enclosure
+after his fireball opens a path. Freeze and Continue still pause him. Existing live
+15-HP Bowsers are upgraded once by adding 35 HP, preserving damage already dealt;
+dead Bowsers remain dead and player ice upgrades/learning progress are unchanged.
+Snapshot bowserRulesVersion=1 prevents repeat healing. Bomb JS cache: v2.23;
+all seven update-notifier queries: v1.0.35. Focused Edge check:
+`node tests/bomb-bowser-browser.mjs` (1440/390, ignored tmp screenshots).
+Verified: autonomous/repeated firing with player out of sight, first-brick blocking
+and contents reveal, roaming into the opened path, freeze/Continue pauses, hard-wall
+blocking, HP upgrade without repeated healing or resurrection, and no page/resource
+errors at both widths. Only this focused browser check was run for the release.
+
+Previous v1.0.34 (2026-09-30). Bomb maze supports both attacks
 at once: configurable Space for small mushrooms (damage 1), B for player ice bombs.
 Initial ice-bomb capacity/range are 1/2. Ice bursts open crates and freeze enemies for
 three seconds without damaging the player or enemy HP; frozen enemies cannot move,

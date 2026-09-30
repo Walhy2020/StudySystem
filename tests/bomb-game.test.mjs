@@ -35,7 +35,7 @@ const calculateLayout = new Function(
 
 assert.match(html, /<canvas id="bombCanvas" width="1280" height="720"/);
 assert.ok(html.includes('bomb-game.css?v=1.4'));
-assert.ok(html.includes('bomb-game.js?v=2.22'));
+assert.ok(html.includes('bomb-game.js?v=2.23'));
 assert.ok(html.includes('id="bombAttackToggle"'));
 assert.ok(html.includes('id="mushroomThrowDistance"'));
 assert.ok(js.includes('const MUSHROOM_THROW_STEP_TIME = 0.09;'));
@@ -174,7 +174,7 @@ assert.ok(js.includes('if (isNightTime() && enemy.type !== "koopa-green")'));
 assert.ok(js.includes('if (!isNightTime() || enemy.type === "koopa-green" || enemy.type === "bullet-bill") return;'));
 assert.match(js, /function isNightTime\(\) \{\s+return false;\s+\}/);
 assert.ok(js.includes('type: index === bowserStartIndex ? "bowser" : "mushroom",'));
-assert.ok(js.includes("hp: index === bowserStartIndex ? 15 : 3,"));
+assert.ok(js.includes("hp: index === bowserStartIndex ? 50 : 3,"));
 assert.ok(js.includes('state.subLevel + 4 + (state.world - FIRST_WORLD) * 2'));
 assert.ok(js.includes('bowserCandidates[Math.floor(Math.random() * bowserCandidates.length)]'));
 assert.ok(js.includes('type: "koopa-green",'));

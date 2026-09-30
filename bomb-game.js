@@ -343,6 +343,7 @@
     return {
       version: BOMB_PROGRESS_VERSION,
       combatRulesVersion: COMBAT_RULES_VERSION,
+      bowserRulesVersion: 1,
       progressSessionId,
       targetRevealPolicy: 1,
       savedAt: Date.now(),
@@ -584,6 +585,14 @@
     state.hiddenPowerUps = new Map(Array.isArray(saved.hiddenPowerUps) ? saved.hiddenPowerUps : []);
     state.hiddenWordCrates = new Map(Array.isArray(saved.hiddenWordCrates) ? saved.hiddenWordCrates : []);
     migrateCombatRules(saved);
+    if (saved.combatRulesVersion === COMBAT_RULES_VERSION && saved.bowserRulesVersion !== 1) {
+      // Upgrade existing living Bowsers once, preserving damage already dealt and dead enemies.
+      state.enemies.forEach(enemy => {
+        if (enemy.type === "bowser" && enemy.alive) {
+          enemy.hp = 50 - (15 - clamp(Number(enemy.hp) || 15, 1, 15));
+        }
+      });
+    }
     state.todayNewWords = plainArray(saved.todayNewWords).map((word) => wordById(word.id)).filter(Boolean);
     state.bombRunWordIds = plainArray(saved.bombRunWordIds);
     state.bombWordCursor = Math.max(0, Number(saved.bombWordCursor) || 0);
@@ -647,7 +656,7 @@
     state.enemies.forEach(enemy => {
       if (!enemy.alive || enemy.type === "bullet-bill") return;
       const oldMax = enemy.type === "bowser" ? 2 : 1;
-      const newMax = enemy.type === "bowser" ? 15 : 3;
+      const newMax = enemy.type === "bowser" ? 50 : 3;
       enemy.hp = Math.max(1, newMax - Math.max(0, oldMax - (Number(enemy.hp) || oldMax)));
       enemy.freezeTimer = 0;
       enemy.fireCooldown = BOWSER_FIRE_COOLDOWN;
@@ -1347,7 +1356,7 @@
     const enemies = starts.slice(0, enemyCount).map((start, index) => ({
       id: index + 1,
       type: index === bowserStartIndex ? "bowser" : "mushroom",
-      hp: index === bowserStartIndex ? 15 : 3,
+      hp: index === bowserStartIndex ? 50 : 3,
       freezeTimer: 0,
       fireCooldown: BOWSER_FIRE_COOLDOWN,
       gx: index === bowserStartIndex ? bowserStart.gx : start.gx,
@@ -2265,13 +2274,10 @@
 
   function updateBowserFire(enemy, dt) {
     enemy.fireCooldown = Math.max(0, (Number(enemy.fireCooldown) || 0) - dt);
-    if (enemy.fireCooldown > 0 || !canEnemySeePlayer(enemy)) return;
-    const dx = state.player.gx - enemy.gx;
-    const dy = state.player.gy - enemy.gy;
-    const distance = Math.hypot(dx, dy);
-    if (distance < 0.1) return;
+    if (enemy.fireCooldown > 0) return;
+    const direction = DIRS[enemy.dir] || DIRS.left;
     state.fireballs.push({ gx: enemy.gx, gy: enemy.gy,
-      vx: dx / distance * FIREBALL_SPEED, vy: dy / distance * FIREBALL_SPEED, life: 5 });
+      vx: direction.x * FIREBALL_SPEED, vy: direction.y * FIREBALL_SPEED, life: 5 });
     enemy.fireCooldown = BOWSER_FIRE_COOLDOWN;
     saveBombProgress();
   }
@@ -2286,7 +2292,12 @@
         ball.gy += ball.vy * dt / steps;
         const gx = Math.round(ball.gx);
         const gy = Math.round(ball.gy);
-        if (!isInside(gx, gy) || state.map[gy][gx] !== TILE_FLOOR || bombAt(gx, gy)) return false;
+        if (!isInside(gx, gy) || state.map[gy][gx] === TILE_HARD || bombAt(gx, gy)) return false;
+        if (state.map[gy][gx] === TILE_CRATE) {
+          openCrateCell(gx, gy);
+          updateHud();
+          return false;
+        }
         if (Math.hypot(ball.gx - state.player.gx, ball.gy - state.player.gy) < 0.58) {
           damagePlayer("monster");
           return false;

@@ -567,10 +567,7 @@
     state.bombs = plainArray(saved.bombs);
     state.fireballs = plainArray(saved.fireballs).filter(ball =>
       [ball.gx, ball.gy, ball.vx, ball.vy, ball.life].every(Number.isFinite) && ball.life > 0);
-    state.mushroomShots = plainArray(saved.mushroomShots).filter((shot) =>
-      Object.hasOwn(DIRS, shot?.direction) && Number.isInteger(shot.gx) && Number.isInteger(shot.gy) &&
-      isInside(shot.gx, shot.gy) && Number.isFinite(shot.progress) && Number.isInteger(shot.steps) &&
-      Number.isInteger(shot.range) && shot.range >= MIN_THROW_DISTANCE && shot.range <= MAX_THROW_DISTANCE);
+    state.mushroomShots = plainArray(saved.mushroomShots).filter(isActiveMushroomShot);
     state.explosions = plainArray(saved.explosions);
     state.particles = plainArray(saved.particles);
     state.powerUps = plainArray(saved.powerUps);
@@ -1926,9 +1923,18 @@
     saveBombProgress();
   }
 
+  function isActiveMushroomShot(shot) {
+    return Boolean(shot && !shot.done && Object.hasOwn(DIRS, shot.direction) &&
+      Number.isInteger(shot.gx) && Number.isInteger(shot.gy) && isInside(shot.gx, shot.gy) &&
+      Number.isFinite(shot.progress) && shot.progress >= 0 && shot.progress < MUSHROOM_THROW_STEP_TIME &&
+      Number.isInteger(shot.range) && shot.range >= MIN_THROW_DISTANCE && shot.range <= MAX_THROW_DISTANCE &&
+      Number.isInteger(shot.steps) && shot.steps >= 0 && shot.steps < shot.range);
+  }
+
   function throwMushroom() {
     if (state.status !== "playing") return;
-    if (state.mushroomShots.length >= 3) return;
+    // Mushrooms have no ammunition limit. Existing projectiles must not swallow a fresh press.
+    state.mushroomShots = state.mushroomShots.filter(isActiveMushroomShot);
     const direction = Object.hasOwn(DIRS, lastDirection) ? lastDirection : "right";
     state.mushroomShots.push({
       gx: Math.round(state.player.gx),
@@ -1960,6 +1966,7 @@
   }
 
   function updateMushroomShots(dt) {
+    state.mushroomShots = state.mushroomShots.filter(isActiveMushroomShot);
     for (const shot of state.mushroomShots) {
       if (shot.done) continue;
       shot.progress += dt;

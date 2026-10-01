@@ -1,13 +1,28 @@
 # StudySystem cross-device handoff
 
-Last updated: 2026-09-30
+Last updated: 2026-10-01
 Repository: `https://github.com/Walhy2020/StudySystem.git`
 Branch: `main`
 Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.36** (2026-09-30). Small mushrooms deal one damage
+System display version: **v1.0.37** (2026-10-01). Removed the three-in-flight
+mushroom limit that silently swallowed fresh attack presses. Restored and live
+projectile queues now reject completed/expired or invalid shots (including negative
+progress/steps). No key reset, ammunition/HP rebalance or automatic held-key firing;
+level, learning progress and ice upgrades remain intact. Bomb JS cache: v2.25;
+all seven update-notifier queries: v1.0.37. Focused checks:
+tests/bomb-mushroom-input.test.mjs and tests/bomb-mushroom-input-browser.mjs.
+
+Real Edge checks at 1440/390 cover all three avatars, five consecutive throws,
+independent ice-bomb use, paused refresh/Continue, shot cleanup, remapped keys,
+native focused-control protection, one-damage hits and brick opening. Existing
+tracked screenshots remain untouched. The user's exact browser snapshot could
+not be inspected; the cap defect was reproduced, and malformed restored shots
+were covered with an isolated synthetic fixture rather than claimed as user data.
+
+Previous v1.0.36 (2026-09-30). Small mushrooms deal one damage
 without adding stun, snapping the enemy to a cell or cancelling its movement; ice
 freezing and special-bomb stun remain unchanged. Bowser starts with 40 HP and his
 cooldown ring (background, progress and ready state) is green. Old 50/15-HP saves

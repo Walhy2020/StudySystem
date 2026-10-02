@@ -7,7 +7,22 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.38** (2026-10-02). Added independent Pinyin before
+System display version: **v1.0.39** (2026-10-02). Pinyin new-learning now follows
+catalog order: initials, finals, whole syllables. Fresh rounds start screening from
+the catalog beginning (still skip mastered); pending daily items are chosen by
+catalog position rather than RNG or saved dailyNewIds array order. Old active
+new-learning snapshots resume the first unfinished item without resetting marks.
+Review and explicit inline selection remain unchanged. Pinyin engine/app caches:
+v1.1; all eight notifier queries: v1.0.39. Focused checks:
+tests/pinyin.test.mjs and tests/pinyin-order-browser.mjs.
+
+Verified: syntax, 154 Node tests and whitespace checks passed. Focused real Edge
+checks at 1440/390 forced RNG=0.999, verified screening and new learning b/p/m,
+reordered an old m-first/shuffled snapshot, retained completed b on refresh,
+explicit completion and mastered skips. No other module browser suites were run;
+existing screenshots and progress remain untouched.
+
+Previous v1.0.38 (2026-10-02). Added independent Pinyin before
 Hanzi in the shared navigation. The 63 targets are 23 initials, 24 finals and 16
 whole syllables. Each card displays one standalone spelling, with no Hanzi,
 spelling examples or word associations. The existing IPA engine/storage policy is

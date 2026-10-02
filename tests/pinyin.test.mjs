@@ -32,6 +32,7 @@ test("拼音筛选63项各一遍后停止，全勾也能确认学习完毕且刷
   let value = make(storage.load()); value.startDaily(); const seen = new Set();
   for (let i = 0; i < 63; i++) {
     const current = value.currentWord(); assert.ok(current); assert.ok(!seen.has(current.id));
+    assert.equal(current.id, PINYIN_ITEMS[i].id, "screening follows the entire catalog including category boundaries");
     seen.add(current.id); value.correct(); storage.save(value.state); value = make(storage.load());
   }
   assert.equal(value.currentWord(), null);
@@ -88,7 +89,47 @@ test("六个学习页拼音导航在汉字前，页面含独立版本与资源",
     assert.ok(html.includes("module-navigation.css?v=1.0"), page);
   }
   const html = readFileSync(new URL("../pinyin.html", import.meta.url), "utf8");
-  assert.ok(html.includes("pinyin-app.js?v=1.0")); assert.ok(html.includes("pinyin.css?v=1.0"));
+  assert.ok(html.includes("pinyin-app.js?v=1.1")); assert.ok(html.includes("pinyin.css?v=1.0"));
   assert.equal((html.match(/id="pinyinSymbol"/g) || []).length, 1);
   assert.ok(!html.includes("phonetic-examples"));
+});
+
+test("新拼音从教材开头筛选，学习按目录而非随机/存档列表顺序，刷新保留完成记录", () => {
+  for (const random of [0, 0.5, 0.999]) {
+    const value = new PinyinEngine(createInitialState(date, 63), PINYIN_ITEMS, { date, rng: () => random });
+    value.state.scanCursor = 40;
+    value.startDaily();
+    assert.equal(value.currentWord().symbol, "b");
+    for (let i = 0; i < 3; i++) value.wrong();
+    assert.equal(value.currentWord().symbol, "b");
+    const saved = structuredClone(value.state);
+    saved.dailyNewIds.reverse(); saved.activeWordId = saved.dailyNewIds[0];
+    let restored = new PinyinEngine(saved, PINYIN_ITEMS, { date, rng: () => { throw new Error("new learning must not use random"); } });
+    for (const symbol of ["b", "p", "m"]) {
+      assert.equal(restored.currentWord().symbol, symbol);
+      restored.correct();
+      restored = new PinyinEngine(structuredClone(restored.state), PINYIN_ITEMS, { date, rng: () => { throw new Error("new learning must not use random"); } });
+    }
+    assert.equal(restored.currentWord(), null);
+    assert.equal(restored.canFinishNewLearning(), true);
+  }
+});
+
+test("新学习跨分类仍按目录，跳过已完成或mastered，不改变复习抽取", () => {
+  for (const symbols of [["w", "a", "o"], ["ong", "zhi", "chi"], ["yuan", "yin", "yun"]]) {
+    const saved = createInitialState(date, 63);
+    saved.dailyTaskStarted = true; saved.dailyPhase = PHASE.NEW_LEARNING;
+    saved.dailyNewIds = symbols.map(symbol => PINYIN_ITEMS.find(item => item.symbol === symbol).id).reverse();
+    const value = make(saved);
+    for (const symbol of symbols) { assert.equal(value.currentWord().symbol, symbol); value.correct(); }
+    assert.equal(value.canFinishNewLearning(), true);
+  }
+  const value = make(); value.startDaily(); value.master();
+  value.state.scanCursor = 40; value.startDaily();
+  assert.equal(value.currentWord().symbol, "p", "mastered b is skipped from the catalog start");
+  let randomCalls = 0;
+  const review = new PinyinEngine(createInitialState(date, 63), PINYIN_ITEMS,
+    { date, rng: () => { randomCalls++; return 0.999; } });
+  review.startReview(); assert.equal(randomCalls, 1, "review keeps its existing selection policy");
+  assert.equal(review.state.dailyReviewIds.length, 63);
 });

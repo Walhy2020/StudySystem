@@ -1,13 +1,34 @@
 # StudySystem cross-device handoff
 
-Last updated: 2026-10-01
+Last updated: 2026-10-02
 Repository: `https://github.com/Walhy2020/StudySystem.git`
 Branch: `main`
 Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.37** (2026-10-01). Removed the three-in-flight
+System display version: **v1.0.38** (2026-10-02). Added independent Pinyin before
+Hanzi in the shared navigation. The 63 targets are 23 initials, 24 finals and 16
+whole syllables. Each card displays one standalone spelling, with no Hanzi,
+spelling examples or word associations. The existing IPA engine/storage policy is
+reused with independent Pinyin catalog/state and mario-pinyin-v1 only: screening,
+one-pass learning plus explicit completion, full non-mastered review, wrong-item
+repair, inline review, refresh restoration and own-only reset. No IPA/Hanzi engine
+implementation was changed. No inaccurate Hanzi/English TTS proxy was added.
+New Pinyin/data/app/CSS resources use v1.0; all eight notifier queries use v1.0.38.
+module-navigation.css?v=1.0 keeps seven labels on a horizontal scroll row at narrow
+widths. Focused checks: tests/pinyin.test.mjs and tests/pinyin-browser-acceptance.mjs.
+
+Verified: pnpm check, 152 Node tests and whitespace checks passed. Real Microsoft
+Edge at 1440/390 covered all 63 target geometries, single-item/no-example cards,
+mouse/touch/native Enter controls, screening/new-learning completion without a
+second lap, active/completed refresh restoration, full 63-item review, immediate
+mastered exclusion and zero-item completion, own-only reset/storage, HTTP resources
+and no page errors/overflow. Only navigation was checked on the six existing
+learning pages; their learning/gameplay browser suites were not run. Ignored tmp/
+screenshots (yuan, ü and completion) were inspected; tracked screenshots preserved.
+
+Previous v1.0.37 (2026-10-01). Removed the three-in-flight
 mushroom limit that silently swallowed fresh attack presses. Restored and live
 projectile queues now reject completed/expired or invalid shots (including negative
 progress/steps). No key reset, ammunition/HP rebalance or automatic held-key firing;
@@ -501,16 +522,18 @@ In the ChatGPT/Codex desktop app, add the cloned repository as a local project a
 
 Top-level navigation order is:
 
-1. Hanzi
-2. Book1
-3. Theme Learning
-4. Scenario Learning
-5. Overall Review
-6. Phonetics
+1. Pinyin
+2. Hanzi
+3. Book1
+4. Theme Learning
+5. Scenario Learning
+6. Overall Review
+7. Phonetics
 
 Persistent browser keys:
 
 - `mario-hanzi-refactor-v1`
+- `mario-pinyin-v1`
 - `mario-phonetics-v1`
 - `mario-book1-v1`
 - `mario-scenario-learning-v1`

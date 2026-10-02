@@ -136,7 +136,7 @@ const mobileContext = await makeContext({ width: 390, height: 844 }, true);
 const mobile = await mobileContext.newPage();
 watch(mobile);
 await mobile.goto(new URL("scenario-learning.html?test=scenario-mobile", baseUrl).href);
-assert.equal(await mobile.locator(".scenario-nav > *").count(), 6);
+assert.equal(await mobile.locator(".scenario-nav > *").count(), 7);
 assert.equal(await noOverflow(mobile), true);
 await mobile.locator('[data-scenario-id="what-is-it"] [data-start-label]').tap();
 await mobile.locator('#nextLine').tap();

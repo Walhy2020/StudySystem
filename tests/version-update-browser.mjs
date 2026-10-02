@@ -6,7 +6,7 @@ const chromium = await loadChromium();
 const base = process.env.HANZI_BASE_URL || "http://127.0.0.1:5177/";
 const browser = await chromium.launch({ headless: true,
   executablePath: "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe" });
-const pages = ["index", "book-learning", "theme-learning", "scenario-learning", "review-learning", "phonetics", "bomb-game"];
+const pages = ["pinyin", "index", "book-learning", "theme-learning", "scenario-learning", "review-learning", "phonetics", "bomb-game"];
 const parts = APP_VERSION.split(".").map(Number);
 const next = `${parts[0]}.${parts[1]}.${parts[2] + 1}`;
 const newer = `${parts[0]}.${parts[1]}.${parts[2] + 2}`;

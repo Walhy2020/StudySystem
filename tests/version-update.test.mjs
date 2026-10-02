@@ -7,7 +7,7 @@ import { APP_VERSION } from "../src/constants.js";
 test("所有页面更新脚本版本与系统显示/包版本一致", () => {
   const metadata = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
   assert.equal(APP_VERSION, metadata.version);
-  for (const page of ["index", "book-learning", "theme-learning", "scenario-learning", "review-learning", "phonetics", "bomb-game"]) {
+  for (const page of ["pinyin", "index", "book-learning", "theme-learning", "scenario-learning", "review-learning", "phonetics", "bomb-game"]) {
     const html = readFileSync(new URL(`../${page}.html`, import.meta.url), "utf8");
     assert.equal(html.split(`src/version-update.js?v=${APP_VERSION}`).length - 1, 1, page);
   }

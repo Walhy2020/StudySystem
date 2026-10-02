@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <link rel="icon" href="data:," />
+  <title>马里奥学习系统 · 拼音</title>
+  <link rel="stylesheet" href="./styles.css?v=2.2" />
+  <link rel="stylesheet" href="./phonetics.css?v=1.9" />
+  <link rel="stylesheet" href="./module-navigation.css?v=1.0" />
+  <link rel="stylesheet" href="./pinyin.css?v=1.0" />
+</head>
+<body>
+<div class="app-shell">
+  <div class="boot-error" id="bootError" hidden></div>
+  <header class="topbar">
+    <div class="brand"><h1>马里奥学习系统</h1><p id="appVersionLabel">版本加载中</p></div>
+    <nav class="module-tabs" aria-label="学习模块">
+      <span class="module-tab is-active" aria-current="page">拼音</span>
+      <a class="module-tab" href="./index.html">汉字</a>
+      <a class="module-tab" href="./book-learning.html">Book1</a>
+      <a class="module-tab" href="./theme-learning.html">主题学习</a>
+      <a class="module-tab" href="./scenario-learning.html">情景模式</a>
+      <a class="module-tab" href="./review-learning.html">总复习</a>
+      <a class="module-tab" href="./phonetics.html">音标</a>
+    </nav>
+    <div class="top-actions"><a class="ghost-button bomb-entry" href="./bomb-game.html?v=1.0">炸弹迷宫</a></div>
+  </header>
+  <main class="workspace pinyin-view">
+    <section class="stage">
+      <div class="map-visual">
+        <img src="./assets/backgrounds/hanzi-kingdom-v2.png?v=1.0" alt="拼音学习王国" />
+        <div class="map-overlay"><span>拼音王国</span><strong>23 声母 · 24 韵母 · 16 整体认读音节</strong></div>
+        <div class="map-economy"><div class="star-counter" aria-label="拼音星星"><span aria-hidden="true">⭐</span><strong id="starCount">0</strong></div></div>
+        <div class="phonetics-map-reset"><button class="ghost-button danger" id="resetPinyin" type="button">重置拼音状态</button></div>
+        <button class="map-next-batch" id="nextBatch" type="button">下一批</button>
+      </div>
+      <section class="challenge" aria-live="polite">
+        <div class="task-status"><strong id="phaseLabel">等待开始</strong><span id="taskProgress"></span></div>
+        <div class="word-card phonetics-word-card pinyin-word-card">
+          <div class="hanzi-panel">
+            <div class="mastered-badge hidden" id="masteredBadge">完全认识</div>
+            <div class="hanzi phonetic-symbol pinyin-symbol" id="currentPinyin" data-content-kind="placeholder">
+              <span class="phonetic-card-category hidden" id="categoryLabel"></span>
+              <span class="phonetic-symbol-stage"><span class="hanzi-content phonetic-state-label" id="pinyinSymbol">开始</span></span>
+            </div>
+            <div class="review-round-badge hidden" id="reviewRoundBadge"></div>
+          </div>
+        </div>
+        <p class="idle-message" id="idleMessage">选择今日新拼音或复习拼音</p>
+        <div class="voice-row">
+          <button class="primary-button start-challenge-button" id="startDaily" type="button">今日新拼音</button>
+          <button class="primary-button start-challenge-button start-review-button" id="startReview" type="button">复习拼音</button>
+          <button class="plain-button icon-action correct-action hidden" id="markCorrect" type="button" aria-label="认识" title="认识"><span aria-hidden="true">√</span></button>
+          <button class="plain-button icon-action wrong-action hidden" id="markWrong" type="button" aria-label="不认识" title="不认识"><span aria-hidden="true">×</span></button>
+          <button class="plain-button icon-action mastery-action hidden" id="markMastered" type="button" aria-label="完全认识" title="完全认识"><span aria-hidden="true">★</span></button>
+        </div>
+        <span class="phonetics-sr-only" id="feedback" role="status"></span>
+      </section>
+    </section>
+    <aside class="side-panel">
+      <section class="panel-block library-panel">
+        <h2>拼音状态</h2>
+        <div class="library-stats">
+          <div><span>已认识</span><strong id="knownCount">0</strong></div>
+          <div><span>完全认识</span><strong id="masteredCount">0</strong></div>
+          <div><span>错拼音</span><strong id="wrongCount">0</strong></div>
+          <div><span>到期复习</span><strong id="dueCount">0</strong></div>
+          <div class="wide-stat"><span>总进度</span><strong id="progressCount">0/63</strong></div>
+        </div>
+      </section>
+      <section class="panel-block today-new-panel">
+        <h2>今日新拼音</h2>
+        <div class="word-list phonetic-list pinyin-list" id="todayNewList"><span class="empty-list">尚未选择</span></div>
+        <button class="finish-new-button hidden" id="finishNewWords" type="button">学习完毕</button>
+      </section>
+      <section class="panel-block review-wrong-panel">
+        <h2>复习错拼音</h2>
+        <div class="word-list phonetic-list pinyin-list" id="reviewWrongList"><span class="empty-list">暂无错拼音</span></div>
+      </section>
+    </aside>
+  </main>
+</div>
+<script type="module" src="./src/pinyin-app.js?v=1.0"></script>
+<script type="module" src="./src/version-update.js?v=1.0.38"></script>
+</body>
+</html>

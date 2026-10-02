@@ -230,7 +230,7 @@ const page = await desktopContext.newPage();
 watchPage(page);
 await page.goto(new URL("review-learning.html", baseUrl).href);
 await assertNoOverflow(page);
-assert.deepEqual(await page.locator(".theme-nav .nav-link").allTextContents().then((items) => items.map((item) => item.trim())), ["汉字", "Book1", "主题学习", "情景模式", "总复习", "音标"]);
+assert.deepEqual(await page.locator(".theme-nav .nav-link").allTextContents().then((items) => items.map((item) => item.trim())), ["拼音", "汉字", "Book1", "主题学习", "情景模式", "总复习", "音标"]);
 assert.equal((await page.locator("#totalReviewCount").textContent()).trim(), "0 个已学");
 assert.equal((await page.locator("#wordLibraryCount").textContent()).trim(), "0/227");
 assert.equal(await page.locator("#totalReviewEmpty").isVisible(), true);

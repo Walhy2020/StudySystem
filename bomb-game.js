@@ -8,8 +8,9 @@
   const ATTACK_LABELS = Object.freeze({ bomb: "冰炸弹", mushroom: "小蘑菇" });
   const COMBAT_RULES_VERSION = 2;
   const ICE_FREEZE_TIME = 3;
-  const BOWSER_FIRE_COOLDOWN = 3;
+  const BOWSER_FIRE_COOLDOWN = 2;
   const FIREBALL_SPEED = 3;
+  const FIREBALL_RADIUS = 20;
   const ATTACK_KEYS = ["Space", ..."BJKLZXCVFGHQERTYUIOPNM".split("").map(key => `Key${key}`)];
   const DEFAULT_THROW_DISTANCE = 3;
   const MIN_THROW_DISTANCE = 1;
@@ -565,8 +566,10 @@
     state.playSource = saved.playSource || null;
     state.map = saved.map;
     state.bombs = plainArray(saved.bombs);
-    state.fireballs = plainArray(saved.fireballs).filter(ball =>
-      [ball.gx, ball.gy, ball.vx, ball.vy, ball.life].every(Number.isFinite) && ball.life > 0);
+    // Old five-second projectiles keep their position/velocity but no longer expire by age.
+    state.fireballs = plainArray(saved.fireballs).filter(ball => ball &&
+      [ball.gx, ball.gy, ball.vx, ball.vy].every(Number.isFinite) && Math.hypot(ball.vx, ball.vy) > 0)
+      .map(ball => ({ gx: ball.gx, gy: ball.gy, vx: ball.vx, vy: ball.vy }));
     state.mushroomShots = plainArray(saved.mushroomShots).filter(isActiveMushroomShot);
     state.explosions = plainArray(saved.explosions);
     state.particles = plainArray(saved.particles);
@@ -582,6 +585,10 @@
     state.hiddenPowerUps = new Map(Array.isArray(saved.hiddenPowerUps) ? saved.hiddenPowerUps : []);
     state.hiddenWordCrates = new Map(Array.isArray(saved.hiddenWordCrates) ? saved.hiddenWordCrates : []);
     migrateCombatRules(saved);
+    state.enemies.forEach(enemy => {
+      if (enemy.type === "bowser") enemy.fireCooldown = Number.isFinite(enemy.fireCooldown)
+        ? clamp(enemy.fireCooldown, 0, BOWSER_FIRE_COOLDOWN) : BOWSER_FIRE_COOLDOWN;
+    });
     if (saved.combatRulesVersion === COMBAT_RULES_VERSION && saved.bowserRulesVersion !== 2) {
       // Rebalance living Bowsers once without resetting damage or resurrecting dead enemies.
       const oldMax = saved.bowserRulesVersion === 1 ? 50 : 15;
@@ -1951,9 +1958,7 @@
   function impactMushroomShot(shot, gx, gy, hitCrate = false) {
     shot.done = true;
     sounds.play("explode");
-    if (hitCrate) {
-      openCrateCell(gx, gy);
-    } else {
+    if (!hitCrate) {
       state.enemies.forEach((enemy) => {
         if (!enemy.alive || Math.round(enemy.gx) !== gx || Math.round(enemy.gy) !== gy) return;
         if (enemy.type === "bullet-bill") defeatEnemy(enemy);
@@ -2285,14 +2290,13 @@
     if (enemy.fireCooldown > 0) return;
     const direction = DIRS[enemy.dir] || DIRS.left;
     state.fireballs.push({ gx: enemy.gx, gy: enemy.gy,
-      vx: direction.x * FIREBALL_SPEED, vy: direction.y * FIREBALL_SPEED, life: 5 });
+      vx: direction.x * FIREBALL_SPEED, vy: direction.y * FIREBALL_SPEED });
     enemy.fireCooldown = BOWSER_FIRE_COOLDOWN;
     saveBombProgress();
   }
 
   function updateFireballs(dt) {
     state.fireballs = state.fireballs.filter(ball => {
-      ball.life -= dt;
       // Small swept steps also keep restored/high-speed projectiles from crossing a wall or player.
       const steps = Math.max(1, Math.ceil(Math.hypot(ball.vx, ball.vy) * dt / 0.15));
       for (let i = 0; i < steps; i += 1) {
@@ -2311,7 +2315,7 @@
           return false;
         }
       }
-      return ball.life > 0;
+      return true;
     });
   }
 
@@ -3788,14 +3792,14 @@
       const center = cellCenter(ball.gx, ball.gy);
       ctx.save();
       ctx.shadowColor = "#f97316";
-      ctx.shadowBlur = 13;
+      ctx.shadowBlur = 26;
       ctx.fillStyle = "#ef4444";
       ctx.beginPath();
-      ctx.arc(center.x, center.y, 10, 0, Math.PI * 2);
+      ctx.arc(center.x, center.y, FIREBALL_RADIUS, 0, Math.PI * 2);
       ctx.fill();
       ctx.fillStyle = "#fde68a";
       ctx.beginPath();
-      ctx.arc(center.x, center.y, 6, 0, Math.PI * 2);
+      ctx.arc(center.x, center.y, 12, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
     });

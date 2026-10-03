@@ -35,7 +35,7 @@ const calculateLayout = new Function(
 
 assert.match(html, /<canvas id="bombCanvas" width="1280" height="720"/);
 assert.ok(html.includes('bomb-game.css?v=1.4'));
-assert.ok(html.includes('bomb-game.js?v=2.25'));
+assert.ok(html.includes('bomb-game.js?v=2.26'));
 assert.ok(html.includes('id="bombAttackToggle"'));
 assert.ok(html.includes('id="mushroomThrowDistance"'));
 assert.ok(js.includes('const MUSHROOM_THROW_STEP_TIME = 0.09;'));
@@ -99,7 +99,8 @@ assert.ok(js.includes('const MAX_HP = 3;'));
 assert.ok(js.includes('bombLimit: 1'));
 assert.ok(js.includes('flameRange: 2'));
 assert.ok(js.includes('const ICE_FREEZE_TIME = 3;'));
-assert.ok(js.includes('const BOWSER_FIRE_COOLDOWN = 3;'));
+assert.ok(js.includes('const BOWSER_FIRE_COOLDOWN = 2;'));
+assert.ok(js.includes('const FIREBALL_RADIUS = 20;'));
 assert.ok(js.includes('mushroomKey: "Space"'));
 assert.ok(js.includes('iceBombKey: "KeyB"'));
 assert.ok(html.includes('id="mushroomAttackKey"'));

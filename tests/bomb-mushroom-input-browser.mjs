@@ -100,7 +100,7 @@ try {
     assert.equal((await read()).enemies[0].hp, 37, "each thrown mushroom still deals one damage");
     const brick = structuredClone(fixture); brick.map[3][3] = 2;
     await load(brick); await page.keyboard.press("Space"); await advance(0.15);
-    assert.equal((await read()).map[3][3], 0, "a mushroom still opens the first brick");
+    assert.equal((await read()).map[3][3], 2, "a mushroom stops at the first brick without opening it");
     assert.equal((await read()).mushroomShots.length, 0);
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     assert.deepEqual(errors, []);

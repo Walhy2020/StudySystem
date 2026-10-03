@@ -1,13 +1,34 @@
 # StudySystem cross-device handoff
 
-Last updated: 2026-10-02
+Last updated: 2026-10-03
 Repository: `https://github.com/Walhy2020/StudySystem.git`
 Branch: `main`
 Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.39** (2026-10-02). Pinyin new-learning now follows
+System display version: **v1.0.40** (2026-10-03). Small mushrooms stop at crates
+without opening them; enemy damage remains one. Bowser fires every two seconds.
+Fireballs render at twice their previous radius (20 outer/12 core), without age or
+distance expiry. Swept collisions with walls, first crates, bombs, player and map
+boundaries remain unchanged. Old saved shots retain their position/velocity and
+discard legacy life; restored Bowser cooldown is capped at two seconds. No HP,
+learning progress, ice upgrades, missile or other module rules were changed.
+Bomb JS cache: v2.26; all eight update-notifier queries: v1.0.40.
+
+Focused checks: tests/bomb-projectile-rules.test.mjs and
+HANZI_BASE_URL=http://127.0.0.1:53177/ node tests/bomb-projectile-rules-browser.mjs.
+Real Microsoft Edge at 1440/390 verified blocked mushroom shots/no through-brick
+damage, one-damage enemy hits, unchanged ice-bomb brick opening, two-second shots,
+double rendered radii, old-save flight beyond five seconds, refresh/Continue,
+first-brick stopping, resources and no page errors/overflow. Ignored tmp screenshots
+were inspected; pre-existing tracked screenshot changes were preserved. No unrelated
+module browser suites were run.
+
+Release checks: pnpm run check, pnpm test (157 passed, zero failures) and
+git diff --check passed.
+
+Previous v1.0.39 (2026-10-02). Pinyin new-learning now follows
 catalog order: initials, finals, whole syllables. Fresh rounds start screening from
 the catalog beginning (still skip mastered); pending daily items are chosen by
 catalog position rather than RNG or saved dailyNewIds array order. Old active

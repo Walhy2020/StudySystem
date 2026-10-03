@@ -49,7 +49,7 @@ try {
     fixture.status = "playing"; fixture.startLayerHidden = true;
     fixture.player = { gx: 12, gy: 10, invulnerable: 0, move: null };
     fixture.enemies = [{ ...seed.enemies.find(enemy => enemy.type === "bowser"),
-      gx: 3, gy: 3, dir: "right", hp: 40, stunTimer: 0, freezeTimer: 0, fireCooldown: 3,
+      gx: 3, gy: 3, dir: "right", hp: 40, stunTimer: 0, freezeTimer: 0, fireCooldown: 2,
       move: { fromX: 3, fromY: 3, toX: 3, toY: 3, time: 0, duration: 1000 } }];
     for (const field of ["fireballs", "bombs", "mushroomShots", "explosions", "powerUps", "particles", "shells", "hiddenPowerUps"]) fixture[field] = [];
     fixture.hiddenWordCrates = fixture.todayNewWords.map((word, index) => {
@@ -65,28 +65,28 @@ try {
       if (start) await page.locator("#overlayStartBombGame").click();
     }
     await load(fixture);
-    await advance(2.9); assert.equal((await state()).fireballs.length, 0);
+    await advance(1.9); assert.equal((await state()).fireballs.length, 0);
     await advance(0.15); assert.equal((await state()).fireballs.length, 1);
-    assert.ok((await state()).enemies[0].fireCooldown > 2.8);
+    assert.ok((await state()).enemies[0].fireCooldown > 1.8);
     assert.ok(await page.evaluate(() => window.__greenCooldownStrokes > 0), "cooldown ring is rendered green");
     await advance(0.2);
     assert.equal((await state()).map[3][4], 0);
     assert.equal((await state()).map[3][5], 2, "fire stops at the first brick");
     assert.ok((await state()).powerUps.some(item => item.gx === 4 && item.gy === 3), "brick contents are revealed");
-    await advance(3.5); assert.equal((await state()).map[3][5], 0, "next cooldown fires again without sight");
+    await advance(2.5); assert.equal((await state()).map[3][5], 0, "next cooldown fires again without sight");
     await page.screenshot({ path: path.resolve("tmp", `bomb-bowser-autofire-${width}.png`) });
 
     const roaming = structuredClone(fixture); roaming.enemies[0].move = null;
-    await load(roaming); await advance(3.55);
+    await load(roaming); await advance(2.55);
     assert.ok((await state()).enemies[0].gx > 3, "Bowser walks into the path opened by his fireball");
     const frozen = structuredClone(fixture); frozen.enemies[0].freezeTimer = 4;
     await load(frozen); await advance(3);
     assert.equal((await state()).map[3][4], 2);
     assert.equal((await state()).fireballs.length, 0);
     const wall = structuredClone(fixture); wall.map[3][4] = 1;
-    await load(wall); await advance(3.3);
+    await load(wall); await advance(2.3);
     assert.equal((await state()).map[3][4], 1, "hard walls cannot be broken");
-    assert.ok((await state()).enemies[0].fireCooldown > 2.6, "blocked sight does not stop the cooldown firing");
+    assert.ok((await state()).enemies[0].fireCooldown > 1.6, "blocked sight does not stop the cooldown firing");
 
     const old = structuredClone(fixture); delete old.bowserRulesVersion;
     old.enemies[0].hp = 12; old.bombLimit = 4; old.flameRange = 8;
@@ -117,7 +117,7 @@ try {
     assert.equal((await state()).enemies[0].hp, 39);
     assert.equal((await state()).enemies[0].stunTimer, 0);
     assert.equal((await state()).enemies[0].move.toX, 5, "mushroom does not stop a moving Bowser");
-    results.push({ width, bowserHp: 40, cooldown: 3, greenRing: true, mushroomStun: false,
+    results.push({ width, bowserHp: 40, cooldown: 2, greenRing: true, mushroomStun: false,
       autonomous: true, crateBreak: true, roaming: true, frozenPause: true, migration: true });
     await context.close();
   }

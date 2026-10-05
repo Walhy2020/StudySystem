@@ -45,6 +45,8 @@
   const attackRangeLabel = document.getElementById("attackRangeLabel");
   const soundToggle = document.getElementById("bombSoundToggle");
   const sounds = window.createBombSoundPlayer();
+  const gamepad = window.createBombGamepadReader();
+  const gamepadStatusNodes = document.querySelectorAll("[data-gamepad-status]");
   const openAllBricksButton = document.getElementById("openAllBricks");
   const startLayer = document.getElementById("bombStartLayer");
   const startTitle = document.getElementById("bombStartTitle");
@@ -271,6 +273,9 @@
   let progressSavePending = false;
   let lastRenderedLearningCardCount = 0;
   const heldDirections = new Set();
+  const keyboardDirections = new Set();
+  let gamepadDirection = "";
+  let gamepadStatus = "";
   let queuedDirection = "";
   let queuedDirectionRemaining = 0;
   let queuedBombPlacement = false;
@@ -722,6 +727,9 @@
 
   function clearInputState() {
     heldDirections.clear();
+    keyboardDirections.clear();
+    gamepadDirection = "";
+    gamepad.reset();
     queuedDirection = "";
     queuedDirectionRemaining = 0;
     queuedBombPlacement = false;
@@ -4177,6 +4185,7 @@
     const dt = Math.min(0.033, (now - lastTime) / 1000 || 0);
     lastTime = now;
     animationClock += dt;
+    pollGamepad();
     sounds.setMusic(state.status === "playing" && !awaitingContinue && !avatarMenuOpen && !attackMenuOpen && ownsProgress &&
       !document.hidden && document.hasFocus() ? state.world : null);
     if (!document.hidden && ownsProgress) update(dt);
@@ -4343,6 +4352,48 @@
     ].join(", ")));
   }
 
+  function pollGamepad() {
+    const waiting = awaitingContinue || state.status !== "playing";
+    const enabled = !document.hidden && document.hasFocus() && !avatarMenuOpen && !attackMenuOpen &&
+      (waiting || !hasNativeKeyboardTarget(document.activeElement));
+    const input = gamepad.poll(enabled);
+    const status = !input.connected ? "手柄未识别：连接后按一下手柄按钮" : !input.standard
+      ? "请将手柄切换到标准 / XInput 模式" : "手柄已连接";
+    if (status !== gamepadStatus) {
+      gamepadStatus = status;
+      gamepadStatusNodes.forEach(node => { node.textContent = status; });
+    }
+    if (input.confirm || (waiting && input.mushroom)) {
+      startGame();
+      return; // Confirmation must never also throw a mushroom or place a bomb.
+    }
+    if (waiting) return;
+    if (input.direction !== gamepadDirection) {
+      const previousDirection = gamepadDirection;
+      if (gamepadDirection && !keyboardDirections.has(gamepadDirection)) heldDirections.delete(gamepadDirection);
+      gamepadDirection = input.direction;
+      if (gamepadDirection) {
+        syncBombProgress();
+        if (awaitingContinue || state.status !== "playing") return;
+        claimBombProgress();
+        heldDirections.add(gamepadDirection);
+        lastDirection = gamepadDirection;
+        queuedDirection = gamepadDirection;
+        queuedDirectionRemaining = PLAYER_TURN_BUFFER_TIME;
+      } else if (queuedDirection === previousDirection && !keyboardDirections.has(queuedDirection)) {
+        queuedDirection = "";
+        queuedDirectionRemaining = 0;
+      }
+    }
+    if (input.mushroom || input.ice) {
+      syncBombProgress();
+      if (awaitingContinue) return;
+      claimBombProgress();
+      if (input.mushroom) throwMushroom();
+      if (input.ice) placeBomb();
+    }
+  }
+
   window.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && avatarMenuOpen) {
       event.preventDefault();
@@ -4362,7 +4413,7 @@
     if (direction) {
       event.preventDefault();
       // After damage/focus loss, auto-repeat is not a new press. Require release and press again.
-      if (event.repeat && !heldDirections.has(direction)) return;
+      if (event.repeat && !keyboardDirections.has(direction)) return;
       syncBombProgress();
       if (awaitingContinue) return;
       claimBombProgress();
@@ -4371,6 +4422,7 @@
         return;
       }
       heldDirections.add(direction);
+      keyboardDirections.add(direction);
       lastDirection = direction;
       if (!event.repeat) {
         queuedDirection = direction;
@@ -4402,7 +4454,8 @@
   window.addEventListener("keyup", (event) => {
     const direction = KEY_DIRS[event.code];
     if (direction) {
-      heldDirections.delete(direction);
+      keyboardDirections.delete(direction);
+      if (gamepadDirection !== direction) heldDirections.delete(direction);
       if (!hasNativeKeyboardTarget(event.target)) event.preventDefault();
     }
   });

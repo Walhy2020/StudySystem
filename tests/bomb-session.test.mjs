@@ -444,7 +444,8 @@ test("方向键在原生按钮上释放仍清理游戏输入，但保留按钮�
   const end = source.indexOf("\n  });", start) + 6;
   let handler;
   const heldDirections = new Set(["down"]);
-  new Function("window", "heldDirections", "KEY_DIRS", "hasNativeKeyboardTarget", source.slice(start, end))(
+  new Function("window", "heldDirections", "KEY_DIRS", "hasNativeKeyboardTarget",
+    'const keyboardDirections = new Set(["down"]), gamepadDirection = "";\n' + source.slice(start, end))(
     { addEventListener: (_, fn) => { handler = fn; } }, heldDirections, { ArrowDown: "down" }, () => true);
   handler({ code: "ArrowDown", target: {}, preventDefault: () => assert.fail("must preserve native default") });
   assert.equal(heldDirections.size, 0);

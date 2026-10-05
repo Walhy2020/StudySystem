@@ -320,6 +320,14 @@ a {
   letter-spacing: 0;
 }
 
+.bomb-gamepad-help {
+  margin: 14px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #475569;
+  overflow-wrap: anywhere;
+}
+
 .bomb-start-panel button {
   min-width: 132px;
   background: #16a34a;

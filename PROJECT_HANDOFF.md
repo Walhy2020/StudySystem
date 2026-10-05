@@ -1,13 +1,41 @@
 # StudySystem cross-device handoff
 
-Last updated: 2026-10-03
+Last updated: 2026-10-05
 Repository: `https://github.com/Walhy2020/StudySystem.git`
 Branch: `main`
 Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.40** (2026-10-03). Small mushrooms stop at crates
+System display version: **v1.0.41** (2026-10-05). Bomb maze supports the browser
+standard Gamepad mapping: left stick/D-pad movement, bottom A/cross mushroom,
+right B/circle ice bomb; A/cross or Start/Options confirms start, saved Continue
+and next-level ready screens without also attacking. Attacks are edge-triggered;
+stick deadzone is 0.35, dominant axis only. Neutral/release is required after
+connection, damage/input reset, focus loss, menus and reconnect, preventing drift
+and held-button attacks. Keyboard and gamepad directions have separate ownership;
+release of one device does not cancel a held direction from the other. Non-standard
+mapping reports XInput guidance instead of guessing. No controller IDs/state are
+persisted; gameplay, progress and storage boundaries are unchanged.
+
+New helper: src/bomb-gamepad.js?v=1.0. Bomb JS v2.27, CSS v1.5;
+all eight notifier references: v1.0.41. Help/status appears on the start card and
+attack settings. Browser recognition can require pressing a controller button;
+audio autoplay may still require an initial mouse click on Start.
+
+Focused validation: tests/bomb-gamepad.test.mjs and
+HANZI_BASE_URL=http://127.0.0.1:53177/ node tests/bomb-gamepad-browser.mjs
+(also available as pnpm run test:gamepad). Real Edge at 1440/390 with an injected
+standard Gamepad fixture covered movement/turning/deadzone, both attacks and
+held-button suppression, start/Continue/next confirmation, disconnect/reconnect,
+damage-neutral safety, menus, keyboard coexistence and no resource errors/overflow.
+This validates the browser implementation, not the user's physical controller or
+its model-specific driver mapping. Ignored tmp start/help screenshots were viewed;
+pre-existing tracked screenshots were preserved. No unrelated browser suites run.
+
+Release checks: pnpm run check, 161 Node tests and git diff --check passed.
+
+Previous v1.0.40 (2026-10-03). Small mushrooms stop at crates
 without opening them; enemy damage remains one. Bowser fires every two seconds.
 Fireballs render at twice their previous radius (20 outer/12 core), without age or
 distance expiry. Swept collisions with walls, first crates, bombs, player and map

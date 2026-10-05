@@ -1,0 +1,55 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import "../src/bomb-gamepad.js";
+
+function harness() {
+  const pad = { index: 0, id: "test", connected: true, mapping: "standard", axes: [0, 0],
+    buttons: Array.from({ length: 16 }, () => ({ pressed: false, value: 0 })) };
+  let pads = [pad];
+  const reader = globalThis.createBombGamepadReader(() => pads);
+  return { pad, reader, connect: value => { pads = value; },
+    button: (index, down) => { pad.buttons[index] = { pressed: down, value: down ? 1 : 0 }; } };
+}
+
+test("手柄摇杆死区、主轴选择及十字键优先，不把对角输入当斜移", () => {
+  const h = harness(); h.reader.poll();
+  h.pad.axes = [0.2, -0.2]; assert.equal(h.reader.poll().direction, "");
+  h.pad.axes = [0.8, 0.4]; assert.equal(h.reader.poll().direction, "right");
+  h.pad.axes = [0.1, -0.8]; assert.equal(h.reader.poll().direction, "up");
+  h.button(14, true); assert.equal(h.reader.poll().direction, "left");
+  h.button(15, true); assert.equal(h.reader.poll().direction, "");
+});
+
+test("手柄A/B/Start只在新按下触发一次，松开可再次触发", () => {
+  const h = harness(); h.reader.poll();
+  for (const [index, action] of [[0, "mushroom"], [1, "ice"], [9, "confirm"]]) {
+    h.button(index, true); assert.equal(h.reader.poll()[action], true);
+    assert.equal(h.reader.poll()[action], false);
+    h.button(index, false); h.reader.poll();
+    h.button(index, true); assert.equal(h.reader.poll()[action], true);
+    h.button(index, false); h.reader.poll();
+  }
+});
+
+test("连接、受伤重置、暂停和重连时按住不误动作，必须回中松键", () => {
+  const h = harness(); h.pad.axes = [0, 1]; h.button(0, true);
+  assert.equal(h.reader.poll().direction, ""); assert.equal(h.reader.poll().mushroom, false);
+  h.pad.axes = [0, 0]; h.button(0, false); h.reader.poll();
+  h.pad.axes = [0, 1]; assert.equal(h.reader.poll().direction, "down");
+  h.reader.reset(); assert.equal(h.reader.poll().direction, "");
+  h.pad.axes = [0, 0]; h.reader.poll();
+  h.reader.poll(false); h.pad.axes = [0, 1]; assert.equal(h.reader.poll().direction, "");
+  h.pad.axes = [0, 0]; h.reader.poll();
+  h.connect([]); assert.equal(h.reader.poll().connected, false);
+  h.pad.axes = [1, 0]; h.connect([h.pad]); assert.equal(h.reader.poll().direction, "");
+});
+
+test("手柄保留已选标准设备，非标准/API不可用不猜测攻击按钮", () => {
+  const h = harness(); h.reader.poll();
+  const other = { ...h.pad, id: "other", index: 1, axes: [-1, 0] };
+  h.connect([other, h.pad]); assert.equal(h.reader.poll().direction, "");
+  h.pad.mapping = ""; h.connect([h.pad]); h.button(0, true);
+  assert.equal(h.reader.poll().standard, false); assert.equal(h.reader.poll().mushroom, false);
+  const unavailable = globalThis.createBombGamepadReader(() => { throw new Error("blocked"); });
+  assert.equal(unavailable.poll().connected, false);
+});

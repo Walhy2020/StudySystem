@@ -1,0 +1,64 @@
+#study-gamepad-cursor {
+  position: fixed;
+  z-index: 2147483647;
+  width: 24px;
+  height: 24px;
+  box-sizing: border-box;
+  transform: translate(-50%, -50%);
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: #2563eb;
+  box-shadow: 0 0 0 2px #1e3a8a, 0 0 14px #60a5fa;
+  pointer-events: none;
+}
+#study-gamepad-cursor::after {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border-radius: 50%;
+  background: white;
+}
+#study-gamepad-cursor.is-clickable { background: #f59e0b; box-shadow: 0 0 0 2px #78350f, 0 0 16px #fbbf24; }
+#study-gamepad-help {
+  position: fixed;
+  z-index: 2147483646;
+  left: 12px;
+  bottom: 12px;
+  max-width: calc(100vw - 24px);
+  box-sizing: border-box;
+  padding: 7px 10px;
+  border-radius: 8px;
+  color: #fff;
+  background: rgba(15, 23, 42, 0.92);
+  font: 12px/1.5 "Microsoft YaHei", sans-serif;
+  pointer-events: none;
+}
+#study-gamepad-cursor[hidden], #study-gamepad-help[hidden] { display: none; }
+.study-gamepad-hover { outline: 3px solid #f59e0b !important; outline-offset: 3px; }
+.study-gamepad-options {
+  position: fixed;
+  z-index: 2147483645;
+  width: min(280px, calc(100vw - 16px));
+  max-height: min(320px, calc(100dvh - 16px));
+  overflow: auto;
+  box-sizing: border-box;
+  padding: 8px;
+  border: 2px solid #2563eb;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 8px 25px #0006;
+}
+.study-gamepad-options button {
+  display: block;
+  width: 100%;
+  min-height: 38px;
+  margin: 2px 0;
+  padding: 6px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #f8fafc;
+  color: #0f172a;
+  font: 16px/1.4 "Microsoft YaHei", sans-serif;
+  text-align: left;
+}
+.study-gamepad-options button[aria-pressed="true"] { background: #dbeafe; border-color: #2563eb; }

@@ -265,6 +265,7 @@
   let playerAvatar = "fly-star";
   let avatarMenuOpen = false;
   let attackMenuOpen = false;
+  let gamepadMenuOpen = false;
 
   let lastTime = performance.now();
   let animationClock = 0;
@@ -1613,6 +1614,7 @@
   }
 
   function startGame() {
+    window.STUDY_GAMEPAD_CURSOR?.leaveMenu();
     setAvatarMenuOpen(false);
     setAttackMenuOpen(false);
     sounds.unlock();
@@ -3155,7 +3157,7 @@
   }
 
   function update(dt) {
-    if (awaitingContinue || avatarMenuOpen || attackMenuOpen) return;
+    if (awaitingContinue || avatarMenuOpen || attackMenuOpen || gamepadMenuOpen) return;
     if (messageTimer > 0) {
       messageTimer -= dt;
       if (messageTimer <= 0 && state.status === "playing") {
@@ -4185,8 +4187,8 @@
     const dt = Math.min(0.033, (now - lastTime) / 1000 || 0);
     lastTime = now;
     animationClock += dt;
-    pollGamepad();
-    sounds.setMusic(state.status === "playing" && !awaitingContinue && !avatarMenuOpen && !attackMenuOpen && ownsProgress &&
+    pollGamepad(now);
+    sounds.setMusic(state.status === "playing" && !awaitingContinue && !avatarMenuOpen && !attackMenuOpen && !gamepadMenuOpen && ownsProgress &&
       !document.hidden && document.hasFocus() ? state.world : null);
     if (!document.hidden && ownsProgress) update(dt);
     render();
@@ -4352,9 +4354,10 @@
     ].join(", ")));
   }
 
-  function pollGamepad() {
+  function pollGamepad(now) {
+    window.STUDY_GAMEPAD_CURSOR?.poll(now);
     const waiting = awaitingContinue || state.status !== "playing";
-    const enabled = !document.hidden && document.hasFocus() && !avatarMenuOpen && !attackMenuOpen &&
+    const enabled = !document.hidden && document.hasFocus() && !avatarMenuOpen && !attackMenuOpen && !gamepadMenuOpen &&
       (waiting || !hasNativeKeyboardTarget(document.activeElement));
     const input = gamepad.poll(enabled);
     const status = !input.connected ? "手柄未识别：连接后按一下手柄按钮" : !input.standard
@@ -4408,7 +4411,7 @@
       return;
     }
     if (hasNativeKeyboardTarget(event.target)) return;
-    if (avatarMenuOpen || attackMenuOpen) return;
+    if (avatarMenuOpen || attackMenuOpen || gamepadMenuOpen) return;
     const direction = KEY_DIRS[event.code];
     if (direction) {
       event.preventDefault();
@@ -4461,6 +4464,17 @@
   });
 
   window.addEventListener("blur", () => { sounds.setMusic(null); clearInputState(); saveBombProgress(); });
+  window.addEventListener("studysystem:gamepad-menu", event => {
+    gamepadMenuOpen = event.detail.active;
+    clearInputState();
+    if (!gamepadMenuOpen && !document.hidden && document.hasFocus()) {
+      setAvatarMenuOpen(false);
+      setAttackMenuOpen(false);
+    }
+    saveBombProgress();
+    if (!gamepadMenuOpen && state.status === "playing" && !awaitingContinue &&
+      !avatarMenuOpen && !attackMenuOpen && !document.hidden && document.hasFocus()) canvas.focus();
+  });
   window.addEventListener("storage", (event) => {
     if (event.key === BOMB_PROGRESS_KEY || event.key === null) syncBombProgress();
   });
@@ -4476,6 +4490,7 @@
   document.fonts?.ready.then(scheduleBombViewportFit);
   canvas.addEventListener("blur", clearInputState);
   canvas.addEventListener("pointerdown", () => {
+    window.STUDY_GAMEPAD_CURSOR?.leaveMenu();
     syncBombProgress();
     if (!awaitingContinue) claimBombProgress();
   });

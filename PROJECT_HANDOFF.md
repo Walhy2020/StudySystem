@@ -7,7 +7,39 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.41** (2026-10-05). Bomb maze supports the browser
+System display version: **v1.0.42** (2026-10-05). All eight pages load the shared
+src/gamepad-cursor.js?v=1.0 and its gamepad-cursor.css?v=1.0. The virtual pointer
+stays in the viewport and never controls the OS cursor. Study pages use either
+stick, A/cross or R3 click and LB/RB scrolling (one full step for horizontal
+scroll-snap lists). Same-origin navigation is restricted to the eight system pages;
+external links, downloads, file pickers and new tabs are not activated. SVG hotspots,
+checkboxes, range sliders and a custom in-page select chooser are supported.
+
+Bomb left-stick/D-pad movement and A/B combat remain intact. Right-stick movement
+or Y/triangle enters pointer menu mode, pauses gameplay/music and clears old inputs;
+A clicks menus without also throwing mushrooms. Y/triangle or clicking the canvas
+returns to gameplay and closes settings menus, requiring neutral before fresh input.
+Clicks on Start/Continue/restart also return to gameplay. Focus/visibility loss,
+disconnect and page navigation clear pointer input. No new progress keys or OS
+input APIs are used. This is not a kiosk/parental lock: physical mouse/keyboard and
+browser chrome remain available. Bomb JS cache v2.28; all eight notifier queries v1.0.42.
+
+Focused validation: tests/gamepad-cursor.test.mjs and
+HANZI_BASE_URL=http://127.0.0.1:53177/ node tests/gamepad-cursor-browser.mjs.
+Real Microsoft Edge with an injected standard controller at 1440/390 covered the
+shared pointer on eight pages, internal navigation and blocked external/download
+links, viewport bounds, held-button single clicks, disconnect/neutral rearming,
+horizontal shoulder scrolling, a real theme SVG hotspot, game menu pause, avatar,
+select/range settings, non-duplicated start click and unchanged game controls after
+return. Ignored tmp cursor screenshots inspected; pre-existing tracked screenshots
+preserved. This is browser input simulation, not a physical-controller certification.
+No unrelated learning/gameplay browser suites were run.
+
+Release checks: syntax, 164 Node tests and whitespace checks passed. The previous
+bomb-gamepad-browser.mjs input suite also passed at 1440/390; only pointer/menu
+and controller coexistence were exercised, not unrelated module workflows.
+
+Previous v1.0.41 (2026-10-05). Bomb maze supports the browser
 standard Gamepad mapping: left stick/D-pad movement, bottom A/cross mushroom,
 right B/circle ice bomb; A/cross or Start/Options confirms start, saved Continue
 and next-level ready screens without also attacking. Attacks are edge-triggered;

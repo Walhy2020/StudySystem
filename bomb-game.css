@@ -157,6 +157,32 @@ a {
   box-shadow: 0 16px 35px rgba(0, 0, 0, 0.38);
 }
 
+.bomb-attack-menu {
+  max-height: min(680px, calc(100dvh - 24px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.bomb-battery-settings {
+  display: grid;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid #cbd5e1;
+}
+
+.bomb-battery-settings .battery-low { color: #b91c1c; font-weight: 700; }
+
+.bomb-actions .bomb-attack-menu .bomb-battery-settings button {
+  height: auto;
+  min-height: 38px;
+  justify-content: center;
+  border: 1px solid #94a3b8;
+  background: #ffffff;
+  color: #0f172a;
+}
+
+.bomb-battery-settings button:disabled { opacity: 0.55; cursor: default; }
+
 .bomb-avatar-menu[hidden],
 .bomb-attack-menu[hidden] { display: none; }
 

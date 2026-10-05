@@ -7,7 +7,31 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.42** (2026-10-05). All eight pages load the shared
+System display version: **v1.0.43** (2026-10-05). Bomb attack settings add an
+explicit WebHID battery authorization button for Sony DualSense / DualSense Edge.
+Only full USB/BT input reports are parsed; BT CRC is validated. Charge uses the
+device's ten-percent bucket (60-69%, not a fabricated precise percentage), with
+charging/full/low/error states. No output or feature reports, host-battery API,
+new storage or gameplay changes. Unknown is shown for unsupported browsers,
+cancelled/denied permission, compact/no reports, disconnection and 10-second stale
+data. One previously authorized supported HID device restores automatically;
+multiple devices require an explicit choice. Attack menu fits/scrolls within the
+viewport. Battery helper cache v1.0; bomb CSS v1.6; bomb JS remains v2.28;
+all eight notifier queries v1.0.43. Physical controller battery accuracy and OS
+HID accessibility still require the user's actual device authorization.
+
+Release checks: syntax, 170 Node tests and whitespace passed. Only targeted
+Microsoft Edge battery UI and existing bomb gamepad input checks ran at
+1440/390; a 390x500 menu also stayed scrollable and in view. Mock HID covered
+USB/full-BT reports, charge/low/full, chooser cancel/denial, disconnect, stale
+data, keyboard/touch authorization and unsupported fallback. The previous
+standard gamepad fixture still passed movement, attacks and confirmation.
+Ignored tmp/bomb-battery-*.png screenshots were inspected; pre-existing tracked
+screenshots preserved. No physical-controller test or unrelated browser suite
+is claimed. In actual Edge, open Attack Settings -> read battery and grant the
+device explicitly; unavailable reports remain unknown.
+
+Previous v1.0.42 (2026-10-05). All eight pages load the shared
 src/gamepad-cursor.js?v=1.0 and its gamepad-cursor.css?v=1.0. The virtual pointer
 stays in the viewport and never controls the OS cursor. Study pages use either
 stick, A/cross or R3 click and LB/RB scrolling (one full step for horizontal

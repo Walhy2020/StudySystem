@@ -45,7 +45,7 @@
   pointer.hidden = true;
   const help = document.createElement("div");
   help.id = "study-gamepad-help";
-  help.textContent = isGame ? "菜单已暂停游戏 · 右摇杆移动 · A / × 点选 · Y / △ 回游戏"
+  help.textContent = isGame ? "菜单已暂停游戏 · 右摇杆移动 · A / × 点选 · L1 / L2 滚动 · Y / △ 回游戏"
     : "手柄光标 · 摇杆移动 · A / × 点选 · LB / RB 滚动";
   help.hidden = true;
   document.body.append(pointer, help);
@@ -165,9 +165,9 @@
     const right = [axis(2), axis(3)];
     const axes = isGame || Math.max(...right.map(Math.abs)) > DEADZONE ? right : [axis(0), axis(1)];
     const buttons = { click: pressed(pad, 0) || pressed(pad, 11), toggle: pressed(pad, 3),
-      scrollUp: pressed(pad, 4), scrollDown: pressed(pad, 5) };
+      scrollUp: pressed(pad, 4), scrollDown: pressed(pad, isGame ? 6 : 5) };
     const neutral = [0, 1, 2, 3].every(index => Math.abs(axis(index)) <= DEADZONE) &&
-      ![0, 1, 3, 4, 5, 9, 11, 12, 13, 14, 15].some(index => pressed(pad, index));
+      ![0, 1, 3, 4, 5, 6, 7, 9, 11, 12, 13, 14, 15].some(index => pressed(pad, index));
     if (!armed) {
       if (neutral) armed = true;
       previous = buttons;

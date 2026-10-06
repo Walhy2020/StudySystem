@@ -7,6 +7,7 @@
   const AVATAR_LABELS = Object.freeze({ bomber: "炸弹人", "fly-star": "小飞星", "super-mushroom": "超级蘑菇" });
   const ATTACK_LABELS = Object.freeze({ bomb: "冰炸弹", mushroom: "小蘑菇" });
   const COMBAT_RULES_VERSION = 2;
+  const ENEMY_HP_RULES_VERSION = 1;
   const ICE_FREEZE_TIME = 3;
   const BOWSER_FIRE_COOLDOWN = 2;
   const FIREBALL_SPEED = 3;
@@ -27,8 +28,8 @@
   const mushroomNode = document.getElementById("mushroomLeft");
   const levelNode = document.getElementById("bombLevel");
   const powerNode = document.getElementById("bombPower");
-  const moonNode = document.getElementById("bombMoonCount");
-  const moonIconNode = document.getElementById("bombMoonHudIcon");
+  const moonHud = document.getElementById("bombMoons");
+  const moonIcons = moonHud.querySelectorAll(".moon-hud-icon");
   const scoreNode = document.getElementById("bombScore");
   const messageNode = document.getElementById("bombMessage");
   const startButton = document.getElementById("startBombGame");
@@ -44,6 +45,9 @@
   const attackHudIcon = document.getElementById("attackHudIcon");
   const attackRangeLabel = document.getElementById("attackRangeLabel");
   const soundToggle = document.getElementById("bombSoundToggle");
+  const settingsToggle = document.getElementById("bombSettingsToggle");
+  const settingsMenu = document.getElementById("bombSettingsMenu");
+  const fullscreenToggle = document.getElementById("bombFullscreenToggle");
   const sounds = window.createBombSoundPlayer();
   const gamepad = window.createBombGamepadReader();
   const gamepadStatusNodes = document.querySelectorAll("[data-gamepad-status]");
@@ -108,7 +112,7 @@
   const THIRD_WORLD_BASE_COLS = 27;
   const THIRD_WORLD_ROWS = 15;
   const THIRD_WORLD_BOARD_X = 112;
-  const WORLD_VIEWPORT = Object.freeze({ x: 98, y: 94, width: 1182, height: 626 });
+  const WORLD_VIEWPORT = Object.freeze({ x: 0, y: 0, width: 1280, height: 720 });
   const BOMB_TIMER = 2;
   const FLAME_TIME = 0.5;
   const PLAYER_MOVE_TIME = 0.18;
@@ -266,10 +270,13 @@
   let avatarMenuOpen = false;
   let attackMenuOpen = false;
   let gamepadMenuOpen = false;
+  let settingsMenuOpen = false;
+  let gamepadConnected = false;
 
   let lastTime = performance.now();
   let animationClock = 0;
   let lastDirection = "right";
+  let attackDirection = "right";
   let messageTimer = 0;
   let progressSavePending = false;
   let lastRenderedLearningCardCount = 0;
@@ -350,6 +357,7 @@
     return {
       version: BOMB_PROGRESS_VERSION,
       combatRulesVersion: COMBAT_RULES_VERSION,
+      enemyHpRulesVersion: ENEMY_HP_RULES_VERSION,
       bowserRulesVersion: 2,
       progressSessionId,
       targetRevealPolicy: 1,
@@ -396,6 +404,7 @@
       activePinyinStep: state.activePinyinStep,
       activePinyinTotal: state.activePinyinTotal,
       lastDirection,
+      attackDirection,
       messageText: messageNode.textContent,
       messageTimer,
       startLayerHidden: startLayer.classList.contains("hidden"),
@@ -449,6 +458,30 @@
     updateHud();
   }
 
+  function setSettingsMenuOpen(open) {
+    settingsMenuOpen = Boolean(open);
+    settingsMenu.hidden = !settingsMenuOpen;
+    settingsToggle.setAttribute("aria-expanded", String(settingsMenuOpen));
+    clearInputState();
+    if (!open) { setAvatarMenuOpen(false); setAttackMenuOpen(false); }
+    saveBombProgress();
+    if (open) avatarToggle.focus();
+  }
+
+  async function toggleFullscreen() {
+    clearInputState();
+    saveBombProgress();
+    try {
+      if (document.fullscreenElement) await document.exitFullscreen();
+      else await appNode.requestFullscreen();
+    } catch {
+      setSettingsMenuOpen(true);
+      setMessage("浏览器需要点击「全屏」按钮授权全屏", 5);
+      fullscreenToggle.focus();
+    }
+    scheduleBombViewportFit();
+  }
+
   function setAvatarMenuOpen(open) {
     if (open && attackMenuOpen) setAttackMenuOpen(false);
     avatarMenuOpen = Boolean(open);
@@ -478,10 +511,10 @@
     claimBombProgress();
     playerAvatar = avatar;
     updateAvatarUi();
-    setAvatarMenuOpen(false);
+    setSettingsMenuOpen(false);
     saveBombProgress();
     if (state.status === "playing" && !awaitingContinue) canvas.focus();
-    else avatarToggle.focus();
+    else settingsToggle.focus();
   }
 
   function saveBombProgress() {
@@ -591,6 +624,7 @@
     state.hiddenPowerUps = new Map(Array.isArray(saved.hiddenPowerUps) ? saved.hiddenPowerUps : []);
     state.hiddenWordCrates = new Map(Array.isArray(saved.hiddenWordCrates) ? saved.hiddenWordCrates : []);
     migrateCombatRules(saved);
+    migrateEnemyHpRules(saved);
     state.enemies.forEach(enemy => {
       if (enemy.type === "bowser") enemy.fireCooldown = Number.isFinite(enemy.fireCooldown)
         ? clamp(enemy.fireCooldown, 0, BOWSER_FIRE_COOLDOWN) : BOWSER_FIRE_COOLDOWN;
@@ -618,7 +652,8 @@
     state.activePinyinStep = Math.max(0, Number(saved.activePinyinStep) || 0);
     state.activePinyinTotal = Math.max(0, Number(saved.activePinyinTotal) || 0);
     normalizeRestoredLevelTargets(saved.targetRevealPolicy === 1 && state.status !== "ready");
-    lastDirection = saved.lastDirection || "right";
+    lastDirection = Object.hasOwn(DIRS, saved.lastDirection) ? saved.lastDirection : "right";
+    attackDirection = Object.hasOwn(DIRS, saved.attackDirection) ? saved.attackDirection : lastDirection;
     messageNode.textContent = saved.messageText || "";
     messageTimer = Math.max(0, Number(saved.messageTimer) || 0);
     startTitle.textContent = saved.startTitleText || `第 ${state.world}-${state.subLevel} / ${LEVELS_PER_WORLD} 小关 · 难度 ${difficultyLabelForSubLevel()}`;
@@ -658,6 +693,16 @@
     state.mushroomKey = ATTACK_KEYS.includes(saved.mushroomKey) ? saved.mushroomKey : "Space";
     state.iceBombKey = ATTACK_KEYS.includes(saved.iceBombKey) && saved.iceBombKey !== state.mushroomKey
       ? saved.iceBombKey : state.mushroomKey === "KeyB" ? "Space" : "KeyB";
+  }
+
+  function migrateEnemyHpRules(saved) {
+    if (saved.enemyHpRulesVersion === ENEMY_HP_RULES_VERSION) return;
+    state.enemies.forEach(enemy => {
+      if (!enemy.alive || enemy.type === "bowser") return;
+      const oldMax = enemy.type === "bullet-bill" ? 1 : 3;
+      const newMax = enemy.type === "bullet-bill" ? 3 : 6;
+      enemy.hp = Math.max(1, newMax - Math.max(0, oldMax - (Number(enemy.hp) || oldMax)));
+    });
   }
 
   function migrateCombatRules(saved) {
@@ -1299,7 +1344,7 @@
     return {
       id,
       type: "bullet-bill",
-      hp: 1,
+      hp: 3,
       gx,
       gy,
       dir,
@@ -1370,7 +1415,7 @@
     const enemies = starts.slice(0, enemyCount).map((start, index) => ({
       id: index + 1,
       type: index === bowserStartIndex ? "bowser" : "mushroom",
-      hp: index === bowserStartIndex ? 40 : 3,
+      hp: index === bowserStartIndex ? 40 : 6,
       freezeTimer: 0,
       fireCooldown: BOWSER_FIRE_COOLDOWN,
       gx: index === bowserStartIndex ? bowserStart.gx : start.gx,
@@ -1388,7 +1433,7 @@
       enemies.push({
         id: enemies.length + 1,
         type: "koopa-green",
-        hp: 3,
+        hp: 6,
         freezeTimer: 0,
         gx: Math.min(COLS - 4, Math.max(3, center - 1)),
         gy: middle,
@@ -1618,6 +1663,7 @@
     setAvatarMenuOpen(false);
     setAttackMenuOpen(false);
     sounds.unlock();
+    setSettingsMenuOpen(false);
     claimBombProgress();
     const resuming = awaitingContinue;
     awaitingContinue = false;
@@ -1665,8 +1711,8 @@
     if (levelNode) levelNode.textContent = `${state.world}-${state.subLevel}/${LEVELS_PER_WORLD} ${difficultyLabelForSubLevel()}`;
     attackRangeLabel.textContent = "冰长";
     if (powerNode) powerNode.textContent = state.flameRange;
-    if (moonNode) moonNode.textContent = `${state.moonWordIds.length}/${BOMB_MOONS_PER_LEVEL}`;
-    moonIconNode?.classList.toggle("is-lit", state.moonWordIds.length > 0);
+    moonHud.setAttribute("aria-label", `学习月亮 ${state.moonWordIds.length}/${BOMB_MOONS_PER_LEVEL}`);
+    moonIcons.forEach((icon, index) => icon.classList.toggle("is-lit", index < state.moonWordIds.length));
     if (scoreNode) scoreNode.textContent = state.score;
   }
 
@@ -1952,7 +1998,7 @@
     if (state.status !== "playing") return;
     // Mushrooms have no ammunition limit. Existing projectiles must not swallow a fresh press.
     state.mushroomShots = state.mushroomShots.filter(isActiveMushroomShot);
-    const direction = Object.hasOwn(DIRS, lastDirection) ? lastDirection : "right";
+    const direction = Object.hasOwn(DIRS, attackDirection) ? attackDirection : "right";
     state.mushroomShots.push({
       gx: Math.round(state.player.gx),
       gy: Math.round(state.player.gy),
@@ -1971,8 +2017,7 @@
     if (!hitCrate) {
       state.enemies.forEach((enemy) => {
         if (!enemy.alive || Math.round(enemy.gx) !== gx || Math.round(enemy.gy) !== gy) return;
-        if (enemy.type === "bullet-bill") defeatEnemy(enemy);
-        else damageEnemy(enemy, true);
+        damageEnemy(enemy, true);
       });
     }
     spawnParticles("blast", gx, gy);
@@ -3046,7 +3091,7 @@
   }
 
   function damageEnemy(enemy, mushroomHit = false) {
-    if (enemy.type === "bullet-bill") return;
+    if (enemy.type === "bullet-bill" && !mushroomHit) return;
     if (!enemy.alive || (!mushroomHit && enemy.hitCooldown > 0)) return;
     enemy.hitCooldown = ENEMY_HIT_COOLDOWN;
     enemy.hp -= 1;
@@ -3157,7 +3202,7 @@
   }
 
   function update(dt) {
-    if (awaitingContinue || avatarMenuOpen || attackMenuOpen || gamepadMenuOpen) return;
+    if (awaitingContinue || settingsMenuOpen || avatarMenuOpen || attackMenuOpen || gamepadMenuOpen) return;
     if (messageTimer > 0) {
       messageTimer -= dt;
       if (messageTimer <= 0 && state.status === "playing") {
@@ -4120,38 +4165,18 @@
     ctx.restore();
   }
 
-  function drawLearningMoons() {
-    const total = BOMB_MOONS_PER_LEVEL;
-    const startX = canvas.width / 2 - (total - 1) * 34;
+  function drawAttackDirection() {
+    if (!gamepadConnected || state.status !== "playing" || isPlayerBlinkHidden()) return;
+    const center = cellCenter(state.player.gx, state.player.gy);
     ctx.save();
-    for (let index = 0; index < total; index += 1) {
-      drawStatusMoon(startX + index * 68, 68, index < state.moonWordIds.length);
-    }
-    ctx.restore();
-  }
-
-  function drawStatusMoon(cx, cy, lit) {
-    const radius = 23;
-    ctx.save();
-    ctx.shadowBlur = lit ? 18 : 0;
-    ctx.shadowColor = "rgba(255, 224, 78, 0.9)";
-    ctx.fillStyle = lit ? "#ffe04e" : "#9ca3af";
-    ctx.strokeStyle = lit ? "#fff5b7" : "#4b5563";
-    ctx.lineWidth = lit ? 3 : 2;
+    ctx.translate(center.x, center.y);
+    ctx.rotate(({ right: 0, down: Math.PI / 2, left: Math.PI, up: -Math.PI / 2 })[attackDirection]);
+    ctx.fillStyle = "#67e8f9";
+    ctx.strokeStyle = "#083344";
+    ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.arc(cx, cy, radius, Math.PI * 0.24, Math.PI * 1.76, false);
-    ctx.arc(cx + radius * 0.42, cy, radius * 0.78, Math.PI * 1.68, Math.PI * 0.32, true);
-    ctx.closePath();
-    ctx.fill();
-    ctx.shadowBlur = 0;
-    ctx.stroke();
-    if (lit) {
-      ctx.fillStyle = "#fff7bf";
-      ctx.beginPath();
-      ctx.arc(cx - 6, cy - 10, 3.5, 0, Math.PI * 2);
-      ctx.arc(cx - 10, cy + 6, 2.4, 0, Math.PI * 2);
-      ctx.fill();
-    }
+    ctx.moveTo(33, 0); ctx.lineTo(24, -6); ctx.lineTo(24, 6); ctx.closePath();
+    ctx.fill(); ctx.stroke();
     ctx.restore();
   }
 
@@ -4176,11 +4201,11 @@
     drawEnemies();
     drawCombatEffects();
     drawPlayer();
+    drawAttackDirection();
     drawParticles();
     drawOverlayFrame();
     if (state.world >= 3) ctx.restore();
     drawActivePinyinPanel();
-    drawLearningMoons();
   }
 
   function loop(now) {
@@ -4188,7 +4213,7 @@
     lastTime = now;
     animationClock += dt;
     pollGamepad(now);
-    sounds.setMusic(state.status === "playing" && !awaitingContinue && !avatarMenuOpen && !attackMenuOpen && !gamepadMenuOpen && ownsProgress &&
+    sounds.setMusic(state.status === "playing" && !awaitingContinue && !settingsMenuOpen && !avatarMenuOpen && !attackMenuOpen && !gamepadMenuOpen && ownsProgress &&
       !document.hidden && document.hasFocus() ? state.world : null);
     if (!document.hidden && ownsProgress) update(dt);
     render();
@@ -4357,9 +4382,13 @@
   function pollGamepad(now) {
     window.STUDY_GAMEPAD_CURSOR?.poll(now);
     const waiting = awaitingContinue || state.status !== "playing";
-    const enabled = !document.hidden && document.hasFocus() && !avatarMenuOpen && !attackMenuOpen && !gamepadMenuOpen &&
+    const systemEnabled = !document.hidden && document.hasFocus();
+    const enabled = systemEnabled && !settingsMenuOpen && !avatarMenuOpen && !attackMenuOpen && !gamepadMenuOpen &&
       (waiting || !hasNativeKeyboardTarget(document.activeElement));
-    const input = gamepad.poll(enabled);
+    const input = gamepad.poll(enabled, systemEnabled);
+    gamepadConnected = input.connected && input.standard;
+    if (input.refresh) { clearInputState(); saveBombProgress(); location.reload(); return; }
+    if (input.fullscreen) void toggleFullscreen();
     const status = !input.connected ? "手柄未识别：连接后按一下手柄按钮" : !input.standard
       ? "请将手柄切换到标准 / XInput 模式" : "手柄已连接";
     if (status !== gamepadStatus) {
@@ -4371,6 +4400,13 @@
       return; // Confirmation must never also throw a mushroom or place a bomb.
     }
     if (waiting) return;
+    if (input.aim && input.aim !== attackDirection) {
+      syncBombProgress();
+      if (awaitingContinue) return;
+      claimBombProgress();
+      attackDirection = input.aim;
+      saveBombProgress();
+    }
     if (input.direction !== gamepadDirection) {
       const previousDirection = gamepadDirection;
       if (gamepadDirection && !keyboardDirections.has(gamepadDirection)) heldDirections.delete(gamepadDirection);
@@ -4410,8 +4446,11 @@
       attackToggle.focus();
       return;
     }
+    if (event.key === "Escape" && settingsMenuOpen) {
+      event.preventDefault(); setSettingsMenuOpen(false); settingsToggle.focus(); return;
+    }
     if (hasNativeKeyboardTarget(event.target)) return;
-    if (avatarMenuOpen || attackMenuOpen || gamepadMenuOpen) return;
+    if (settingsMenuOpen || avatarMenuOpen || attackMenuOpen || gamepadMenuOpen) return;
     const direction = KEY_DIRS[event.code];
     if (direction) {
       event.preventDefault();
@@ -4427,6 +4466,7 @@
       heldDirections.add(direction);
       keyboardDirections.add(direction);
       lastDirection = direction;
+      if (!gamepadConnected) attackDirection = direction;
       if (!event.repeat) {
         queuedDirection = direction;
         queuedDirectionRemaining = PLAYER_TURN_BUFFER_TIME;
@@ -4470,6 +4510,7 @@
     if (!gamepadMenuOpen && !document.hidden && document.hasFocus()) {
       setAvatarMenuOpen(false);
       setAttackMenuOpen(false);
+      setSettingsMenuOpen(false);
     }
     saveBombProgress();
     if (!gamepadMenuOpen && state.status === "playing" && !awaitingContinue &&
@@ -4516,6 +4557,14 @@
     startGame();
   });
   restartButton.addEventListener("click", restartGame);
+  settingsToggle.addEventListener("click", () => {
+    syncBombProgress(); setSettingsMenuOpen(!settingsMenuOpen);
+  });
+  fullscreenToggle.addEventListener("click", () => { void toggleFullscreen(); });
+  document.addEventListener("fullscreenchange", () => {
+    fullscreenToggle.textContent = document.fullscreenElement ? "退出全屏" : "全屏";
+    scheduleBombViewportFit();
+  });
   avatarToggle.addEventListener("click", () => {
     syncBombProgress();
     setAvatarMenuOpen(!avatarMenuOpen);
@@ -4552,6 +4601,9 @@
     saveBombProgress();
   });
   document.addEventListener("pointerdown", (event) => {
+    if (settingsMenuOpen && !settingsToggle.contains(event.target) && !settingsMenu.contains(event.target)) {
+      setSettingsMenuOpen(false);
+    }
     if (avatarMenuOpen && !avatarToggle.contains(event.target) && !avatarMenu.contains(event.target)) {
       setAvatarMenuOpen(false);
     }

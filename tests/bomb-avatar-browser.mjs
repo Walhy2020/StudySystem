@@ -60,6 +60,7 @@ try {
   assert.equal(await page.evaluate(() => window.__BOMB_GAME__.getSelectedAvatar()), "fly-star");
   assert.match(await page.locator("#bombAvatarToggle").getAttribute("aria-label"), /小飞星/);
 
+  if (await page.locator("#bombSettingsMenu").isHidden()) await page.locator("#bombSettingsToggle").click();
   await page.locator("#bombAvatarToggle").focus();
   await page.keyboard.press("Space");
   assert.equal(await page.locator("#bombAvatarToggle").getAttribute("aria-expanded"), "true");
@@ -73,6 +74,7 @@ try {
   await page.waitForFunction(() => window.__bomberDraws > 0);
   await page.screenshot({ path: path.join(root, "tmp", "bomb-avatar-bomber-desktop.png") });
   const before = await page.evaluate(() => window.__BOMB_GAME__.getState());
+  if (await page.locator("#bombSettingsMenu").isHidden()) await page.locator("#bombSettingsToggle").click();
   await page.locator("#bombAvatarToggle").click();
   await page.waitForTimeout(220);
   const paused = await page.evaluate(() => window.__BOMB_GAME__.getState());
@@ -100,17 +102,20 @@ try {
   assert.equal(await page.evaluate(() => window.__BOMB_GAME__.getSelectedAvatar()), "super-mushroom", "restart keeps the chosen character");
 
   await page.setViewportSize({ width: 390, height: 844 });
+  if (await page.locator("#bombSettingsMenu").isHidden()) await page.locator("#bombSettingsToggle").click();
   await page.locator("#bombAvatarToggle").tap();
   await assertLayout(390);
   await page.locator('[data-avatar="fly-star"]').tap();
   assert.equal(await page.evaluate(() => window.__BOMB_GAME__.getSelectedAvatar()), "fly-star");
   await page.evaluate(() => { window.__bomberDraws = 0; });
+  if (await page.locator("#bombSettingsMenu").isHidden()) await page.locator("#bombSettingsToggle").click();
   await page.locator("#bombAvatarToggle").tap();
   await page.locator('[data-avatar="bomber"]').tap();
   await page.waitForFunction(() => window.__bomberDraws > 0);
   await page.screenshot({ path: path.join(root, "tmp", "bomb-avatar-bomber-390.png") });
   await page.evaluate(() => { window.__mushroomDraws = 0; });
   await page.evaluate(() => { window.__mushroomDrawWidths = []; });
+  if (await page.locator("#bombSettingsMenu").isHidden()) await page.locator("#bombSettingsToggle").click();
   await page.locator("#bombAvatarToggle").tap();
   await page.locator('[data-avatar="super-mushroom"]').tap();
   await page.waitForFunction(() => window.__mushroomDraws > 0);

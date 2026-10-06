@@ -33,12 +33,33 @@ try {
     const button = (index, down) => page.evaluate(({ index, down }) => {
       window.__pad.buttons[index] = { pressed: down, value: down ? 1 : 0 };
     }, { index, down });
+    const move = (x, y) => page.evaluate(({ x, y }) => {
+      for (const i of [12, 13, 14, 15]) window.__pad.buttons[i] = { pressed: false, value: 0 };
+      const index = y < 0 ? 12 : y > 0 ? 13 : x < 0 ? 14 : x > 0 ? 15 : -1;
+      if (index >= 0) window.__pad.buttons[index] = { pressed: true, value: 1 };
+    }, { x, y });
+    const settings = async () => {
+      if (await page.locator("#bombSettingsMenu").isHidden()) await page.locator("#bombSettingsToggle").click();
+    };
     async function tap(index) { await button(index, true); await advance(0.02); await button(index, false); await advance(0.02); }
     await page.goto(base + "bomb-game.html?gamepad=1");
     await advance(0.02); await page.screenshot({ path: `tmp/bomb-gamepad-start-${width}.png` });
     assert.equal(await page.locator("[data-gamepad-status]").last().textContent(), "手柄已连接");
     await tap(0); assert.equal((await read()).status, "playing");
     assert.equal((await read()).mushroomShots.length, 0, "A starts without throwing");
+    assert.ok((await read()).enemies.filter(enemy => enemy.type !== "bowser").every(enemy => enemy.hp === 6));
+    const layout = await page.evaluate(() => window.__BOMB_GAME__.getLevelLayout());
+    assert.deepEqual(layout.viewport, { x: 0, y: 0, width: 1280, height: 720 });
+    assert.equal(layout.tile, 48);
+    const geometry = await page.evaluate(() => {
+      const moons = document.getElementById("bombMoons").getBoundingClientRect();
+      const bar = document.querySelector(".bomb-topbar").getBoundingClientRect();
+      return { center: moons.x + moons.width / 2, width: innerWidth, height: bar.height };
+    });
+    assert.ok(Math.abs(geometry.center - width / 2) < 1, "five moons centered on entire screen");
+    assert.ok(geometry.height <= (width === 390 ? 70 : 45), JSON.stringify(geometry));
+    assert.equal(await page.locator("#bombMoons .moon-hud-icon").count(), 5);
+    await page.screenshot({ path: `tmp/bomb-expanded-${width}.png` });
     const fixture = await read();
     const rows = fixture.map.length, cols = fixture.map[0].length;
     fixture.map = Array.from({ length: rows }, (_, y) => Array.from({ length: cols }, (_, x) =>
@@ -62,9 +83,14 @@ try {
     await axes(0, 0); await advance(0.02); await tap(9);
     assert.equal(await page.evaluate(() => window.__BOMB_GAME__.isAwaitingContinue()), false);
     await axes(0.2, 0.1); await advance(0.3); assert.equal((await read()).player.gx, 2);
-    await axes(1, 0); await advance(0.3); assert.ok((await read()).player.gx > 3);
-    await axes(0, 1); await advance(0.3); assert.ok((await read()).player.gy > 3, "turn is buffered during a step");
-    await axes(0, 0); await advance(0.4); const stopped = (await read()).player;
+    await axes(0, -1); await advance(0.02);
+    assert.equal((await read()).attackDirection, "up");
+    assert.equal((await read()).player.gx, 2, "left stick aims without moving");
+    await axes(0, 0); await move(1, 0); await advance(0.3); assert.ok((await read()).player.gx > 3);
+    assert.equal((await read()).attackDirection, "up", "D-pad movement does not override aim");
+    await tap(0); assert.equal((await read()).mushroomShots.at(-1).direction, "up");
+    await move(0, 1); await advance(0.3); assert.ok((await read()).player.gy > 3, "turn is buffered during a step");
+    await move(0, 0); await advance(0.4); const stopped = (await read()).player;
     await advance(0.2); assert.equal((await read()).player.gy, stopped.gy);
     await load(fixture); await button(0, true); await advance(0.12);
     assert.equal((await read()).mushroomShots.length, 1, "held A throws only once");
@@ -72,15 +98,15 @@ try {
     assert.equal((await read()).mushroomShots.length, 2);
     await tap(1); assert.equal((await read()).bombs.filter(bomb => bomb.isIce).length, 1);
     await page.keyboard.press("Space"); assert.equal((await read()).mushroomShots.length, 3);
-    await page.locator("#bombAttackToggle").click(); await tap(0); await axes(1, 0); await advance(0.2);
+    await settings(); await page.locator("#bombAttackToggle").click(); await tap(0); await move(1, 0); await advance(0.2);
     assert.equal((await read()).mushroomShots.length, 3); assert.equal((await read()).player.gx, 2);
-    await page.keyboard.press("Escape"); await page.locator("#bombCanvas").focus();
+    await page.keyboard.press("Escape"); await page.keyboard.press("Escape"); await page.locator("#bombCanvas").focus();
     await advance(0.1); assert.equal((await read()).player.gx, 2, "held stick after menu cannot drift");
-    await axes(0, 0); await advance(0.02); await axes(1, 0); await advance(0.1);
-    await page.keyboard.down("ArrowRight"); await axes(0, 0); await advance(0.3);
+    await move(0, 0); await advance(0.02); await move(1, 0); await advance(0.1);
+    await page.keyboard.down("ArrowRight"); await move(0, 0); await advance(0.3);
     assert.ok((await read()).player.gx > 3, "gamepad release preserves held keyboard direction");
     await page.keyboard.up("ArrowRight"); await advance(0.3);
-    await axes(1, 0); await advance(0.1);
+    await move(1, 0); await advance(0.1);
     await page.evaluate(() => { window.__pad.connected = false; }); await advance(0.4);
     const disconnectedX = (await read()).player.gx; await advance(0.3);
     assert.equal((await read()).player.gx, disconnectedX);
@@ -90,11 +116,11 @@ try {
     const damage = structuredClone(fixture); damage.player.invulnerable = 0;
     Object.assign(damage.enemies[0], { gx: 3, gy: 3, stunTimer: 0, freezeTimer: 0,
       move: { fromX: 3, fromY: 3, toX: 3, toY: 3, time: 0, duration: 1000 } });
-    await load(damage); await axes(1, 0); await advance(0.35);
+    await load(damage); await move(1, 0); await advance(0.35);
     assert.equal((await read()).hp, fixture.hp - 1);
     const damagedX = (await read()).player.gx; await advance(0.5);
     assert.equal((await read()).player.gx, damagedX, "damage requires releasing the held stick");
-    await axes(0, 0); await advance(0.02); await button(12, true); await advance(0.2);
+    await move(0, 0); await advance(0.02); await button(12, true); await advance(0.2);
     assert.ok((await read()).player.gy < 3, "D-pad works after neutral");
     await button(12, false); await advance(0.2);
 
@@ -106,12 +132,48 @@ try {
     await button(0, false); await advance(0.02); await tap(0);
     assert.equal((await read()).mushroomShots.length, 1);
     await load(next, false); await tap(9); assert.equal((await read()).status, "playing");
-    await page.locator("#bombAttackToggle").click(); await advance(0.02);
+    const completed = structuredClone(fixture); completed.moonWordIds = fixture.todayNewWords.slice(0, 3).map(word => word.id);
+    await load(completed);
+    assert.equal(await page.locator("#bombMoons .is-lit").count(), 3, "saved progress lights exactly its completed moons");
+    await settings(); await page.locator("#bombAttackToggle").click(); await advance(0.02);
+    const pausedClock = (await read()).dayClock; await advance(0.3);
+    assert.equal((await read()).dayClock, pausedClock, "outer/nested settings pause gameplay");
+    if (width === 390) {
+      await page.setViewportSize({ width, height: 500 });
+      await page.locator("#readGamepadBattery").scrollIntoViewIfNeeded();
+      const battery = await page.locator("#readGamepadBattery").boundingBox();
+      assert.ok(battery.y >= 0 && battery.y + battery.height <= 500, "nested battery control scrolls into short viewport");
+      await page.setViewportSize({ width, height: 900 });
+    }
     await page.screenshot({ path: `tmp/bomb-gamepad-help-${width}.png` });
+    // R2 routes both enter and exit; browser policy rejection exposes a real-click fallback.
+    await page.evaluate(() => {
+      window.__fullCalls = [];
+      document.querySelector(".bomb-game-app").requestFullscreen = async () => { window.__fullCalls.push("enter"); };
+      document.exitFullscreen = async () => { window.__fullCalls.push("exit"); };
+    });
+    await tap(7); assert.deepEqual(await page.evaluate(() => window.__fullCalls), ["enter"]);
+    await page.evaluate(() => Object.defineProperty(document, "fullscreenElement", { configurable: true, value: document.querySelector(".bomb-game-app") }));
+    await tap(7); assert.deepEqual(await page.evaluate(() => window.__fullCalls), ["enter", "exit"]);
+    await page.evaluate(() => {
+      Object.defineProperty(document, "fullscreenElement", { configurable: true, value: null });
+      document.querySelector(".bomb-game-app").requestFullscreen = async () => { throw new DOMException("activation needed", "NotAllowedError"); };
+    });
+    await tap(7); assert.match(await page.locator("#bombMessage").textContent(), /点击.*全屏/);
+    assert.equal(await page.locator("#bombSettingsMenu").isVisible(), true);
+    // R1 really navigates/reloads the page and keeps progress behind the Continue gate.
+    const beforeRefresh = await read();
+    await Promise.all([page.waitForEvent("load"), button(5, true).then(() => advance(0.02))]);
+    await advance(0.02);
+    assert.equal(await page.evaluate(() => window.__BOMB_GAME__.isAwaitingContinue()), true);
+    assert.deepEqual((await read()).player, beforeRefresh.player);
+    assert.equal((await read()).attackDirection, beforeRefresh.attackDirection);
+    assert.deepEqual((await read()).map, beforeRefresh.map);
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     assert.deepEqual(errors, []);
     results.push({ width, mockStandardGamepad: true, movement: true, dualAttacks: true,
-      startContinueNext: true, disconnectNeutral: true, damageNeutral: true, keyboardPreserved: true });
+      startContinueNext: true, disconnectNeutral: true, damageNeutral: true, keyboardPreserved: true,
+      independentAim: true, compactCenteredMoons: true, fullMapViewport: true, refreshSaved: true, fullscreenMock: true });
     await context.close();
   }
   console.log(JSON.stringify({ ok: true, browser: "Microsoft Edge", results }));

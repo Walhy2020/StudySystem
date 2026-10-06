@@ -32,7 +32,7 @@ test("蘑菇不再因场上已有三发而丢弃新的投掷", () => {
   const state = { status: "playing", mushroomShots: Array.from({ length: 3 }, () => ({ ...shot })),
     player: { gx: 2, gy: 3 }, throwDistance: 3 };
   const throwMushroom = new Function("state", "isActiveMushroomShot", `
-    const DIRS = { right: {} }, lastDirection = "right";
+    const DIRS = { right: {} }, attackDirection = "right";
     const sounds = { play() {} }, saveBombProgress = () => {};
     ${throwSource}
     return throwMushroom;

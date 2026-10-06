@@ -11,18 +11,19 @@ function harness() {
     button: (index, down) => { pad.buttons[index] = { pressed: down, value: down ? 1 : 0 }; } };
 }
 
-test("手柄摇杆死区、主轴选择及十字键优先，不把对角输入当斜移", () => {
+test("左摇杆只瞄准、十字键只移动，死区和主轴避免斜移", () => {
   const h = harness(); h.reader.poll();
   h.pad.axes = [0.2, -0.2]; assert.equal(h.reader.poll().direction, "");
-  h.pad.axes = [0.8, 0.4]; assert.equal(h.reader.poll().direction, "right");
-  h.pad.axes = [0.1, -0.8]; assert.equal(h.reader.poll().direction, "up");
+  h.pad.axes = [0.8, 0.4]; assert.equal(h.reader.poll().aim, "right");
+  assert.equal(h.reader.poll().direction, "");
+  h.pad.axes = [0.1, -0.8]; assert.equal(h.reader.poll().aim, "up");
   h.button(14, true); assert.equal(h.reader.poll().direction, "left");
   h.button(15, true); assert.equal(h.reader.poll().direction, "");
 });
 
-test("手柄A/B/Start只在新按下触发一次，松开可再次触发", () => {
+test("手柄攻击/确认/R1/R2只在新按下触发一次，松开可再次触发", () => {
   const h = harness(); h.reader.poll();
-  for (const [index, action] of [[0, "mushroom"], [1, "ice"], [9, "confirm"]]) {
+  for (const [index, action] of [[0, "mushroom"], [1, "ice"], [9, "confirm"], [5, "refresh"], [7, "fullscreen"]]) {
     h.button(index, true); assert.equal(h.reader.poll()[action], true);
     assert.equal(h.reader.poll()[action], false);
     h.button(index, false); h.reader.poll();
@@ -35,13 +36,27 @@ test("连接、受伤重置、暂停和重连时按住不误动作，必须回�
   const h = harness(); h.pad.axes = [0, 1]; h.button(0, true);
   assert.equal(h.reader.poll().direction, ""); assert.equal(h.reader.poll().mushroom, false);
   h.pad.axes = [0, 0]; h.button(0, false); h.reader.poll();
-  h.pad.axes = [0, 1]; assert.equal(h.reader.poll().direction, "down");
+  h.pad.axes = [0, 1]; assert.equal(h.reader.poll().aim, "down");
   h.reader.reset(); assert.equal(h.reader.poll().direction, "");
   h.pad.axes = [0, 0]; h.reader.poll();
   h.reader.poll(false); h.pad.axes = [0, 1]; assert.equal(h.reader.poll().direction, "");
   h.pad.axes = [0, 0]; h.reader.poll();
   h.connect([]); assert.equal(h.reader.poll().connected, false);
   h.pad.axes = [1, 0]; h.connect([h.pad]); assert.equal(h.reader.poll().direction, "");
+});
+
+test("菜单中R1/R2可用、战斗禁用，失焦或重连后按住不重触发", () => {
+  const h = harness(); h.reader.poll(false, true);
+  h.button(5, true); h.button(0, true);
+  assert.equal(h.reader.poll(false, true).refresh, true);
+  assert.equal(h.reader.poll(false, true).mushroom, false);
+  assert.equal(h.reader.poll(false, true).refresh, false);
+  h.reader.poll(false, false);
+  assert.equal(h.reader.poll(true, true).refresh, false);
+  h.button(5, false); h.button(0, false); h.reader.poll();
+  h.button(7, true); assert.equal(h.reader.poll().fullscreen, true);
+  h.connect([]); h.reader.poll(); h.connect([h.pad]);
+  assert.equal(h.reader.poll().fullscreen, false);
 });
 
 test("手柄保留已选标准设备，非标准/API不可用不猜测攻击按钮", () => {

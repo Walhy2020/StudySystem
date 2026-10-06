@@ -1,0 +1,98 @@
+{
+  "schemaVersion": 1,
+  "snapshotDate": "2026-10-06",
+  "relationshipKind": "logical-coordination-not-restorable-chat-tree",
+  "repository": "https://github.com/Walhy2020/StudySystem.git",
+  "main": {
+    "title": "学习系统主会话",
+    "originalThreadId": "01a014e5-4a69-7941-9d31-4095a09be774",
+    "model": "gpt-6.1-sol",
+    "reasoningEffort": "high",
+    "modelEvidence": "Last observed turn_context on 2026-10-06"
+  },
+  "children": [
+    {
+      "role": "S01",
+      "title": "S01 汉字模块",
+      "originalThreadId": "01a0152a-afef-7992-af9b-94a2743c8499",
+      "coordinatorOriginalThreadId": "01a014e5-4a69-7941-9d31-4095a09be774",
+      "model": "gpt-6-astra",
+      "reasoningEffort": "medium",
+      "modelEvidence": "Last observed turn_context on 2026-09-08; not an assertion about current global defaults",
+      "preset": "s01-hanzi",
+      "scope": "汉字及拼音模块；保持独立存储，汉字复习最多20项。"
+    },
+    {
+      "role": "S02",
+      "title": "S02 炸弹迷宫模块",
+      "originalThreadId": "01a0190f-4eba-75f1-87df-535436e747e3",
+      "coordinatorOriginalThreadId": "01a014e5-4a69-7941-9d31-4095a09be774",
+      "model": "gpt-6-astra",
+      "reasoningEffort": "medium",
+      "modelEvidence": "Last observed turn_context on 2026-09-08; not an assertion about current global defaults",
+      "preset": "s02-bomb",
+      "scope": "炸弹迷宫、游戏手柄和音效；保持五个不同目标和独立游戏进度。"
+    },
+    {
+      "role": "S03",
+      "title": "S03 Book 模块",
+      "originalThreadId": "01a0195b-8f15-7822-a982-6ad0776f1008",
+      "coordinatorOriginalThreadId": "01a014e5-4a69-7941-9d31-4095a09be774",
+      "model": "gpt-6-astra",
+      "reasoningEffort": "medium",
+      "modelEvidence": "Last observed turn_context on 2026-09-08; not an assertion about current global defaults",
+      "preset": "s03-book",
+      "scope": "Book1 A-Z、每字母4词的主题学习流程。"
+    },
+    {
+      "role": "S04",
+      "title": "S04 主题推进",
+      "originalThreadId": "01a01e1a-6c9e-73a2-bc3f-46c5aa8196af",
+      "coordinatorOriginalThreadId": "01a014e5-4a69-7941-9d31-4095a09be774",
+      "model": "gpt-6-astra",
+      "reasoningEffort": "medium",
+      "modelEvidence": "Last observed turn_context on 2026-09-08; not an assertion about current global defaults",
+      "preset": "s04-themes",
+      "scope": "主题、情景与总复习；保持模块存储边界和统一已学词库。"
+    },
+    {
+      "role": "S05",
+      "title": "S05 音标模块",
+      "originalThreadId": "01a0243c-eee9-7523-aa74-00aaa4ab0372",
+      "coordinatorOriginalThreadId": "01a014e5-4a69-7941-9d31-4095a09be774",
+      "model": "gpt-6-astra",
+      "reasoningEffort": "medium",
+      "modelEvidence": "Last observed turn_context on 2026-09-08; not an assertion about current global defaults",
+      "preset": "s05-phonetics",
+      "scope": "48音标模块，每轮复习包含全部非mastered项。"
+    },
+    {
+      "role": "T01",
+      "title": "T01 素材整理",
+      "originalThreadId": "01a01a12-273a-7203-a5dc-fc712d4c2ac3",
+      "coordinatorOriginalThreadId": "01a014e5-4a69-7941-9d31-4095a09be774",
+      "model": "gpt-6-astra",
+      "reasoningEffort": "medium",
+      "modelEvidence": "Last observed turn_context on 2026-09-08; not an assertion about current global defaults",
+      "preset": "t01-assets",
+      "scope": "只做指定素材整理、内容核对与资源索引；不改业务代码。"
+    },
+    {
+      "role": "T02",
+      "title": "T02 图片生成",
+      "originalThreadId": "01a01f40-66fd-71a0-a11d-7a4815e9cbcf",
+      "coordinatorOriginalThreadId": "01a014e5-4a69-7941-9d31-4095a09be774",
+      "model": "gpt-6-astra",
+      "reasoningEffort": "medium",
+      "modelEvidence": "Last observed turn_context on 2026-09-08; not an assertion about current global defaults",
+      "preset": "t02-images",
+      "scope": "使用imagegen技能生成和检查素材；中间稿output，批准后assets；不泄露密钥。"
+    }
+  ],
+  "limitations": [
+    "Git does not import existing chat history, IDs, or app parent pointers.",
+    "Manual chats must select their model in the app; custom agent templates configure spawned agents only.",
+    "No credentials, browser profiles, HID permissions, or learning progress are included.",
+    "Models and skills require availability on the destination account/device."
+  ]
+}

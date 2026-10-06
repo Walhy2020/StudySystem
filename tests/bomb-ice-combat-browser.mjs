@@ -38,7 +38,8 @@ try {
     assert.deepEqual([seed.bombLimit, seed.flameRange, seed.mushroomKey, seed.iceBombKey], [1, 2, "Space", "KeyB"]);
     for (const type of ["iceFlower", "iceBomb"]) assert.equal(seed.hiddenPowerUps.filter(([, t]) => t === type).length, 1);
     assert.equal(seed.enemies.find(e => e.type === "bowser").hp, 40);
-    assert.ok(seed.enemies.filter(e => e.type !== "bowser").every(e => e.hp === 3));
+    assert.ok(seed.enemies.filter(e => e.type !== "bowser").every(e => e.hp === 6));
+    if (await page.locator("#bombSettingsMenu").isHidden()) await page.locator("#bombSettingsToggle").click();
     if (width === 390) await page.locator("#bombAttackToggle").tap();
     else await page.locator("#bombAttackToggle").click();
     await page.locator("#mushroomAttackKey").selectOption("KeyJ");

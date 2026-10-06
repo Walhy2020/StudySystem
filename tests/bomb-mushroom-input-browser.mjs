@@ -79,6 +79,7 @@ try {
     for (let i = 0; i < 5; i++) await page.keyboard.press("J");
     assert.equal((await read()).mushroomShots.length, 5);
     await page.keyboard.press("Space"); assert.equal((await read()).bombs.length, 1);
+    if (await page.locator("#bombSettingsMenu").isHidden()) await page.locator("#bombSettingsToggle").click();
     await page.locator("#bombAttackToggle").focus();
     await page.keyboard.press("J");
     assert.equal((await read()).mushroomShots.length, 5, "native controls keep their keyboard guard");

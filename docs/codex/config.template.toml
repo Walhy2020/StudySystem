@@ -1,0 +1,8 @@
+# Copy/merge into project .codex/config.toml only when reconstructing the setup.
+# Do not overwrite existing configuration or include credentials.
+model = "gpt-6.1-sol"
+model_reasoning_effort = "high"
+
+[agents]
+default_subagent_model = "gpt-6-astra"
+default_subagent_reasoning_effort = "medium"

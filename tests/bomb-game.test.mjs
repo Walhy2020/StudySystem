@@ -34,8 +34,8 @@ const calculateLayout = new Function(
 });
 
 assert.match(html, /<canvas id="bombCanvas" width="1280" height="720"/);
-assert.ok(html.includes('bomb-game.css?v=1.6'));
-assert.ok(html.includes('bomb-game.js?v=2.28'));
+assert.ok(html.includes('bomb-game.css?v=1.7'));
+assert.ok(html.includes('bomb-game.js?v=2.29'));
 assert.ok(html.includes('id="bombAttackToggle"'));
 assert.ok(html.includes('id="mushroomThrowDistance"'));
 assert.ok(js.includes('const MUSHROOM_THROW_STEP_TIME = 0.09;'));
@@ -149,7 +149,7 @@ assert.ok(js.includes('const BOMB_PROGRESS_VERSION = 1;'));
 assert.ok(js.includes('playerAvatar,'), "selected avatar is saved in the existing bomb snapshot");
 assert.ok(js.includes('saved.playerAvatar') && js.includes('"fly-star"'), "older saves retain the current fly-star default");
 assert.ok(js.includes('getSelectedAvatar: () => playerAvatar'));
-assert.ok(js.includes('if (awaitingContinue || avatarMenuOpen || attackMenuOpen || gamepadMenuOpen) return;'),
+assert.ok(js.includes('if (awaitingContinue || settingsMenuOpen || avatarMenuOpen || attackMenuOpen || gamepadMenuOpen) return;'),
   "character, attack and gamepad menus pause gameplay");
 const writes = [...js.matchAll(/localStorage\.(setItem|removeItem)\(([^,\)]+)/g)].map((match) => match[2].trim());
 assert.deepEqual([...new Set(writes)], ["BOMB_PROGRESS_KEY"], "only bomb progress storage may be mutated");
@@ -175,7 +175,7 @@ assert.ok(js.includes('if (isNightTime() && enemy.type !== "koopa-green")'));
 assert.ok(js.includes('if (!isNightTime() || enemy.type === "koopa-green" || enemy.type === "bullet-bill") return;'));
 assert.match(js, /function isNightTime\(\) \{\s+return false;\s+\}/);
 assert.ok(js.includes('type: index === bowserStartIndex ? "bowser" : "mushroom",'));
-assert.ok(js.includes("hp: index === bowserStartIndex ? 40 : 3,"));
+assert.ok(js.includes("hp: index === bowserStartIndex ? 40 : 6,"));
 assert.ok(js.includes('state.subLevel + 4 + (state.world - FIRST_WORLD) * 2'));
 assert.ok(js.includes('bowserCandidates[Math.floor(Math.random() * bowserCandidates.length)]'));
 assert.ok(js.includes('type: "koopa-green",'));
@@ -192,7 +192,7 @@ assert.ok(js.includes("const BULLET_BILL_SIGHT_RANGE = 8;"));
 assert.ok(js.includes("const BULLET_BILL_FORGET_TIME = 1;"));
 assert.ok(js.includes("const BULLET_BILL_DROP_RANGE = 10;"));
 assert.ok(js.includes("function convertBombTouchedByBulletBill(enemy)"));
-assert.ok(js.includes('if (enemy.type === "bullet-bill") return;'));
+assert.ok(js.includes('if (enemy.type === "bullet-bill" && !mushroomHit) return;'));
 assert.ok(!js.includes("function explodeBulletBill("));
 assert.ok(js.includes('enemy.type === "bullet-bill"'));
 assert.ok(js.includes("advanceMove(enemy, dt, true)"), "Bullet Bill uses continuous linear movement between cells");

@@ -53,7 +53,7 @@ test("世界3至6逐世界增加怪物且库巴不占出生点", () => {
     for (state.subLevel = 1; state.subLevel <= 5; state.subLevel += 1) {
       const enemies = createEnemies();
       assert.equal(enemies.find(enemy => enemy.type === "bowser").hp, 40);
-      assert.ok(enemies.filter(enemy => enemy.type !== "bowser").every(enemy => enemy.hp === 3));
+      assert.ok(enemies.filter(enemy => enemy.type !== "bowser").every(enemy => enemy.hp === 6));
       assert.equal(enemies.length, state.subLevel + 5 + (state.world - 3) * 2);
       assert.equal(enemies.filter(enemy => enemy.type === "koopa-green").length, 1);
       assert.equal(new Set(enemies.map(enemy => coordKey(enemy.gx, enemy.gy))).size, enemies.length);

@@ -120,13 +120,13 @@ try {
     await page.goto(base + "bomb-game.css?cursor-fixture=1");
     await page.evaluate(({ key, fixture }) => localStorage.setItem(key, JSON.stringify(fixture)), { key, fixture });
     await page.goto(base + "bomb-game.html?cursor=1"); await advance(0.05);
-    await tap(9); await aim("#bombAvatarToggle");
+    await tap(9); await aim("#bombSettingsToggle"); await tap(); await aim("#bombAvatarToggle");
     const paused = await read(); await advance(0.5);
     assert.equal((await read()).dayClock, paused.dayClock, "cursor menu pauses the game");
     await tap(); await aim('[data-avatar="super-mushroom"]'); await tap();
     assert.equal((await read()).playerAvatar, "super-mushroom");
     assert.equal((await read()).mushroomShots.length, 0);
-    await aim("#bombAttackToggle"); await tap(); await aim("#iceBombAttackKey"); await tap();
+    await aim("#bombSettingsToggle"); await tap(); await aim("#bombAttackToggle"); await tap(); await aim("#iceBombAttackKey"); await tap();
     assert.equal(await page.locator(".study-gamepad-options").isVisible(), true);
     await aim('.study-gamepad-options button'); await tap();
     assert.equal((await read()).iceBombKey, "Space");
@@ -134,12 +134,12 @@ try {
     await page.screenshot({ path: `tmp/gamepad-cursor-bomb-${width}.png` });
     await tap(3); assert.equal(await page.locator("#bombAttackMenu").isVisible(), false);
     assert.equal(await page.locator("#study-gamepad-cursor").isVisible(), false);
-    await page.evaluate(() => { window.__pad.axes[0] = 1; }); await advance(0.2);
-    assert.ok((await read()).player.gx > 2, "left stick returns to gameplay after cursor mode");
-    await page.evaluate(() => { window.__pad.axes[0] = 0; }); await advance(0.02);
+    await page.evaluate(() => { window.__pad.buttons[15] = { pressed: true, value: 1 }; }); await advance(0.2);
+    assert.ok((await read()).player.gx > 2, "D-pad returns to gameplay after cursor mode");
+    await page.evaluate(() => { window.__pad.buttons[15] = { pressed: false, value: 0 }; }); await advance(0.02);
     await tap(); assert.equal((await read()).mushroomShots.length, 1);
     await tap(1); assert.equal((await read()).bombs.filter(bomb => bomb.isIce).length, 1);
-    await aim("#bombAvatarToggle"); await page.evaluate(() => window.dispatchEvent(new Event("blur")));
+    await aim("#bombSettingsToggle"); await page.evaluate(() => window.dispatchEvent(new Event("blur")));
     assert.equal(await page.locator("#study-gamepad-cursor").isVisible(), false);
     assert.deepEqual(errors, []);
     results.push({ width, sharedPages: 8, internalNavigation: true, blockedExternal: true,

@@ -48,6 +48,7 @@ try {
     const status = page.locator("#bombGamepadBattery"), button = page.locator("#readGamepadBattery");
     await page.waitForFunction(() => !document.getElementById("readGamepadBattery").disabled);
     assert.equal(await page.evaluate(() => window.__battery.requests), 0, "no unsolicited HID chooser");
+    if (await page.locator("#bombSettingsMenu").isHidden()) await page.locator("#bombSettingsToggle").click();
     await page.locator("#bombAttackToggle").click();
     assert.match(await status.textContent(), /未知/);
     const click = async () => { if (width === 390) await button.tap(); else await button.click(); };
@@ -92,6 +93,7 @@ try {
   const context = await browser.newContext();
   await context.addInitScript(() => Object.defineProperty(navigator, "hid", { value: undefined }));
   const page = await context.newPage(); await page.goto(base + "bomb-game.html?battery-unsupported=1");
+  if (await page.locator("#bombSettingsMenu").isHidden()) await page.locator("#bombSettingsToggle").click();
   await page.locator("#bombAttackToggle").click();
   assert.ok(await page.locator("#readGamepadBattery").isDisabled());
   assert.match(await page.locator("#bombGamepadBattery").textContent(), /不支持/);

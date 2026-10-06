@@ -534,3 +534,76 @@ a {
     font-size: 14px;
   }
 }
+
+/* Compact HUD: moons live outside the canvas, which is now all map viewport. */
+.bomb-topbar {
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-areas: "hud moons actions";
+  gap: 6px;
+  padding: 5px 8px;
+}
+.bomb-hud { gap: 4px; justify-content: flex-start; }
+.hud-pill, .hud-pill:nth-child(4) {
+  flex-basis: auto;
+  height: 30px;
+  gap: 4px;
+  padding: 0 6px;
+  font-size: 13px;
+}
+.hud-pill strong { min-width: 0; font-size: 15px; }
+.bomb-actions { gap: 4px; }
+.bomb-actions > button, .bomb-actions > a {
+  height: 30px;
+  min-width: 48px;
+  padding: 0 8px;
+  font-size: 14px;
+}
+.bomb-moons { grid-area: moons; display: flex; gap: 8px; justify-content: center; align-items: center; }
+.moon-hud-icon { width: 26px; height: 26px; flex-basis: 26px; }
+.moon-hud-icon::after { width: 19px; height: 24px; background: #0c1420; }
+.bomb-settings-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 10;
+  width: min(300px, calc(100vw - 16px));
+  max-height: calc(100dvh - 110px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: grid;
+  gap: 6px;
+  padding: 8px;
+  background: #f8fafc;
+  border: 1px solid #94a3b8;
+  border-radius: 12px;
+  box-shadow: 0 16px 35px #0006;
+}
+.bomb-settings-menu[hidden] { display: none; }
+.bomb-settings-menu > button { width: 100%; }
+.bomb-settings-menu .bomb-avatar-menu, .bomb-settings-menu .bomb-attack-menu {
+  position: static;
+  width: 100%;
+  max-height: calc(100dvh - 240px);
+  overflow-y: auto;
+  box-shadow: none;
+}
+@media (max-width: 1100px) {
+  .bomb-topbar {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "hud" "actions";
+    gap: 5px;
+  }
+  .bomb-hud { justify-content: center; }
+  .bomb-actions { justify-content: flex-start; width: 100%; }
+  .bomb-actions #bombSettingsToggle { margin-left: auto; }
+  .bomb-moons { position: absolute; left: 50%; bottom: 5px; transform: translateX(-50%); pointer-events: none; }
+}
+@media (max-width: 480px) {
+  .bomb-topbar { padding: 4px 6px; gap: 4px; }
+  .bomb-hud { gap: 4px; }
+  .hud-pill, .hud-pill:nth-child(4) { height: 28px; padding: 0 3px; gap: 3px; }
+  .bomb-actions > button, .bomb-actions > a { height: 28px; min-width: 38px; padding: 0 5px; font-size: 13px; }
+  .bomb-moons { gap: 4px; bottom: 4px; }
+  .moon-hud-icon { width: 20px; height: 20px; flex-basis: 20px; }
+  .moon-hud-icon::after { width: 14px; height: 19px; }
+}

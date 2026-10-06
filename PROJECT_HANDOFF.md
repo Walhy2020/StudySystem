@@ -1,13 +1,48 @@
 # StudySystem cross-device handoff
 
-Last updated: 2026-10-05
+Last updated: 2026-10-06
 Repository: `https://github.com/Walhy2020/StudySystem.git`
 Branch: `main`
 Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.43** (2026-10-05). Bomb attack settings add an
+System display version: **v1.0.44** (2026-10-06). Ordinary monsters now have
+6 HP and missiles 3 HP. Independent enemyHpRulesVersion migrates living saves
+once, preserving damage/dead enemies/Bowser 40 HP and ice upgrades. Missiles take
+one mushroom damage per hit and drop the existing range-10 bomb only on death.
+
+PS5 standard mapping: D-pad moves, left stick independently aims (cyan indicator),
+right stick retains menu cursor, cross/circle attacks, Options confirms. R1 saves
+and reloads the page; R2 toggles fullscreen, with a visible real-click fallback
+when browser activation policy blocks it. System buttons work in settings while
+combat remains paused. R1 no longer scrolls the bomb page's virtual menu;
+L1/L2 scroll the game settings up/down (other pages retain LB/RB).
+
+Compact top HUD has five screen-centered DOM moons and one Settings entry for
+avatar/attack/audio/fullscreen. Settings pause gameplay/music and clear held
+inputs. The camera viewport expands from 1182x626 to full 1280x720, reclaiming
+the previous canvas HUD margin; tiles remain 48 and the camera follows the player.
+Bomb CSS v1.7, JS v2.29, gamepad reader/cursor v1.1; eight notifier queries v1.0.44.
+
+Codex logical main/child relationships and last observed actual model settings
+are versioned in docs/codex/: main gpt-6.1-sol/high, seven module/material chats
+gpt-6-astra/medium. Inactive child model records date to 2026-09-08. Templates
+are not auto-activated and do not import chat histories/IDs, accounts, credentials,
+skills, controller permissions or browser progress.
+
+Targeted real Edge checks at 1440/390 use a standard Gamepad fixture for independent
+aim/D-pad, attacks, refresh/Continue, fullscreen API routing/fallback, menu pause,
+centered moons, expanded viewport and resources. Physical controller and actual
+Gamepad-triggered fullscreen authorization remain device/browser checks; no
+unrelated learning module browser flows were run. Existing tracked PNG changes
+are user-owned and excluded from this release.
+
+Release gates: pnpm run check, pnpm test (174/174), the one targeted bomb-gamepad
+Edge script and git diff --check passed. Ignored tmp desktop/390 screenshots
+were inspected; no physical-controller certification is claimed.
+
+Previous **v1.0.43** (2026-10-05). Bomb attack settings add an
 explicit WebHID battery authorization button for Sony DualSense / DualSense Edge.
 Only full USB/BT input reports are parsed; BT CRC is validated. Charge uses the
 device's ten-percent bucket (60-69%, not a fabricated precise percentage), with

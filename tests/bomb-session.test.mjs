@@ -142,6 +142,7 @@ test("玩家匀速起步并连续跨格，短按转向和移动中落弹不会�
         player:{ gx:2, gy:2, move:null, invulnerable:0 } };
       const heldDirections = new Set();
       let queuedDirection = "", queuedDirectionRemaining = 0, queuedBombPlacement = false, lastDirection = "right";
+      let attackFollowsMovement = false, attackDirection = "right";
       const rememberPlayerCell = () => {}, shellAt = () => null, pushShell = () => {};
       const bombAt = (gx, gy) => state.bombs.find(bomb => bomb.gx === gx && bomb.gy === gy);
       const isCellOpen = (gx, gy) => map[gy]?.[gx] === 0 && !bombAt(gx, gy);

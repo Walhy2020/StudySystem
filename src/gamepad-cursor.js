@@ -53,6 +53,14 @@
   let lastFrame = null, identity = "", armed = false, previous = {};
   let menu = false, hovered = null, popup = null;
 
+  function overlayHost() { return document.fullscreenElement || document.body; }
+  function syncOverlayHost() {
+    const host = overlayHost();
+    host.append(pointer, help);
+    if (popup) host.append(popup);
+  }
+  document.addEventListener("fullscreenchange", syncOverlayHost);
+
   function closePopup() { popup?.remove(); popup = null; }
   function setMenu(value) {
     if (menu === value) return;
@@ -90,7 +98,7 @@
       });
       popup.append(button);
     }
-    document.body.append(popup);
+    overlayHost().append(popup);
     const rect = select.getBoundingClientRect();
     popup.style.left = Math.max(8, Math.min(innerWidth - popup.offsetWidth - 8, rect.left)) + "px";
     popup.style.top = Math.max(8, Math.min(innerHeight - popup.offsetHeight - 8, rect.bottom + 4)) + "px";

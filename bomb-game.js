@@ -277,6 +277,7 @@
   let animationClock = 0;
   let lastDirection = "right";
   let attackDirection = "right";
+  let attackFollowsMovement = false;
   let messageTimer = 0;
   let progressSavePending = false;
   let lastRenderedLearningCardCount = 0;
@@ -405,6 +406,7 @@
       activePinyinTotal: state.activePinyinTotal,
       lastDirection,
       attackDirection,
+      attackFollowsMovement,
       messageText: messageNode.textContent,
       messageTimer,
       startLayerHidden: startLayer.classList.contains("hidden"),
@@ -654,6 +656,8 @@
     normalizeRestoredLevelTargets(saved.targetRevealPolicy === 1 && state.status !== "ready");
     lastDirection = Object.hasOwn(DIRS, saved.lastDirection) ? saved.lastDirection : "right";
     attackDirection = Object.hasOwn(DIRS, saved.attackDirection) ? saved.attackDirection : lastDirection;
+    attackFollowsMovement = saved.attackFollowsMovement === true;
+    updateAttackDirectionUi();
     messageNode.textContent = saved.messageText || "";
     messageTimer = Math.max(0, Number(saved.messageTimer) || 0);
     startTitle.textContent = saved.startTitleText || `第 ${state.world}-${state.subLevel} / ${LEVELS_PER_WORLD} 小关 · 难度 ${difficultyLabelForSubLevel()}`;
@@ -1850,6 +1854,7 @@
 
   function startMove(actor, direction, duration) {
     if (actor === state.player) rememberPlayerCell(Math.round(actor.gx), Math.round(actor.gy));
+    if (actor === state.player && attackFollowsMovement) attackDirection = direction;
     const dir = DIRS[direction];
     const targetX = Math.round(actor.gx) + dir.x;
     const targetY = Math.round(actor.gy) + dir.y;
@@ -4165,17 +4170,22 @@
     ctx.restore();
   }
 
+  function updateAttackDirectionUi() {
+    document.getElementById("attackDirectionMode").textContent = attackFollowsMovement
+      ? "攻击方向：跟随行走（L3 解除）" : "攻击方向：独立瞄准（L3 锁定跟随）";
+  }
+
   function drawAttackDirection() {
     if (!gamepadConnected || state.status !== "playing" || isPlayerBlinkHidden()) return;
     const center = cellCenter(state.player.gx, state.player.gy);
     ctx.save();
     ctx.translate(center.x, center.y);
     ctx.rotate(({ right: 0, down: Math.PI / 2, left: Math.PI, up: -Math.PI / 2 })[attackDirection]);
-    ctx.fillStyle = "#67e8f9";
+    ctx.fillStyle = attackFollowsMovement ? "#facc15" : "#67e8f9";
     ctx.strokeStyle = "#083344";
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(33, 0); ctx.lineTo(24, -6); ctx.lineTo(24, 6); ctx.closePath();
+    ctx.moveTo(48, 0); ctx.lineTo(30, -12); ctx.lineTo(30, 12); ctx.closePath();
     ctx.fill(); ctx.stroke();
     ctx.restore();
   }
@@ -4400,7 +4410,17 @@
       return; // Confirmation must never also throw a mushroom or place a bomb.
     }
     if (waiting) return;
-    if (input.aim && input.aim !== attackDirection) {
+    if (input.aimToggle) {
+      syncBombProgress();
+      if (awaitingContinue) return;
+      claimBombProgress();
+      attackFollowsMovement = !attackFollowsMovement;
+      if (attackFollowsMovement) attackDirection = state.player.move?.direction || lastDirection;
+      updateAttackDirectionUi();
+      setMessage(attackFollowsMovement ? "攻击方向：跟随行走" : "攻击方向：独立瞄准", 1.5);
+      saveBombProgress();
+    }
+    if (!attackFollowsMovement && input.aim && input.aim !== attackDirection) {
       syncBombProgress();
       if (awaitingContinue) return;
       claimBombProgress();
@@ -4466,7 +4486,7 @@
       heldDirections.add(direction);
       keyboardDirections.add(direction);
       lastDirection = direction;
-      if (!gamepadConnected) attackDirection = direction;
+      if (!gamepadConnected && !attackFollowsMovement) attackDirection = direction;
       if (!event.repeat) {
         queuedDirection = direction;
         queuedDirectionRemaining = PLAYER_TURN_BUFFER_TIME;

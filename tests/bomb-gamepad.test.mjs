@@ -23,13 +23,26 @@ test("左摇杆只瞄准、十字键只移动，死区和主轴避免斜移", ()
 
 test("手柄攻击/确认/R1/R2只在新按下触发一次，松开可再次触发", () => {
   const h = harness(); h.reader.poll();
-  for (const [index, action] of [[0, "mushroom"], [1, "ice"], [9, "confirm"], [5, "refresh"], [7, "fullscreen"]]) {
+  for (const [index, action] of [[0, "mushroom"], [1, "ice"], [9, "confirm"], [10, "aimToggle"], [5, "refresh"], [7, "fullscreen"]]) {
     h.button(index, true); assert.equal(h.reader.poll()[action], true);
     assert.equal(h.reader.poll()[action], false);
     h.button(index, false); h.reader.poll();
     h.button(index, true); assert.equal(h.reader.poll()[action], true);
     h.button(index, false); h.reader.poll();
   }
+});
+
+test("L3行走或瞄准中可切换，但暂停/连接时按住必须先松开回中", () => {
+  const h = harness(); h.reader.poll();
+  h.pad.axes = [1, 0]; h.button(12, true); h.button(10, true);
+  const moving = h.reader.poll();
+  assert.equal(moving.aimToggle, true); assert.equal(moving.direction, "up");
+  assert.equal(h.reader.poll().aimToggle, false);
+  h.reader.poll(false); assert.equal(h.reader.poll().aimToggle, false);
+  h.pad.axes = [0, 0]; h.button(12, false); h.button(10, false); h.reader.poll();
+  h.button(10, true); assert.equal(h.reader.poll().aimToggle, true);
+  h.connect([]); h.reader.poll(); h.connect([h.pad]);
+  assert.equal(h.reader.poll().aimToggle, false);
 });
 
 test("连接、受伤重置、暂停和重连时按住不误动作，必须回中松键", () => {

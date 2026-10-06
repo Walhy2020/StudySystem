@@ -44,7 +44,8 @@
             <select id="iceBombAttackKey" aria-label="冰炸弹快捷键"></select>
             <label for="mushroomThrowDistance">投掷距离 <output id="mushroomThrowDistanceValue" for="mushroomThrowDistance">3 格</output></label>
             <input id="mushroomThrowDistance" type="range" min="1" max="8" step="1" value="3" aria-label="小蘑菇投掷距离，单位格" />
-            <p class="bomb-attack-help">键盘投掷跟随移动方向；手柄左摇杆独立瞄准，十字键移动；冰炸弹在脚下释放。重复快捷键会自动交换。</p>
+            <p class="bomb-attack-help">键盘投掷跟随移动方向；手柄左摇杆独立瞄准，十字键移动；按下左摇杆 L3 锁定跟随行走，再按解除；冰炸弹在脚下释放。重复快捷键会自动交换。</p>
+            <p class="bomb-attack-help" id="attackDirectionMode" role="status">攻击方向：独立瞄准（L3 锁定跟随）</p>
             <p class="bomb-attack-help">A / × 扔小蘑菇；B / ○ 放冰炸弹；Start / Options 开始、继续或确认下一关。R1 刷新页面；R2 全屏。右摇杆菜单光标，A / × 点选；Y / △ 返回游戏。</p>
             <p class="bomb-attack-help" data-gamepad-status role="status">连接手柄后按一下按钮</p>
             <div class="bomb-battery-settings">
@@ -63,7 +64,7 @@
           <div class="bomb-start-panel">
             <h2 id="bombStartTitle">炸弹迷宫</h2>
             <button id="overlayStartBombGame" type="button">开始</button>
-            <p class="bomb-gamepad-help">手柄：十字键移动 · 左摇杆瞄准<br />A / × 小蘑菇 · B / ○ 冰炸弹<br />R1 刷新 · R2 全屏<br />A / × 或 Start / Options 确认开始、继续、下一关<br />右摇杆菜单光标 · A / × 点选 · Y / △ 回游戏</p>
+            <p class="bomb-gamepad-help">手柄：十字键移动 · 左摇杆瞄准<br />L3 按下左摇杆：锁定跟随 / 解除<br />A / × 小蘑菇 · B / ○ 冰炸弹<br />R1 刷新 · R2 全屏<br />A / × 或 Start / Options 确认开始、继续、下一关<br />右摇杆菜单光标 · A / × 点选 · Y / △ 回游戏</p>
             <p class="bomb-gamepad-help" data-gamepad-status role="status">连接手柄后按一下按钮</p>
           </div>
         </section>
@@ -74,10 +75,10 @@
   <script src="./data/pinyin-readings.js?v=1.0"></script>
 
   <script src="./src/bomb-audio.js?v=1.4"></script>
-  <script src="./src/gamepad-cursor.js?v=1.1"></script>
-  <script src="./src/bomb-gamepad.js?v=1.1"></script>
+  <script src="./src/gamepad-cursor.js?v=1.2"></script>
+  <script src="./src/bomb-gamepad.js?v=1.2"></script>
   <script src="./src/bomb-gamepad-battery.js?v=1.0"></script>
-  <script src="./bomb-game.js?v=2.29"></script>
-  <script type="module" src="./src/version-update.js?v=1.0.44"></script>
+  <script src="./bomb-game.js?v=2.30"></script>
+  <script type="module" src="./src/version-update.js?v=1.0.45"></script>
 </body>
 </html>

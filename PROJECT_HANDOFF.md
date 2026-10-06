@@ -7,7 +7,29 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.44** (2026-10-06). Ordinary monsters now have
+System display version: **v1.0.45** (2026-10-06). L3 (press left stick) toggles
+attack-direction follow while walking; press again restores independent stick aim.
+The follow flag persists in the existing bomb save, defaults off for older saves,
+tracks actual successful movement/turns and ignores stick aim while locked.
+Menu/Continue/held-button and reconnect protections remain intact. The arrow's
+triangle width/height are doubled; follow is yellow and free aim cyan.
+
+Fullscreen cursor fix: pointer, help and controller-select popup are mounted in
+document.fullscreenElement while fullscreen is active and restored to body on
+exit. The right-stick virtual menu cursor remains visible and clickable in the
+browser fullscreen top layer, without OS mouse control. Shared cursor/reader
+caches v1.2, bomb JS v2.30, CSS unchanged v1.7; eight notifier queries v1.0.45.
+
+Focused verification: tests/bomb-aim-fullscreen-browser.mjs used real Microsoft
+Edge at 1440/390 with a standard PS5 input fixture. It covered L3 while walking,
+held single-toggle, turns/attacks, reload/Continue lock persistence, unlock and
+menu protection, enlarged-arrow rendering, actual trusted-click fullscreen,
+visible right-stick cursor/help/select popup, exit reparenting and resource errors.
+Only this changed-feature browser script ran; no unrelated module flows.
+Syntax and 175 Node tests passed; physical-controller operation is not claimed.
+Ignored tmp screenshots inspected; existing tracked PNG changes preserved.
+
+Previous **v1.0.44** (2026-10-06). Ordinary monsters now have
 6 HP and missiles 3 HP. Independent enemyHpRulesVersion migrates living saves
 once, preserving damage/dead enemies/Bowser 40 HP and ice upgrades. Missiles take
 one mushroom damage per hit and drop the existing range-10 bomb only on death.

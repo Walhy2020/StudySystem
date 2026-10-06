@@ -3,6 +3,7 @@
     "scenario-learning.html", "review-learning.html", "phonetics.html", "bomb-game.html"];
   const DEADZONE = 0.25;
   const SPEED = 650;
+  const SCROLL_SPEED = 500;
   const pressed = (pad, index) => Boolean(pad.buttons?.[index]?.pressed || pad.buttons?.[index]?.value > 0.5);
 
   function safeDestination(href, base, current = base) {
@@ -13,10 +14,10 @@
     } catch { return null; }
   }
 
+  const axisStrength = value => Number.isFinite(value) && Math.abs(value) > DEADZONE
+    ? Math.sign(value) * (Math.min(1, Math.abs(value)) - DEADZONE) / (1 - DEADZONE) : 0;
   function cursorStep(position, axes, dt, width, height) {
-    const axis = value => Number.isFinite(value) && Math.abs(value) > DEADZONE
-      ? Math.sign(value) * (Math.min(1, Math.abs(value)) - DEADZONE) / (1 - DEADZONE) : 0;
-    let x = axis(axes[0]), y = axis(axes[1]);
+    let x = axisStrength(axes[0]), y = axisStrength(axes[1]);
     const length = Math.hypot(x, y);
     if (length > 1) { x /= length; y /= length; }
     const limit = (value, size) => {
@@ -27,7 +28,13 @@
       y: limit(position.y + y * SPEED * Math.max(0, Math.min(0.05, dt)), height) };
   }
 
-  globalThis.StudyGamepadCursorTools = Object.freeze({ safeDestination, cursorStep });
+  function edgeScrollAmount(position, axes, dt, height) {
+    const y = axisStrength(axes[1]);
+    const outward = (y < 0 && position.y <= 12.5) || (y > 0 && position.y >= height - 12.5);
+    return outward && Number.isFinite(dt) ? y * SCROLL_SPEED * Math.max(0, Math.min(0.05, dt)) : 0;
+  }
+
+  globalThis.StudyGamepadCursorTools = Object.freeze({ safeDestination, cursorStep, edgeScrollAmount });
   if (typeof document === "undefined" || typeof window === "undefined") return;
   const source = document.currentScript?.src;
   if (!source) return;
@@ -46,7 +53,7 @@
   const help = document.createElement("div");
   help.id = "study-gamepad-help";
   help.textContent = isGame ? "菜单已暂停游戏 · 右摇杆移动 · A / × 点选 · L1 / L2 滚动 · Y / △ 回游戏"
-    : "手柄光标 · 摇杆移动 · A / × 点选 · LB / RB 滚动";
+    : "手柄光标 · 摇杆移动 · 到上下边缘继续推可滚动 · A / × 点选 · LB / RB 滚动";
   help.hidden = true;
   document.body.append(pointer, help);
   let position = { x: innerWidth / 2, y: innerHeight / 2 };
@@ -137,21 +144,23 @@
     if (isGame && (target.id === "bombCanvas" || target.id === "startBombGame" ||
       target.id === "overlayStartBombGame" || target.id === "restartBombGame")) setMenu(false);
   }
-  function scrollAtCursor(amount, freshPress) {
+  function scrollAtCursor(amount, freshPress, verticalOnly = false) {
     let node = document.elementFromPoint(position.x, position.y);
     while (node && node !== document.body) {
       const css = getComputedStyle(node);
       if (/(auto|scroll)/.test(css.overflowY) && node.scrollHeight > node.clientHeight + 1) {
-        node.scrollTop += amount; return;
+        const canScroll = amount > 0 ? node.scrollTop < node.scrollHeight - node.clientHeight - 1 : node.scrollTop > 0;
+        if (!verticalOnly || canScroll) { node.scrollTop += amount; return; }
       }
-      if (/(auto|scroll)/.test(css.overflowX) && node.scrollWidth > node.clientWidth + 1) {
+      if (!verticalOnly && /(auto|scroll)/.test(css.overflowX) && node.scrollWidth > node.clientWidth + 1) {
         // A full step avoids mandatory scroll-snap snapping every tiny frame back to the same card.
         if (freshPress) node.scrollLeft += Math.sign(amount) * Math.max(160, node.clientWidth * 0.8);
         return;
       }
       node = node.parentElement;
     }
-    document.scrollingElement.scrollTop += amount;
+    const root = document.scrollingElement;
+    if (root && (!verticalOnly || !/(hidden|clip)/.test(getComputedStyle(root).overflowY))) root.scrollTop += amount;
   }
   function suspend() {
     armed = false; previous = {};
@@ -193,10 +202,14 @@
     if (menu) {
       position = cursorStep(position, axes, dt, innerWidth, innerHeight);
       pointer.style.left = position.x + "px"; pointer.style.top = position.y + "px";
-      setHover(targetAtCursor());
       const scroll = Number(buttons.scrollDown) - Number(buttons.scrollUp);
       if (scroll) scrollAtCursor(scroll * 500 * Math.max(0, Math.min(0.05, dt)),
         (buttons.scrollDown && !previous.scrollDown) || (buttons.scrollUp && !previous.scrollUp));
+      else {
+        const edgeScroll = edgeScrollAmount(position, axes, dt, innerHeight);
+        if (edgeScroll) scrollAtCursor(edgeScroll, false, true);
+      }
+      setHover(targetAtCursor());
       if (buttons.click && !previous.click) clickAtCursor();
     } else setHover(null);
     previous = buttons;

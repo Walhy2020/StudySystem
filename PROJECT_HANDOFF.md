@@ -7,7 +7,28 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.47** (2026-10-06). Attack shortcuts now use
+System display version: **v1.0.48** (2026-10-06). The shared in-page gamepad
+cursor now scrolls vertically when held outward at the viewport top/bottom.
+Right-stick movement keeps the cursor inside the page; downward push at the
+bottom reveals lower content, upward push at the top returns toward the header.
+Release/deadzone/reverse motion stops edge scrolling immediately. Scroll speed
+scales with stick deflection, capped at 500px/s. Vertical containers under the
+cursor scroll first, exhausted containers fall back to the page, and horizontal
+lists are not converted into sideways motion. Shoulder scrolling retains its
+existing horizontal snap behavior and takes priority to avoid doubled scrolling.
+Focus/disconnect/neutral and shortcut-capture protections remain; no storage or
+game movement rules changed. Eight pages use cursor v1.4 and notifier v1.0.48;
+bomb JS/CSS/reader stay v2.32/v1.8/v1.4.
+
+Focused tests/gamepad-edge-scroll-browser.mjs passed in real Microsoft Edge at
+1440/390: actual tall phonetics page, both edges, continuous/release/reverse,
+top/bottom limits, nested panel/fallback, no horizontal conversion, capture,
+disconnect/reconnect/blur safeguards, click-once, resources and no overflow.
+Standard controller was simulated; no physical-controller certification.
+Ignored tmp screenshots inspected. Syntax, 180 Node tests and whitespace passed;
+no unrelated browser suite ran; existing tracked PNG changes preserved.
+
+Previous **v1.0.47** (2026-10-06). Attack shortcuts now use
 press-to-capture buttons instead of selects. Each attack retains one keyboard
 and one standard-gamepad binding. Duplicate or reserved movement/system inputs
 are rejected with feedback, never silently swapped. Escape, menu close and

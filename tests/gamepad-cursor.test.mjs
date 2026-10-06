@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import "../src/gamepad-cursor.js";
-const { safeDestination, cursorStep } = globalThis.StudyGamepadCursorTools;
+const { safeDestination, cursorStep, edgeScrollAmount } = globalThis.StudyGamepadCursorTools;
 
 test("手柄光标只允许八个系统页面同源同目录导航，不开放外链、下载或脚本", () => {
   const base = "http://127.0.0.1:53177/study/";
@@ -25,10 +25,23 @@ test("手柄光标死区、速度与对角归一，边界始终限于网页视�
   assert.deepEqual(cursorStep({ x: 0, y: 0 }, [-1, -1], 1, 390, 731), { x: 12, y: 12 });
 });
 
+test("光标只在上下边缘继续外推时滚动，松开/死区/横推/离开边缘立即停止", () => {
+  assert.equal(edgeScrollAmount({ y: 719 }, [0, 1], 0.02, 731), 10);
+  assert.equal(edgeScrollAmount({ y: 12 }, [0, -1], 0.02, 731), -10);
+  assert.equal(edgeScrollAmount({ y: 719 }, [0, 0.625], 0.02, 731), 5);
+  for (const axes of [[0, 0], [0, 0.2], [1, 0], [0, -1], [0, NaN]]) {
+    assert.equal(edgeScrollAmount({ y: 719 }, axes, 0.02, 731), 0);
+  }
+  assert.equal(edgeScrollAmount({ y: 12 }, [0, 1], 0.02, 731), 0);
+  assert.equal(edgeScrollAmount({ y: 700 }, [0, 1], 0.02, 731), 0);
+  assert.equal(edgeScrollAmount({ y: 719 }, [0, 1], 10, 731), 25);
+  assert.equal(edgeScrollAmount({ y: 719 }, [0, 1], -1, 731), 0);
+});
+
 test("八个页面接入同一个光标资源，无新增进度存储或系统级鼠标入口", () => {
   for (const page of ["index", "pinyin", "book-learning", "theme-learning", "scenario-learning", "review-learning", "phonetics", "bomb-game"]) {
     const html = readFileSync(new URL(`../${page}.html`, import.meta.url), "utf8");
-    assert.equal(html.split('src/gamepad-cursor.js?v=1.3').length - 1, 1, page);
+    assert.equal(html.split('src/gamepad-cursor.js?v=1.4').length - 1, 1, page);
   }
   const source = readFileSync(new URL("../src/gamepad-cursor.js", import.meta.url), "utf8");
   assert.doesNotMatch(source, /localStorage|sessionStorage|window\.open|showPicker|requestPointerLock/);

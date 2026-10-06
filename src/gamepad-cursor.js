@@ -34,7 +34,25 @@
     return outward && Number.isFinite(dt) ? y * SCROLL_SPEED * Math.max(0, Math.min(0.05, dt)) : 0;
   }
 
-  globalThis.StudyGamepadCursorTools = Object.freeze({ safeDestination, cursorStep, edgeScrollAmount });
+  function restoreCursorPosition(value, width, height) {
+    const valid = value && Number.isFinite(value.x) && Number.isFinite(value.y);
+    return cursorStep(valid ? value : { x: width / 2, y: height / 2 }, [0, 0], 0, width, height);
+  }
+  function createPositionStore(storage, key) {
+    return Object.freeze({
+      read(width, height) {
+        try { return restoreCursorPosition(JSON.parse(storage?.getItem(key) ?? "null"), width, height); }
+        catch { return restoreCursorPosition(null, width, height); }
+      },
+      save(position) {
+        if (!Number.isFinite(position?.x) || !Number.isFinite(position?.y)) return;
+        try { storage?.setItem(key, JSON.stringify({ x: position.x, y: position.y })); }
+        catch { /* Disabled session storage must not interrupt controller input. */ }
+      },
+    });
+  }
+
+  globalThis.StudyGamepadCursorTools = Object.freeze({ safeDestination, cursorStep, edgeScrollAmount, restoreCursorPosition, createPositionStore });
   if (typeof document === "undefined" || typeof window === "undefined") return;
   const source = document.currentScript?.src;
   if (!source) return;
@@ -56,7 +74,19 @@
     : "手柄光标 · 摇杆移动 · 到上下边缘继续推可滚动 · A / × 点选 · LB / RB 滚动 · R2 全屏";
   help.hidden = true;
   document.body.append(pointer, help);
-  let position = { x: innerWidth / 2, y: innerHeight / 2 };
+  let positionStorage;
+  try { positionStorage = window.sessionStorage; } catch { /* Browser storage may be disabled. */ }
+  // UI coordinates only, isolated to this tab and application directory.
+  const positionStore = createPositionStore(positionStorage, `mario-gamepad-cursor-position-v1:${base.pathname}`);
+  let position = positionStore.read(innerWidth, innerHeight);
+  function renderPosition() {
+    pointer.style.left = position.x + "px"; pointer.style.top = position.y + "px";
+  }
+  function rememberPosition() {
+    // A dormant fullscreen owner must never overwrite its current child module.
+    if (!window.STUDY_FULLSCREEN_SHELL?.isHosting()) positionStore.save(position);
+  }
+  renderPosition();
   let inputCapture = false;
   let lastFrame = null, identity = "", armed = false, previous = {};
   let menu = false, hovered = null, popup = null;
@@ -155,6 +185,7 @@
     if (target.matches("a")) {
       const destination = safeDestination(target.getAttribute("href"), base, location.href);
       if (!destination || target.hasAttribute("download")) return;
+      rememberPosition();
       if (!window.STUDY_FULLSCREEN_SHELL?.navigate(destination.href)) location.assign(destination.href);
       return;
     }
@@ -236,7 +267,7 @@
     pointer.hidden = !menu; help.hidden = !menu;
     if (menu) {
       position = cursorStep(position, axes, dt, innerWidth, innerHeight);
-      pointer.style.left = position.x + "px"; pointer.style.top = position.y + "px";
+      renderPosition();
       const scroll = Number(buttons.scrollDown) - Number(buttons.scrollUp);
       if (scroll) scrollAtCursor(scroll * 500 * Math.max(0, Math.min(0.05, dt)),
         (buttons.scrollDown && !previous.scrollDown) || (buttons.scrollUp && !previous.scrollUp));
@@ -253,12 +284,14 @@
     resetInput: () => { armed = false; previous = {}; },
     setInputCapture: active => { inputCapture = Boolean(active); armed = false; previous = {}; } });
   window.addEventListener("blur", suspend);
-  window.addEventListener("pagehide", suspend);
-  window.addEventListener("studysystem:fullscreen-navigation", suspend);
+  window.addEventListener("pagehide", () => { rememberPosition(); suspend(); });
+  window.addEventListener("studysystem:fullscreen-navigation", () => { rememberPosition(); suspend(); });
   window.addEventListener("gamepaddisconnected", suspend);
   window.addEventListener("studysystem:update-prompt", suspend);
   document.addEventListener("visibilitychange", () => { if (document.hidden) suspend(); });
-  window.addEventListener("resize", closePopup);
+  window.addEventListener("resize", () => {
+    position = restoreCursorPosition(position, innerWidth, innerHeight); renderPosition(); closePopup();
+  });
   function frame(now) { poll(now); requestAnimationFrame(frame); }
   requestAnimationFrame(frame);
 }());

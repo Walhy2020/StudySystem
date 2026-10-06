@@ -7,7 +7,28 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.50** (2026-10-06). Fullscreen module navigation
+System display version: **v1.0.51** (2026-10-06). The shared gamepad pointer
+keeps its screen coordinates across module navigation, fullscreen-frame switches,
+fullscreen exit and refresh. Only the first visit without valid coordinates
+starts centered. Viewport resize clamps to visible boundaries instead of recentering.
+The per-tab UI key `mario-gamepad-cursor-position-v1:<app directory>` uses
+sessionStorage and stores x/y only, never buttons, learning progress or game saves.
+Separate tabs are independent. Disabled/malformed storage fails safely; dormant
+fullscreen owners never overwrite the active child's coordinates on pagehide.
+
+Cursor JS v1.7, CSS v1.1; shell/game rules unchanged. All eight notifier queries
+v1.0.51; display-version entries reference constants v1.0.51 (Hanzi app v1.29,
+Pinyin app v1.3, IPA app v1.28).
+
+Only tests/gamepad-cursor-position-browser.mjs ran in real Microsoft Edge at
+1440/390: navigation-only coverage across eight pages, actual pointer link click,
+fullscreen transitions, R2 exit without stale-owner overwrite, refresh, viewport
+clamp, tab isolation, geometry and HTTP/no page errors. Standard controller input
+was simulated; physical PS5 operation is not certified. Ignored tmp screenshots
+inspected; pre-existing tracked PNG edits preserved and excluded. Syntax,
+186 Node tests and git diff --check passed. No unrelated browser workflows ran.
+
+Previous **v1.0.50** (2026-10-06). Fullscreen module navigation
 now keeps one persistent fullscreen owner with one same-origin internal iframe.
 Switching between all eight pages stays fullscreen; native and gamepad links
 share validated routing, browser back/forward reuses the frame, and R2/browser

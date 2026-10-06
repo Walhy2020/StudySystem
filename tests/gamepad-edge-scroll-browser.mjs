@@ -31,7 +31,7 @@ try {
     const scroll = () => page.evaluate(() => document.scrollingElement.scrollTop);
     const pointer = page.locator("#study-gamepad-cursor");
     await page.goto(base + "phonetics.html?edge-scroll-check=1");
-    await page.waitForFunction(() => document.querySelectorAll("#phoneticsGrid button").length > 0 || document.getElementById("appVersionLabel")?.textContent.includes("1.0.50"));
+    await page.waitForFunction(() => document.querySelectorAll("#phoneticsGrid button").length > 0 || document.getElementById("appVersionLabel")?.textContent.includes("1.0.51"));
     assert.ok(await page.evaluate(() => document.scrollingElement.scrollHeight > innerHeight), "actual learning page has scrollable height");
     await advance(0.05); await axes(0, 1); await advance(0.1);
     assert.equal(await scroll(), 0, "no scrolling until cursor reaches the bottom");
@@ -95,7 +95,7 @@ try {
     await page.evaluate(() => { window.__pad.buttons[0] = { pressed: false, value: 0 }; document.getElementById("edge-click").remove(); });
     await advance(0.05);
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
-    assert.equal((await page.request.get(base + "src/gamepad-cursor.js?v=1.6")).status(), 200);
+    assert.equal((await page.request.get(base + "src/gamepad-cursor.js?v=1.7")).status(), 200);
     assert.deepEqual(errors, []);
     results.push({ width, actualLearningScroll: true, stopAndReverse: true, bounds: true,
       nestedFallback: true, noHorizontalConversion: true, inputSafety: true, clickPreserved: true });

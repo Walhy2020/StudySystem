@@ -89,7 +89,7 @@ test("六个学习页拼音导航在汉字前，页面含独立版本与资源",
     assert.ok(html.includes("module-navigation.css?v=1.0"), page);
   }
   const html = readFileSync(new URL("../pinyin.html", import.meta.url), "utf8");
-  assert.ok(html.includes("pinyin-app.js?v=1.2")); assert.ok(html.includes("pinyin.css?v=1.0"));
+  assert.ok(html.includes("pinyin-app.js?v=1.3")); assert.ok(html.includes("pinyin.css?v=1.0"));
   assert.equal((html.match(/id="pinyinSymbol"/g) || []).length, 1);
   assert.ok(!html.includes("phonetic-examples"));
 });

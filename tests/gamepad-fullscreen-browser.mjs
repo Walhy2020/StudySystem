@@ -99,7 +99,7 @@ try {
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
     }
     assert.deepEqual(errors, []);
-    assert.equal((await page.request.get(base + "src/gamepad-cursor.js?v=1.6")).status(), 200);
+    assert.equal((await page.request.get(base + "src/gamepad-cursor.js?v=1.7")).status(), 200);
     assert.equal((await page.request.get(base + "gamepad-cursor.css?v=1.1")).status(), 200);
     results.push({ width, pages: 8, r2Edge: true, actualFullscreen: true, pointerVisible: true,
       nativeFallback: true, captureAndFocusSafety: true, noDoubleGameToggle: true });

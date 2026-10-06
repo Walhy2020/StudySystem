@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import "../src/gamepad-cursor.js";
-const { safeDestination, cursorStep, edgeScrollAmount } = globalThis.StudyGamepadCursorTools;
+const { safeDestination, cursorStep, edgeScrollAmount, restoreCursorPosition, createPositionStore } = globalThis.StudyGamepadCursorTools;
 
 test("手柄光标只允许八个系统页面同源同目录导航，不开放外链、下载或脚本", () => {
   const base = "http://127.0.0.1:53177/study/";
@@ -41,10 +41,36 @@ test("光标只在上下边缘继续外推时滚动，松开/死区/横推/离�
 test("八个页面接入同一个光标资源，无新增进度存储或系统级鼠标入口", () => {
   for (const page of ["index", "pinyin", "book-learning", "theme-learning", "scenario-learning", "review-learning", "phonetics", "bomb-game"]) {
     const html = readFileSync(new URL(`../${page}.html`, import.meta.url), "utf8");
-    assert.equal(html.split('src/gamepad-cursor.js?v=1.6').length - 1, 1, page);
+    assert.equal(html.split('src/gamepad-cursor.js?v=1.7').length - 1, 1, page);
   }
   const source = readFileSync(new URL("../src/gamepad-cursor.js", import.meta.url), "utf8");
-  assert.doesNotMatch(source, /localStorage|sessionStorage|window\.open|showPicker|requestPointerLock/);
+  assert.doesNotMatch(source, /localStorage|window\.open|showPicker|requestPointerLock/);
+  assert.match(source, /window\.sessionStorage/);
+  assert.match(source, /mario-gamepad-cursor-position-v1/);
   assert.match(source, /gamepad-cursor\.css\?v=1\.1/);
   assert.match(source, /if \(document\.hidden \|\| !document\.hasFocus\(\)\)/);
+});
+
+test("光标坐标保留原位置，视口缩小时仅夹到边界，坏数据回退安全", () => {
+  assert.deepEqual(restoreCursorPosition({ x: 125, y: 67 }, 1440, 900), { x: 125, y: 67 });
+  assert.deepEqual(restoreCursorPosition({ x: 1300, y: 850 }, 390, 731), { x: 378, y: 719 });
+  assert.deepEqual(restoreCursorPosition({ x: -20, y: 0 }, 390, 731), { x: 12, y: 12 });
+  for (const value of [null, undefined, {}, [], { x: "20", y: 30 }, { x: NaN, y: 20 }, { x: 20, y: Infinity }]) {
+    assert.deepEqual(restoreCursorPosition(value, 390, 900), { x: 195, y: 450 });
+  }
+});
+
+test("坐标存储仅写会话专用key的x/y，非法数据及拒绝存储不影响输入", () => {
+  const values = new Map(), writes = [];
+  const storage = { getItem: key => values.get(key), setItem: (key, value) => { values.set(key, value); writes.push(key); } };
+  const key = "mario-gamepad-cursor-position-v1:/";
+  const store = createPositionStore(storage, key);
+  store.save({ x: 125, y: 67, pressed: true, progress: "must not persist" });
+  assert.deepEqual(writes, [key]); assert.deepEqual(JSON.parse(values.get(key)), { x: 125, y: 67 });
+  assert.deepEqual(store.read(390, 900), { x: 125, y: 67 });
+  store.save({ x: NaN, y: 30 }); assert.equal(writes.length, 1);
+  values.set(key, "bad json"); assert.deepEqual(store.read(390, 900), { x: 195, y: 450 });
+  const blocked = createPositionStore({ getItem() { throw Error("denied"); }, setItem() { throw Error("denied"); } }, key);
+  assert.deepEqual(blocked.read(390, 900), { x: 195, y: 450 });
+  assert.doesNotThrow(() => blocked.save({ x: 20, y: 30 }));
 });

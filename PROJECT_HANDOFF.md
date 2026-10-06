@@ -7,7 +7,35 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.51** (2026-10-06). The shared gamepad pointer
+System display version: **v1.0.52** (2026-10-06). Bomb HUD now shows one
+moon icon multiplied by the completed count, still centered and requiring five
+answers per level. In-game transient banners (pickup, enemy hits/deaths, start,
+fullscreen, etc.) and restored legacy banners are suppressed visually and for
+live announcements. Shared pointer help stays hidden; learning-page fullscreen
+activation fallback keeps its buttons without explanatory text. Native browser
+Escape/fullscreen notices are outside page control; start/Continue, settings,
+binding feedback and version-update confirmation remain available.
+
+All destructible crates, including black hidden-missile crates, have 3 HP.
+Each ice/normal/missile bomb, Bowser fireball or shell impact deals one damage;
+loot and score occur only on the third hit. Surviving crates stop the attack;
+overlapping distinct blasts each count once without penetrating a crate barrier.
+Mushrooms still cannot damage crates. Enemy-clear automatic opening and learning
+space allocation retain their prior rules. Damaged 1/2-HP crates save in the
+existing bomb key as crateHp entries; old saves default to 3, invalid/non-crate
+entries are ignored, and each new level resets crate damage.
+
+Bomb JS/CSS v2.34/v1.9, cursor JS v1.8; eight notifier queries v1.0.52.
+Display-version imports use constants v1.0.52 (Hanzi/Pinyin/IPA entry caches
+v1.30/v1.4/v1.29). Only tests/bomb-brick-hp-browser.mjs ran in real Edge at
+1440/390: ordinary/black crates, three hits, no early reward/missile, partial
+HP refresh/Continue, actual pickup, numeric moon restore/center geometry, hidden
+pointer help, real fullscreen and resource/no-error checks. Controller menu
+input was simulated; physical PS5 operation is not certified. Ignored tmp
+screenshots inspected; existing tracked PNG edits preserved/excluded. Syntax,
+191 Node tests and git diff --check passed. No unrelated browser suite ran.
+
+Previous **v1.0.51** (2026-10-06). The shared gamepad pointer
 keeps its screen coordinates across module navigation, fullscreen-frame switches,
 fullscreen exit and refresh. Only the first visit without valid coordinates
 starts centered. Viewport resize clamps to visible boundaries instead of recentering.

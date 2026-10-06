@@ -29,7 +29,7 @@
   const levelNode = document.getElementById("bombLevel");
   const powerNode = document.getElementById("bombPower");
   const moonHud = document.getElementById("bombMoons");
-  const moonIcons = moonHud.querySelectorAll(".moon-hud-icon");
+  const moonCountNode = document.getElementById("bombMoonCount");
   const scoreNode = document.getElementById("bombScore");
   const messageNode = document.getElementById("bombMessage");
   const startButton = document.getElementById("startBombGame");
@@ -173,6 +173,7 @@
   const TILE_FLOOR = 0;
   const TILE_HARD = 1;
   const TILE_CRATE = 2;
+  const CRATE_MAX_HP = 3;
 
   const DIRS = {
     up: { x: 0, y: -1 },
@@ -294,6 +295,7 @@
   const state = {
     status: "ready",
     map: [],
+    crateHp: new Map(),
     bombs: [],
     mushroomShots: [],
     fireballs: [],
@@ -386,6 +388,7 @@
       enemyClearOpenedBricks: state.enemyClearOpenedBricks,
       playSource: state.playSource,
       map: plainArray(state.map),
+      crateHp: mapEntries(state.crateHp),
       bombs: plainArray(state.bombs),
       mushroomShots: plainArray(state.mushroomShots),
       fireballs: plainArray(state.fireballs),
@@ -620,6 +623,7 @@
     state.enemyClearOpenedBricks = Boolean(saved.enemyClearOpenedBricks);
     state.playSource = saved.playSource || null;
     state.map = saved.map;
+    restoreCrateHp(saved.crateHp);
     state.bombs = plainArray(saved.bombs);
     // Old five-second projectiles keep their position/velocity but no longer expire by age.
     state.fireballs = plainArray(saved.fireballs).filter(ball => ball &&
@@ -671,8 +675,7 @@
     lastDirection = Object.hasOwn(DIRS, saved.lastDirection) ? saved.lastDirection : "right";
     attackDirection = Object.hasOwn(DIRS, saved.attackDirection) ? saved.attackDirection : lastDirection;
     if (Object.hasOwn(DIRS, state.player.move?.direction)) attackDirection = state.player.move.direction;
-    messageNode.textContent = saved.messageText || "";
-    messageTimer = Math.max(0, Number(saved.messageTimer) || 0);
+    setMessage(); // Ignore legacy transient banners too.
     startTitle.textContent = saved.startTitleText || `第 ${state.world}-${state.subLevel} / ${LEVELS_PER_WORLD} 小关 · 难度 ${difficultyLabelForSubLevel()}`;
     awaitingContinue = state.status === "playing";
     overlayStartButton.textContent = awaitingContinue ? "继续" : saved.overlayStartText || "开始";
@@ -1622,6 +1625,7 @@
     setLevelDimensions(state.world, state.subLevel);
     state.status = "ready";
     state.map = createMap();
+    state.crateHp = new Map();
     state.bombs = [];
     state.mushroomShots = [];
     state.fireballs = [];
@@ -1709,9 +1713,10 @@
     startGame();
   }
 
-  function setMessage(text, seconds = 1.4) {
-    messageNode.textContent = text;
-    messageTimer = seconds;
+  function setMessage() {
+    // Keep legacy call sites/save fields compatible without visual or live-region prompts.
+    messageNode.textContent = "";
+    messageTimer = 0;
   }
 
   function isNightTime() {
@@ -1727,7 +1732,7 @@
     attackRangeLabel.textContent = "冰长";
     if (powerNode) powerNode.textContent = state.flameRange;
     moonHud.setAttribute("aria-label", `学习月亮 ${state.moonWordIds.length}/${BOMB_MOONS_PER_LEVEL}`);
-    moonIcons.forEach((icon, index) => icon.classList.toggle("is-lit", index < state.moonWordIds.length));
+    moonCountNode.textContent = state.moonWordIds.length;
     if (scoreNode) scoreNode.textContent = state.score;
   }
 
@@ -1768,6 +1773,7 @@
         // Hidden missiles must be revealed by the player, never by enemy-clear cleanup.
         if (state.hiddenPowerUps.get(coordKey(x, y)) === "bulletBill") continue;
         state.map[y][x] = TILE_FLOOR;
+        state.crateHp?.delete(coordKey(x, y));
         maybeSpawnBrickPowerUp(x, y);
         spawnParticles("crate", x, y);
         opened += 1;
@@ -2407,8 +2413,30 @@
     }
   }
 
+  function restoreCrateHp(entries) {
+    state.crateHp = new Map();
+    for (const entry of Array.isArray(entries) ? entries : []) {
+      if (!Array.isArray(entry) || entry.length !== 2 || typeof entry[0] !== "string") continue;
+      const [gx, gy] = entry[0].split(",").map(Number), hp = entry[1];
+      if (!Number.isInteger(gx) || !Number.isInteger(gy) || entry[0] !== coordKey(gx, gy) ||
+          !isInside(gx, gy) || state.map[gy][gx] !== TILE_CRATE ||
+          !Number.isInteger(hp) || hp < 1 || hp >= CRATE_MAX_HP) continue;
+      state.crateHp.set(entry[0], hp);
+    }
+  }
+
+  function crateHpAt(gx, gy) {
+    return state.map[gy]?.[gx] === TILE_CRATE ? state.crateHp.get(coordKey(gx, gy)) ?? CRATE_MAX_HP : 0;
+  }
+
   function openCrateCell(gx, gy) {
     if (!isInside(gx, gy) || state.map[gy][gx] !== TILE_CRATE) return false;
+    const hp = crateHpAt(gx, gy) - 1;
+    if (hp > 0) {
+      state.crateHp.set(coordKey(gx, gy), hp);
+      return false;
+    }
+    state.crateHp.delete(coordKey(gx, gy));
     state.map[gy][gx] = TILE_FLOOR;
     maybeSpawnBrickPowerUp(gx, gy);
     spawnParticles("crate", gx, gy);
@@ -2469,8 +2497,9 @@
     }
 
     if (state.map[nextY][nextX] === TILE_CRATE) {
-      openCrateCell(nextX, nextY);
+      const opened = openCrateCell(nextX, nextY);
       updateHud();
+      if (!opened) { removeShell(shell); return; }
     }
 
     const enemy = enemyAt(nextX, nextY);
@@ -2559,6 +2588,7 @@
       const cell = crateCandidates[0];
       if (!cell) break;
       state.map[cell.y][cell.x] = TILE_FLOOR;
+      state.crateHp?.delete(coordKey(cell.x, cell.y));
       spawnParticles("crate", cell.x, cell.y);
       cells.push({ x: cell.x, y: cell.y });
     }
@@ -2904,6 +2934,7 @@
       for (let x = 0; x < COLS; x += 1) {
         if (state.map[y][x] !== TILE_CRATE) continue;
         state.map[y][x] = TILE_FLOOR;
+        state.crateHp.delete(coordKey(x, y));
         maybeSpawnBrickPowerUp(x, y);
         spawnParticles("crate", x, y);
         opened += 1;
@@ -2943,15 +2974,12 @@
           Array.isArray(explosion.blockedCells) &&
           explosion.blockedCells.some((cell) => cell.gx === gx && cell.gy === gy)
         ));
-        if (recentlyDestroyedCrate) break;
         if (state.map[gy][gx] === TILE_CRATE) {
           blockedCells.push({ gx, gy });
-          state.map[gy][gx] = TILE_FLOOR;
-          maybeSpawnBrickPowerUp(gx, gy);
-          spawnParticles("crate", gx, gy);
-          state.score += 5;
+          openCrateCell(gx, gy);
           break;
         }
+        if (recentlyDestroyedCrate) break;
       }
     });
 

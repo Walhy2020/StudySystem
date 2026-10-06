@@ -58,7 +58,7 @@ try {
     });
     assert.ok(Math.abs(geometry.center - width / 2) < 1, "five moons centered on entire screen");
     assert.ok(geometry.height <= (width === 390 ? 70 : 45), JSON.stringify(geometry));
-    assert.equal(await page.locator("#bombMoons .moon-hud-icon").count(), 5);
+    assert.equal(await page.locator("#bombMoons .moon-hud-icon").count(), 1);
     await page.screenshot({ path: `tmp/bomb-expanded-${width}.png` });
     const fixture = await read();
     const rows = fixture.map.length, cols = fixture.map[0].length;
@@ -134,7 +134,7 @@ try {
     await load(next, false); await tap(9); assert.equal((await read()).status, "playing");
     const completed = structuredClone(fixture); completed.moonWordIds = fixture.todayNewWords.slice(0, 3).map(word => word.id);
     await load(completed);
-    assert.equal(await page.locator("#bombMoons .is-lit").count(), 3, "saved progress lights exactly its completed moons");
+    assert.equal(await page.locator("#bombMoonCount").textContent(), "3", "saved completed-moon count is exact");
     await settings(); await page.locator("#bombAttackToggle").click(); await advance(0.02);
     const pausedClock = (await read()).dayClock; await advance(0.3);
     assert.equal((await read()).dayClock, pausedClock, "outer/nested settings pause gameplay");
@@ -159,7 +159,7 @@ try {
       Object.defineProperty(document, "fullscreenElement", { configurable: true, value: null });
       document.querySelector(".bomb-game-app").requestFullscreen = async () => { throw new DOMException("activation needed", "NotAllowedError"); };
     });
-    await tap(7); assert.match(await page.locator("#bombMessage").textContent(), /点击.*全屏/);
+    await tap(7); assert.equal(await page.locator("#bombMessage").isVisible(), false);
     assert.equal(await page.locator("#bombSettingsMenu").isVisible(), true);
     // R1 really navigates/reloads the page and keeps progress behind the Continue gate.
     const beforeRefresh = await read();

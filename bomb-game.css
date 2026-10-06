@@ -568,7 +568,9 @@ a {
   padding: 0 8px;
   font-size: 14px;
 }
-.bomb-moons { grid-area: moons; display: flex; gap: 8px; justify-content: center; align-items: center; }
+.bomb-moons { grid-area: moons; display: flex; gap: 8px; justify-content: center; align-items: center; color: #f8fafc; font-size: 20px; font-weight: 800; }
+.bomb-moons strong { min-width: 1ch; font-variant-numeric: tabular-nums; }
+.bomb-message[hidden] { display: none; }
 .moon-hud-icon { width: 26px; height: 26px; flex-basis: 26px; }
 .moon-hud-icon::after { width: 19px; height: 24px; background: #0c1420; }
 .bomb-settings-menu {

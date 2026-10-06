@@ -108,16 +108,13 @@
     fullscreenPrompt.className = "study-gamepad-fullscreen";
     fullscreenPrompt.setAttribute("role", "group");
     fullscreenPrompt.setAttribute("aria-label", "全屏授权");
-    const text = document.createElement("p"); text.setAttribute("role", "status");
     const supported = Boolean(document.fullscreenElement ? document.exitFullscreen : document.documentElement.requestFullscreen);
-    text.textContent = supported ? "浏览器需要真实点击授权，请点击下方按钮后再用 R2 切换全屏。"
-      : "当前浏览器不支持网页全屏，请在支持全屏的浏览器中打开。";
     const confirm = document.createElement("button"); confirm.type = "button";
     confirm.textContent = document.fullscreenElement ? "退出全屏" : "进入全屏";
     confirm.disabled = !supported; confirm.addEventListener("click", toggleLearningFullscreen);
     const cancel = document.createElement("button"); cancel.type = "button"; cancel.textContent = "取消";
     cancel.addEventListener("click", closeFullscreenPrompt);
-    fullscreenPrompt.append(text, confirm, cancel); overlayHost().append(fullscreenPrompt);
+    fullscreenPrompt.append(confirm, cancel); overlayHost().append(fullscreenPrompt);
     (supported ? confirm : cancel).focus({ preventScroll: true });
   }
   async function toggleLearningFullscreen() {
@@ -264,7 +261,7 @@
     }
     if (axes.some(value => Math.abs(value) > DEADZONE)) setMenu(true);
     if (!isGame) setMenu(true);
-    pointer.hidden = !menu; help.hidden = !menu;
+    pointer.hidden = !menu; help.hidden = true;
     if (menu) {
       position = cursorStep(position, axes, dt, innerWidth, innerHeight);
       renderPosition();

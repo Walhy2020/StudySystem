@@ -7,7 +7,7 @@
     <link rel="icon" href="data:," />
     <title>炸弹迷宫 - 马里奥学习系统</title>
 
-    <link rel="stylesheet" href="./bomb-game.css?v=1.8" />
+    <link rel="stylesheet" href="./bomb-game.css?v=1.9" />
   </head>
   <body>
     <div class="bomb-game-app">
@@ -20,7 +20,7 @@
           <span class="hud-pill"><span id="attackRangeLabel">冰长</span><strong id="bombPower">2</strong></span>
         </div>
         <div class="bomb-moons" id="bombMoons" role="img" aria-label="学习月亮 0/5">
-          <span class="moon-hud-icon" aria-hidden="true"></span><span class="moon-hud-icon" aria-hidden="true"></span><span class="moon-hud-icon" aria-hidden="true"></span><span class="moon-hud-icon" aria-hidden="true"></span><span class="moon-hud-icon" aria-hidden="true"></span>
+          <span class="moon-hud-icon is-lit" aria-hidden="true"></span><span aria-hidden="true">×</span><strong id="bombMoonCount" aria-hidden="true">0</strong>
         </div>
         <nav class="bomb-actions">
           <button id="startBombGame" type="button">开始</button>
@@ -59,7 +59,7 @@
 
       <main class="bomb-stage">
         <canvas id="bombCanvas" width="1280" height="720" tabindex="0" aria-label="炸弹迷宫游戏"></canvas>
-        <div class="bomb-message" id="bombMessage" aria-live="polite"></div>
+        <div class="bomb-message" id="bombMessage" hidden aria-hidden="true"></div>
         <section class="bomb-start-layer" id="bombStartLayer" aria-labelledby="bombStartTitle">
           <div class="bomb-start-panel">
             <h2 id="bombStartTitle">炸弹迷宫</h2>
@@ -75,11 +75,11 @@
   <script src="./data/pinyin-readings.js?v=1.0"></script>
 
   <script src="./src/bomb-audio.js?v=1.4"></script>
-  <script src="./src/fullscreen-shell.js?v=1.0"></script><script src="./src/gamepad-cursor.js?v=1.7"></script>
+  <script src="./src/fullscreen-shell.js?v=1.0"></script><script src="./src/gamepad-cursor.js?v=1.8"></script>
   <script src="./src/bomb-bindings.js?v=1.0"></script>
   <script src="./src/bomb-gamepad.js?v=1.4"></script>
   <script src="./src/bomb-gamepad-battery.js?v=1.0"></script>
-  <script src="./bomb-game.js?v=2.33"></script>
-  <script type="module" src="./src/version-update.js?v=1.0.51"></script>
+  <script src="./bomb-game.js?v=2.34"></script>
+  <script type="module" src="./src/version-update.js?v=1.0.52"></script>
 </body>
 </html>

@@ -87,7 +87,12 @@ try {
     assert.equal((await read()).enemies[0].hp, 40, "mushroom cannot hit through the brick");
     assert.equal((await read()).powerUps.length, 0, "brick content remains hidden");
     await page.keyboard.press("B"); await advance(2.1);
-    assert.equal((await read()).map[3][4], 0, "ice bombs still open bricks");
+    assert.equal((await read()).map[3][4], 2, "first ice bomb damages but does not open a 3-HP brick");
+    assert.equal(new Map((await read()).crateHp).get("4,3"), 2);
+    for (const expectedHp of [1,0]) {
+      await advance(0.7); await page.keyboard.press("KeyB"); await advance(2.05);
+      assert.equal((await read()).map[3][4], expectedHp === 0 ? 0 : 2);
+    }
     assert.ok((await read()).powerUps.some(item => item.type === "iceFlower"));
     const hit = structuredClone(brick); hit.map[3][4] = 0; hit.enemies[0].gx = 4;
     await load(hit); await page.keyboard.press("Space"); await advance(0.22);
@@ -96,7 +101,8 @@ try {
     const firstBrick = structuredClone(fixture); firstBrick.enemies[0].fireCooldown = 0;
     firstBrick.map[3][3] = firstBrick.map[3][4] = 2;
     await load(firstBrick); await advance(0.25);
-    assert.equal((await read()).map[3][3], 0); assert.equal((await read()).map[3][4], 2);
+    assert.equal((await read()).map[3][3], 2); assert.equal((await read()).map[3][4], 2);
+    assert.equal(new Map((await read()).crateHp).get("3,3"), 2);
     assert.equal((await read()).fireballs.length, 0, "fireball still stops at the first brick");
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     assert.deepEqual(errors, []);

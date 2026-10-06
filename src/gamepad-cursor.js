@@ -43,7 +43,7 @@
   const isGame = location.pathname === base.pathname + "bomb-game.html";
   const style = document.createElement("link");
   style.rel = "stylesheet";
-  style.href = new URL("../gamepad-cursor.css?v=1.0", source).href;
+  style.href = new URL("../gamepad-cursor.css?v=1.1", source).href;
   document.head.append(style);
 
   const pointer = document.createElement("div");
@@ -53,21 +53,53 @@
   const help = document.createElement("div");
   help.id = "study-gamepad-help";
   help.textContent = isGame ? "菜单已暂停游戏 · 右摇杆移动 · A / × 点选 · L1 / L2 滚动 · Y / △ 回游戏"
-    : "手柄光标 · 摇杆移动 · 到上下边缘继续推可滚动 · A / × 点选 · LB / RB 滚动";
+    : "手柄光标 · 摇杆移动 · 到上下边缘继续推可滚动 · A / × 点选 · LB / RB 滚动 · R2 全屏";
   help.hidden = true;
   document.body.append(pointer, help);
   let position = { x: innerWidth / 2, y: innerHeight / 2 };
   let inputCapture = false;
   let lastFrame = null, identity = "", armed = false, previous = {};
   let menu = false, hovered = null, popup = null;
+  let fullscreenPending = false, fullscreenPrompt = null;
 
   function overlayHost() { return document.fullscreenElement || document.body; }
   function syncOverlayHost() {
     const host = overlayHost();
     host.append(pointer, help);
     if (popup) host.append(popup);
+    closeFullscreenPrompt();
   }
   document.addEventListener("fullscreenchange", syncOverlayHost);
+
+  function closeFullscreenPrompt() { fullscreenPrompt?.remove(); fullscreenPrompt = null; }
+  function showFullscreenPrompt() {
+    closeFullscreenPrompt();
+    fullscreenPrompt = document.createElement("div");
+    fullscreenPrompt.className = "study-gamepad-fullscreen";
+    fullscreenPrompt.setAttribute("role", "group");
+    fullscreenPrompt.setAttribute("aria-label", "全屏授权");
+    const text = document.createElement("p"); text.setAttribute("role", "status");
+    const supported = Boolean(document.fullscreenElement ? document.exitFullscreen : document.documentElement.requestFullscreen);
+    text.textContent = supported ? "浏览器需要真实点击授权，请点击下方按钮后再用 R2 切换全屏。"
+      : "当前浏览器不支持网页全屏，请在支持全屏的浏览器中打开。";
+    const confirm = document.createElement("button"); confirm.type = "button";
+    confirm.textContent = document.fullscreenElement ? "退出全屏" : "进入全屏";
+    confirm.disabled = !supported; confirm.addEventListener("click", toggleLearningFullscreen);
+    const cancel = document.createElement("button"); cancel.type = "button"; cancel.textContent = "取消";
+    cancel.addEventListener("click", closeFullscreenPrompt);
+    fullscreenPrompt.append(text, confirm, cancel); overlayHost().append(fullscreenPrompt);
+    (supported ? confirm : cancel).focus({ preventScroll: true });
+  }
+  async function toggleLearningFullscreen() {
+    if (isGame || fullscreenPending || inputCapture) return;
+    fullscreenPending = true;
+    try {
+      if (document.fullscreenElement) await document.exitFullscreen();
+      else await document.documentElement.requestFullscreen();
+      closeFullscreenPrompt();
+    } catch { showFullscreenPrompt(); }
+    finally { fullscreenPending = false; }
+  }
 
   function closePopup() { popup?.remove(); popup = null; }
   function setMenu(value) {
@@ -184,7 +216,7 @@
     const right = [axis(2), axis(3)];
     const axes = isGame || Math.max(...right.map(Math.abs)) > DEADZONE ? right : [axis(0), axis(1)];
     const buttons = { click: pressed(pad, 0) || pressed(pad, 11), toggle: pressed(pad, 3),
-      scrollUp: pressed(pad, 4), scrollDown: pressed(pad, isGame ? 6 : 5) };
+      scrollUp: pressed(pad, 4), scrollDown: pressed(pad, isGame ? 6 : 5), fullscreen: !isGame && pressed(pad, 7) };
     const neutral = [0, 1, 2, 3].every(index => Math.abs(axis(index)) <= DEADZONE) &&
       ![0, 1, 3, 4, 5, 6, 7, 9, 11, 12, 13, 14, 15].some(index => pressed(pad, index));
     if (!armed) {
@@ -192,6 +224,7 @@
       previous = buttons;
       return;
     }
+    if (buttons.fullscreen && !previous.fullscreen) void toggleLearningFullscreen();
     if (isGame && buttons.toggle && !previous.toggle) {
       if (menu) { suspend(); return; }
       setMenu(true);

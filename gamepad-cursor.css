@@ -62,3 +62,33 @@
   text-align: left;
 }
 .study-gamepad-options button[aria-pressed="true"] { background: #dbeafe; border-color: #2563eb; }
+
+.study-gamepad-fullscreen {
+  position: fixed;
+  z-index: 2147483645;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(380px, calc(100vw - 24px));
+  box-sizing: border-box;
+  padding: 12px;
+  border: 2px solid #2563eb;
+  border-radius: 10px;
+  background: #fff;
+  color: #0f172a;
+  box-shadow: 0 8px 25px #0006;
+  font: 16px/1.5 "Microsoft YaHei", sans-serif;
+}
+.study-gamepad-fullscreen p { margin: 0 0 10px; }
+.study-gamepad-fullscreen button {
+  min-height: 42px;
+  margin-right: 8px;
+  padding: 6px 12px;
+  border: 1px solid #94a3b8;
+  border-radius: 6px;
+  background: #f8fafc;
+  color: #0f172a;
+  font: inherit;
+  cursor: pointer;
+}
+.study-gamepad-fullscreen button:disabled { opacity: 0.55; cursor: default; }

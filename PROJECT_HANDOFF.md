@@ -7,7 +7,26 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.48** (2026-10-06). The shared in-page gamepad
+System display version: **v1.0.49** (2026-10-06). R2 toggles fullscreen on
+all eight pages. The seven learning pages use the shared cursor handler and
+fullscreen the document root; bomb maze keeps its existing app-container handler
+without a duplicate R2 request. Held/reconnect/focus and capture safeguards remain.
+An in-flight guard prevents overlapping learning-page requests. Browser activation
+denials show a real-click enter/exit button with cancel/unsupported feedback rather
+than pretending fullscreen succeeded. Browser activation may be needed again on
+later entries. Pointer/help remain mounted inside the fullscreen top layer.
+
+Shared cursor v1.5 and CSS v1.1; eight notifier queries v1.0.49. Bomb JS/CSS/reader
+remain v2.32/v1.8/v1.4. Only tests/gamepad-fullscreen-browser.mjs ran for browser
+acceptance: real Microsoft Edge, 1440/390, eight pages, R2 single edge/held-on-connect,
+no double bomb handler, denied API and real-click fallback, actual trusted-activation
+R2 entry/exit, visible fullscreen pointer/help, capture/focus suppression, geometry
+and resources. Standard controller input was simulated; no physical-controller
+certification or unrelated learning/gameplay flows. Syntax, 180 Node tests and
+git diff --check passed. Ignored tmp screenshots inspected; tracked PNG changes
+remain preserved and excluded.
+
+Previous **v1.0.48** (2026-10-06). The shared in-page gamepad
 cursor now scrolls vertically when held outward at the viewport top/bottom.
 Right-stick movement keeps the cursor inside the page; downward push at the
 bottom reveals lower content, upward push at the top returns toward the header.

@@ -7,7 +7,28 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.46** (2026-10-06). Attack direction now follows
+System display version: **v1.0.47** (2026-10-06). Attack shortcuts now use
+press-to-capture buttons instead of selects. Each attack retains one keyboard
+and one standard-gamepad binding. Duplicate or reserved movement/system inputs
+are rejected with feedback, never silently swapped. Escape, menu close and
+focus loss cancel capture. Held entry buttons require release; capture pauses
+both combat/system actions and the shared cursor's independent polling, so
+binding R1/R2 cannot refresh/fullscreen and captured presses cannot click/attack.
+Bindings restore in the existing bomb save without map/HP/progress changes.
+Defaults remain Space/B and Cross/Circle; free L3 can be assigned explicitly.
+The enlarged attack arrow stays bright cyan while stopped or moving.
+
+Bomb JS v2.32, CSS v1.8, bindings helper v1.0, gamepad reader v1.4 and shared
+cursor v1.3; all eight notifier references v1.0.47. Focused real Microsoft Edge
+tests/bomb-bindings-browser.mjs passed at 1440/390 (including 390x500 settings):
+keyboard/touch capture, controller remapping, held/multiple/reserved inputs,
+conflicts/cancel, reload/Continue persistence, unchanged map/HP, actual attacks,
+fixed rendered-arrow color, geometry and HTTP resources/no page errors.
+Standard gamepad input was simulated; no physical controller test is claimed.
+Syntax checks, 179 Node tests and git diff --check passed. No unrelated browser
+suite ran. Ignored tmp screenshots inspected; tracked PNG changes preserved.
+
+Previous **v1.0.46** (2026-10-06). Attack direction now follows
 every successful player move automatically. While stopped, the left stick can
 adjust aim; resuming movement/turning overrides stationary aim again. Actual
 in-progress steps take priority over buffered turn requests. L3 has no action.

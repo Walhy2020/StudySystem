@@ -228,16 +228,26 @@ a {
   accent-color: #16a34a;
 }
 
-.bomb-attack-menu select {
+.bomb-actions .bomb-attack-menu .bomb-binding-button {
   width: 100%;
   min-width: 0;
   min-height: 36px;
-  padding: 4px 8px;
+  height: auto;
+  padding: 10px 8px;
+  white-space: normal;
+  overflow-wrap: anywhere;
   border: 1px solid #94a3b8;
   border-radius: 7px;
   background: #ffffff;
   color: #0f172a;
   font-size: 16px;
+}
+
+.bomb-actions .bomb-attack-menu .bomb-binding-button.is-capturing {
+  border-color: #0284c7;
+  background: #e0f2fe;
+  outline: 2px solid #0284c7;
+  outline-offset: 1px;
 }
 
 .bomb-attack-menu input[type="range"]:disabled {

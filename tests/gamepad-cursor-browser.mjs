@@ -127,9 +127,9 @@ try {
     assert.equal((await read()).playerAvatar, "super-mushroom");
     assert.equal((await read()).mushroomShots.length, 0);
     await aim("#bombSettingsToggle"); await tap(); await aim("#bombAttackToggle"); await tap(); await aim("#iceBombAttackKey"); await tap();
-    assert.equal(await page.locator(".study-gamepad-options").isVisible(), true);
-    await aim('.study-gamepad-options button'); await tap();
-    assert.equal((await read()).iceBombKey, "Space");
+    assert.equal(await page.locator("#iceBombAttackKey").getAttribute("aria-pressed"), "true");
+    await page.keyboard.press("KeyJ");
+    assert.equal((await read()).iceBombKey, "KeyJ");
     await aim("#mushroomThrowDistance"); await tap(); assert.ok((await read()).throwDistance >= 4);
     await page.screenshot({ path: `tmp/gamepad-cursor-bomb-${width}.png` });
     await tap(3); assert.equal(await page.locator("#bombAttackMenu").isVisible(), false);

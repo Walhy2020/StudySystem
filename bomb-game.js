@@ -12,7 +12,7 @@
   const BOWSER_FIRE_COOLDOWN = 2;
   const FIREBALL_SPEED = 3;
   const FIREBALL_RADIUS = 20;
-  const ATTACK_KEYS = ["Space", ..."BJKLZXCVFGHQERTYUIOPNM".split("").map(key => `Key${key}`)];
+  const bindings = window.BombBindings;
   const DEFAULT_THROW_DISTANCE = 3;
   const MIN_THROW_DISTANCE = 1;
   const MAX_THROW_DISTANCE = 8;
@@ -42,6 +42,9 @@
   const throwDistanceValue = document.getElementById("mushroomThrowDistanceValue");
   const mushroomKeyInput = document.getElementById("mushroomAttackKey");
   const iceBombKeyInput = document.getElementById("iceBombAttackKey");
+  const bindingStatus = document.getElementById("bombBindingStatus");
+  let bindingCapture = null;
+  let captureNeutral = false;
   const attackHudIcon = document.getElementById("attackHudIcon");
   const attackRangeLabel = document.getElementById("attackRangeLabel");
   const soundToggle = document.getElementById("bombSoundToggle");
@@ -306,6 +309,8 @@
     flameRange: 2,
     mushroomKey: "Space",
     iceBombKey: "KeyB",
+    mushroomGamepadButton: 0,
+    iceBombGamepadButton: 1,
     attackMode: "bomb",
     throwDistance: DEFAULT_THROW_DISTANCE,
     fireFlowersSpawned: 0,
@@ -373,6 +378,8 @@
       attackMode: state.attackMode,
       mushroomKey: state.mushroomKey,
       iceBombKey: state.iceBombKey,
+      mushroomGamepadButton: state.mushroomGamepadButton,
+      iceBombGamepadButton: state.iceBombGamepadButton,
       throwDistance: state.throwDistance,
       fireFlowersSpawned: state.fireFlowersSpawned,
       dayClock: state.dayClock,
@@ -449,8 +456,14 @@
   function updateAttackUi() {
     attackToggle.setAttribute("aria-label", "设置小蘑菇与冰炸弹快捷键");
     attackToggle.title = "双攻击设置";
-    mushroomKeyInput.value = state.mushroomKey;
-    iceBombKeyInput.value = state.iceBombKey;
+    for (const [action, button] of [["mushroom", mushroomKeyInput], ["iceBomb", iceBombKeyInput]]) {
+      const waiting = bindingCapture === action;
+      button.textContent = waiting ? "请按键盘或手柄按钮（Esc 取消）"
+        : `键盘：${bindings.keyLabel(state[action + "Key"])} · 手柄：${bindings.buttonLabel(state[action + "GamepadButton"])}`;
+      button.classList.toggle("is-capturing", waiting);
+      button.setAttribute("aria-pressed", String(waiting));
+    }
+    gamepad.setBindings(state.mushroomGamepadButton, state.iceBombGamepadButton);
     throwDistanceInput.value = String(state.throwDistance);
     throwDistanceInput.disabled = false;
     throwDistanceValue.textContent = `${state.throwDistance} 格`;
@@ -499,6 +512,7 @@
     attackMenuOpen = Boolean(open);
     attackMenu.hidden = !attackMenuOpen;
     attackToggle.setAttribute("aria-expanded", String(attackMenuOpen));
+    if (!open) cancelBindingCapture();
     if (attackMenuOpen) {
       clearInputState();
       saveBombProgress();
@@ -691,9 +705,7 @@
   }
 
   function restoreAttackKeys(saved) {
-    state.mushroomKey = ATTACK_KEYS.includes(saved.mushroomKey) ? saved.mushroomKey : "Space";
-    state.iceBombKey = ATTACK_KEYS.includes(saved.iceBombKey) && saved.iceBombKey !== state.mushroomKey
-      ? saved.iceBombKey : state.mushroomKey === "KeyB" ? "Space" : "KeyB";
+    Object.assign(state, bindings.restore(saved));
   }
 
   function migrateEnemyHpRules(saved) {
@@ -4173,7 +4185,7 @@
     ctx.save();
     ctx.translate(center.x, center.y);
     ctx.rotate(({ right: 0, down: Math.PI / 2, left: Math.PI, up: -Math.PI / 2 })[attackDirection]);
-    ctx.fillStyle = state.player.move ? "#facc15" : "#67e8f9";
+    ctx.fillStyle = "#67e8f9";
     ctx.strokeStyle = "#083344";
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -4382,6 +4394,17 @@
   }
 
   function pollGamepad(now) {
+    if (bindingCapture) {
+      const input = gamepad.poll(false, false);
+      if (document.hidden || !document.hasFocus()) { cancelBindingCapture(); return; }
+      if (!input.pressedButtons.length) captureNeutral = true;
+      else if (captureNeutral) {
+        captureNeutral = false;
+        if (input.pressedButtons.length === 1) applyCapturedBinding("gamepad", input.pressedButtons[0]);
+        else bindingStatus.textContent = "请只按一个手柄按钮，松开后重试。";
+      }
+      return;
+    }
     window.STUDY_GAMEPAD_CURSOR?.poll(now);
     const waiting = awaitingContinue || state.status !== "playing";
     const systemEnabled = !document.hidden && document.hasFocus();
@@ -4436,6 +4459,14 @@
   }
 
   window.addEventListener("keydown", (event) => {
+    if (bindingCapture) {
+      event.preventDefault(); event.stopImmediatePropagation();
+      if (event.repeat) return;
+      if (event.code === "Escape") cancelBindingCapture();
+      else if (event.ctrlKey || event.altKey || event.metaKey || event.shiftKey) bindingStatus.textContent = "请按单个键，不使用组合键。";
+      else applyCapturedBinding("keyboard", event.code);
+      return;
+    }
     if (event.key === "Escape" && avatarMenuOpen) {
       event.preventDefault();
       setAvatarMenuOpen(false);
@@ -4505,7 +4536,7 @@
     }
   });
 
-  window.addEventListener("blur", () => { sounds.setMusic(null); clearInputState(); saveBombProgress(); });
+  window.addEventListener("blur", () => { cancelBindingCapture(); sounds.setMusic(null); clearInputState(); saveBombProgress(); });
   window.addEventListener("studysystem:gamepad-menu", event => {
     gamepadMenuOpen = event.detail.active;
     clearInputState();
@@ -4539,6 +4570,7 @@
   });
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) {
+      cancelBindingCapture();
       sounds.setMusic(null);
       clearInputState();
       saveBombProgress();
@@ -4579,21 +4611,33 @@
     syncBombProgress();
     setAttackMenuOpen(!attackMenuOpen);
   });
-  for (const input of [mushroomKeyInput, iceBombKeyInput]) {
-    for (const key of ATTACK_KEYS) {
-      const option = document.createElement("option");
-      option.value = key;
-      option.textContent = key === "Space" ? "空格" : key.slice(3);
-      input.append(option);
-    }
-    input.addEventListener("change", () => {
-      claimBombProgress();
-      const field = input === mushroomKeyInput ? "mushroomKey" : "iceBombKey";
-      const other = field === "mushroomKey" ? "iceBombKey" : "mushroomKey";
-      if (input.value === state[other]) state[other] = state[field];
-      state[field] = input.value;
+  function cancelBindingCapture() {
+    if (!bindingCapture) return;
+    bindingCapture = null; captureNeutral = false;
+    clearInputState(); window.STUDY_GAMEPAD_CURSOR?.resetInput();
+    window.STUDY_GAMEPAD_CURSOR?.setInputCapture(false);
+    bindingStatus.textContent = "已取消绑定。"; updateAttackUi();
+  }
+  function applyCapturedBinding(device, value) {
+    const action = bindingCapture;
+    syncBombProgress();
+    if (!action || bindingCapture !== action) return;
+    const error = bindings.conflict(state, action, device, value);
+    if (error) { bindingStatus.textContent = error; return; }
+    claimBombProgress();
+    state[action + (device === "keyboard" ? "Key" : "GamepadButton")] = value;
+    bindingCapture = null; captureNeutral = false;
+    clearInputState(); window.STUDY_GAMEPAD_CURSOR?.resetInput();
+    window.STUDY_GAMEPAD_CURSOR?.setInputCapture(false);
+    bindingStatus.textContent = "绑定成功，松开按键后可继续操作。";
+    updateAttackUi(); saveBombProgress();
+  }
+  for (const [action, input] of [["mushroom", mushroomKeyInput], ["iceBomb", iceBombKeyInput]]) {
+    input.addEventListener("click", () => {
+      syncBombProgress(); bindingCapture = action; captureNeutral = false;
+      window.STUDY_GAMEPAD_CURSOR?.setInputCapture(true);
+      clearInputState(); bindingStatus.textContent = "按键盘或手柄按钮绑定；Esc 取消。";
       updateAttackUi();
-      saveBombProgress();
     });
   }
   throwDistanceInput.addEventListener("input", () => {

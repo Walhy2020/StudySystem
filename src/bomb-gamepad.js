@@ -3,6 +3,7 @@
 
   function createBombGamepadReader(getGamepads = () => navigator.getGamepads?.() || []) {
     let identity = "", armed = false, previous = {}, systemArmed = false, systemPrevious = {};
+    let attackButtons = { mushroom: 0, ice: 1 };
     const pressed = (pad, index) => Boolean(pad.buttons?.[index]?.pressed || pad.buttons?.[index]?.value > 0.5);
     function reset() { armed = false; previous = {}; }
     function poll(enabled = true, systemEnabled = enabled) {
@@ -14,8 +15,9 @@
       const nextIdentity = pad ? `${pad.index}:${pad.id}` : "";
       if (nextIdentity !== identity) { identity = nextIdentity; reset(); systemArmed = false; systemPrevious = {}; }
       const result = { connected: Boolean(pad), standard: pad?.mapping === "standard",
-        direction: "", aim: "", mushroom: false, ice: false, confirm: false, refresh: false, fullscreen: false };
+        direction: "", aim: "", mushroom: false, ice: false, confirm: false, refresh: false, fullscreen: false, pressedButtons: [] };
       if (!pad || !result.standard) { reset(); return result; }
+      result.pressedButtons = Array.from(pad.buttons || [], (_, index) => index).filter(index => pressed(pad, index));
       const x = Number.isFinite(pad.axes?.[0]) ? pad.axes[0] : 0;
       const y = Number.isFinite(pad.axes?.[1]) ? pad.axes[1] : 0;
       const directions = [pressed(pad, 12) && "up", pressed(pad, 13) && "down",
@@ -28,7 +30,7 @@
       else if (!systemArmed) { if (!Object.values(systemButtons).some(Boolean)) systemArmed = true; }
       else for (const key of Object.keys(systemButtons)) result[key] = systemButtons[key] && !systemPrevious[key];
       systemPrevious = systemButtons;
-      const buttons = { mushroom: pressed(pad, 0), ice: pressed(pad, 1), confirm: pressed(pad, 9) };
+      const buttons = { mushroom: pressed(pad, attackButtons.mushroom), ice: pressed(pad, attackButtons.ice), confirm: pressed(pad, 9) };
       const neutral = !aim && !directions.length && !Object.values(buttons).some(Boolean) && !Object.values(systemButtons).some(Boolean);
       if (!enabled) { reset(); return result; }
       if (!armed) {
@@ -42,7 +44,11 @@
       previous = buttons;
       return result;
     }
-    return { poll, reset };
+    function setBindings(mushroom, ice) {
+      if (attackButtons.mushroom === mushroom && attackButtons.ice === ice) return;
+      attackButtons = { mushroom, ice }; reset();
+    }
+    return { poll, reset, setBindings };
   }
   globalThis.createBombGamepadReader = createBombGamepadReader;
 }());

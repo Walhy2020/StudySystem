@@ -11,6 +11,23 @@ function harness() {
     button: (index, down) => { pad.buttons[index] = { pressed: down, value: down ? 1 : 0 }; } };
 }
 
+test("自定义手柄攻击只响应新按钮，捕捉期间仅返回原始按下按钮且不执行操作", () => {
+  const h = harness(); h.reader.poll(); h.reader.setBindings(2, 10); h.reader.poll();
+  h.button(0, true); assert.equal(h.reader.poll().mushroom, false);
+  h.button(0, false); h.reader.poll();
+  h.button(2, true); assert.equal(h.reader.poll().mushroom, true);
+  assert.equal(h.reader.poll().mushroom, false);
+  h.reader.setBindings(8, 10); h.button(8, true);
+  assert.equal(h.reader.poll().mushroom, false, "remap requires neutral");
+  h.button(2, false); h.button(8, false); h.reader.poll();
+  h.button(10, true); assert.equal(h.reader.poll().ice, true);
+  h.button(5, true); h.button(7, true);
+  const capture = h.reader.poll(false, false);
+  assert.deepEqual(capture.pressedButtons, [5, 7, 10]);
+  for (const action of ["mushroom", "ice", "confirm", "refresh", "fullscreen"]) assert.equal(capture[action], false);
+  assert.equal(h.reader.poll().ice, false, "capture press cannot leak into gameplay");
+});
+
 test("左摇杆只瞄准、十字键只移动，死区和主轴避免斜移", () => {
   const h = harness(); h.reader.poll();
   h.pad.axes = [0.2, -0.2]; assert.equal(h.reader.poll().direction, "");

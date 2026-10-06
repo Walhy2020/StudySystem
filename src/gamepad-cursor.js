@@ -50,6 +50,7 @@
   help.hidden = true;
   document.body.append(pointer, help);
   let position = { x: innerWidth / 2, y: innerHeight / 2 };
+  let inputCapture = false;
   let lastFrame = null, identity = "", armed = false, previous = {};
   let menu = false, hovered = null, popup = null;
 
@@ -161,6 +162,7 @@
     if (lastFrame === now) return;
     const dt = lastFrame === null ? 0 : (now - lastFrame) / 1000;
     lastFrame = now;
+    if (inputCapture) { armed = false; previous = {}; return; }
     if (document.hidden || !document.hasFocus()) { suspend(); return; }
     let pads;
     try { pads = Array.from(navigator.getGamepads?.() || []).filter(pad => pad?.connected && pad.mapping === "standard"); }
@@ -199,7 +201,9 @@
     } else setHover(null);
     previous = buttons;
   }
-  window.STUDY_GAMEPAD_CURSOR = Object.freeze({ poll, leaveMenu: suspend, isMenuActive: () => isGame && menu });
+  window.STUDY_GAMEPAD_CURSOR = Object.freeze({ poll, leaveMenu: suspend, isMenuActive: () => isGame && menu,
+    resetInput: () => { armed = false; previous = {}; },
+    setInputCapture: active => { inputCapture = Boolean(active); armed = false; previous = {}; } });
   window.addEventListener("blur", suspend);
   window.addEventListener("pagehide", suspend);
   window.addEventListener("gamepaddisconnected", suspend);

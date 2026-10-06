@@ -104,7 +104,7 @@ try {
     assert.equal(await pointer.evaluate(node => document.fullscreenElement.contains(node)), true);
     assert.equal(await page.locator("#study-gamepad-help").evaluate(node => document.fullscreenElement.contains(node)), true);
     await page.locator("#bombAttackToggle").click();
-    // Move the virtual pointer to a real select and open its controller option popup.
+    // Move the virtual pointer to the capture control in the fullscreen top layer.
     const rect = await page.locator("#mushroomAttackKey").boundingBox();
     const target = { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
     for (let i = 0; i < 240; i++) {
@@ -119,9 +119,11 @@ try {
     }
     await page.evaluate(() => { window.__pad.axes[2] = 0; window.__pad.axes[3] = 0; }); await advance(0.02);
     await tap(0);
-    const popup = page.locator(".study-gamepad-options");
-    assert.equal(await popup.isVisible(), true);
-    assert.equal(await popup.evaluate(node => document.fullscreenElement.contains(node)), true);
+    const capture = page.locator("#mushroomAttackKey");
+    assert.equal(await capture.getAttribute("aria-pressed"), "true");
+    assert.equal(await capture.evaluate(node => document.fullscreenElement.contains(node)), true);
+    await page.keyboard.press("KeyJ");
+    assert.equal((await read()).mushroomKey, "KeyJ");
     await page.screenshot({ path: `tmp/bomb-cursor-fullscreen-${width}.png` });
     await page.evaluate(() => document.exitFullscreen());
     await page.waitForFunction(() => !document.fullscreenElement);

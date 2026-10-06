@@ -42,11 +42,12 @@ try {
     if (await page.locator("#bombSettingsMenu").isHidden()) await page.locator("#bombSettingsToggle").click();
     if (width === 390) await page.locator("#bombAttackToggle").tap();
     else await page.locator("#bombAttackToggle").click();
-    await page.locator("#mushroomAttackKey").selectOption("KeyJ");
-    await page.locator("#iceBombAttackKey").selectOption("Space");
+    await page.locator("#mushroomAttackKey").click();
+    await page.keyboard.press("KeyJ");
+    await page.locator("#iceBombAttackKey").click();
+    await page.keyboard.press("Space");
     await page.keyboard.press("Space");
     assert.equal((await read()).bombs.length, 0);
-    await page.keyboard.press("Escape"); // close the native select popup, not the settings panel
     await advance(0.02);
     const menu = await page.locator("#bombAttackMenu").boundingBox();
     assert.ok(menu.x >= 0 && menu.x + menu.width <= width);

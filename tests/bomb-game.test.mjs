@@ -34,8 +34,8 @@ const calculateLayout = new Function(
 });
 
 assert.match(html, /<canvas id="bombCanvas" width="1280" height="720"/);
-assert.ok(html.includes('bomb-game.css?v=1.7'));
-assert.ok(html.includes('bomb-game.js?v=2.31'));
+assert.ok(html.includes('bomb-game.css?v=1.8'));
+assert.ok(html.includes('bomb-game.js?v=2.32'));
 assert.ok(html.includes('id="bombAttackToggle"'));
 assert.ok(html.includes('id="mushroomThrowDistance"'));
 assert.ok(js.includes('const MUSHROOM_THROW_STEP_TIME = 0.09;'));

@@ -85,7 +85,7 @@ test("电量模块只读HID不发送输出/特征报告、不写存储，入口�
   const source = readFileSync(new URL("../src/bomb-gamepad-battery.js", import.meta.url), "utf8");
   assert.doesNotMatch(source, /sendReport|sendFeatureReport|receiveFeatureReport|localStorage|sessionStorage/);
   const html = readFileSync(new URL("../bomb-game.html", import.meta.url), "utf8");
-  assert.match(html, /bomb-game\.css\?v=1\.7/);
+  assert.match(html, /bomb-game\.css\?v=1\.8/);
   assert.match(html, /src\/bomb-gamepad-battery\.js\?v=1\.0/);
   assert.equal(html.split('id="readGamepadBattery"').length - 1, 1);
   assert.ok(html.indexOf('id="readGamepadBattery"') < html.indexOf('<main class="bomb-stage">'));

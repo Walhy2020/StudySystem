@@ -91,6 +91,7 @@ export function speakPhoneticExample(item, options = {}) {
 }
 
 const synthesis = speechApi();
+if (typeof window !== "undefined") window.addEventListener?.("studysystem:fullscreen-navigation", cancelPhoneticSpeech);
 if (synthesis) {
   refreshEnglishVoices();
   synthesis.addEventListener?.("voiceschanged", refreshEnglishVoices);

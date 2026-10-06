@@ -1,7 +1,7 @@
 import { PhoneticsEngine } from "./phonetics-engine.js?v=1.2";
-import { APP_VERSION, PHASE } from "./constants.js?v=1.24";
+import { APP_VERSION, PHASE } from "./constants.js?v=1.0.50";
 import { PhoneticsStorage } from "./phonetics-storage.js?v=1.1";
-import { cancelPhoneticSpeech, speakPhoneticExample } from "./phonetics-tts.js?v=1.2";
+import { cancelPhoneticSpeech, speakPhoneticExample } from "./phonetics-tts.js?v=1.3";
 import { displaySymbol, exampleEntries } from "./phonetics-display.js?v=1.0";
 
 export const PHONETICS_STORAGE_KEY = "mario-phonetics-v1";

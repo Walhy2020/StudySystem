@@ -41,7 +41,7 @@ if (typeof window !== "undefined" && typeof document !== "undefined") {
   const currentVersion = new URL(import.meta.url).searchParams.get("v");
   const checkVersion = createVersionChecker({
     currentVersion,
-    isVisible: () => document.visibilityState === "visible",
+    isVisible: () => document.visibilityState === "visible" && !window.STUDY_FULLSCREEN_SHELL?.isHosting(),
     fetchVersion: async () => {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 5000);

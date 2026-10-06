@@ -520,7 +520,7 @@ test("主题页十二个卡片、九十一个互动目标、歌词音标、阶�
   assert.doesNotMatch(html, /id="openTotalReview"|id="openWordLibrary"|id="wordLibraryView"|id="totalReviewView"/);
   assert.match(html, /href="\.\/review-learning\.html">总复习<\/a>/);
   assert.match(html, /theme-learning\.css\?v=3\.5/);
-  assert.match(html, /theme-learning\.js\?v=2\.17/);
+  assert.match(html, /theme-learning\.js\?v=2\.18/);
   assert.match(html, /id="reviewWordStage"[^>]*>2 复习单词<\/button>/);
   assert.match(html, /id="practiceStage"[^>]*>3 互动练习<\/button>/);
   const script = await readFile(new URL("../theme-learning.js", import.meta.url), "utf8");
@@ -603,9 +603,9 @@ test("总复习是独立并列模块，主题页只记录学习进度", async ()
   assert.match(reviewHtml, /id="totalReviewView"/);
   assert.match(reviewHtml, /id="wordLibraryView" hidden/);
   assert.match(reviewHtml, /theme-learning\.css\?v=3\.5/);
-  assert.match(reviewHtml, /review-learning\.js\?v=1\.14/);
+  assert.match(reviewHtml, /review-learning\.js\?v=1\.15/);
   assert.match(reviewHtml, /id="wordLibraryCount">0\/239<\/b>/);
-  assert.match(reviewScript, /theme-learning\.js\?v=2\.17/);
+  assert.match(reviewScript, /theme-learning\.js\?v=2\.18/);
   assert.match(reviewScript, /theme-overview\.js\?v=1\.13/);
   assert.match(reviewScript, /overview\.openReview\(\)/);
 });

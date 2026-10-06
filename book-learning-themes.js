@@ -21,6 +21,7 @@ const chosen = () => theme?.items.find((item) => item.id === selectedId);
 function save() { state = storage.save(state); }
 
 function stopSpeech() { clearTimeout(speechTimer); window.speechSynthesis?.cancel?.(); }
+window.addEventListener("studysystem:fullscreen-navigation", stopSpeech);
 function speak(item) {
   if (!item || !window.speechSynthesis || !window.SpeechSynthesisUtterance) return;
   stopSpeech();

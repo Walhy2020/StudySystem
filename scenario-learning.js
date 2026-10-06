@@ -1,5 +1,5 @@
 import { SCENARIOS, scenarioById, scenarioLineById } from "./data/scenarios.js?v=1.6";
-import { initializeScenarioWords } from "./src/scenario-workshop.js?v=1.11";
+import { initializeScenarioWords } from "./src/scenario-workshop.js?v=1.12";
 import { createDialoguePlayback } from "./src/scenario-playback.js?v=1.1";
 
 export { SCENARIOS };
@@ -456,6 +456,7 @@ function initializePage() {
   });
   document.addEventListener("visibilitychange", () => { if (document.hidden && playback.running) playback.pause(); });
   window.addEventListener("pagehide", stopPlayback);
+  window.addEventListener("studysystem:fullscreen-navigation", () => { stopPlayback(); clearTimeout(practiceTimer); });
   dom.speakPractice.addEventListener("click", () => speaker.speak(practice.question()?.prompt.text));
   dom.restartPractice.addEventListener("click", () => setStage("practice"));
   dom.returnAfterComplete.addEventListener("click", () => { setView(false); syncPicker(); });

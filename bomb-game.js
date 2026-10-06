@@ -485,7 +485,8 @@
     clearInputState();
     saveBombProgress();
     try {
-      if (document.fullscreenElement) await document.exitFullscreen();
+      if (window.STUDY_FULLSCREEN_SHELL?.isEmbedded()) await window.STUDY_FULLSCREEN_SHELL.toggleFullscreen();
+      else if (document.fullscreenElement) await document.exitFullscreen();
       else await appNode.requestFullscreen();
     } catch {
       setSettingsMenuOpen(true);
@@ -532,6 +533,7 @@
   }
 
   function saveBombProgress() {
+    if (window.STUDY_FULLSCREEN_SHELL?.isHosting()) return;
     if (!ownsProgress) return;
     try {
       const latest = localStorage.getItem(BOMB_PROGRESS_KEY);
@@ -4223,6 +4225,7 @@
   }
 
   function loop(now) {
+    if (window.STUDY_FULLSCREEN_SHELL?.isHosting()) { lastTime = now; requestAnimationFrame(loop); return; }
     const dt = Math.min(0.033, (now - lastTime) / 1000 || 0);
     lastTime = now;
     animationClock += dt;
@@ -4579,6 +4582,9 @@
     }
   });
   window.addEventListener("pagehide", () => { sounds.setMusic(null); saveBombProgress(); });
+  window.addEventListener("studysystem:fullscreen-navigation", () => {
+    cancelBindingCapture(); clearInputState(); sounds.setMusic(null); saveBombProgress();
+  });
   window.addEventListener("studysystem:update-prompt", () => { sounds.setMusic(null); clearInputState(); saveBombProgress(); });
 
   startButton.addEventListener("click", startGame);

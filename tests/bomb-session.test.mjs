@@ -13,6 +13,8 @@ test("过期窗口即使尚未收到 storage 事件，也不能覆盖新存档�
     getItem: () => storage.value,
     setItem: (key, value) => { storage.writes.push(key); storage.value = value; } };
   const app = new Function("localStorage", `
+    const window = { STUDY_FULLSCREEN_SHELL: { isHosting: () => hosting } };
+    let hosting = false;
     const BOMB_PROGRESS_KEY = "mario-bomb-game-progress-v1";
     let lastStoredProgress = localStorage.getItem(BOMB_PROGRESS_KEY), ownsProgress = true;
     let data = JSON.parse(lastStoredProgress), clears = 0;
@@ -28,6 +30,7 @@ test("过期窗口即使尚未收到 storage 事件，也不能覆盖新存档�
     ${extract("syncBombProgress")}
     ${extract("claimBombProgress")}
     return { saveBombProgress, claimBombProgress, syncBombProgress,
+      setHosting: value => { hosting = value; },
       read: () => ({ data, ownsProgress, clears }) };
   `)(storage);
   storage.value = JSON.stringify({ score: 25 });
@@ -44,6 +47,10 @@ test("过期窗口即使尚未收到 storage 事件，也不能覆盖新存档�
   app.saveBombProgress();
   assert.equal(storage.value, null, "storage deletion cannot resurrect stale progress");
   assert.deepEqual(app.read().data, { score: 0 });
+  app.setHosting(true);
+  storage.value = JSON.stringify({ score: 99 });
+  app.saveBombProgress();
+  assert.equal(storage.writes.length, 1, "dormant fullscreen owner cannot overwrite the active module");
 });
 
 test("原有火焰受伤及致命伤清空输入，无敌期不重复扣血", () => {

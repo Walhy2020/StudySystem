@@ -449,6 +449,9 @@ function initializePage() {
   let feedbackTimer = 0;
   let advanceTimer = 0;
   const speaker = createEnglishSpeaker();
+  window.addEventListener("studysystem:fullscreen-navigation", () => {
+    clearTimeout(feedbackTimer); clearTimeout(advanceTimer); speaker.cancel();
+  });
 
   const activeConfig = () => THEME_CONFIGS[activeThemeId];
   const activeTargets = () => activeThemeId

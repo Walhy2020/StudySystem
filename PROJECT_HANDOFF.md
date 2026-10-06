@@ -7,7 +7,30 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.49** (2026-10-06). R2 toggles fullscreen on
+System display version: **v1.0.50** (2026-10-06). Fullscreen module navigation
+now keeps one persistent fullscreen owner with one same-origin internal iframe.
+Switching between all eight pages stays fullscreen; native and gamepad links
+share validated routing, browser back/forward reuses the frame, and R2/browser
+exit opens the currently visible module normally rather than the dormant source.
+Windowed navigation is unchanged. Outgoing speech/timers stop; dormant bomb
+gameplay/music/controller polling/save writes pause, and returning to a saved
+game still requires Continue. No new storage keys or synchronization service.
+
+Shell JS/CSS v1.0, cursor v1.6/CSS v1.1, bomb JS v2.33, book themes v1.3,
+theme JS v2.18, scenario JS v2.7, phonetics TTS v1.3; all eight notifier queries
+v1.0.50. Hanzi/Pinyin/IPA display-version entry imports use current constants
+queries; Hanzi app v1.28, Pinyin app v1.2, IPA app v1.27.
+
+Only tests/fullscreen-shell-browser.mjs ran for browser acceptance: real Microsoft
+Edge 1440/390, all-module transitions, mouse/keyboard/touch links, right-stick
+pointer routing, no fullscreen exit/nested frames, history, source progress,
+bomb pause/save/Continue, R2 and browser-initiated fullscreen exit, windowed
+navigation, geometry and resources/no page errors. Standard controller input
+was simulated; physical-controller operation is not certified. Ignored tmp
+screenshots inspected; existing user-owned tracked PNG changes remain excluded.
+Syntax, 184 Node tests and git diff --check passed; no unrelated browser suite.
+
+Previous **v1.0.49** (2026-10-06). R2 toggles fullscreen on
 all eight pages. The seven learning pages use the shared cursor handler and
 fullscreen the document root; bomb maze keeps its existing app-container handler
 without a duplicate R2 request. Held/reconnect/focus and capture safeguards remain.

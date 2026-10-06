@@ -94,7 +94,8 @@
     if (isGame || fullscreenPending || inputCapture) return;
     fullscreenPending = true;
     try {
-      if (document.fullscreenElement) await document.exitFullscreen();
+      if (window.STUDY_FULLSCREEN_SHELL?.isEmbedded()) await window.STUDY_FULLSCREEN_SHELL.toggleFullscreen();
+      else if (document.fullscreenElement) await document.exitFullscreen();
       else await document.documentElement.requestFullscreen();
       closeFullscreenPrompt();
     } catch { showFullscreenPrompt(); }
@@ -154,7 +155,7 @@
     if (target.matches("a")) {
       const destination = safeDestination(target.getAttribute("href"), base, location.href);
       if (!destination || target.hasAttribute("download")) return;
-      location.assign(destination.href); // Stay in this tab and within the eight system pages.
+      if (!window.STUDY_FULLSCREEN_SHELL?.navigate(destination.href)) location.assign(destination.href);
       return;
     }
     if (target.matches("select")) { openSelect(target); return; }
@@ -203,6 +204,7 @@
     if (lastFrame === now) return;
     const dt = lastFrame === null ? 0 : (now - lastFrame) / 1000;
     lastFrame = now;
+    if (window.STUDY_FULLSCREEN_SHELL?.isHosting()) { suspend(); return; }
     if (inputCapture) { armed = false; previous = {}; return; }
     if (document.hidden || !document.hasFocus()) { suspend(); return; }
     let pads;
@@ -252,6 +254,7 @@
     setInputCapture: active => { inputCapture = Boolean(active); armed = false; previous = {}; } });
   window.addEventListener("blur", suspend);
   window.addEventListener("pagehide", suspend);
+  window.addEventListener("studysystem:fullscreen-navigation", suspend);
   window.addEventListener("gamepaddisconnected", suspend);
   window.addEventListener("studysystem:update-prompt", suspend);
   document.addEventListener("visibilitychange", () => { if (document.hidden) suspend(); });

@@ -1,4 +1,4 @@
-export const APP_VERSION = "1.0.49";
+export const APP_VERSION = "1.0.50";
 export const SCHEMA_VERSION = 1;
 export const WORD_BANK_VERSION = 1;
 export const CHARACTER_COUNT = 1600;

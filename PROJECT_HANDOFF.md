@@ -7,7 +7,24 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.45** (2026-10-06). L3 (press left stick) toggles
+System display version: **v1.0.46** (2026-10-06). Attack direction now follows
+every successful player move automatically. While stopped, the left stick can
+adjust aim; resuming movement/turning overrides stationary aim again. Actual
+in-progress steps take priority over buffered turn requests. L3 has no action.
+The fixed/follow toggle and its saved flag are removed; legacy true/false flags
+are ignored without changing map, HP or progress. The enlarged arrow remains,
+yellow during motion and cyan when stationary. D-pad movement is unchanged.
+
+Bomb JS v2.31, gamepad reader v1.3; shared cursor v1.2 and CSS v1.7 unchanged;
+all eight notifier references v1.0.46. Only the changed aim checks ran in real
+Edge at 1440/390: tests/bomb-aim-fullscreen-browser.mjs --aim-only. Verified
+stationary aim/attacks, automatic follow/turns while the left stick is held,
+inert L3, legacy-save restoration and no page/resource errors. Fullscreen and
+unrelated module browser flows were explicitly skipped. Syntax and 175 Node
+tests passed; git diff --check passed. Ignored tmp screenshots inspected;
+physical controller not tested; existing tracked PNG changes preserved.
+
+Previous **v1.0.45** (2026-10-06). L3 (press left stick) toggles
 attack-direction follow while walking; press again restores independent stick aim.
 The follow flag persists in the existing bomb save, defaults off for older saves,
 tracks actual successful movement/turns and ignores stick aim while locked.

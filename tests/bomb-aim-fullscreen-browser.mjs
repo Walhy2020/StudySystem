@@ -3,6 +3,7 @@ import fs from "node:fs";
 import { loadChromium } from "./playwright-runtime.mjs";
 const base = process.env.HANZI_BASE_URL || "http://127.0.0.1:5177/";
 const key = "mario-bomb-game-progress-v1";
+const aimOnly = process.argv.includes("--aim-only");
 const browser = await (await loadChromium()).launch({ headless: true,
   executablePath: "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe" });
 fs.mkdirSync("tmp", { recursive: true });
@@ -60,31 +61,39 @@ try {
     await load(fixture);
     await axes(0, -1); await advance(0.02); assert.equal((await read()).attackDirection, "up");
     await button(15, true); await advance(0.1);
-    assert.equal((await read()).attackDirection, "up", "free aim remains independent while walking");
+    assert.equal((await read()).attackDirection, "right", "walking automatically overrides stationary aim");
     await button(10, true); await advance(0.1);
-    assert.equal((await read()).attackFollowsMovement, true);
-    assert.equal((await read()).attackDirection, "right", "L3 aligns to actual current walk");
-    await advance(0.1); assert.equal((await read()).attackFollowsMovement, true, "held L3 toggles once");
+    assert.equal((await read()).attackDirection, "right", "L3 has no effect while walking");
+    assert.equal("attackFollowsMovement" in (await read()), false, "old lock setting removed from saves");
     await button(10, false); await button(15, false); await axes(-1, 0); await advance(0.2);
+    assert.equal((await read()).attackDirection, "left", "stopped player accepts stick aim");
+    await tap(10); assert.equal((await read()).attackDirection, "left", "L3 has no effect while stopped");
+    await tap(0); assert.equal((await read()).mushroomShots.at(-1).direction, "left", "stationary attack uses stick aim");
+    await page.screenshot({ path: `tmp/bomb-aim-stopped-${width}.png` });
     await button(13, true); await advance(0.25);
-    assert.equal((await read()).attackDirection, "down", "walking turns override stick aim only when locked");
+    assert.equal((await read()).attackDirection, "down", "walking resumes follow despite held left stick");
+    await button(13, false); await button(15, true); await advance(0.02);
+    assert.equal((await read()).attackDirection, (await read()).player.move.direction, "buffered turn follows actual step, not requested turn");
+    await advance(0.25); assert.equal((await read()).attackDirection, "right", "successful turn follows automatically");
+    await button(15, false); await button(13, true); await advance(0.25);
     await tap(0); assert.equal((await read()).mushroomShots.at(-1).direction, "down");
+    await page.screenshot({ path: `tmp/bomb-aim-moving-${width}.png` });
     await button(13, false); await axes(0, 0); await advance(0.2);
-    const locked = await read();
+    const legacy = await read(); legacy.attackFollowsMovement = true;
     assert.ok(await page.evaluate(() => window.__largeAimArrows > 0), "enlarged arrow is actually rendered");
-    await page.screenshot({ path: `tmp/bomb-aim-locked-${width}.png` });
-    await load(locked);
-    assert.equal((await read()).attackFollowsMovement, true, "lock persists on reload/Continue");
-    await tap(10); assert.equal((await read()).attackFollowsMovement, false);
+    await load(legacy);
+    assert.equal("attackFollowsMovement" in (await read()), false, "old true lock flag is ignored and not written back");
+    await tap(10);
     await axes(0, -1); await advance(0.02); assert.equal((await read()).attackDirection, "up");
     await axes(0, 0); await button(15, true); await advance(0.2);
-    assert.equal((await read()).attackDirection, "up", "unlock returns to independent aim");
+    assert.equal((await read()).attackDirection, "right", "resumed save uses automatic movement follow");
     await button(15, false); await advance(0.2);
     await page.locator("#bombSettingsToggle").click();
     await button(10, true); await advance(0.1);
-    assert.equal((await read()).attackFollowsMovement, false, "menus ignore L3 gameplay input");
+    assert.equal("attackFollowsMovement" in (await read()), false, "menus cannot restore removed lock mode");
     await button(10, false); await advance(0.02);
 
+    if (!aimOnly) {
     // Real browser fullscreen with a trusted button click, not a mocked fullscreenElement.
     await page.locator("#bombFullscreenToggle").click();
     await page.waitForFunction(() => document.fullscreenElement?.classList.contains("bomb-game-app"));
@@ -118,10 +127,12 @@ try {
     await page.waitForFunction(() => !document.fullscreenElement);
     assert.equal(await pointer.evaluate(node => node.parentElement === document.body), true);
     assert.equal(await page.locator("#study-gamepad-help").evaluate(node => node.parentElement === document.body), true);
+    }
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     assert.deepEqual(errors, []);
-    results.push({ width, mockGamepad: true, l3TogglePersistence: true, enlargedArrow: true,
-      actualFullscreen: true, cursorAndSelectPopupVisible: true });
+    results.push({ width, mockGamepad: true, automaticMovementAim: true, stationaryStickAim: true,
+      l3NoAction: true, oldLockIgnored: true, enlargedArrow: true,
+      actualFullscreen: !aimOnly, cursorAndSelectPopupTested: !aimOnly });
     await context.close();
   }
   console.log(JSON.stringify({ ok: true, browser: "Microsoft Edge", physicalControllerTested: false, results }));

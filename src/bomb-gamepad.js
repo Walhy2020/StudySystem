@@ -14,7 +14,7 @@
       const nextIdentity = pad ? `${pad.index}:${pad.id}` : "";
       if (nextIdentity !== identity) { identity = nextIdentity; reset(); systemArmed = false; systemPrevious = {}; }
       const result = { connected: Boolean(pad), standard: pad?.mapping === "standard",
-        direction: "", aim: "", aimToggle: false, mushroom: false, ice: false, confirm: false, refresh: false, fullscreen: false };
+        direction: "", aim: "", mushroom: false, ice: false, confirm: false, refresh: false, fullscreen: false };
       if (!pad || !result.standard) { reset(); return result; }
       const x = Number.isFinite(pad.axes?.[0]) ? pad.axes[0] : 0;
       const y = Number.isFinite(pad.axes?.[1]) ? pad.axes[1] : 0;
@@ -28,7 +28,7 @@
       else if (!systemArmed) { if (!Object.values(systemButtons).some(Boolean)) systemArmed = true; }
       else for (const key of Object.keys(systemButtons)) result[key] = systemButtons[key] && !systemPrevious[key];
       systemPrevious = systemButtons;
-      const buttons = { mushroom: pressed(pad, 0), ice: pressed(pad, 1), confirm: pressed(pad, 9), aimToggle: pressed(pad, 10) };
+      const buttons = { mushroom: pressed(pad, 0), ice: pressed(pad, 1), confirm: pressed(pad, 9) };
       const neutral = !aim && !directions.length && !Object.values(buttons).some(Boolean) && !Object.values(systemButtons).some(Boolean);
       if (!enabled) { reset(); return result; }
       if (!armed) {

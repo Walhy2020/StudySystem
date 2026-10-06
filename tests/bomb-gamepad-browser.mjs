@@ -87,8 +87,8 @@ try {
     assert.equal((await read()).attackDirection, "up");
     assert.equal((await read()).player.gx, 2, "left stick aims without moving");
     await axes(0, 0); await move(1, 0); await advance(0.3); assert.ok((await read()).player.gx > 3);
-    assert.equal((await read()).attackDirection, "up", "D-pad movement does not override aim");
-    await tap(0); assert.equal((await read()).mushroomShots.at(-1).direction, "up");
+    assert.equal((await read()).attackDirection, "right", "D-pad movement automatically updates attack direction");
+    await tap(0); assert.equal((await read()).mushroomShots.at(-1).direction, "right");
     await move(0, 1); await advance(0.3); assert.ok((await read()).player.gy > 3, "turn is buffered during a step");
     await move(0, 0); await advance(0.4); const stopped = (await read()).player;
     await advance(0.2); assert.equal((await read()).player.gy, stopped.gy);
@@ -173,7 +173,7 @@ try {
     assert.deepEqual(errors, []);
     results.push({ width, mockStandardGamepad: true, movement: true, dualAttacks: true,
       startContinueNext: true, disconnectNeutral: true, damageNeutral: true, keyboardPreserved: true,
-      independentAim: true, compactCenteredMoons: true, fullMapViewport: true, refreshSaved: true, fullscreenMock: true });
+      stationaryAim: true, automaticMovementAim: true, compactCenteredMoons: true, fullMapViewport: true, refreshSaved: true, fullscreenMock: true });
     await context.close();
   }
   console.log(JSON.stringify({ ok: true, browser: "Microsoft Edge", results }));

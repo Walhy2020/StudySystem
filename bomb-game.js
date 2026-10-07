@@ -275,6 +275,7 @@
   let attackMenuOpen = false;
   let gamepadMenuOpen = false;
   let settingsMenuOpen = false;
+  let fullscreenPending = false;
   let gamepadConnected = false;
 
   let lastTime = performance.now();
@@ -485,18 +486,25 @@
   }
 
   async function toggleFullscreen() {
+    if (fullscreenPending) return false;
+    fullscreenPending = true;
     clearInputState();
     saveBombProgress();
     try {
       if (window.STUDY_FULLSCREEN_SHELL?.isEmbedded()) await window.STUDY_FULLSCREEN_SHELL.toggleFullscreen();
       else if (document.fullscreenElement) await document.exitFullscreen();
       else await appNode.requestFullscreen();
-    } catch {
-      setSettingsMenuOpen(true);
-      setMessage("浏览器需要点击「全屏」按钮授权全屏", 5);
-      fullscreenToggle.focus();
+      setSettingsMenuOpen(false);
+      canvas.focus({ preventScroll: true });
+      return true;
+    } catch (error) {
+      // A denied browser request must not open settings or steal game focus.
+      console.warn("浏览器未允许全屏切换", error);
+      return false;
+    } finally {
+      fullscreenPending = false;
+      scheduleBombViewportFit();
     }
-    scheduleBombViewportFit();
   }
 
   function setAvatarMenuOpen(open) {

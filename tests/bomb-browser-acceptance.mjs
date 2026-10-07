@@ -201,7 +201,7 @@ const resourcePaths = [
   "bomb-game.html",
   "bomb-game.css?v=1.5",
   "bomb-game.js?v=2.34",
-  "src/gamepad-cursor.js?v=1.8",
+  "src/gamepad-cursor.js?v=1.9",
   "gamepad-cursor.css?v=1.1",
   "src/bomb-gamepad.js?v=1.4",
   "src/bomb-bindings.js?v=1.0",

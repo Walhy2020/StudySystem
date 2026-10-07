@@ -7,7 +7,22 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.54** (2026-10-07). Small mushroom throws now
+System display version: **v1.0.55** (2026-10-07). R2 directly requests native
+fullscreen across all eight pages, without auto-opening bomb settings or a
+learning-page authorization popup when denied. Successful bomb toggles close
+settings and return focus to the canvas; concurrent requests are guarded.
+Browser denial remains a real denial, reported only in the console, with no fake
+fullscreen or security bypass. Browser-owned Escape/fullscreen notices cannot
+be suppressed by website code. Fullscreen-shell navigation and cursor reparenting
+remain unchanged. Bomb JS v2.37, shared cursor v1.9; eight notifier queries and
+display-version imports v1.0.55 (Hanzi/Pinyin/IPA entry caches v1.33/v1.7/v1.32).
+Focused browser check: tests/gamepad-fullscreen-browser.mjs, R2 only at 1440/390
+on the eight pages; standard input is simulated, not physical-controller
+certification. Existing tracked PNG changes remain excluded. Syntax, 196 Node
+tests, the focused Edge check and git diff --check passed; no unrelated browser
+learning/gameplay suite ran.
+
+Previous **v1.0.54** (2026-10-07). Small mushroom throws now
 deal one damage to ordinary and black hidden-missile crates: a full-health brick
 needs three hits. Each shot ends at the first brick and cannot damage twice;
 the first two hits keep contents hidden, and the third reveals contents/scores

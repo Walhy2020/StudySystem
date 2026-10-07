@@ -107,7 +107,7 @@ try {
     const second = await context.newPage(); await second.goto(base + "pinyin.html"); await ready(second);
     await samePoint(second, { x: width / 2, y: 450 });
     await second.close();
-    assert.equal((await page.request.get(base + "src/gamepad-cursor.js?v=1.8")).status(), 200);
+    assert.equal((await page.request.get(base + "src/gamepad-cursor.js?v=1.9")).status(), 200);
     assert.deepEqual(errors, []);
     results.push({ width, windowedEightPages: true, pointerNavigation: true, fullscreenSwitch: true,
       exitAndReload: true, staleOwnerProtected: true, viewportClamp: true, tabIsolation: true });

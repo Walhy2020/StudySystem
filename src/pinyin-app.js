@@ -1,7 +1,7 @@
 import { PINYIN_ITEMS } from "../data/pinyin.js?v=1.0";
 import { PinyinEngine } from "./pinyin-engine.js?v=1.1";
 import { PinyinStorage } from "./pinyin-storage.js?v=1.0";
-import { APP_VERSION, PHASE } from "./constants.js?v=1.0.54";
+import { APP_VERSION, PHASE } from "./constants.js?v=1.0.55";
 
 const items = PINYIN_ITEMS;
 const dom = Object.fromEntries([...document.querySelectorAll("[id]")].map(node => [node.id, node]));

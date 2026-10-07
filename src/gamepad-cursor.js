@@ -90,33 +90,16 @@
   let inputCapture = false;
   let lastFrame = null, identity = "", armed = false, previous = {};
   let menu = false, hovered = null, popup = null;
-  let fullscreenPending = false, fullscreenPrompt = null;
+  let fullscreenPending = false;
 
   function overlayHost() { return document.fullscreenElement || document.body; }
   function syncOverlayHost() {
     const host = overlayHost();
     host.append(pointer, help);
     if (popup) host.append(popup);
-    closeFullscreenPrompt();
   }
   document.addEventListener("fullscreenchange", syncOverlayHost);
 
-  function closeFullscreenPrompt() { fullscreenPrompt?.remove(); fullscreenPrompt = null; }
-  function showFullscreenPrompt() {
-    closeFullscreenPrompt();
-    fullscreenPrompt = document.createElement("div");
-    fullscreenPrompt.className = "study-gamepad-fullscreen";
-    fullscreenPrompt.setAttribute("role", "group");
-    fullscreenPrompt.setAttribute("aria-label", "全屏授权");
-    const supported = Boolean(document.fullscreenElement ? document.exitFullscreen : document.documentElement.requestFullscreen);
-    const confirm = document.createElement("button"); confirm.type = "button";
-    confirm.textContent = document.fullscreenElement ? "退出全屏" : "进入全屏";
-    confirm.disabled = !supported; confirm.addEventListener("click", toggleLearningFullscreen);
-    const cancel = document.createElement("button"); cancel.type = "button"; cancel.textContent = "取消";
-    cancel.addEventListener("click", closeFullscreenPrompt);
-    fullscreenPrompt.append(confirm, cancel); overlayHost().append(fullscreenPrompt);
-    (supported ? confirm : cancel).focus({ preventScroll: true });
-  }
   async function toggleLearningFullscreen() {
     if (isGame || fullscreenPending || inputCapture) return;
     fullscreenPending = true;
@@ -124,8 +107,12 @@
       if (window.STUDY_FULLSCREEN_SHELL?.isEmbedded()) await window.STUDY_FULLSCREEN_SHELL.toggleFullscreen();
       else if (document.fullscreenElement) await document.exitFullscreen();
       else await document.documentElement.requestFullscreen();
-      closeFullscreenPrompt();
-    } catch { showFullscreenPrompt(); }
+      return true;
+    } catch (error) {
+      // Keep the page and focus unchanged; browser authorization is not bypassable.
+      console.warn("浏览器未允许全屏切换", error);
+      return false;
+    }
     finally { fullscreenPending = false; }
   }
 

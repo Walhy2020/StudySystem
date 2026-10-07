@@ -92,7 +92,7 @@ try {
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
     await page.locator("#bombSettingsToggle").click();
     await page.screenshot({ path: `tmp/bomb-quiet-hud-${width}.png` });
-    for (const resource of ["bomb-game.css?v=1.9","bomb-game.js?v=2.36","src/gamepad-cursor.js?v=1.8"]) {
+    for (const resource of ["bomb-game.css?v=1.9","bomb-game.js?v=2.37","src/gamepad-cursor.js?v=1.9"]) {
       assert.equal((await page.request.get(base + resource)).status(), 200);
     }
     assert.deepEqual(errors, []);

@@ -131,7 +131,7 @@ try {
     assert.ok(rect.x >= 0 && rect.x + rect.width <= width && rect.y >= 0 && rect.y + rect.height <= (width === 390 ? 500 : 900));
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
     await page.screenshot({ path: `tmp/bomb-bindings-menu-${width}.png` });
-    for (const resource of ["bomb-game.css?v=1.9", "bomb-game.js?v=2.34", "src/bomb-bindings.js?v=1.0", "src/bomb-gamepad.js?v=1.4", "src/gamepad-cursor.js?v=1.8"]) {
+    for (const resource of ["bomb-game.css?v=1.9", "bomb-game.js?v=2.34", "src/bomb-bindings.js?v=1.0", "src/bomb-gamepad.js?v=1.4", "src/gamepad-cursor.js?v=1.9"]) {
       assert.equal((await page.request.get(base + resource)).status(), 200);
     }
     assert.deepEqual(errors, []);

@@ -2034,9 +2034,12 @@
   }
 
   function impactMushroomShot(shot, gx, gy, hitCrate = false) {
+    if (shot.done) return;
     shot.done = true;
     sounds.play("explode");
-    if (!hitCrate) {
+    if (hitCrate) {
+      openCrateCell(gx, gy, 1);
+    } else {
       state.enemies.forEach((enemy) => {
         if (!enemy.alive || Math.round(enemy.gx) !== gx || Math.round(enemy.gy) !== gy) return;
         damageEnemy(enemy, true);

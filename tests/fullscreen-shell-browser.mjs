@@ -58,7 +58,7 @@ try {
       return frame;
     }
     await page.goto(base + "phonetics.html?shell-check=1");
-    await page.waitForFunction(() => document.getElementById("appVersionLabel")?.textContent === "v1.0.53");
+    await page.waitForFunction(() => document.getElementById("appVersionLabel")?.textContent === "v1.0.54");
     const phoneticsBefore = await page.evaluate(() => localStorage.getItem("mario-phonetics-v1"));
     await activate();
     await page.locator('a[href="./index.html"]').click();

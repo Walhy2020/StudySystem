@@ -7,7 +7,20 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.53** (2026-10-07). Bowser fireballs and all
+System display version: **v1.0.54** (2026-10-07). Small mushroom throws now
+deal one damage to ordinary and black hidden-missile crates: a full-health brick
+needs three hits. Each shot ends at the first brick and cannot damage twice;
+the first two hits keep contents hidden, and the third reveals contents/scores
+once. Partial HP survives refresh/Continue in the existing save. Bombs and Bowser
+fireballs still destroy a crate in one hit; enemy damage remains one. No new keys,
+HP migration, movement or other-module learning changes.
+Bomb JS v2.36; all eight notifier queries and display-version imports v1.0.54
+(Hanzi/Pinyin/IPA entry caches v1.32/v1.6/v1.31). Focused browser check:
+tests/bomb-mushroom-brick-browser.mjs (real Edge, 1440/390). Existing tracked PNG
+edits remain preserved and excluded; no unrelated browser suite. Syntax,
+193 Node tests, the focused Edge check and git diff --check passed.
+
+Previous **v1.0.53** (2026-10-07). Bowser fireballs and all
 ice/normal/red/missile bombs deal 3 damage to crates, destroying a full-health
 or previously damaged crate in one hit. Each stops at the first crate; overlapping
 blasts retain the destroyed-brick barrier. Rewards/hidden questions/missiles reveal

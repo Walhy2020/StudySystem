@@ -31,7 +31,7 @@ try {
     const scroll = () => page.evaluate(() => document.scrollingElement.scrollTop);
     const pointer = page.locator("#study-gamepad-cursor");
     await page.goto(base + "phonetics.html?edge-scroll-check=1");
-    await page.waitForFunction(() => document.querySelectorAll("#phoneticsGrid button").length > 0 || document.getElementById("appVersionLabel")?.textContent.includes("1.0.53"));
+    await page.waitForFunction(() => document.querySelectorAll("#phoneticsGrid button").length > 0 || document.getElementById("appVersionLabel")?.textContent.includes("1.0.54"));
     assert.ok(await page.evaluate(() => document.scrollingElement.scrollHeight > innerHeight), "actual learning page has scrollable height");
     await advance(0.05); await axes(0, 1); await advance(0.1);
     assert.equal(await scroll(), 0, "no scrolling until cursor reaches the bottom");

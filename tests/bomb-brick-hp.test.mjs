@@ -27,10 +27,11 @@ function harness() {
     ${extract("restoreCrateHp")}
     ${extract("crateHpAt")}
     ${extract("openCrateCell")}
+    ${extract("impactMushroomShot")}
     ${extract("explodeBomb")}
     ${extract("updateFireballs")}
     ${extract("continueShellRun")}
-    return { restoreCrateHp, crateHpAt, openCrateCell, explodeBomb, updateFireballs, continueShellRun };
+    return { restoreCrateHp, crateHpAt, openCrateCell, impactMushroomShot, explodeBomb, updateFireballs, continueShellRun };
   `)(state, rewards, particles, moves);
   return { state, rewards, particles, moves, ...api };
 }
@@ -57,6 +58,20 @@ test("旧存档砖块默认3血，受损存档保留1/2血，坏数据及已开�
   assert.deepEqual([...app.state.crateHp], [["3,1", 2], ["4,1", 1]]);
   app.openCrateCell(4,1); app.restoreCrateHp([["4,1",1], ["3,1",2]]);
   assert.equal(app.crateHpAt(4,1), 0); assert.equal(app.crateHpAt(3,1), 2);
+});
+
+test("小蘑菇三击碎砖：每颗仅扣1血，前两击不出奖励，第三击只开一块", () => {
+  const app = harness();
+  for (const hp of [2,1,0]) {
+    const shot = {};
+    app.impactMushroomShot(shot, 3, 1, true);
+    app.impactMushroomShot(shot, 3, 1, true);
+    assert.equal(shot.done, true); assert.equal(app.crateHpAt(3,1), hp);
+    assert.equal(app.crateHpAt(4,1), 3);
+    assert.equal(app.state.score, hp === 0 ? 5 : 0);
+    assert.deepEqual(app.rewards, hp === 0 ? ["3,1"] : []);
+  }
+  assert.equal(app.state.crateHp.has("3,1"), false);
 });
 
 test("冰/普通/导弹炸弹一次打掉满血或受损砖块，不穿透或重复出奖励", () => {

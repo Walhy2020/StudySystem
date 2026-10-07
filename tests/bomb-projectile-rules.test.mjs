@@ -8,19 +8,19 @@ function extract(name) {
   return source.slice(start, source.indexOf("\n  }", start) + 4);
 }
 
-test("小蘑菇碰砖结束、不打开砖或攻击砖后的敌人，击中敌人仍扣1血", () => {
+test("小蘑菇碰砖扣1血后结束，不攻击砖后的敌人，击中敌人仍扣1血", () => {
   const enemy = { alive: true, gx: 4, gy: 3, type: "bowser", hp: 40 };
-  let damaged = 0;
-  const impact = new Function("enemy", "damageEnemy", `
+  let damaged = 0, crateDamage = 0;
+  const impact = new Function("enemy", "damageEnemy", "openCrateCell", `
     const state = { enemies: [enemy] }, sounds = { play() {} };
     const spawnParticles = () => {}, updateHud = () => {}, checkLevelComplete = () => {};
     const defeatEnemy = () => { throw new Error("unexpected missile"); };
-    const openCrateCell = () => { throw new Error("mushroom must not open crates"); };
     ${extract("impactMushroomShot")}
     return impactMushroomShot;
-  `)(enemy, target => { target.hp--; damaged++; });
+  `)(enemy, target => { target.hp--; damaged++; }, (x, y, damage) => { crateDamage += damage; });
   const blocked = {}; impact(blocked, 4, 3, true);
-  assert.equal(blocked.done, true); assert.equal(damaged, 0);
+  assert.equal(blocked.done, true); assert.equal(damaged, 0); assert.equal(crateDamage, 1);
+  impact(blocked, 4, 3, true); assert.equal(crateDamage, 1, "same shot cannot damage twice");
   const hit = {}; impact(hit, 4, 3, false);
   assert.equal(hit.done, true); assert.equal(enemy.hp, 39); assert.equal(damaged, 1);
 });

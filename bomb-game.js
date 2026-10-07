@@ -682,7 +682,6 @@
     normalizeRestoredLevelTargets(saved.targetRevealPolicy === 1 && state.status !== "ready");
     lastDirection = Object.hasOwn(DIRS, saved.lastDirection) ? saved.lastDirection : "right";
     attackDirection = Object.hasOwn(DIRS, saved.attackDirection) ? saved.attackDirection : lastDirection;
-    if (Object.hasOwn(DIRS, state.player.move?.direction)) attackDirection = state.player.move.direction;
     setMessage(); // Ignore legacy transient banners too.
     startTitle.textContent = saved.startTitleText || `第 ${state.world}-${state.subLevel} / ${LEVELS_PER_WORLD} 小关 · 难度 ${difficultyLabelForSubLevel()}`;
     awaitingContinue = state.status === "playing";
@@ -1879,7 +1878,6 @@
 
   function startMove(actor, direction, duration) {
     if (actor === state.player) rememberPlayerCell(Math.round(actor.gx), Math.round(actor.gy));
-    if (actor === state.player) attackDirection = direction;
     const dir = DIRS[direction];
     const targetX = Math.round(actor.gx) + dir.x;
     const targetY = Math.round(actor.gy) + dir.y;
@@ -4467,7 +4465,7 @@
       return; // Confirmation must never also throw a mushroom or place a bomb.
     }
     if (waiting) return;
-    if (!state.player.move && input.aim && input.aim !== attackDirection) {
+    if (!input.direction && !keyboardDirections.size && !state.player.move && input.aim && input.aim !== attackDirection) {
       syncBombProgress();
       if (awaitingContinue) return;
       claimBombProgress();
@@ -4484,6 +4482,7 @@
         claimBombProgress();
         heldDirections.add(gamepadDirection);
         lastDirection = gamepadDirection;
+        attackDirection = gamepadDirection;
         queuedDirection = gamepadDirection;
         queuedDirectionRemaining = PLAYER_TURN_BUFFER_TIME;
       } else if (queuedDirection === previousDirection && !keyboardDirections.has(queuedDirection)) {
@@ -4541,8 +4540,8 @@
       heldDirections.add(direction);
       keyboardDirections.add(direction);
       lastDirection = direction;
-      if (!gamepadConnected) attackDirection = direction;
       if (!event.repeat) {
+        attackDirection = direction;
         queuedDirection = direction;
         queuedDirectionRemaining = PLAYER_TURN_BUFFER_TIME;
       }

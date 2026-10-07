@@ -73,7 +73,7 @@ try {
     await button(13, true); await advance(0.25);
     assert.equal((await read()).attackDirection, "down", "walking resumes follow despite held left stick");
     await button(13, false); await button(15, true); await advance(0.02);
-    assert.equal((await read()).attackDirection, (await read()).player.move.direction, "buffered turn follows actual step, not requested turn");
+    assert.equal((await read()).attackDirection, "right", "new directional input changes aim before the buffered turn completes");
     await advance(0.25); assert.equal((await read()).attackDirection, "right", "successful turn follows automatically");
     await button(15, false); await button(13, true); await advance(0.25);
     await tap(0); assert.equal((await read()).mushroomShots.at(-1).direction, "down");
@@ -88,7 +88,40 @@ try {
     await axes(0, 0); await button(15, true); await advance(0.2);
     assert.equal((await read()).attackDirection, "right", "resumed save uses automatic movement follow");
     await button(15, false); await advance(0.2);
+    const corridor = structuredClone(fixture);
+    corridor.attackDirection = "right";
+    corridor.map[2][3] = 1; corridor.map[4][3] = 2;
+    corridor.map[4][4] = corridor.map[4][5] = 1;
+    await load(corridor);
+    // A connected left stick must not override a blocked D-pad direction.
+    await axes(0, -1); await button(13, true); await advance(0.02);
+    assert.equal((await read()).attackDirection, "down");
+    assert.deepEqual([(await read()).player.gx, (await read()).player.gy], [3,3]);
+    await tap(0);
+    assert.equal((await read()).mushroomShots.at(-1).direction, "down", "blocked direction also controls actual attacks");
+    await advance(0.1); assert.equal(new Map((await read()).crateHp).get("3,4"), 2);
+    await button(13, false); await axes(0,0); await advance(0.02);
+    await page.locator("#bombCanvas").focus(); await page.keyboard.press("ArrowUp");
+    assert.equal((await read()).attackDirection, "up", "keyboard turns aim into a wall even with a controller connected");
+    await page.keyboard.down("ArrowRight"); await advance(0.06);
+    const movingRight = await read(); assert.equal(movingRight.player.move.direction, "right");
+    await page.keyboard.down("ArrowDown");
+    assert.equal((await read()).attackDirection, "down", "blocked turn immediately aims down during a rightward step");
+    await advance(0.35);
+    assert.equal((await read()).attackDirection, "down", "fallback rightward movement does not overwrite requested aim");
+    await page.keyboard.up("ArrowRight"); await page.keyboard.up("ArrowDown");
+    await advance(0.25);
+    const savedAim = await read();
+    savedAim.attackDirection = "down";
+    savedAim.player.move = { direction: "right", fromX: 3, fromY: 3, toX: 4, toY: 3, time: 0.06, duration: 0.18 };
+    savedAim.player.gx = 3 + 1/3; savedAim.player.gy = 3;
+    await load(savedAim);
+    assert.equal((await read()).attackDirection, "down", "Continue preserves aim independent of a restored movement step");
     await page.locator("#bombSettingsToggle").click();
+    const menuAim = (await read()).attackDirection;
+    await button(12, true); await advance(0.05);
+    assert.equal((await read()).attackDirection, menuAim, "settings keep directional input inactive");
+    await button(12, false);
     await button(10, true); await advance(0.1);
     assert.equal("attackFollowsMovement" in (await read()), false, "menus cannot restore removed lock mode");
     await button(10, false); await advance(0.02);
@@ -99,6 +132,7 @@ try {
     await page.waitForFunction(() => document.fullscreenElement?.classList.contains("bomb-game-app"));
     await page.evaluate(() => { window.__pad.axes[2] = 1; }); await advance(0.15);
     await page.evaluate(() => { window.__pad.axes[2] = 0; }); await advance(0.02);
+    await page.locator("#bombSettingsToggle").click();
     const pointer = page.locator("#study-gamepad-cursor");
     assert.equal(await pointer.isVisible(), true);
     assert.equal(await pointer.evaluate(node => document.fullscreenElement.contains(node)), true);
@@ -132,7 +166,7 @@ try {
     }
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     assert.deepEqual(errors, []);
-    results.push({ width, mockGamepad: true, automaticMovementAim: true, stationaryStickAim: true,
+    results.push({ width, mockGamepad: true, requestedDirectionAim: true, blockedDpadAndKeyboardAim: true, stationaryStickAim: true,
       l3NoAction: true, oldLockIgnored: true, enlargedArrow: true,
       actualFullscreen: !aimOnly, cursorAndSelectPopupTested: !aimOnly });
     await context.close();

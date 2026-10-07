@@ -7,7 +7,22 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.55** (2026-10-07). R2 directly requests native
+System display version: **v1.0.56** (2026-10-07). Attack aim follows a fresh
+keyboard direction or D-pad press immediately, even into walls/crates or during
+an unfinished movement step. Actual/fallback movement no longer overwrites that
+requested aim. Keyboard aim works with a controller connected; neutral/repeat,
+native focused-control, Continue and menu protections remain. Stationary left
+stick aim stays available only without held movement directions. Restoring a
+partial move preserves the saved independent aim. Collision, turn buffering,
+speed, damage and storage schema are unchanged.
+Bomb JS v2.38; eight notifier queries and display-version imports v1.0.56
+(Hanzi/Pinyin/IPA entry caches v1.34/v1.8/v1.33). Focused browser check:
+tests/bomb-aim-fullscreen-browser.mjs --aim-only (Edge 1440/390, simulated standard
+controller); fullscreen and unrelated module flows are skipped. Existing tracked
+PNG changes remain preserved/excluded. Syntax, 198 Node tests, the aim-only Edge
+check and git diff --check passed.
+
+Previous **v1.0.55** (2026-10-07). R2 directly requests native
 fullscreen across all eight pages, without auto-opening bomb settings or a
 learning-page authorization popup when denied. Successful bomb toggles close
 settings and return focus to the canvas; concurrent requests are guarded.

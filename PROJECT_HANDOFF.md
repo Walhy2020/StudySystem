@@ -1,13 +1,25 @@
 # StudySystem cross-device handoff
 
-Last updated: 2026-10-06
+Last updated: 2026-10-07
 Repository: `https://github.com/Walhy2020/StudySystem.git`
 Branch: `main`
 Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.52** (2026-10-06). Bomb HUD now shows one
+System display version: **v1.0.53** (2026-10-07). Bowser fireballs and all
+ice/normal/red/missile bombs deal 3 damage to crates, destroying a full-health
+or previously damaged crate in one hit. Each stops at the first crate; overlapping
+blasts retain the destroyed-brick barrier. Rewards/hidden questions/missiles reveal
+once. Shells still deal one crate damage; mushrooms cannot damage crates. Player
+damage, enemy HP, fireball speed/cooldown and save schema remain unchanged.
+Bomb JS v2.35; all eight notifier queries and display-version imports v1.0.53
+(Hanzi/Pinyin/IPA entry caches v1.31/v1.5/v1.30). Focused browser check:
+tests/bomb-single-hit-brick-browser.mjs (real Edge, 1440/390). No unrelated browser
+suite; pre-existing tracked PNG edits remain excluded. Syntax, 192 Node tests,
+the focused Edge check and git diff --check passed.
+
+Previous **v1.0.52** (2026-10-06). Bomb HUD now shows one
 moon icon multiplied by the completed count, still centered and requiring five
 answers per level. In-game transient banners (pickup, enemy hits/deaths, start,
 fullscreen, etc.) and restored legacy banners are suppressed visually and for

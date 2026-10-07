@@ -58,16 +58,11 @@ try {
     }
     fixture.bombs = [{ gx: 2, gy: 3, range: 2, time: 1.99, isIce: true, exploded: false, ownerInside: true }];
     await load(fixture); assert.equal(hp(await read(),3,3), 3); await advance(0.05);
-    assert.equal(hp(await read(),3,3), 2); assert.equal((await read()).powerUps.length, 0);
+    assert.equal(hp(await read(),3,3), 0); assert.equal((await read()).powerUps.filter(item => item.type === "iceFlower").length, 1);
     await page.reload(); await advance(1);
-    assert.equal(hp(await read(),3,3), 2); assert.equal(await page.evaluate(() => window.__BOMB_GAME__.isAwaitingContinue()), true);
+    assert.equal(hp(await read(),3,3), 0); assert.equal(await page.evaluate(() => window.__BOMB_GAME__.isAwaitingContinue()), true);
     await page.locator("#overlayStartBombGame").click(); await page.locator("#bombCanvas").focus();
     await advance(0.7);
-    for (const remaining of [1,0]) {
-      await page.keyboard.press("KeyB"); await advance(2.05);
-      assert.equal(hp(await read(),3,3), remaining);
-      assert.equal((await read()).powerUps.filter(item => item.type === "iceFlower").length, remaining === 0 ? 1 : 0);
-    }
     await advance(0.7); await page.keyboard.down("ArrowRight"); await advance(0.2); await page.keyboard.up("ArrowRight");
     assert.equal((await read()).flameRange, 3, "pickup still works without a toast");
     assert.equal(await page.locator("#bombMessage").textContent(), "");
@@ -76,12 +71,8 @@ try {
     black.bombs = [{ gx: 4, gy: 3, range: 2, time: 1.99, isIce: true, exploded: false, ownerInside: true }];
     black.explosions = [];
     await load(black); await advance(0.05);
-    assert.equal(hp(await read(),5,3), 2);
-    for (const remaining of [1,0]) {
-      await advance(0.7); await page.keyboard.press("KeyB"); await advance(2.05);
-      const snapshot = await read(); assert.equal(hp(snapshot,5,3), remaining);
-      assert.equal(snapshot.enemies.filter(enemy => enemy.type === "bullet-bill").length, remaining === 0 ? 1 : 0);
-    }
+    assert.equal(hp(await read(),5,3), 0);
+    assert.equal((await read()).enemies.filter(enemy => enemy.type === "bullet-bill").length, 1);
     // HUD restores the number, not five individual moon slots; menus keep working.
     const moons = await read(); moons.moonWordIds = moons.todayNewWords.slice(0,3).map(word => word.id);
     await load(moons);
@@ -101,12 +92,12 @@ try {
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
     await page.locator("#bombSettingsToggle").click();
     await page.screenshot({ path: `tmp/bomb-quiet-hud-${width}.png` });
-    for (const resource of ["bomb-game.css?v=1.9","bomb-game.js?v=2.34","src/gamepad-cursor.js?v=1.8"]) {
+    for (const resource of ["bomb-game.css?v=1.9","bomb-game.js?v=2.35","src/gamepad-cursor.js?v=1.8"]) {
       assert.equal((await page.request.get(base + resource)).status(), 200);
     }
     assert.deepEqual(errors, []);
-    results.push({ width, ordinaryAndMissileBricks: true, threeHits: true, savedDamage: true,
-      noEarlyLoot: true, moonCount: true, quietPickupAndFullscreen: true });
+    results.push({ width, ordinaryAndMissileBricks: true, singleHit: true, savedDestruction: true,
+      singleLoot: true, moonCount: true, quietPickupAndFullscreen: true });
     await context.close();
   }
   console.log(JSON.stringify({ ok: true, browser: "Microsoft Edge", simulatedStandardGamepad: true, results }));

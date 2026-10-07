@@ -2383,7 +2383,7 @@
         const gy = Math.round(ball.gy);
         if (!isInside(gx, gy) || state.map[gy][gx] === TILE_HARD || bombAt(gx, gy)) return false;
         if (state.map[gy][gx] === TILE_CRATE) {
-          openCrateCell(gx, gy);
+          openCrateCell(gx, gy, CRATE_MAX_HP);
           updateHud();
           return false;
         }
@@ -2429,9 +2429,9 @@
     return state.map[gy]?.[gx] === TILE_CRATE ? state.crateHp.get(coordKey(gx, gy)) ?? CRATE_MAX_HP : 0;
   }
 
-  function openCrateCell(gx, gy) {
+  function openCrateCell(gx, gy, damage = 1) {
     if (!isInside(gx, gy) || state.map[gy][gx] !== TILE_CRATE) return false;
-    const hp = crateHpAt(gx, gy) - 1;
+    const hp = crateHpAt(gx, gy) - damage;
     if (hp > 0) {
       state.crateHp.set(coordKey(gx, gy), hp);
       return false;
@@ -2976,7 +2976,7 @@
         ));
         if (state.map[gy][gx] === TILE_CRATE) {
           blockedCells.push({ gx, gy });
-          openCrateCell(gx, gy);
+          openCrateCell(gx, gy, CRATE_MAX_HP);
           break;
         }
         if (recentlyDestroyedCrate) break;

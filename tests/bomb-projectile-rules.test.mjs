@@ -51,7 +51,7 @@ test("火球飞行超过原5秒仍有效，碰硬墙/砖/炸弹/玩家仍结束�
     if (block === "crate") state.map[3][5] = 2;
     if (block === "player") state.player = { gx: 5, gy: 3 };
     const update = new Function("state", "bombAt", "openCrateCell", "damagePlayer", `
-      const TILE_HARD = 1, TILE_CRATE = 2;
+      const TILE_HARD = 1, TILE_CRATE = 2, CRATE_MAX_HP = 3;
       const isInside = (x, y) => x >= 0 && x < 200 && y >= 0 && y < 5;
       const updateHud = () => {};
       ${extract("updateFireballs")}

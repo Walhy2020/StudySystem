@@ -59,30 +59,40 @@ test("旧存档砖块默认3血，受损存档保留1/2血，坏数据及已开�
   assert.equal(app.crateHpAt(4,1), 0); assert.equal(app.crateHpAt(3,1), 2);
 });
 
-test("冰/普通/导弹炸弹均每次扣1血，重叠爆炸不漏计伤害也不穿过砖块", () => {
+test("冰/普通/导弹炸弹一次打掉满血或受损砖块，不穿透或重复出奖励", () => {
   for (const kind of ["ice", "normal", "missile"]) {
-    const app = harness();
-    for (const hp of [2,1,0]) {
+    for (const hp of [3,2,1]) {
+      const app = harness();
+      if (hp < 3) app.state.crateHp.set("3,1", hp);
       const bomb = { gx: 1, gy: 1, range: 6, isIce: kind === "ice", fromBulletBill: kind === "missile" };
       app.explodeBomb(bomb); app.explodeBomb(bomb); // One bomb cannot damage twice.
-      assert.equal(app.crateHpAt(3,1), hp);
+      assert.equal(app.crateHpAt(3,1), 0);
       assert.equal(app.crateHpAt(4,1), 3);
       assert.equal(app.state.explosions.at(-1).cells.some(cell => cell.gx > 3), false);
+      assert.equal(app.state.score, 5); assert.deepEqual(app.rewards, ["3,1"]);
+      app.explodeBomb({ gx: 1, gy: 1, range: 6, isIce: true });
+      assert.equal(app.crateHpAt(4,1), 3, "overlapping blasts keep the first brick barrier");
+      app.state.explosions = [];
+      app.explodeBomb({ gx: 1, gy: 1, range: 6, isIce: true });
+      assert.equal(app.crateHpAt(4,1), 0);
     }
-    assert.equal(app.state.score, 5); assert.deepEqual(app.rewards, ["3,1"]);
-    app.state.explosions = [];
-    app.explodeBomb({ gx: 1, gy: 1, range: 6, isIce: true });
-    assert.equal(app.crateHpAt(4,1), 2);
   }
 });
 
-test("火球和龟壳扣1血，未碎砖阻挡它们，不在一帧穿砖或连续扣三次", () => {
-  const fire = harness();
-  for (const hp of [2,1,0]) {
+test("库巴火球一次打掉满血或受损砖块，停在第一块，不重复出奖励", () => {
+  for (const hp of [3,2,1]) {
+    const fire = harness();
+    if (hp < 3) fire.state.crateHp.set("3,1", hp);
     fire.state.fireballs = [{ gx: 2, gy: 1, vx: 3, vy: 0 }]; fire.updateFireballs(0.3);
-    assert.equal(fire.state.fireballs.length, 0); assert.equal(fire.crateHpAt(3,1), hp);
+    assert.equal(fire.state.fireballs.length, 0); assert.equal(fire.crateHpAt(3,1), 0);
     assert.equal(fire.crateHpAt(4,1), 3);
+    assert.equal(fire.state.score, 5); assert.deepEqual(fire.rewards, ["3,1"]);
+    fire.updateFireballs(1);
+    assert.equal(fire.state.score, 5); assert.deepEqual(fire.rewards, ["3,1"]);
   }
+});
+
+test("龟壳仍每击扣1血，未碎砖阻挡，不在一帧连续扣血", () => {
   const shell = harness();
   for (const hp of [2,1,0]) {
     const actor = { gx: 2, gy: 1, dir: "right", alive: true }; shell.continueShellRun(actor);

@@ -7,7 +7,37 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.57** (2026-10-08). L1 toggles website audio
+System display version: **v1.0.58** (2026-10-08). New Scenario 05,
+"介绍一下自己 / Introducing Ourselves" (`self-introduction`): Mia introduces
+herself first with six short lines (name, age 8, Beijing, pen, apple, flower),
+then Leo uses the same patterns (age 9, Lujiang, pencil, banana, flower).
+Leo enters only on his first line, not automatically on the second line.
+Twelve lines have aligned per-word IPA and Chinese; manual/continuous replay
+stays unchanged. Six practice questions match the same type of introduction;
+17 vocabulary entries filter already-learned words. Names/cities are excluded
+from new words; place-name IPA is an approximate reading guide. Game item
+remains the learned `flower`, represented by the original Classic Items II
+fire-flower artwork, with no flame-shaped petals. Completion still does not
+auto-mark vocabulary learned. All progress stays in the existing scenario key.
+The deduplicated total catalog is now 243 (adds years, old, live, in), and learned
+scenario words remain available to overall review. Existing source-module
+progress and schemas are unchanged.
+
+New imagegen CLI/API cover is RGB PNG 1254x1254; existing actors are reused.
+Approved theme crops for one pencil/flower are RGB 640x640. All three assets
+are in assets/scenarios with v1 names, with generation/crop provenance in
+introducing-ourselves-v1.prompt.md and scripts/build-self-introduction-assets.py.
+Cover/object images are visibly used with contain, complete and unclipped.
+Scenario JS/CSS v2.9/v2.7, data v1.7, workshop/vocabulary v1.13/v1.12;
+total library/overview v1.5/v1.14, Theme/Review JS v2.20/v1.17. Eight notifier
+queries/display imports v1.0.58; Hanzi/Pinyin/IPA entries v1.36/v1.10/v1.35.
+Syntax and 203 Node tests passed. Only the new scenario's Edge browser script
+ran at 1440/390: all 12 lines, first-speaker entry, IPA/art geometry, manual vs
+continuous replay, six practice questions, progress restore, learned-word
+filtering, HTTP 200 and no overflow/errors. Manual screenshot review passed.
+Existing tracked screenshot edits remain excluded; no unrelated browser suite.
+
+Previous **v1.0.57** (2026-10-08), commit `2126945`. L1 toggles website audio
 off/on across all eight pages, replacing its previous upward-scroll shortcut.
 Game effects/music and learning speech share this switch; the bomb sound button
 uses the same state. Muting cancels current/pending speech; scenario playback

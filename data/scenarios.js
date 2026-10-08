@@ -151,6 +151,49 @@ export const FRUIT_TASTING_VOCABULARY = Object.freeze([
   ["and", "/ən/", "和"], ["crisp", "/krɪsp/", "脆的"], ["orange", "/ˈɒrɪndʒ/", "橙子；橙色的"], ["banana", "/bəˈnɑːnə/", "香蕉"], ["strawberry", "/ˈstrɔːbəri/", "草莓"],
 ].map(([word, phonetic, chinese]) => Object.freeze({ word, phonetic, chinese })));
 
+export const SELF_INTRODUCTION_LINES = Object.freeze([
+  line("self-mia-hello", "Mia", "Hello! I'm Mia.", "/həˈləʊ aɪm ˈmiːə/", "你好！我是米娅。", [["Hello!", "/həˈləʊ/"], ["I'm", "/aɪm/"], ["Mia.", "/ˈmiːə/"]]),
+  line("self-mia-age", "Mia", "I'm eight years old.", "/aɪm eɪt jɪəz əʊld/", "我八岁了。", [["I'm", "/aɪm/"], ["eight", "/eɪt/"], ["years", "/jɪəz/"], ["old.", "/əʊld/"]]),
+  line("self-mia-home", "Mia", "I live in Beijing.", "/aɪ lɪv ɪn ˌbeɪˈdʒɪŋ/", "我住在北京。", [["I", "/aɪ/"], ["live", "/lɪv/"], ["in", "/ɪn/"], ["Beijing.", "/ˌbeɪˈdʒɪŋ/"]]),
+  line("self-mia-pen", "Mia", "I have a pen.", "/aɪ hæv ə pen/", "我有一支笔。", [["I", "/aɪ/"], ["have", "/hæv/"], ["a", "/ə/"], ["pen.", "/pen/"]], "pen"),
+  line("self-mia-apple", "Mia", "I have an apple.", "/aɪ hæv ən ˈæpəl/", "我有一个苹果。", [["I", "/aɪ/"], ["have", "/hæv/"], ["an", "/ən/"], ["apple.", "/ˈæpəl/"]], "apple"),
+  line("self-mia-flower", "Mia", "I have a flower.", "/aɪ hæv ə ˈflaʊə/", "我有一朵花（游戏里的火焰花）。", [["I", "/aɪ/"], ["have", "/hæv/"], ["a", "/ə/"], ["flower.", "/ˈflaʊə/"]], "flower"),
+  line("self-leo-hello", "Leo", "Hello! I'm Leo.", "/həˈləʊ aɪm ˈliːəʊ/", "你好！我是利奥。", [["Hello!", "/həˈləʊ/"], ["I'm", "/aɪm/"], ["Leo.", "/ˈliːəʊ/"]]),
+  line("self-leo-age", "Leo", "I'm nine years old.", "/aɪm naɪn jɪəz əʊld/", "我九岁了。", [["I'm", "/aɪm/"], ["nine", "/naɪn/"], ["years", "/jɪəz/"], ["old.", "/əʊld/"]]),
+  line("self-leo-home", "Leo", "I live in Lujiang.", "/aɪ lɪv ɪn luː dʒjɑːŋ/", "我住在庐江。", [["I", "/aɪ/"], ["live", "/lɪv/"], ["in", "/ɪn/"], ["Lujiang.", "/luː dʒjɑːŋ/"]]),
+  line("self-leo-pencil", "Leo", "I have a pencil.", "/aɪ hæv ə ˈpensəl/", "我有一支铅笔。", [["I", "/aɪ/"], ["have", "/hæv/"], ["a", "/ə/"], ["pencil.", "/ˈpensəl/"]], "pencil"),
+  line("self-leo-banana", "Leo", "I have a banana.", "/aɪ hæv ə bəˈnɑːnə/", "我有一根香蕉。", [["I", "/aɪ/"], ["have", "/hæv/"], ["a", "/ə/"], ["banana.", "/bəˈnɑːnə/"]], "banana"),
+  line("self-leo-flower", "Leo", "I have a flower.", "/aɪ hæv ə ˈflaʊə/", "我有一朵花（游戏里的火焰花）。", [["I", "/aɪ/"], ["have", "/hæv/"], ["a", "/ə/"], ["flower.", "/ˈflaʊə/"]], "flower"),
+]);
+
+export const SELF_INTRODUCTION_OBJECTS = Object.freeze({
+  pen: WHAT_IS_IT_OBJECTS.pen,
+  apple: FRUIT_TASTING_OBJECTS.apple,
+  pencil: Object.freeze({ label: "一支黄色铅笔（教室用品）", image: "./assets/scenarios/self-intro-pencil-v1.png?v=1.0" }),
+  banana: FRUIT_TASTING_OBJECTS.banana,
+  flower: Object.freeze({ label: "经典道具 II 的火焰花，没有火焰形状", image: "./assets/scenarios/self-intro-flower-v1.png?v=1.0" }),
+});
+
+export const SELF_INTRODUCTION_VOCABULARY = Object.freeze([
+  ["hello", "/həˈləʊ/", "你好"], ["i", "/aɪ/", "我"], ["am", "/æm/", "是（与 I 连用）"],
+  ["eight", "/eɪt/", "八"], ["nine", "/naɪn/", "九"], ["years", "/jɪəz/", "年（复数）"],
+  ["old", "/əʊld/", "年龄为……的"], ["live", "/lɪv/", "居住"], ["in", "/ɪn/", "在……里面；在（某地）"],
+  ["have", "/hæv/", "有"], ["a", "/ə/", "一个；一支"], ["an", "/ən/", "一个（用于元音音素前）"],
+  ["pen", "/pen/", "笔"], ["pencil", "/ˈpensəl/", "铅笔"], ["apple", "/ˈæpəl/", "苹果"],
+  ["banana", "/bəˈnɑːnə/", "香蕉"], ["flower", "/ˈflaʊə/", "花（游戏画面使用火焰花）"],
+].map(([word, phonetic, chinese]) => Object.freeze({ word, phonetic, chinese })));
+
+export const SELF_INTRODUCTION_PRACTICE = Object.freeze([
+  ["hello", "self-mia-hello", "self-leo-hello", "self-leo-age", "self-leo-home"],
+  ["age", "self-mia-age", "self-leo-age", "self-leo-home", "self-leo-pencil"],
+  ["home", "self-mia-home", "self-leo-home", "self-leo-age", "self-leo-banana"],
+  ["stationery", "self-mia-pen", "self-leo-pencil", "self-leo-banana", "self-leo-flower"],
+  ["fruit", "self-mia-apple", "self-leo-banana", "self-leo-pencil", "self-leo-home"],
+  ["flower", "self-mia-flower", "self-leo-flower", "self-leo-banana", "self-leo-pencil"],
+].map(([id, promptId, answerId, wrong1, wrong2]) => Object.freeze({
+  id: `self-${id}`, promptId, answerId, optionIds: Object.freeze([wrong1, answerId, wrong2]),
+})));
+
 export const SCENARIOS = Object.freeze([
   Object.freeze({
     id: "first-meeting",
@@ -203,6 +246,20 @@ export const SCENARIOS = Object.freeze([
     practice: FRUIT_TASTING_PRACTICE,
     vocabulary: FRUIT_TASTING_VOCABULARY,
     focusObjects: FRUIT_TASTING_OBJECTS,
+  }),
+  Object.freeze({
+    id: "self-introduction",
+    number: 5,
+    chineseTitle: "介绍一下自己",
+    englishTitle: "Introducing Ourselves",
+    description: "米娅先介绍姓名、年龄、城市和物品，利奥再用相同句式介绍。",
+    completionTitle: "自我介绍完成！",
+    completionText: "你已经会介绍自己是谁、几岁、住在哪里，以及自己有什么。",
+    practiceInstruction: "听米娅的介绍，选出利奥介绍同类信息的句子。",
+    lines: SELF_INTRODUCTION_LINES,
+    practice: SELF_INTRODUCTION_PRACTICE,
+    vocabulary: SELF_INTRODUCTION_VOCABULARY,
+    focusObjects: SELF_INTRODUCTION_OBJECTS,
   }),
 ]);
 

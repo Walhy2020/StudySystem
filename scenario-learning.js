@@ -1,5 +1,5 @@
-import { SCENARIOS, scenarioById, scenarioLineById } from "./data/scenarios.js?v=1.6";
-import { initializeScenarioWords } from "./src/scenario-workshop.js?v=1.12";
+import { SCENARIOS, scenarioById, scenarioLineById } from "./data/scenarios.js?v=1.7";
+import { initializeScenarioWords } from "./src/scenario-workshop.js?v=1.13";
 import { createDialoguePlayback } from "./src/scenario-playback.js?v=1.1";
 
 export { SCENARIOS };
@@ -268,10 +268,11 @@ function initializePage() {
     dom.dialoguePhonetic.textContent = line.phonetic;
     renderAlignedSentence(dom.dialogueAligned, line);
     dom.dialogueChinese.textContent = line.chinese;
-    dom.actorMia.classList.add("is-present");
-    dom.actorLeo.classList.toggle("is-present", currentLineIndex >= 1);
-    dom.actorMia.setAttribute("aria-hidden", "false");
-    dom.actorLeo.setAttribute("aria-hidden", String(currentLineIndex < 1));
+    for (const [name, actor] of [["Mia", dom.actorMia], ["Leo", dom.actorLeo]]) {
+      const present = scenario.lines.slice(0, currentLineIndex + 1).some(item => item.speaker === name);
+      actor.classList.toggle("is-present", present);
+      actor.setAttribute("aria-hidden", String(!present));
+    }
     dom.actorStage.dataset.speaker = line.speaker;
     dom.actorStage.dataset.scenarioId = scenario.id;
     const focusObject = line.focusObject && scenario.focusObjects?.[line.focusObject];
@@ -302,7 +303,7 @@ function initializePage() {
   function renderPractice() {
     if (practice.complete) return finishPractice();
     const question = practice.question();
-    const practiceArt = ["counting-pens", "fruit-tasting"].includes(scenario.id) && scenario.focusObjects?.[question.prompt.focusObject];
+    const practiceArt = ["counting-pens", "fruit-tasting", "self-introduction"].includes(scenario.id) && scenario.focusObjects?.[question.prompt.focusObject];
     dom.countingPracticeImage.hidden = !practiceArt;
     if (practiceArt) {
       dom.countingPracticeImage.src = practiceArt.image;
@@ -317,7 +318,7 @@ function initializePage() {
     dom.practicePhonetic.textContent = question.prompt.phonetic;
     renderAlignedSentence(dom.practiceAligned, question.prompt);
     dom.speakPractice.setAttribute("aria-label", `朗读问题：${question.prompt.text}`);
-    dom.practiceFeedback.textContent = "选择最合适的回应。";
+    dom.practiceFeedback.textContent = scenario.practiceInstruction || "选择最合适的回应。";
     dom.practiceFeedback.className = "practice-feedback";
     dom.responseOptions.replaceChildren();
     for (const line of question.options) {

@@ -1,7 +1,7 @@
-import { THEME_CONFIGS } from "../theme-learning.js?v=2.18";
-import { buildThemeCatalog } from "./theme-overview.js?v=1.13";
-import { totalLearnedWordSet } from "./total-word-library.js?v=1.4";
-import { FIRST_MEETING_VOCABULARY } from "../data/scenarios.js?v=1.6";
+import { THEME_CONFIGS } from "../theme-learning.js?v=2.20";
+import { buildThemeCatalog } from "./theme-overview.js?v=1.14";
+import { totalLearnedWordSet } from "./total-word-library.js?v=1.5";
+import { FIRST_MEETING_VOCABULARY } from "../data/scenarios.js?v=1.7";
 export { FIRST_MEETING_VOCABULARY };
 export const normalizeWord = (value) => String(value || "").trim().toLowerCase().replaceAll("’", "'");
 const CONTRACTIONS = { "i'm": ["i", "am"], "you're": ["you", "are"], "we're": ["we", "are"], "they're": ["they", "are"], "it's": ["it", "is"], "he's": ["he", "is"], "she's": ["she", "is"], "don't": ["do", "not"], "can't": ["can", "not"], "i've": ["i", "have"], "i'll": ["i", "will"] };

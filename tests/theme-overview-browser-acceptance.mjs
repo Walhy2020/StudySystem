@@ -286,7 +286,7 @@ assert.equal(themeStorageMutations.filter(({ key }) => key === learnedKey).lengt
 await page.locator('.theme-nav a[href="./review-learning.html"]').click();
 await page.waitForURL(/review-learning\.html/);
 assert.equal((await page.locator("#totalReviewCount").textContent()).trim(), "89 个已学");
-assert.equal((await page.locator("#wordLibraryCount").textContent()).trim(), "89/239");
+assert.equal((await page.locator("#wordLibraryCount").textContent()).trim(), "89/243");
 saved = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), learnedKey);
 assert.equal(saved.version, 2);
 assert.equal(saved.learned.length, 91);
@@ -313,7 +313,7 @@ assert.equal(await page.evaluate(() => window.__spoken.length), spokenBefore + 1
 await page.screenshot({ path: "tests/theme-library-desktop.png", fullPage: true });
 
 await page.reload();
-assert.equal((await page.locator("#wordLibraryCount").textContent()).trim(), "89/239");
+assert.equal((await page.locator("#wordLibraryCount").textContent()).trim(), "89/243");
 await page.click("#openWordLibrary");
 await page.click("#startLibraryReview");
 assert.equal(await page.locator("#totalReviewPanel").isVisible(), true);

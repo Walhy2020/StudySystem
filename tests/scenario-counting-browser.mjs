@@ -29,7 +29,7 @@ try {
     const noOverflow = async () => assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     // A fresh browser context isolates normal keys and exercises the actual cross-page flow.
     await page.goto(new URL("scenario-learning.html", base).href);
-    assert.equal(await page.locator(".scenario-card").count(), 4);
+    assert.equal(await page.locator(".scenario-card").count(), 5);
     const response = await page.request.get(new URL("assets/scenarios/counting-pens-v1.png?v=1.0", base).href);
     assert.equal(response.status(), 200);
     assert.match(response.headers()["content-type"], /image\/png/);
@@ -94,7 +94,7 @@ try {
     await page.goto(new URL("review-learning.html", base).href);
     await act("#openWordLibrary");
     assert.equal(await page.locator('[data-word-key="total:pens"]').count(), 1);
-    assert.equal(await page.locator("#wordLibraryCount").textContent(), "5/239");
+    assert.equal(await page.locator("#wordLibraryCount").textContent(), "5/243");
     for (const [word, objectId] of Object.entries({ keys: "two-keys", mushrooms: "four-mushrooms", coins: "five-coins", stars: "six-stars" })) {
       const image = page.locator(`[data-word-key="total:${word}"] img`);
       assert.equal(await image.getAttribute("src"), scene.focusObjects[objectId].image);

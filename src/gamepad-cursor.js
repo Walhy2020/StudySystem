@@ -70,8 +70,8 @@
   pointer.hidden = true;
   const help = document.createElement("div");
   help.id = "study-gamepad-help";
-  help.textContent = isGame ? "菜单已暂停游戏 · 右摇杆移动 · A / × 点选 · L1 / L2 滚动 · Y / △ 回游戏"
-    : "手柄光标 · 摇杆移动 · 到上下边缘继续推可滚动 · A / × 点选 · LB / RB 滚动 · R2 全屏";
+  help.textContent = isGame ? "菜单已暂停游戏 · 右摇杆移动 · A / × 点选 · L1 静音 · L2 下滚 · Y / △ 回游戏"
+    : "手柄光标 · 摇杆移动 · 到上下边缘继续推可滚动 · A / × 点选 · L1 静音 · R1 下滚 · R2 全屏";
   help.hidden = true;
   document.body.append(pointer, help);
   let positionStorage;
@@ -233,7 +233,7 @@
     const right = [axis(2), axis(3)];
     const axes = isGame || Math.max(...right.map(Math.abs)) > DEADZONE ? right : [axis(0), axis(1)];
     const buttons = { click: pressed(pad, 0) || pressed(pad, 11), toggle: pressed(pad, 3),
-      scrollUp: pressed(pad, 4), scrollDown: pressed(pad, isGame ? 6 : 5), fullscreen: !isGame && pressed(pad, 7) };
+      mute: pressed(pad, 4), scrollDown: pressed(pad, isGame ? 6 : 5), fullscreen: !isGame && pressed(pad, 7) };
     const neutral = [0, 1, 2, 3].every(index => Math.abs(axis(index)) <= DEADZONE) &&
       ![0, 1, 3, 4, 5, 6, 7, 9, 11, 12, 13, 14, 15].some(index => pressed(pad, index));
     if (!armed) {
@@ -242,6 +242,7 @@
       return;
     }
     if (buttons.fullscreen && !previous.fullscreen) void toggleLearningFullscreen();
+    if (buttons.mute && !previous.mute) window.STUDY_AUDIO?.toggle();
     if (isGame && buttons.toggle && !previous.toggle) {
       if (menu) { suspend(); return; }
       setMenu(true);
@@ -252,9 +253,9 @@
     if (menu) {
       position = cursorStep(position, axes, dt, innerWidth, innerHeight);
       renderPosition();
-      const scroll = Number(buttons.scrollDown) - Number(buttons.scrollUp);
+      const scroll = Number(buttons.scrollDown);
       if (scroll) scrollAtCursor(scroll * 500 * Math.max(0, Math.min(0.05, dt)),
-        (buttons.scrollDown && !previous.scrollDown) || (buttons.scrollUp && !previous.scrollUp));
+        buttons.scrollDown && !previous.scrollDown);
       else {
         const edgeScroll = edgeScrollAmount(position, axes, dt, innerHeight);
         if (edgeScroll) scrollAtCursor(edgeScroll, false, true);

@@ -41,7 +41,7 @@ test("光标只在上下边缘继续外推时滚动，松开/死区/横推/离�
 test("八个页面接入同一个光标资源，无新增进度存储或系统级鼠标入口", () => {
   for (const page of ["index", "pinyin", "book-learning", "theme-learning", "scenario-learning", "review-learning", "phonetics", "bomb-game"]) {
     const html = readFileSync(new URL(`../${page}.html`, import.meta.url), "utf8");
-    assert.equal(html.split('src/gamepad-cursor.js?v=1.9').length - 1, 1, page);
+    assert.equal(html.split('src/gamepad-cursor.js?v=1.10').length - 1, 1, page);
   }
   const source = readFileSync(new URL("../src/gamepad-cursor.js", import.meta.url), "utf8");
   assert.doesNotMatch(source, /localStorage|window\.open|showPicker|requestPointerLock/);

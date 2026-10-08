@@ -1,6 +1,6 @@
 (function () {
   const reservedKeys = new Set(["KeyW", "KeyA", "KeyS", "KeyD"]);
-  const reservedButtons = new Map([[3, "菜单光标"], [4, "菜单向上滚动"], [5, "刷新页面"],
+  const reservedButtons = new Map([[3, "菜单光标"], [4, "网页静音"], [5, "刷新页面"],
     [6, "菜单向下滚动"], [7, "全屏"], [9, "开始/继续"], [11, "菜单点选"],
     [12, "向上移动"], [13, "向下移动"], [14, "向左移动"], [15, "向右移动"], [16, "系统按钮"]]);
   function validKey(code) {

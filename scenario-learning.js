@@ -174,6 +174,7 @@ export function createScenarioSpeaker({ synthesis, Utterance, delay = 60 } = {})
           utterance.onend = () => settle(onEnd);
           utterance.onerror = () => settle(onError);
           if (onError) watchdog = setTimeout(() => settle(onError), 45000);
+          globalThis.STUDY_AUDIO?.prepareSpeech(utterance);
           synthesis.speak(utterance);
         } catch { clearTimeout(watchdog); if (current === generation) onError?.(); }
       }, delay);
@@ -456,6 +457,9 @@ function initializePage() {
   });
   document.addEventListener("visibilitychange", () => { if (document.hidden && playback.running) playback.pause(); });
   window.addEventListener("pagehide", stopPlayback);
+  window.addEventListener("studysystem:audiochange", event => {
+    if (event.detail.muted) { if (playback.running) playback.pause(); speaker.cancel(); }
+  });
   window.addEventListener("studysystem:fullscreen-navigation", () => { stopPlayback(); clearTimeout(practiceTimer); });
   dom.speakPractice.addEventListener("click", () => speaker.speak(practice.question()?.prompt.text));
   dom.restartPractice.addEventListener("click", () => setStage("practice"));

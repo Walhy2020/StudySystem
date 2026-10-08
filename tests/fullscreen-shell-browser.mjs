@@ -58,7 +58,7 @@ try {
       return frame;
     }
     await page.goto(base + "phonetics.html?shell-check=1");
-    await page.waitForFunction(() => document.getElementById("appVersionLabel")?.textContent === "v1.0.56");
+    await page.waitForFunction(() => document.getElementById("appVersionLabel")?.textContent === "v1.0.57");
     const phoneticsBefore = await page.evaluate(() => localStorage.getItem("mario-phonetics-v1"));
     await activate();
     await page.locator('a[href="./index.html"]').click();
@@ -129,7 +129,7 @@ try {
     await activate(); await page.locator('a[href="./phonetics.html"]').click(); frame = await moduleFrame("phonetics");
     await page.evaluate(() => document.exitFullscreen());
     await page.waitForFunction(() => !document.fullscreenElement && !document.getElementById("study-module-frame") && location.pathname.endsWith("phonetics.html"));
-    for (const resource of ["src/fullscreen-shell.js?v=1.0", "fullscreen-shell.css?v=1.0", "src/gamepad-cursor.js?v=1.9", "bomb-game.js?v=2.34"]) {
+    for (const resource of ["src/fullscreen-shell.js?v=1.0", "fullscreen-shell.css?v=1.0", "src/gamepad-cursor.js?v=1.10", "bomb-game.js?v=2.34"]) {
       assert.equal((await page.request.get(base + resource)).status(), 200);
     }
     assert.deepEqual(errors, []);

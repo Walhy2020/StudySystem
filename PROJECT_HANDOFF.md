@@ -1,13 +1,34 @@
 # StudySystem cross-device handoff
 
-Last updated: 2026-10-07
+Last updated: 2026-10-08
 Repository: `https://github.com/Walhy2020/StudySystem.git`
 Branch: `main`
 Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.56** (2026-10-07). Attack aim follows a fresh
+System display version: **v1.0.57** (2026-10-08). L1 toggles website audio
+off/on across all eight pages, replacing its previous upward-scroll shortcut.
+Game effects/music and learning speech share this switch; the bomb sound button
+uses the same state. Muting cancels current/pending speech; scenario playback
+pauses and requires a manual restart/continue, without changing progress.
+The preference is sessionStorage UI state only:
+`mario-web-audio-muted-v1:<app-directory>` (root suffix `/`). It survives refresh
+and module navigation in the current tab, and synchronizes same-origin fullscreen
+owner/frame controllers. It does not change Windows volume or learning keys.
+Held-on-connect, capture/blur/reconnect protections remain; stick edge-scroll and
+existing downward-scroll buttons remain available.
+Shared audio v1.0, cursor v1.10, bomb bindings v1.1, Bomb JS v2.39;
+Theme/Review/Scenario/Book JS v2.19/v1.16/v2.8/v1.4, Hanzi TTS v1.1,
+IPA TTS v1.4; eight notifier queries and display imports v1.0.57
+(Hanzi/Pinyin/IPA entry caches v1.35/v1.9/v1.34). Syntax and 201 Node tests
+passed. Only tests/web-audio-browser.mjs ran in real Edge at 1440/390:
+L1 fresh-press/hold/capture, no scrolling, mute speech/gains, refresh/navigation,
+fullscreen frame sync, resource failures and overflow. Standard gamepad input
+is simulated, not physical PS5 certification. Existing tracked PNG changes
+remain preserved/excluded. No unrelated browser suite ran.
+
+Previous **v1.0.56** (2026-10-07). Attack aim follows a fresh
 keyboard direction or D-pad press immediately, even into walls/crates or during
 an unfinished movement step. Actual/fallback movement no longer overwrites that
 requested aim. Keyboard aim works with a controller connected; neutral/repeat,

@@ -100,7 +100,7 @@ const assetStatuses = await page.evaluate(async () => {
     "./data/phonetics.js?v=1.0", "./data/phonetics-transcriptions.js?v=1.0",
     "./src/phonetics-app.js?v=1.29", "./src/phonetics-display.js?v=1.0",
     "./src/phonetics-engine.js?v=1.2", "./src/phonetics-storage.js?v=1.1",
-    "./src/phonetics-tts.js?v=1.3", "./src/engine.js", "./src/storage.js",
+    "./src/phonetics-tts.js?v=1.4", "./src/engine.js", "./src/storage.js",
     "./assets/backgrounds/phonetics-sound-kingdom-v2.png?v=1.0",
   ];
   return Object.fromEntries(await Promise.all(assets.map(async (asset) => {

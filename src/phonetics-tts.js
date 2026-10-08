@@ -81,6 +81,7 @@ export function speakPhoneticExample(item, options = {}) {
         utterance.rate = 0.72;
         utterance.pitch = 1.02;
         synthesis.resume?.();
+        globalThis.STUDY_AUDIO?.prepareSpeech(utterance);
         synthesis.speak(utterance);
         resolve({ ok: true, reason: "spoken", example, utterance, voice: voice || null });
       } catch {
@@ -92,6 +93,9 @@ export function speakPhoneticExample(item, options = {}) {
 
 const synthesis = speechApi();
 if (typeof window !== "undefined") window.addEventListener?.("studysystem:fullscreen-navigation", cancelPhoneticSpeech);
+if (typeof window !== "undefined") window.addEventListener?.("studysystem:audiochange", event => {
+  if (event.detail.muted) cancelPhoneticSpeech();
+});
 if (synthesis) {
   refreshEnglishVoices();
   synthesis.addEventListener?.("voiceschanged", refreshEnglishVoices);

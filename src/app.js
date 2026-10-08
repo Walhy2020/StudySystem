@@ -1,7 +1,7 @@
 import { HanziEngine } from "./engine.js";
-import { APP_VERSION, PHASE, REVIEW_INTERVAL_ROUNDS } from "./constants.js?v=1.0.56";
+import { APP_VERSION, PHASE, REVIEW_INTERVAL_ROUNDS } from "./constants.js?v=1.0.57";
 import { HanziStorage, storageOptionsFromLocation } from "./storage.js?v=1.1";
-import { speakChineseCharacter } from "./tts.js";
+import { speakChineseCharacter } from "./tts.js?v=1.1";
 
 const words = Array.isArray(window.MARIO_WORD_BANK) ? window.MARIO_WORD_BANK : [];
 const dom = Object.fromEntries([...document.querySelectorAll("[id]")].map((node) => [node.id, node]));

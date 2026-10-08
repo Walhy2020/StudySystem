@@ -4701,6 +4701,17 @@
       setAttackMenuOpen(false);
     }
   });
+  function syncWebAudio() {
+    const enabled = !window.STUDY_AUDIO?.isMuted();
+    if (sounds.isEnabled() !== enabled) sounds.setEnabled(enabled);
+    if (!sounds.supported) return;
+    soundToggle.textContent = enabled ? "🔊" : "🔇";
+    soundToggle.setAttribute("aria-label", enabled ? "关闭音效" : "开启音效");
+    soundToggle.setAttribute("aria-pressed", String(enabled));
+    soundToggle.title = enabled ? "关闭音效" : "开启音效";
+  }
+  window.addEventListener("studysystem:audiochange", syncWebAudio);
+  syncWebAudio();
   if (!sounds.supported) {
     soundToggle.disabled = true;
     soundToggle.textContent = "🔇";
@@ -4708,12 +4719,7 @@
     soundToggle.title = "浏览器不支持音效";
   } else {
     soundToggle.addEventListener("click", () => {
-      const enabled = !sounds.isEnabled();
-      sounds.setEnabled(enabled);
-      soundToggle.textContent = enabled ? "🔊" : "🔇";
-      soundToggle.setAttribute("aria-label", enabled ? "关闭音效" : "开启音效");
-      soundToggle.setAttribute("aria-pressed", String(enabled));
-      soundToggle.title = enabled ? "关闭音效" : "开启音效";
+      window.STUDY_AUDIO?.toggle();
     });
   }
   openAllBricksButton?.addEventListener("click", openAllBricks);

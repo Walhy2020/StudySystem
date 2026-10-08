@@ -339,6 +339,7 @@ export function speakEnglish(text, synthesis = globalThis.speechSynthesis, Utter
     const utterance = new Utterance(text);
     utterance.lang = "en-GB";
     utterance.rate = 0.86;
+    globalThis.STUDY_AUDIO?.prepareSpeech(utterance);
     synthesis.speak(utterance);
     return true;
   } catch {
@@ -401,6 +402,7 @@ export function createEnglishSpeaker(options = {}) {
         const timeoutMs = Math.max(2500, Math.min(12000, Number(callbacks.timeoutMs) || words * 650 + 1000));
         job.completionTimer = setTimeout(() => finish(job, "timeout"), timeoutMs);
         synthesis.resume?.();
+        globalThis.STUDY_AUDIO?.prepareSpeech(utterance);
         synthesis.speak(utterance);
         callbacks.onStart?.(utterance);
       } catch {
@@ -449,6 +451,9 @@ function initializePage() {
   let feedbackTimer = 0;
   let advanceTimer = 0;
   const speaker = createEnglishSpeaker();
+  window.addEventListener("studysystem:audiochange", event => {
+    if (event.detail.muted) speaker.cancel();
+  });
   window.addEventListener("studysystem:fullscreen-navigation", () => {
     clearTimeout(feedbackTimer); clearTimeout(advanceTimer); speaker.cancel();
   });

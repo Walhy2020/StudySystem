@@ -114,7 +114,7 @@ test("Book1 页面只引用独立资源和独立存储入口", async () => {
   const html = await readFile(new URL("../book-learning.html", import.meta.url), "utf8");
   const app = await readFile(new URL("../book-learning-themes.js", import.meta.url), "utf8");
   assert.match(html, /book-learning\.css\?v=2\.1/);
-  assert.match(html, /book-learning-themes\.js\?v=1\.3/);
+  assert.match(html, /book-learning-themes\.js\?v=1\.4/);
   assert.match(html, /Oxford Phonics World 1/);
   assert.doesNotMatch(html + app, /Book2|opw2|Oxford Phonics World 2/i);
   assert.match(app, /Book1Storage/);

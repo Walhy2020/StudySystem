@@ -22,6 +22,7 @@ function save() { state = storage.save(state); }
 
 function stopSpeech() { clearTimeout(speechTimer); window.speechSynthesis?.cancel?.(); }
 window.addEventListener("studysystem:fullscreen-navigation", stopSpeech);
+window.addEventListener("studysystem:audiochange", event => { if (event.detail.muted) stopSpeech(); });
 function speak(item) {
   if (!item || !window.speechSynthesis || !window.SpeechSynthesisUtterance) return;
   stopSpeech();
@@ -31,6 +32,7 @@ function speak(item) {
     const voices = window.speechSynthesis.getVoices?.() || [];
     utterance.voice = voices.find((voice) => /^en-GB/i.test(voice.lang) && voice.localService)
       || voices.find((voice) => /^en-GB/i.test(voice.lang)) || voices.find((voice) => /^en/i.test(voice.lang)) || null;
+    globalThis.STUDY_AUDIO?.prepareSpeech(utterance);
     window.speechSynthesis.speak(utterance);
   }, 60);
 }

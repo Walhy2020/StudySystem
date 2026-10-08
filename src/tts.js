@@ -20,6 +20,7 @@ export function speakChineseCharacter(character) {
   utterance.rate = 0.72;
   utterance.pitch = 1.08;
   window.speechSynthesis.cancel();
+  globalThis.STUDY_AUDIO?.prepareSpeech(utterance);
   window.speechSynthesis.speak(utterance);
   return true;
 }

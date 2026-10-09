@@ -52,7 +52,7 @@ test("攻击绑定转移仅清空另一攻击的同设备槽，空绑定刷新�
 
 test("页面接入捕捉按钮、同步前验证和固定青色箭头", () => {
   const html = readFileSync(new URL("../bomb-game.html", import.meta.url), "utf8");
-  assert.match(html, /src\/bomb-bindings.js\?v=1.2/);
+  assert.match(html, /src\/bomb-bindings.js\?v=1.3/);
   assert.match(html, /<button id="mushroomAttackKey"/);
   assert.match(html, /<button id="iceBombAttackKey"/);
   assert.doesNotMatch(html, /<select/);

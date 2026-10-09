@@ -172,7 +172,7 @@ a {
 
 .bomb-battery-settings .battery-low { color: #b91c1c; font-weight: 700; }
 
-.bomb-actions .bomb-attack-menu .bomb-battery-settings button {
+.bomb-actions .bomb-battery-settings button {
   height: auto;
   min-height: 38px;
   justify-content: center;
@@ -180,6 +180,8 @@ a {
   background: #ffffff;
   color: #0f172a;
 }
+
+#bombBindingStatus:empty { display: none; }
 
 .bomb-battery-settings button:disabled { opacity: 0.55; cursor: default; }
 

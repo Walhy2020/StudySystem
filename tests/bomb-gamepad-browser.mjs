@@ -146,20 +146,20 @@ try {
       await page.setViewportSize({ width, height: 900 });
     }
     await page.screenshot({ path: `tmp/bomb-gamepad-help-${width}.png` });
-    // R2 routes both enter and exit; browser policy rejection exposes a real-click fallback.
+    // Fullscreen now uses its settings button; R2 return has a separate focused check.
     await page.evaluate(() => {
       window.__fullCalls = [];
       document.querySelector(".bomb-game-app").requestFullscreen = async () => { window.__fullCalls.push("enter"); };
       document.exitFullscreen = async () => { window.__fullCalls.push("exit"); };
     });
-    await tap(7); assert.deepEqual(await page.evaluate(() => window.__fullCalls), ["enter"]);
+    await page.locator("#bombFullscreenToggle").click(); assert.deepEqual(await page.evaluate(() => window.__fullCalls), ["enter"]);
     await page.evaluate(() => Object.defineProperty(document, "fullscreenElement", { configurable: true, value: document.querySelector(".bomb-game-app") }));
-    await tap(7); assert.deepEqual(await page.evaluate(() => window.__fullCalls), ["enter", "exit"]);
+    await page.locator("#bombSettingsToggle").click(); await page.locator("#bombFullscreenToggle").click(); assert.deepEqual(await page.evaluate(() => window.__fullCalls), ["enter", "exit"]);
     await page.evaluate(() => {
       Object.defineProperty(document, "fullscreenElement", { configurable: true, value: null });
       document.querySelector(".bomb-game-app").requestFullscreen = async () => { throw new DOMException("activation needed", "NotAllowedError"); };
     });
-    await tap(7); assert.equal(await page.locator("#bombMessage").isVisible(), false);
+    await page.locator("#bombSettingsToggle").click(); await page.locator("#bombFullscreenToggle").click(); assert.equal(await page.locator("#bombMessage").isVisible(), false);
     assert.equal(await page.locator("#bombSettingsMenu").isVisible(), true);
     // R1 really navigates/reloads the page and keeps progress behind the Continue gate.
     const beforeRefresh = await read();

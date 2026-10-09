@@ -36,9 +36,10 @@ try {
       await page.evaluate(() => {
         const node = document.createElement("button"); node.id = "shell-activation"; node.textContent = "Activation fixture";
         node.style.cssText = "position:fixed;top:0;left:0;z-index:2147483647"; document.body.append(node);
+        node.addEventListener("click", () => { void window.STUDY_FULLSCREEN_SHELL.toggleFullscreen(); });
       });
       await page.locator("#shell-activation").click(); await page.evaluate(() => document.getElementById("shell-activation").remove());
-      await advance(page); await tap(page, 7);
+      await advance(page);
       await page.waitForFunction(() => Boolean(document.fullscreenElement));
     }
     async function moduleFrame(name) {
@@ -58,7 +59,7 @@ try {
       return frame;
     }
     await page.goto(base + "phonetics.html?shell-check=1");
-    await page.waitForFunction(() => document.getElementById("appVersionLabel")?.textContent === "v1.0.60");
+    await page.waitForFunction(() => document.getElementById("appVersionLabel")?.textContent === "v1.0.61");
     const phoneticsBefore = await page.evaluate(() => localStorage.getItem("mario-phonetics-v1"));
     await activate();
     await page.locator('a[href="./index.html"]').click();
@@ -105,8 +106,8 @@ try {
     assert.equal(bombAfter.hp, bombBefore.hp); assert.deepEqual(bombAfter.map, bombBefore.map);
     assert.equal(bombAfter.dayClock, bombBefore.dayClock, "no background game progression before Continue");
     await page.screenshot({ path: `tmp/fullscreen-shell-bomb-${width}.png` });
-    // R2 exits the outer fullscreen and opens the currently visible module normally.
-    await button(frame, 7, true); await advance(frame);
+    // Browser exit opens the currently visible module; R2 is now module-level back.
+    await page.evaluate(() => document.exitFullscreen());
     await page.waitForFunction(() => !document.fullscreenElement && !document.getElementById("study-module-frame") && Boolean(window.__BOMB_GAME__));
     assert.ok(page.url().includes("bomb-game.html"));
     assert.equal((await page.evaluate(() => window.__BOMB_GAME__.getState())).hp, bombBefore.hp);
@@ -119,7 +120,7 @@ try {
     assert.equal((await page.evaluate(() => window.__BOMB_GAME__.getState())).dayClock, sourceBomb.dayClock);
     assert.equal((await page.evaluate(() => window.__BOMB_GAME__.getState())).hp, sourceBomb.hp);
     await frame.locator('a[href="./phonetics.html"]').click(); frame = await moduleFrame("phonetics");
-    await button(frame, 7, true); await advance(frame);
+    await page.evaluate(() => document.exitFullscreen());
     await page.waitForFunction(() => !document.fullscreenElement && !document.getElementById("study-module-frame") && location.pathname.endsWith("phonetics.html"));
     assert.ok(page.url().includes("phonetics.html"), "exit never jumps back to the dormant bomb page");
     await page.locator('a[href="./index.html"]').click();
@@ -129,7 +130,7 @@ try {
     await activate(); await page.locator('a[href="./phonetics.html"]').click(); frame = await moduleFrame("phonetics");
     await page.evaluate(() => document.exitFullscreen());
     await page.waitForFunction(() => !document.fullscreenElement && !document.getElementById("study-module-frame") && location.pathname.endsWith("phonetics.html"));
-    for (const resource of ["src/fullscreen-shell.js?v=1.0", "fullscreen-shell.css?v=1.0", "src/gamepad-cursor.js?v=1.10", "bomb-game.js?v=2.34"]) {
+    for (const resource of ["src/fullscreen-shell.js?v=1.0", "fullscreen-shell.css?v=1.0", "src/gamepad-cursor.js?v=1.11", "bomb-game.js?v=2.34"]) {
       assert.equal((await page.request.get(base + resource)).status(), 200);
     }
     assert.deepEqual(errors, []);

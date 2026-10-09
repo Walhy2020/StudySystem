@@ -7,7 +7,39 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.60** (2026-10-09). New Scenario 06,
+System display version: **v1.0.61** (2026-10-09). R2 / Xbox RT now returns one
+internal level per fresh press rather than toggling fullscreen. Scenario content
+returns to its picker; Theme content returns to theme list, then series list;
+Book1 returns to letter groups. The outer level returns to index.html; at home
+R2 does nothing. Module-owned exit buttons cancel speech/timers without changing
+learned records. Fullscreen-shell routing keeps fullscreen and cursor coordinates.
+Bomb submenus/settings/menu-pointer close one level first, then return home with
+the game saved. Capture, focus, connection-neutral and held-button guards remain.
+Fullscreen still uses the explicit game settings button or browser controls.
+
+Battery status/read button moves directly into game Settings; static attack-setting
+instructions are removed, while binding capture feedback and connection status stay.
+Windows server.py now exposes only GET /api/controller-battery for loopback peers
+and loopback Host, rejecting cross-origin requests, with no CORS/cache/device writes.
+controller_battery.py uses XInputGetBatteryInformation and returns actual empty/low/
+medium/full buckets (never fabricated percentages); wired/unknown stay unknown.
+Multiple slots are labeled separately rather than guessed as a specific controller.
+Other platforms fall back safely. Sony input-only WebHID/CRC/stale support remains.
+No controller data is stored and no learning keys/schemas change.
+
+Bomb JS/CSS v2.41/v1.10; shared cursor v1.11; reader/bindings/battery v1.5/v1.3/v1.1.
+All eight notifier references/display imports v1.0.61; Hanzi/Pinyin/IPA entry caches
+v1.39/v1.13/v1.38. Syntax, 212 Node tests (including focused Python XInput/API tests)
+and git diff --check passed. Only gamepad-back-battery-browser.mjs and the battery
+UI regression ran in real Edge at 1440/390 (also 390x500 for battery layout).
+Standard Xbox/Sony inputs and UI battery packets were simulated, not physical
+button certification. A separate real local XInput read returned slot 1 full.
+Settings screenshots in ignored tmp were inspected; tracked PNG edits excluded.
+No unrelated module browser workflows ran. The inherited 53177 server was preserved;
+its old process still returns 404 for this API and must be restarted once to load
+the new Python code. R2/static updates need only a page refresh.
+
+Previous **v1.0.60** (2026-10-09). New Scenario 06,
 "课堂指令 / Classroom Commands" (`classroom-commands`), retains the user's five
 sentences exactly: Please stand up. / Please sit down. / Please raise your hands.
 / Thank you. / You're welcome. Each has aligned British IPA and Chinese.

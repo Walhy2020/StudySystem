@@ -93,7 +93,7 @@ try {
     }
     await page.screenshot({ path: `tmp/cursor-position-${width}.png` });
     // R2 exit destroys the frame; the dormant owner must not save its stale point.
-    await frame.evaluate(() => { window.__pad.buttons[7] = { pressed: true, value: 1 }; window.__advance(1 / 60); });
+    await page.evaluate(() => document.exitFullscreen());
     await page.waitForFunction(() => !document.fullscreenElement && !document.getElementById("study-module-frame") && location.pathname.endsWith("phonetics.html"));
     await ready(page); await samePoint(page, childPoint);
     const stored = await page.evaluate(key => JSON.parse(sessionStorage.getItem(key)), positionKey);
@@ -107,7 +107,7 @@ try {
     const second = await context.newPage(); await second.goto(base + "pinyin.html"); await ready(second);
     await samePoint(second, { x: width / 2, y: 450 });
     await second.close();
-    assert.equal((await page.request.get(base + "src/gamepad-cursor.js?v=1.10")).status(), 200);
+    assert.equal((await page.request.get(base + "src/gamepad-cursor.js?v=1.11")).status(), 200);
     assert.deepEqual(errors, []);
     results.push({ width, windowedEightPages: true, pointerNavigation: true, fullscreenSwitch: true,
       exitAndReload: true, staleOwnerProtected: true, viewportClamp: true, tabIsolation: true });

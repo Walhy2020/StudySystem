@@ -25,13 +25,14 @@
       const direction = directions.length === 1 ? directions[0] : "";
       const aim = Math.max(Math.abs(x), Math.abs(y)) >= DEADZONE
         ? (Math.abs(x) > Math.abs(y) ? (x > 0 ? "right" : "left") : (y > 0 ? "down" : "up")) : "";
-      const systemButtons = { refresh: pressed(pad, 5), fullscreen: pressed(pad, 7) };
+      // R2 return is owned by the shared cursor, including while menus are open.
+      const systemButtons = { refresh: pressed(pad, 5) };
       if (!systemEnabled) systemArmed = false;
       else if (!systemArmed) { if (!Object.values(systemButtons).some(Boolean)) systemArmed = true; }
       else for (const key of Object.keys(systemButtons)) result[key] = systemButtons[key] && !systemPrevious[key];
       systemPrevious = systemButtons;
       const buttons = { mushroom: pressed(pad, attackButtons.mushroom), ice: pressed(pad, attackButtons.ice), confirm: pressed(pad, 9) };
-      const neutral = !aim && !directions.length && !Object.values(buttons).some(Boolean) && !Object.values(systemButtons).some(Boolean);
+      const neutral = !aim && !directions.length && !Object.values(buttons).some(Boolean) && !Object.values(systemButtons).some(Boolean) && !pressed(pad, 7);
       if (!enabled) { reset(); return result; }
       if (!armed) {
         if (neutral) armed = true;

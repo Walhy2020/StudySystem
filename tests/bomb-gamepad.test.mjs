@@ -51,9 +51,9 @@ test("左摇杆只瞄准、十字键只移动，死区和主轴避免斜移", ()
   h.button(15, true); assert.equal(h.reader.poll().direction, "");
 });
 
-test("手柄攻击/确认/R1/R2只在新按下触发一次，松开可再次触发", () => {
+test("手柄攻击/确认/R1只在新按下触发一次，R2由共享返回入口处理", () => {
   const h = harness(); h.reader.poll();
-  for (const [index, action] of [[0, "mushroom"], [1, "ice"], [9, "confirm"], [5, "refresh"], [7, "fullscreen"]]) {
+  for (const [index, action] of [[0, "mushroom"], [1, "ice"], [9, "confirm"], [5, "refresh"]]) {
     h.button(index, true); assert.equal(h.reader.poll()[action], true);
     assert.equal(h.reader.poll()[action], false);
     h.button(index, false); h.reader.poll();
@@ -98,7 +98,7 @@ test("菜单中R1/R2可用、战斗禁用，失焦或重连后按住不重触发
   h.reader.poll(false, false);
   assert.equal(h.reader.poll(true, true).refresh, false);
   h.button(5, false); h.button(0, false); h.reader.poll();
-  h.button(7, true); assert.equal(h.reader.poll().fullscreen, true);
+  h.button(7, true); assert.equal(h.reader.poll().fullscreen, false);
   h.connect([]); h.reader.poll(); h.connect([h.pad]);
   assert.equal(h.reader.poll().fullscreen, false);
 });

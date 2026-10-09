@@ -23,6 +23,7 @@ try {
         return window.__battery.mode === "cancel" ? [] : [device];
       };
       Object.defineProperty(navigator, "hid", { configurable: true, value: hid });
+      Object.defineProperty(navigator, "getGamepads", { value: () => [{ id: "DualSense Wireless Controller", connected: true, mapping: "standard", index: 0, axes: [0, 0, 0, 0], buttons: [] }] });
       Object.defineProperty(navigator, "getBattery", { value: () => { throw Error("host battery must not be queried"); } });
       window.__batteryReport = (value, bluetooth = false, compact = false) => {
         const data = new DataView(new ArrayBuffer(compact ? 9 : bluetooth ? 77 : 63));
@@ -49,28 +50,27 @@ try {
     await page.waitForFunction(() => !document.getElementById("readGamepadBattery").disabled);
     assert.equal(await page.evaluate(() => window.__battery.requests), 0, "no unsolicited HID chooser");
     if (await page.locator("#bombSettingsMenu").isHidden()) await page.locator("#bombSettingsToggle").click();
-    await page.locator("#bombAttackToggle").click();
     assert.match(await status.textContent(), /未知/);
     const click = async () => { if (width === 390) await button.tap(); else await button.click(); };
-    await click(); assert.match(await status.textContent(), /等待完整/);
+    await click(); await page.waitForFunction(() => document.getElementById("bombGamepadBattery").textContent === "手柄电量：等待数据");
     assert.deepEqual(await page.evaluate(() => window.__battery.filters), [{ vendorId: 0x054c, productId: 0x0ce6 }, { vendorId: 0x054c, productId: 0x0df2 }]);
     await page.evaluate(() => window.__batteryReport(0x16)); assert.equal(await status.textContent(), "手柄电量：60–69% · 充电中");
     await page.evaluate(() => window.__batteryReport(0x01)); assert.match(await status.textContent(), /10–19%.*低电量/);
     assert.ok(await status.evaluate(node => node.classList.contains("battery-low")));
     await page.evaluate(() => window.__batteryReport(0x20, true)); assert.equal(await status.textContent(), "手柄电量：100% · 已充满");
     await page.evaluate(() => { window.__battery.now += 11000; });
-    await page.waitForFunction(() => document.getElementById("bombGamepadBattery").textContent.includes("过期"));
+    await page.waitForFunction(() => document.getElementById("bombGamepadBattery").textContent === "手柄电量：未知");
     assert.doesNotMatch(await status.textContent(), /100%/);
     await page.evaluate(() => window.__batteryReport(0x16, true));
     await page.evaluate(() => window.__batteryDisconnect()); assert.match(await status.textContent(), /已断开/);
-    await click(); await page.evaluate(() => window.__batteryReport(0x16, false, true)); assert.match(await status.textContent(), /未知/);
-    await page.evaluate(() => { window.__battery.mode = "cancel"; }); await click(); assert.match(await status.textContent(), /未选择/);
-    await page.evaluate(() => { window.__battery.mode = "deny"; }); await click(); assert.match(await status.textContent(), /读取失败/);
+    await click(); await page.waitForFunction(() => document.getElementById("bombGamepadBattery").textContent.includes("等待")); await page.evaluate(() => window.__batteryReport(0x16, false, true)); assert.match(await status.textContent(), /等待/);
+    await page.evaluate(() => { window.__battery.mode = "cancel"; }); await click(); await page.waitForFunction(() => document.getElementById("bombGamepadBattery").textContent.endsWith("未知"));
+    await page.evaluate(() => { window.__battery.mode = "deny"; }); await click(); await page.waitForFunction(() => document.getElementById("bombGamepadBattery").textContent.endsWith("读取失败"));
     await page.evaluate(() => { window.__battery.mode = "select"; });
-    await button.focus(); await page.keyboard.press("Enter"); await page.evaluate(() => window.__batteryReport(0x16));
+    await button.focus(); await page.keyboard.press("Enter"); await page.waitForFunction(() => document.getElementById("bombGamepadBattery").textContent.includes("等待")); await page.evaluate(() => window.__batteryReport(0x16));
     assert.match(await status.textContent(), /60–69%/);
-    assert.ok(await page.locator("#bombAttackMenu").isVisible(), "authorizing never resumes game behind menu");
-    const geometry = await page.locator("#bombAttackMenu").evaluate(menu => {
+    assert.ok(await page.locator("#bombSettingsMenu").isVisible(), "authorizing never resumes game behind menu");
+    const geometry = await page.locator("#bombSettingsMenu").evaluate(menu => {
       const box = menu.getBoundingClientRect(), button = document.getElementById("readGamepadBattery").getBoundingClientRect();
       return { overflow: document.documentElement.scrollWidth > innerWidth, left: box.left, right: box.right,
         bottom: box.bottom, height: innerHeight, buttonInside: button.top >= box.top && button.bottom <= box.bottom };
@@ -80,8 +80,8 @@ try {
     await page.screenshot({ path: `tmp/bomb-battery-${width}.png` });
     if (width === 390) {
       await page.setViewportSize({ width, height: 500 }); await button.scrollIntoViewIfNeeded();
-      const short = await page.locator("#bombAttackMenu").boundingBox(); assert.ok(short.y + short.height <= 500);
-      await button.tap(); await page.evaluate(() => window.__batteryReport(0x01));
+      const short = await page.locator("#bombSettingsMenu").boundingBox(); assert.ok(short.y + short.height <= 500);
+      await button.tap(); await page.waitForFunction(() => document.getElementById("bombGamepadBattery").textContent.includes("等待")); await page.evaluate(() => window.__batteryReport(0x01));
       await page.screenshot({ path: "tmp/bomb-battery-short-390.png" });
     }
     const keys = await page.evaluate(() => Object.keys(localStorage));
@@ -91,13 +91,13 @@ try {
     await context.close();
   }
   const context = await browser.newContext();
+  await context.route("**/api/controller-battery", route => route.fulfill({ contentType: "application/json", body: '{"supported":false,"controllers":[]}' }));
   await context.addInitScript(() => Object.defineProperty(navigator, "hid", { value: undefined }));
   const page = await context.newPage(); await page.goto(base + "bomb-game.html?battery-unsupported=1");
   if (await page.locator("#bombSettingsMenu").isHidden()) await page.locator("#bombSettingsToggle").click();
-  await page.locator("#bombAttackToggle").click();
-  assert.ok(await page.locator("#readGamepadBattery").isDisabled());
-  assert.match(await page.locator("#bombGamepadBattery").textContent(), /不支持/);
-  await page.keyboard.press("Escape"); assert.ok(await page.locator("#bombAttackMenu").isHidden());
+  assert.ok(await page.locator("#readGamepadBattery").isEnabled());
+  assert.match(await page.locator("#bombGamepadBattery").textContent(), /未知/);
+  await page.keyboard.press("Escape"); assert.ok(await page.locator("#bombSettingsMenu").isHidden());
   await page.locator("#overlayStartBombGame").click();
   assert.equal(await page.evaluate(() => window.__BOMB_GAME__.getState().status), "playing");
   await context.close();

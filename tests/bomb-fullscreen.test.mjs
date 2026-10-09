@@ -24,7 +24,7 @@ function harness({ fail = false, embedded = false, request } = {}) {
   `)(document, appNode, window, calls);
   return { toggle, calls, document };
 }
-test("R2全屏被拒绝不打开设置或抢焦点，释放后可再次请求", async () => {
+test("设置中的全屏按钮被拒绝不打开设置或抢焦点，可再次请求", async () => {
   const app = harness({ fail: true });
   assert.equal(await app.toggle(), false); assert.equal(await app.toggle(), false);
   assert.equal(app.calls.filter(call => call === "request").length, 2);
@@ -45,5 +45,6 @@ test("待处理的全屏请求不重复发起，学习页不再创建授权弹�
   resolve(); assert.equal(await first, true);
   const cursor = readFileSync(new URL("../src/gamepad-cursor.js", import.meta.url), "utf8");
   assert.doesNotMatch(cursor, /showFullscreenPrompt|fullscreenPrompt|全屏授权/);
-  assert.match(cursor, /document\.documentElement\.requestFullscreen\(\)/);
+  assert.doesNotMatch(cursor, /requestFullscreen\(\)/);
+  assert.match(cursor, /back: pressed\(pad, 7\)/);
 });

@@ -81,12 +81,21 @@ test("取消、拒绝授权和打开失败可安全重试，不支持时不调�
   const unsupported = globalThis.createBombBatteryReader({ hid: null }); await unsupported.authorize();
   assert.equal(unsupported.getState().kind, "unsupported"); await unsupported.dispose();
 });
-test("电量模块只读HID不发送输出/特征报告、不写存储，入口只在攻击设置", () => {
+test("电量模块只读、不写存储，入口直接位于设置", () => {
   const source = readFileSync(new URL("../src/bomb-gamepad-battery.js", import.meta.url), "utf8");
   assert.doesNotMatch(source, /sendReport|sendFeatureReport|receiveFeatureReport|localStorage|sessionStorage/);
   const html = readFileSync(new URL("../bomb-game.html", import.meta.url), "utf8");
-  assert.match(html, /bomb-game\.css\?v=1\.9/);
-  assert.match(html, /src\/bomb-gamepad-battery\.js\?v=1\.0/);
+  assert.match(html, /bomb-game\.css\?v=1\.10/);
+  assert.match(html, /src\/bomb-gamepad-battery\.js\?v=1\.1/);
   assert.equal(html.split('id="readGamepadBattery"').length - 1, 1);
   assert.ok(html.indexOf('id="readGamepadBattery"') < html.indexOf('<main class="bomb-stage">'));
+});
+
+test("Xbox电量保留真实档位，有线/不支持/断线不会伪报百分比", () => {
+  const format = globalThis.formatXInputBattery;
+  for (const [level, label] of [["empty", "没电"], ["low", "低"], ["medium", "中"], ["full", "满"], ["wired", "有线连接 · 电量未知"], ["unknown", "未知"]]) {
+    assert.equal(format({ supported: true, controllers: [{ slot: 1, level }] }), "手柄电量：" + label);
+  }
+  for (const result of [null, {}, { supported: false, controllers: [] }, { supported: true, controllers: [] }, { supported: true, controllers: [{ slot: 5, level: "full" }] }]) assert.equal(format(result), null);
+  assert.equal(format({ supported: true, controllers: [{ slot: 1, level: "low" }, { slot: 3, level: "full" }] }), "手柄电量：手柄 1 · 低；手柄 3 · 满");
 });

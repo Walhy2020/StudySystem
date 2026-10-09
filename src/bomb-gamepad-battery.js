@@ -102,22 +102,33 @@
   globalThis.parseDualSenseBattery = parseDualSenseBattery;
   globalThis.createBombBatteryReader = createBombBatteryReader;
 
+  function formatXInputBattery(result) {
+    if (result?.supported !== true || !Array.isArray(result.controllers)) return null;
+    const labels = { empty: "没电", low: "低", medium: "中", full: "满", wired: "有线连接 · 电量未知", unknown: "未知" };
+    const controllers = result.controllers.filter(item => Number.isInteger(item?.slot) && item.slot >= 1 && item.slot <= 4 && Object.hasOwn(labels, item.level));
+    if (!controllers.length) return null;
+    return "手柄电量：" + controllers.map(item =>
+      `${controllers.length > 1 ? `手柄 ${item.slot} · ` : ""}${labels[item.level]}`).join("；");
+  }
+  globalThis.formatXInputBattery = formatXInputBattery;
+
   if (!globalThis.document) return;
   const status = document.getElementById("bombGamepadBattery"), button = document.getElementById("readGamepadBattery");
   if (!status || !button) return;
   const labels = {
-    unknown: "手柄电量：未知（点击下方按钮授权读取 PS5 手柄）",
-    unsupported: "手柄电量：未知（此浏览器不支持读取，请使用 Edge / Chrome）",
-    checking: "手柄电量：未知（检查已有授权）",
-    authorizing: "手柄电量：未知（请选择并授权 PS5 手柄）",
-    waiting: "手柄电量：未知（等待完整电量报告；蓝牙可能不提供）",
-    cancelled: "手柄电量：未知（未选择手柄，可重新读取）",
-    error: "手柄电量：未知（读取失败，不影响游戏操作）",
-    disconnected: "手柄电量：未知（手柄已断开，请重新读取）",
-    stale: "手柄电量：未知（电量数据已过期）",
+    unknown: "手柄电量：未知",
+    unsupported: "手柄电量：未知",
+    checking: "手柄电量：读取中",
+    authorizing: "手柄电量：授权中",
+    waiting: "手柄电量：等待数据",
+    cancelled: "手柄电量：未知",
+    error: "手柄电量：读取失败",
+    disconnected: "手柄电量：已断开",
+    stale: "手柄电量：未知",
   };
-  let lastLabel = "";
-  const reader = createBombBatteryReader({ onChange: state => {
+  let lastLabel = "", nativeLabel = null, nativeBusy = false;
+  function renderState(state) {
+    if (nativeLabel !== null) return;
     let label = labels[state.kind];
     if (state.kind === "ready") {
       const battery = state.battery;
@@ -132,17 +143,50 @@
     }
     if (lastLabel !== label) { lastLabel = label; status.textContent = label; }
     status.classList.toggle("battery-low", Boolean(state.battery?.low));
-    button.disabled = state.busy || state.kind === "unsupported";
-  } });
-  button.addEventListener("click", () => { void reader.authorize(); });
-  const menu = document.getElementById("bombAttackMenu");
+    button.disabled = state.busy || nativeBusy;
+  }
+  const reader = createBombBatteryReader({ onChange: renderState });
+  function sonyConnected() {
+    try { return Array.from(navigator.getGamepads?.() || []).some(pad => pad?.connected && /dualsense|054c|sony|wireless controller/i.test(pad.id) && !/xbox|xinput/i.test(pad.id)); }
+    catch { return false; }
+  }
+  async function readNativeBattery() {
+    if (nativeBusy) return false;
+    if (sonyConnected()) { nativeLabel = null; renderState(reader.getState()); return false; }
+    nativeBusy = true; button.disabled = true;
+    try {
+      const response = await fetch("./api/controller-battery", { cache: "no-store", signal: AbortSignal.timeout(2500) });
+      nativeLabel = response.ok ? formatXInputBattery(await response.json()) : null;
+    } catch { nativeLabel = null; }
+    finally {
+      nativeBusy = false; button.disabled = reader.getState().busy;
+      if (nativeLabel !== null) {
+        lastLabel = nativeLabel; status.textContent = nativeLabel;
+        status.classList.toggle("battery-low", /：没电|：低|· 没电|· 低/.test(nativeLabel));
+      } else { lastLabel = ""; renderState(reader.getState()); }
+    }
+    return nativeLabel !== null;
+  }
+  button.addEventListener("click", async () => {
+    if (sonyConnected()) nativeLabel = null;
+    if (!await readNativeBattery()) {
+      let xbox = false;
+      try { xbox = Array.from(navigator.getGamepads?.() || []).some(pad => pad?.connected && /xbox|xinput/i.test(pad.id)); } catch {}
+      if (!xbox) await reader.authorize();
+    }
+  });
+  const menu = document.getElementById("bombSettingsMenu");
   function fitMenu() {
     if (menu && !menu.hidden) menu.style.maxHeight = `${Math.max(80, innerHeight - menu.getBoundingClientRect().top - 12)}px`;
   }
-  document.getElementById("bombAttackToggle")?.addEventListener("click", () => requestAnimationFrame(fitMenu));
+  document.getElementById("bombSettingsToggle")?.addEventListener("click", () => {
+    requestAnimationFrame(fitMenu);
+    if (menu && !menu.hidden) void readNativeBattery();
+  });
   window.addEventListener("resize", fitMenu);
   void reader.restore();
   const timer = setInterval(reader.checkStale, 1000);
+  const nativeTimer = setInterval(() => { if (menu && !menu.hidden && !document.hidden) void readNativeBattery(); }, 5000);
   // pagehide can be followed by pageshow from the back-forward cache.
-  window.addEventListener("pagehide", event => { if (!event.persisted) { clearInterval(timer); void reader.dispose(); } });
+  window.addEventListener("pagehide", event => { if (!event.persisted) { clearInterval(timer); clearInterval(nativeTimer); void reader.dispose(); } });
 }());

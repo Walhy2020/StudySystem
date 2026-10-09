@@ -26,7 +26,7 @@ try {
     const enter = () => act('[data-scenario-id="self-introduction"] [data-start-label]');
     const noOverflow = async () => assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
     await page.goto(base + "scenario-learning.html");
-    assert.equal(await page.locator(".scenario-card").count(), 5);
+    assert.equal(await page.locator(".scenario-card").count(), 6);
     const cover = page.locator('[data-scenario-id="self-introduction"] img');
     await cover.evaluate(image => image.decode());
     assert.deepEqual(await cover.evaluate(image => [image.naturalWidth, image.naturalHeight, getComputedStyle(image).objectFit]), [1254, 1254, "contain"]);

@@ -26,7 +26,7 @@ try {
     const spoken = count => page.waitForFunction(expected => window.__spoken.length === expected, count, { polling: 100 });
     const noOverflow = async () => assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     await page.goto(new URL("scenario-learning.html", base).href);
-    assert.equal(await page.locator(".scenario-card").count(), 5);
+    assert.equal(await page.locator(".scenario-card").count(), 6);
     for (const name of ["fruit-table-v2", "fruit-red-apple-v1", "fruit-yellow-lemon-v1", "fruit-green-pear-v1", "fruit-orange-v1", "fruit-banana-v1", "fruit-strawberry-v1"]) {
       const response = await page.request.get(new URL(`assets/scenarios/${name}.png?v=1.0`, base).href);
       assert.equal(response.status(), 200, name);
@@ -90,7 +90,7 @@ try {
     assert.ok((await page.evaluate(() => window.__writes)).every(key => key === "mario-scenario-learning-v1"));
     await page.goto(new URL("review-learning.html", base).href);
     await act("#openWordLibrary");
-    assert.equal(await page.locator("#wordLibraryCount").textContent(), "4/243");
+    assert.equal(await page.locator("#wordLibraryCount").textContent(), "4/251");
     const pear = page.locator('[data-word-key="total:pear"] img');
     assert.equal(await pear.getAttribute("src"), scene.focusObjects.pear.image);
     await pear.evaluate(node => node.decode());

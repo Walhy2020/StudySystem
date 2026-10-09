@@ -1,5 +1,5 @@
 import { BOOK1_ITEMS } from "../data/book1.js";
-import { SCENARIOS } from "../data/scenarios.js?v=1.7";
+import { SCENARIOS } from "../data/scenarios.js?v=1.8";
 
 export const TOTAL_WORD_SOURCE_KEYS = Object.freeze({
   theme: "mario-theme-learned-v1",
@@ -8,7 +8,7 @@ export const TOTAL_WORD_SOURCE_KEYS = Object.freeze({
 });
 
 export const normalizeLibraryWord = (value) => String(value || "").trim().toLowerCase().replaceAll("’", "'");
-const CONTRACTIONS = Object.freeze({ "i'm": ["i", "am"], "they're": ["they", "are"], "it's": ["it", "is"] });
+const CONTRACTIONS = Object.freeze({ "i'm": ["i", "am"], "you're": ["you", "are"], "they're": ["they", "are"], "it's": ["it", "is"] });
 
 function wordsInText(text) {
   return (normalizeLibraryWord(text).match(/[a-z]+(?:'[a-z]+)*/g) || []).flatMap((word) => CONTRACTIONS[word] || [word]);
@@ -26,6 +26,9 @@ function read(storage, key) {
 const values = (value) => Array.isArray(value) ? value : [];
 
 function scenarioArt(word, scenarios) {
+  const commandObject = { stand: "stand-up", sit: "sit-down", raise: "raise-hands" }[word];
+  const commandArt = commandObject && scenarios.find(({ id }) => id === "classroom-commands")?.focusObjects?.[commandObject];
+  if (commandArt) return Object.freeze({ type: "image-url", src: commandArt.image, alt: commandArt.label });
   const fruitObject = { apple: "apple", lemon: "lemon", pear: "pear", orange: "orange", banana: "banana", strawberry: "strawberry" }[word];
   const fruitArt = fruitObject && scenarios.find(({ id }) => id === "fruit-tasting")?.focusObjects?.[fruitObject];
   if (fruitArt) return Object.freeze({ type: "image-url", src: fruitArt.image, alt: fruitArt.label });

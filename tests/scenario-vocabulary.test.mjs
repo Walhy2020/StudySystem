@@ -7,7 +7,7 @@ import { BOOK1_ITEMS } from "../data/book1.js";
 test("情景单词按词去重、拆开常用缩写，排除角色名但保留功能词", () => {
   assert.deepEqual(dialogueWords("Hi Mia, I’m fine. I'm fine!", ["Mia"]), ["hi", "i", "am", "fine"]);
   const words = collectScenarioVocabulary(SCENARIOS);
-  assert.equal(words.length, 70);
+  assert.equal(words.length, 79);
   assert.ok(words.every((word) => word.sources.length && word.phonetic && word.chinese));
   assert.deepEqual(new Set(words.map((w) => w.word)), new Set(dialogueWords(SCENARIOS.flatMap((scenario) => scenario.lines).map((line) => line.text).join(" "), ["Mia", "Leo", "Beijing", "Lujiang"])));
   for (const word of ["marker", "erasers"]) {
@@ -21,6 +21,7 @@ test("新单词严格跟随当前情景，不合并其他情景", () => {
   assert.equal(collectScenarioVocabulary([SCENARIOS[2]]).length, 22);
   assert.equal(collectScenarioVocabulary([SCENARIOS[3]]).length, 25);
   assert.equal(collectScenarioVocabulary([SCENARIOS[4]]).length, 17);
+  assert.equal(collectScenarioVocabulary([SCENARIOS[5]]).length, 12);
   assert.equal(collectScenarioVocabulary([SCENARIOS[0]]).some(({ word }) => word === "marker"), false);
   assert.equal(collectScenarioVocabulary([SCENARIOS[1]]).some(({ word }) => word === "hello"), false);
 });
@@ -33,7 +34,7 @@ test("已学判断只读统一总词库并隔离测试命名空间", () => {
   const known = knownScenarioWords(storage, ["Hello"], ":test:a");
   assert.deepEqual([...known].sort(), ["apple", "hello", "red"]);
   assert.ok(reads.every((key) => key.endsWith(":test:a")));
-  assert.equal(collectScenarioVocabulary(SCENARIOS, known).filter((w) => !w.learned).length, 67);
+  assert.equal(collectScenarioVocabulary(SCENARIOS, known).filter((w) => !w.learned).length, 76);
   assert.doesNotThrow(() => knownScenarioWords({ getItem: () => '{"learned":null,"masteredIds":{}}' }));
 });
 
@@ -51,7 +52,7 @@ test("旧情景状态升级保留完成及位置；学会后刷新不重新加�
 test("重复情景不重复收词且保留来源；不能凭完成对话当作学会单词", () => {
   const extra = { id: "example", title: "又见面", lines: [{ text: "Hello!" }], vocabulary: [FIRST_MEETING_VOCABULARY[0]] };
   const words = collectScenarioVocabulary([...SCENARIOS, extra]);
-  assert.equal(words.length, 70);
+  assert.equal(words.length, 79);
   assert.equal(words.find((w) => w.word === "hello").sources.length, 4);
   assert.ok(words.every((w) => !w.learned));
 });

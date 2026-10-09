@@ -8,6 +8,15 @@
 
 ## 当前配图
 
+- 情景：课堂指令（Classroom Commands，情景 06，2026-10-09）。
+- 用户五句原文完整保留：Please stand up. / Please sit down. / Please raise your hands. / Thank you. / You're welcome.，逐词英式音标与中文一一对应。
+- 本次内置 image_gen 不可用，用户明确授权 imagegen CLI/API，使用技能原脚本及 gpt-image-2、medium、1024×1024 请求生成；实际四张均为 1254×1254 PNG。
+- 正式 RGB PNG 为 `classroom-commands-v1.png`、`command-stand-up-v1.png`、`command-sit-down-v1.png`、`command-raise-hands-v1.png`，完整保留人物和双手，白底动作卡显示在舞台中央；背景用于封面和舞台。
+- 提示词与来源说明：`assets/scenarios/classroom-commands-v1.prompt.md`；发布脚本：`scripts/build-classroom-command-assets.py`。原始输出和生成依赖留在忽略的 output/tmp 目录，不提交密钥或浏览器进度。
+- 五题看中文选英文，选项只有英文与音标，不显示中文答案；语音按钮为可选英文提示。其他情景仍练习选择回应，切换不会沿用课堂模式。
+- 12 个候选词只属于当前情景，You're 分为 you/are，hands 保留复数词形；完成对话或练习不自动入已学库，仍需“学会了”。总候选目录为 251。
+- 专项验收：`node tests/scenario-classroom-commands-browser.mjs`，真实 Edge 桌面/390px，受控语音回调，截图仅输出忽略的 tmp 目录。
+
 - 情景：第一次见面（Mia / Leo）。
 - 文件：assets/scenarios/first-meeting-v1.png。
 - 内置 image_gen 生成，1254×1254，RGB PNG。

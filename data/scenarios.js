@@ -194,6 +194,40 @@ export const SELF_INTRODUCTION_PRACTICE = Object.freeze([
   id: `self-${id}`, promptId, answerId, optionIds: Object.freeze([wrong1, answerId, wrong2]),
 })));
 
+export const CLASSROOM_COMMAND_LINES = Object.freeze([
+  line("command-stand-up", "Mia", "Please stand up.", "/pliːz stænd ʌp/", "请站起来。", [["Please", "/pliːz/"], ["stand", "/stænd/"], ["up.", "/ʌp/"]], "stand-up"),
+  line("command-sit-down", "Mia", "Please sit down.", "/pliːz sɪt daʊn/", "请坐下。", [["Please", "/pliːz/"], ["sit", "/sɪt/"], ["down.", "/daʊn/"]], "sit-down"),
+  line("command-raise-hands", "Mia", "Please raise your hands.", "/pliːz reɪz jɔː hændz/", "请举起小手。", [["Please", "/pliːz/"], ["raise", "/reɪz/"], ["your", "/jɔː/"], ["hands.", "/hændz/"]], "raise-hands"),
+  line("command-thank-you", "Mia", "Thank you.", "/θæŋk juː/", "谢谢你。", [["Thank", "/θæŋk/"], ["you.", "/juː/"]]),
+  line("command-welcome", "Leo", "You're welcome.", "/jɔː ˈwelkəm/", "不客气。", [["You're", "/jɔː/"], ["welcome.", "/ˈwelkəm/"]]),
+]);
+
+export const CLASSROOM_COMMAND_OBJECTS = Object.freeze({
+  "stand-up": Object.freeze({ label: "小朋友站在椅子旁，双脚着地，双手自然放下", image: "./assets/scenarios/command-stand-up-v1.png?v=1.0" }),
+  "sit-down": Object.freeze({ label: "小朋友坐在椅子上，双脚着地", image: "./assets/scenarios/command-sit-down-v1.png?v=1.0" }),
+  "raise-hands": Object.freeze({ label: "小朋友站好，双手举过头顶", image: "./assets/scenarios/command-raise-hands-v1.png?v=1.0" }),
+});
+
+export const CLASSROOM_COMMAND_VOCABULARY = Object.freeze([
+  ["please", "/pliːz/", "请"], ["stand", "/stænd/", "站；站立"], ["up", "/ʌp/", "向上（stand up 表示站起来）"],
+  ["sit", "/sɪt/", "坐"], ["down", "/daʊn/", "向下（sit down 表示坐下）"], ["raise", "/reɪz/", "举起"],
+  ["your", "/jɔː/", "你的；你们的"], ["hands", "/hændz/", "手（复数）"], ["thank", "/θæŋk/", "感谢"],
+  ["you", "/juː/", "你；你们"], ["are", "/ɑː/", "是（You're 是 You are 的缩写）"], ["welcome", "/ˈwelkəm/", "不客气（用于 You're welcome）"],
+].map(([word, phonetic, chinese]) => Object.freeze({ word, phonetic, chinese })));
+
+export const CLASSROOM_COMMAND_PRACTICE = Object.freeze([
+  ["stand-up", "sit-down", "raise-hands"],
+  ["sit-down", "raise-hands", "stand-up"],
+  ["raise-hands", "stand-up", "sit-down"],
+  ["thank-you", "welcome", "stand-up"],
+  ["welcome", "thank-you", "sit-down"],
+].map(([correct, wrong1, wrong2], index) => {
+  const answerId = `command-${correct}`;
+  const options = [`command-${wrong1}`, `command-${wrong2}`];
+  options.splice(index % 3, 0, answerId);
+  return Object.freeze({ id: `match-${correct}`, promptId: answerId, answerId, optionIds: Object.freeze(options) });
+}));
+
 export const SCENARIOS = Object.freeze([
   Object.freeze({
     id: "first-meeting",
@@ -260,6 +294,22 @@ export const SCENARIOS = Object.freeze([
     practice: SELF_INTRODUCTION_PRACTICE,
     vocabulary: SELF_INTRODUCTION_VOCABULARY,
     focusObjects: SELF_INTRODUCTION_OBJECTS,
+  }),
+  Object.freeze({
+    id: "classroom-commands",
+    number: 6,
+    chineseTitle: "课堂指令",
+    englishTitle: "Classroom Commands",
+    description: "练习站起来、坐下、举起小手，以及谢谢你和不客气。",
+    completionTitle: "课堂指令完成！",
+    completionText: "你已经会说三句简单课堂指令，以及谢谢你和不客气。",
+    practiceMode: "chinese-to-english",
+    practiceInstruction: "看中文提示，选出对应的英文；也可以点击声音按钮听英文提示。",
+    focusKind: "动作",
+    lines: CLASSROOM_COMMAND_LINES,
+    practice: CLASSROOM_COMMAND_PRACTICE,
+    vocabulary: CLASSROOM_COMMAND_VOCABULARY,
+    focusObjects: CLASSROOM_COMMAND_OBJECTS,
   }),
 ]);
 

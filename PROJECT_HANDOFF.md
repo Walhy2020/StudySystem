@@ -7,7 +7,45 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.59** (2026-10-09). Attack shortcut capture now
+System display version: **v1.0.60** (2026-10-09). New Scenario 06,
+"课堂指令 / Classroom Commands" (`classroom-commands`), retains the user's five
+sentences exactly: Please stand up. / Please sit down. / Please raise your hands.
+/ Thank you. / You're welcome. Each has aligned British IPA and Chinese.
+The three actions display separate full-body white-background illustrations.
+Mia gives the instructions and says thank you; Leo enters for You're welcome.
+User-started manual/continuous speech and three-cycle focus emphasis remain.
+
+Five Chinese-to-English matching questions cover every sentence. English options
+keep IPA but hide Chinese translations; wrong answers retry, sound gives an
+optional English hint, and other scenarios retain response-mode exercises.
+Twelve active-scenario vocabulary candidates include separate hands and hand
+spellings; You're expands to you/are. Words enter the read-only shared total
+library only after explicit learning, never from dialogue/practice completion.
+The combined catalog is now 251 unique candidates (adds please, stand, sit,
+down, raise, your, hands, welcome). Stand/sit/raise use their action images;
+hands uses a meaning card to avoid an identical raise/hands picture choice.
+Existing scenario progress and all eight learning/game storage keys are preserved.
+
+User-authorized imagegen CLI/API generated four square PNGs with gpt-image-2,
+medium quality, requested 1024x1024; actual outputs were 1254x1254. Final RGB
+white-backed files live in assets/scenarios with v1 names, full prompts in
+classroom-commands-v1.prompt.md and repeatable local publishing in
+scripts/build-classroom-command-assets.py. No reference files were uploaded,
+no API Key was checked in, and the webpage has no generation service.
+
+Scenario JS/CSS v2.10/v2.8, data v1.8, workshop/vocabulary v1.14/v1.13,
+total library/overview v1.6/v1.15, Theme/Review JS v2.21/v1.18. Eight notifier
+queries/display imports v1.0.60; Hanzi/Pinyin/IPA entries v1.38/v1.12/v1.37.
+Syntax and 209 Node tests passed. Focused real Microsoft Edge at 1440/390
+verified all five lines, artwork geometry/HTTP 200, aligned IPA, manual/continuous
+playback, five meaning-matching questions, keyboard Enter/touch, wrong retry,
+line/question/word refresh restoration, independent completion, total-library
+learning, no foreign progress writes, no overflow or page errors. Existing
+First Meeting/What Is It? response exercises and Self Introduction were checked.
+Speech uses controlled callbacks; this is not a manual listening certification.
+Ignored tmp screenshots inspected; no unrelated browser suite was run.
+
+Previous **v1.0.59** (2026-10-09), commit `16c5abe`. Attack shortcut capture now
 transfers duplicate attack keys instead of rejecting them. Assigning Xbox X to
 the mushroom automatically clears the ice bomb's gamepad binding; the reverse
 and keyboard transfers work the same way. Only the other attack's same-device
@@ -849,7 +887,7 @@ Damage clears held directions and movement; OS key-repeat cannot restart movemen
 release and a fresh press. Bomb script cache is v1.6. Regression entry points:
 `tests/bomb-browser-acceptance.mjs` and `tests/bomb-session-browser.mjs` (real Microsoft Edge).
 
-Latest addition: Scenario 04, `fruit-tasting` (水果尝一尝 / Fruit Tasting),
+Scenario 04, `fruit-tasting` (水果尝一尝 / Fruit Tasting),
 uses an imagegen six-fruit table scene and six matching fruit focus pictures.
 Mia asks what fruit it is, what color it is, and how it tastes; Leo answers for
 a red sweet-and-crisp apple, yellow sour lemon, green sweet pear, orange, banana,
@@ -936,9 +974,11 @@ In the ChatGPT/Codex desktop app, add the cloned repository as a local project a
 - Entry: `scenario-learning.html`; authoritative lesson data is isolated in `data/scenarios.js`.
 - Scenario 01 is First Meeting: six dialogue lines with complete British IPA and Chinese translations.
 - Scenario 02 is What Is It?: fourteen continuous classroom dialogue lines adapted from the textbook's printed pages 6-7, covering a pen, yellow pencils, a red marker, green erasers, and the final red-eraser correction, with word-aligned British IPA, Chinese translations, and five response-choice questions.
-- The four delivered scenarios contain 80 dialogue lines and 38 practice questions in total. The module has line-by-line learning, Previous/Next navigation, manual-only speech, and wrong-answer retry.
+- The six delivered scenarios contain 97 dialogue lines and 49 practice questions in total. The module has line-by-line learning, Previous/Next navigation, user-started speech, and wrong-answer retry.
 - Scenario 03 is Let's Count!: 24 lines and 12 illustrated questions across six object groups.
 - Scenario 04 is Fruit Tasting: 36 lines and 18 illustrated questions about six fruits, their colors, and sweet, sour or crisp descriptions. The active `assets/scenarios/fruit-table-v2.png` and six fruit-focus PNGs were visually inspected; the original and expansion prompt sets are saved in `assets/scenarios/fruit-tasting-v1.prompt.md` and `assets/scenarios/fruit-expansion-v2.prompt.md`.
+- Scenario 05 is Introducing Ourselves: Mia's six introduction lines, then Leo's six, with six response questions and 17 vocabulary candidates.
+- Scenario 06 is Classroom Commands: five instruction/politeness lines, three action illustrations, five Chinese-to-English questions without Chinese answer labels, and 12 vocabulary candidates. Four imagegen CLI/API assets and their full prompts are checked in under `assets/scenarios/`.
 - Completing every question in one scenario adds a green check only to that scenario card. Schema 3 stores each scenario's line, three-stage tab, and question independently under `scenarioProgress`, while preserving the top-level compatibility aliases and migrating the previous single-scenario state. Progress writes only `mario-scenario-learning-v1` and is not included in the theme learned-word library.
 - Scenario artwork and new lessons are now authored in conversation using the imagegen skill, not through a browser generator. See `SCENARIO_WORKSHOP.md` for the current workflow.
 - New-word matching uses the same shared total word library as overall review. Explicit word learning is stored as `learnedWords` under the existing scenario progress key; dialogue completion alone never marks vocabulary learned.
@@ -946,7 +986,7 @@ In the ChatGPT/Codex desktop app, add the cloned repository as a local project a
 - What Is It? uses `assets/scenarios/what-is-it-classroom-v1.png` (1254×1254 RGB PNG) as both its card artwork and classroom stage. It shows exactly one blue pen, three yellow pencils, one red marker, and three green erasers; Mia and Leo remain separate side overlays so the central stationery stays visible.
 - Each What Is It? line also drives a separate transparent stationery asset on a white circular focus card over the blackboard. When a stationery line starts speaking, its card performs three 1-second scale-breathing cycles and then returns to its normal size. The blue pen, three yellow pencils, red marker, three green erasers, and three red erasers are independently emphasized without covering the actors.
 - English and British IPA are rendered from the same per-word token data, so every displayed word has its own transcription directly underneath it in dialogue and practice choices.
-- New Words is the third tab beside Dialogue and Practice. It follows the active scenario instead of opening a combined library: Scenarios 01–04 expose 16, 19, 22, and 25 candidates respectively. Learning writes only `learnedWords` inside the scenario storage key.
+- New Words is the third tab beside Dialogue and Practice. It follows the active scenario instead of opening a combined library: Scenarios 01–06 expose 16, 19, 22, 25, 17, and 12 candidates respectively. Learning writes only `learnedWords` inside the scenario storage key.
 - Dialogue playback is user-started. “从头重播” reads only the first line and waits for manual Next; “从头连播” restarts at line one and advances on speech-end events. Mia enters first and Leo on line two. A saturated orange-gold contour halo with a tighter blur marks the speaking actor, breathing for three 1-second cycles, then staying steady until speech ends (steady with reduced motion); the right pane shows only the current sentence with British IPA beneath. Pause/navigation/mode switching invalidate stale callbacks; playback completion does not mark words learned. Mobile stacks stage and conversation. `src/scenario-playback.js` controls both modes.
 - The browser generation form and API backend were removed at the user's request. The page makes no generation API calls and needs no API Key; the active-scenario New Words tab and all browser learning progress are retained. Any private `.local-scenarios/` data remains untouched and ignored.
 
@@ -957,7 +997,7 @@ In the ChatGPT/Codex desktop app, add the cloned repository as a local project a
 - Space toggles the current review word's IPA breakdown, using the same click behavior. Entering a round focuses its IPA button; repeated keydown does not retrigger, and sound/answer/navigation controls keep native keyboard behavior. New questions begin collapsed.
 - This is an independent top-level module, not a child page inside Theme Learning.
 - The total word library aggregates words actually learned in Book1, Theme Learning, and Scenario Learning. It reads all three existing progress keys without writing across module boundaries and deduplicates by normalized English spelling.
-- The combined published catalog currently contains 239 unique candidate words. The library and each review round include only the subset actually learned in the current browser profile.
+- The combined published catalog currently contains 251 unique candidate words. The library and each review round include only the subset actually learned in the current browser profile.
 - Theme artwork remains preferred for duplicates, Book1 uses its original word pictures, and scenario words use focused object art when available or a Chinese-meaning choice card when no literal image exists. Reviews keep four unique choices, wrong-answer retry, restart, refresh persistence, desktop and 390px layouts.
 
 ### Bomb maze

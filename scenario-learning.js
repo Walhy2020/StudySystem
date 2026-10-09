@@ -1,5 +1,5 @@
-import { SCENARIOS, scenarioById, scenarioLineById } from "./data/scenarios.js?v=1.7";
-import { initializeScenarioWords } from "./src/scenario-workshop.js?v=1.13";
+import { SCENARIOS, scenarioById, scenarioLineById } from "./data/scenarios.js?v=1.8";
+import { initializeScenarioWords } from "./src/scenario-workshop.js?v=1.14";
 import { createDialoguePlayback } from "./src/scenario-playback.js?v=1.1";
 
 export { SCENARIOS };
@@ -206,7 +206,8 @@ export function renderAlignedSentence(container, line) {
     english.textContent = token.text;
     const phonetic = document.createElement("small");
     phonetic.textContent = token.phonetic;
-    word.append(english, phonetic);
+    word.append(english);
+    if (token.phonetic) word.append(phonetic);
     container.append(word);
   }
 }
@@ -281,7 +282,7 @@ function initializePage() {
     if (focusObject) {
       dom.scenarioObjectImage.src = focusObject.image;
       dom.scenarioObjectImage.alt = focusObject.label;
-      dom.scenarioObjectFocus.setAttribute("aria-label", `重点物品：${focusObject.label}`);
+      dom.scenarioObjectFocus.setAttribute("aria-label", `重点${scenario.focusKind || "物品"}：${focusObject.label}`);
       if (playbackPhase === "speaking") {
         void dom.scenarioObjectFocus.offsetWidth;
         dom.scenarioObjectFocus.classList.add("is-breathing");
@@ -303,7 +304,10 @@ function initializePage() {
   function renderPractice() {
     if (practice.complete) return finishPractice();
     const question = practice.question();
-    const practiceArt = ["counting-pens", "fruit-tasting", "self-introduction"].includes(scenario.id) && scenario.focusObjects?.[question.prompt.focusObject];
+    const meaningMatch = scenario.practiceMode === "chinese-to-english";
+    dom.practicePanel.dataset.practiceMode = scenario.practiceMode || "response";
+    dom.practiceOptionsTitle.textContent = meaningMatch ? "选择对应的英文" : "你会怎么回应？";
+    const practiceArt = ["counting-pens", "fruit-tasting", "self-introduction", "classroom-commands"].includes(scenario.id) && scenario.focusObjects?.[question.prompt.focusObject];
     dom.countingPracticeImage.hidden = !practiceArt;
     if (practiceArt) {
       dom.countingPracticeImage.src = practiceArt.image;
@@ -313,11 +317,14 @@ function initializePage() {
       dom.countingPracticeImage.alt = "";
     }
     dom.practiceProgress.textContent = `${practice.questionIndex + 1}/${scenario.practice.length}`;
-    dom.practiceSpeaker.textContent = question.prompt.speaker;
-    dom.practicePrompt.textContent = question.prompt.text;
-    dom.practicePhonetic.textContent = question.prompt.phonetic;
-    renderAlignedSentence(dom.practiceAligned, question.prompt);
-    dom.speakPractice.setAttribute("aria-label", `朗读问题：${question.prompt.text}`);
+    dom.practiceSpeaker.textContent = meaningMatch ? "中文提示" : question.prompt.speaker;
+    const displayedPrompt = meaningMatch
+      ? { text: question.prompt.chinese, phonetic: "", tokens: [{ text: question.prompt.chinese }] }
+      : question.prompt;
+    dom.practicePrompt.textContent = displayedPrompt.text;
+    dom.practicePhonetic.textContent = displayedPrompt.phonetic;
+    renderAlignedSentence(dom.practiceAligned, displayedPrompt);
+    dom.speakPractice.setAttribute("aria-label", `${meaningMatch ? "听英文提示" : "朗读问题"}：${question.prompt.text}`);
     dom.practiceFeedback.textContent = scenario.practiceInstruction || "选择最合适的回应。";
     dom.practiceFeedback.className = "practice-feedback";
     dom.responseOptions.replaceChildren();
@@ -331,7 +338,8 @@ function initializePage() {
       renderAlignedSentence(aligned, line);
       const chinese = document.createElement("small");
       chinese.textContent = line.chinese;
-      button.append(aligned, chinese);
+      button.append(aligned);
+      if (!meaningMatch) button.append(chinese);
       button.addEventListener("click", () => answerPractice(button));
       dom.responseOptions.append(button);
     }
@@ -342,7 +350,8 @@ function initializePage() {
     const result = practice.answer(button.dataset.answerId);
     if (result.status === "wrong") {
       button.classList.add("is-wrong");
-      dom.practiceFeedback.textContent = "再想一想，这句回应还不合适。";
+      dom.practiceFeedback.textContent = scenario.practiceMode === "chinese-to-english"
+        ? "再想一想，这句英文与中文提示不对应。" : "再想一想，这句回应还不合适。";
       dom.practiceFeedback.className = "practice-feedback is-wrong";
       return;
     }

@@ -4669,11 +4669,13 @@
     const error = bindings.conflict(state, action, device, value);
     if (error) { bindingStatus.textContent = error; return; }
     claimBombProgress();
-    state[action + (device === "keyboard" ? "Key" : "GamepadButton")] = value;
+    const { clearedAction } = bindings.assign(state, action, device, value);
     bindingCapture = null; captureNeutral = false;
     clearInputState(); window.STUDY_GAMEPAD_CURSOR?.resetInput();
     window.STUDY_GAMEPAD_CURSOR?.setInputCapture(false);
-    bindingStatus.textContent = "绑定成功，松开按键后可继续操作。";
+    bindingStatus.textContent = clearedAction
+      ? `绑定成功，${clearedAction === "mushroom" ? "小蘑菇" : "冰炸弹"}的${device === "keyboard" ? "键盘" : "手柄"}绑定已清空。松开按键后可继续操作。`
+      : "绑定成功，松开按键后可继续操作。";
     updateAttackUi(); saveBombProgress();
   }
   for (const [action, input] of [["mushroom", mushroomKeyInput], ["iceBomb", iceBombKeyInput]]) {

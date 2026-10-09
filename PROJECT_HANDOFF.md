@@ -1,13 +1,31 @@
 # StudySystem cross-device handoff
 
-Last updated: 2026-10-08
+Last updated: 2026-10-09
 Repository: `https://github.com/Walhy2020/StudySystem.git`
 Branch: `main`
 Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.58** (2026-10-08). New Scenario 05,
+System display version: **v1.0.59** (2026-10-09). Attack shortcut capture now
+transfers duplicate attack keys instead of rejecting them. Assigning Xbox X to
+the mushroom automatically clears the ice bomb's gamepad binding; the reverse
+and keyboard transfers work the same way. Only the other attack's same-device
+slot is cleared. An explicit null displays as "未设置" and survives refresh,
+without restoring a default button. Reserved movement/menu/system controls,
+neutral-before-capture, cancellation, pause/input-leak safeguards and legacy
+invalid/missing-binding migration remain unchanged. Progress still uses only
+the existing bomb storage key; no learning-module schema changes.
+Bomb JS v2.40, bindings v1.2; eight notifier queries/display imports v1.0.59;
+Hanzi/Pinyin/IPA entry caches v1.37/v1.11/v1.36. Syntax and 205 Node tests passed.
+Focused real Microsoft Edge acceptance at 1440/390 used a simulated standard
+Xbox controller: both transfer directions, null reload, exclusive X mushroom
+attack, reserved controls, cancellation/held-button/multi-button capture,
+paused gameplay, input isolation, touch/keyboard use, HTTP 200, no page errors
+or horizontal overflow. Ignored tmp screenshots inspected; physical-controller
+operation is not claimed and no unrelated browser suite was run.
+
+Previous **v1.0.58** (2026-10-08), commit `c3a3d3d`. New Scenario 05,
 "介绍一下自己 / Introducing Ourselves" (`self-introduction`): Mia introduces
 herself first with six short lines (name, age 8, Beijing, pen, apple, flower),
 then Leo uses the same patterns (age 9, Lujiang, pencil, banana, flower).

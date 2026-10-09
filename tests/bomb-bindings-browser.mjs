@@ -13,7 +13,7 @@ try {
     await context.addInitScript(() => {
       let callbacks = [], now;
       window.requestAnimationFrame = cb => { callbacks.push(cb); return callbacks.length; };
-      window.__pad = { index: 0, id: "Standard PS5 fixture", mapping: "standard", connected: true,
+      window.__pad = { index: 0, id: "Xbox standard fixture", mapping: "standard", connected: true,
         axes: [0, 0, 0, 0], buttons: Array.from({ length: 18 }, () => ({ pressed: false, value: 0 })) };
       Object.defineProperty(navigator, "getGamepads", { value: () => [window.__pad] });
       window.__advance = seconds => {
@@ -67,12 +67,20 @@ try {
     await capture("#mushroomAttackKey"); await page.keyboard.press("KeyJ");
     assert.equal((await read()).mushroomKey, "KeyJ");
     await capture("#iceBombAttackKey"); await page.keyboard.press("KeyJ");
-    assert.match(await page.locator("#bombBindingStatus").innerText(), /已绑定小蘑菇/);
-    assert.equal((await read()).iceBombKey, "KeyB");
+    assert.match(await page.locator("#bombBindingStatus").innerText(), /小蘑菇的键盘绑定已清空/);
+    assert.equal((await read()).mushroomKey, null);
+    assert.equal((await read()).iceBombKey, "KeyJ");
+    assert.match(await page.locator("#mushroomAttackKey").innerText(), /键盘：未设置/);
+    await page.reload(); await advance();
+    assert.equal((await read()).mushroomKey, null, "cleared keyboard survives refresh");
+    await page.locator("#overlayStartBombGame").click(); await advance(); await settings();
+    await capture("#mushroomAttackKey"); await page.keyboard.press("KeyJ");
+    assert.equal((await read()).iceBombKey, null);
+    await capture("#iceBombAttackKey");
     for (const input of ["KeyW", "ArrowUp", "Enter", "Control+KeyK"]) {
       await page.keyboard.press(input);
       assert.equal(await page.locator("#iceBombAttackKey").getAttribute("aria-pressed"), "true");
-      assert.equal((await read()).iceBombKey, "KeyB");
+      assert.equal((await read()).iceBombKey, null);
     }
     await page.keyboard.press("Digit1"); assert.equal((await read()).iceBombKey, "Digit1");
     await capture("#mushroomAttackKey"); await page.keyboard.press("Escape");
@@ -81,6 +89,7 @@ try {
     assert.equal(await page.locator("#mushroomAttackKey").getAttribute("aria-pressed"), "false");
 
     // Held menu-confirm button is not captured, and independent cursor RAF is blocked.
+    const beforeControllerCapture = await read();
     await button(0, true); await capture("#mushroomAttackKey"); await advance();
     assert.equal(await page.locator("#mushroomAttackKey").getAttribute("aria-pressed"), "true");
     await button(0, false); await advance();
@@ -97,11 +106,36 @@ try {
     await button(2, false); await button(10, false); await advance();
     await tap(2); assert.equal((await read()).mushroomGamepadButton, 2);
     await capture("#iceBombAttackKey"); await tap(2);
-    assert.match(await page.locator("#bombBindingStatus").innerText(), /已绑定小蘑菇/);
+    assert.match(await page.locator("#bombBindingStatus").innerText(), /小蘑菇的手柄绑定已清空/);
+    assert.equal((await read()).mushroomGamepadButton, null);
+    await capture("#mushroomAttackKey"); await tap(2);
+    assert.equal((await read()).mushroomGamepadButton, 2);
+    assert.equal((await read()).iceBombGamepadButton, null);
+    assert.match(await page.locator("#iceBombAttackKey").innerText(), /手柄：未设置/);
+    assert.match(await page.locator("#bombBindingStatus").innerText(), /冰炸弹的手柄绑定已清空/);
+    assert.equal((await read()).dayClock, beforeControllerCapture.dayClock, "capture stays paused");
+    assert.equal((await read()).mushroomShots.length, 0);
+    assert.equal((await read()).bombs.length, 0);
+    await page.screenshot({ path: `tmp/bomb-bindings-transferred-${width}.png` });
+    await page.reload(); await advance();
+    assert.equal((await read()).iceBombGamepadButton, null, "cleared controller survives refresh");
+    assert.equal((await read()).mushroomGamepadButton, 2);
+    await page.locator("#overlayStartBombGame").click(); await advance();
+    await tap(2);
+    assert.equal((await read()).mushroomShots.length, 1, "Xbox X fires mushroom only");
+    assert.equal((await read()).bombs.length, 0, "unbound ice attack does not fire");
+    await settings();
+    // Remove the deliberate post-refresh test shot without changing the paused fixture.
+    const cleared = await read(); cleared.mushroomShots = [];
+    await page.evaluate(({ key, cleared }) => localStorage.setItem(key, JSON.stringify(cleared)), { key, cleared });
+    await page.reload(); await advance();
+    await page.locator("#overlayStartBombGame").click(); await advance(); await settings();
+    const afterShotPaused = await read();
+    await capture("#iceBombAttackKey");
     await tap(10); assert.equal((await read()).iceBombGamepadButton, 10);
     assert.equal((await read()).mushroomShots.length, 0);
     assert.equal((await read()).bombs.length, 0);
-    assert.equal((await read()).dayClock, paused.dayClock);
+    assert.equal((await read()).dayClock, afterShotPaused.dayClock);
     assert.equal((await read()).hp, paused.hp);
     assert.deepEqual((await read()).map, paused.map);
     await capture("#mushroomAttackKey"); await page.screenshot({ path: `tmp/bomb-bindings-capture-${width}.png` });
@@ -131,11 +165,11 @@ try {
     assert.ok(rect.x >= 0 && rect.x + rect.width <= width && rect.y >= 0 && rect.y + rect.height <= (width === 390 ? 500 : 900));
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
     await page.screenshot({ path: `tmp/bomb-bindings-menu-${width}.png` });
-    for (const resource of ["bomb-game.css?v=1.9", "bomb-game.js?v=2.34", "src/bomb-bindings.js?v=1.1", "src/bomb-gamepad.js?v=1.4", "src/gamepad-cursor.js?v=1.10"]) {
+    for (const resource of ["bomb-game.css?v=1.9", "bomb-game.js?v=2.40", "src/bomb-bindings.js?v=1.2", "src/bomb-gamepad.js?v=1.4", "src/gamepad-cursor.js?v=1.10"]) {
       assert.equal((await page.request.get(base + resource)).status(), 200);
     }
     assert.deepEqual(errors, []);
-    results.push({ width, keyboardCapture: true, controllerCapture: true, conflictsRejected: true,
+    results.push({ width, keyboardCapture: true, controllerCapture: true, conflictsTransferred: true, clearedPersisted: true,
       reservedSuppressed: true, noInputLeak: true, persisted: true, constantCyan: true, geometry: true });
     await context.close();
   }

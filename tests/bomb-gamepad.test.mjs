@@ -28,6 +28,19 @@ test("自定义手柄攻击只响应新按钮，捕捉期间仅返回原始按�
   assert.equal(h.reader.poll().ice, false, "capture press cannot leak into gameplay");
 });
 
+test("清空手柄攻击绑定不恢复默认，也不影响另一个攻击", () => {
+  const h = harness(); h.reader.setBindings(2, null); h.reader.poll();
+  for (const index of [0, 1, 2, 10]) {
+    h.button(index, true); const result = h.reader.poll();
+    assert.equal(result.mushroom, index === 2);
+    assert.equal(result.ice, false);
+    h.button(index, false); h.reader.poll();
+  }
+  h.reader.setBindings(null, 2); h.reader.poll();
+  h.button(2, true); const result = h.reader.poll();
+  assert.equal(result.mushroom, false); assert.equal(result.ice, true);
+});
+
 test("左摇杆只瞄准、十字键只移动，死区和主轴避免斜移", () => {
   const h = harness(); h.reader.poll();
   h.pad.axes = [0.2, -0.2]; assert.equal(h.reader.poll().direction, "");

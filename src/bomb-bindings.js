@@ -9,30 +9,40 @@
   }
   function validButton(index) { return Number.isInteger(index) && index >= 0 && index <= 31 && !reservedButtons.has(index); }
   function keyLabel(code) {
+    if (code === null) return "未设置";
     if (code === "Space") return "空格";
     if (/^Key/.test(code)) return code.slice(3);
     if (/^Digit/.test(code)) return code.slice(5);
     return code.replace(/^Numpad/, "小键盘 ");
   }
   function buttonLabel(index) {
+    if (index === null) return "未设置";
     return ({ 0: "× / A", 1: "○ / B", 2: "□ / X", 3: "△ / Y", 4: "L1", 5: "R1", 6: "L2", 7: "R2",
       8: "Share / Select", 9: "Options / Start", 10: "L3", 11: "R3" })[index] || `手柄键 ${index}`;
   }
   function restore(saved) {
-    const mushroomKey = validKey(saved.mushroomKey) ? saved.mushroomKey : "Space";
-    const iceBombKey = validKey(saved.iceBombKey) && saved.iceBombKey !== mushroomKey
+    const mushroomKey = saved.mushroomKey === null ? null : validKey(saved.mushroomKey) ? saved.mushroomKey : "Space";
+    const iceBombKey = saved.iceBombKey === null ? null : validKey(saved.iceBombKey) && saved.iceBombKey !== mushroomKey
       ? saved.iceBombKey : mushroomKey === "KeyB" ? "Space" : "KeyB";
-    const mushroomGamepadButton = validButton(saved.mushroomGamepadButton) ? saved.mushroomGamepadButton : 0;
-    const iceBombGamepadButton = validButton(saved.iceBombGamepadButton) && saved.iceBombGamepadButton !== mushroomGamepadButton
+    const mushroomGamepadButton = saved.mushroomGamepadButton === null ? null : validButton(saved.mushroomGamepadButton) ? saved.mushroomGamepadButton : 0;
+    const iceBombGamepadButton = saved.iceBombGamepadButton === null ? null : validButton(saved.iceBombGamepadButton) && saved.iceBombGamepadButton !== mushroomGamepadButton
       ? saved.iceBombGamepadButton : mushroomGamepadButton === 1 ? 0 : 1;
     return { mushroomKey, iceBombKey, mushroomGamepadButton, iceBombGamepadButton };
   }
   function conflict(state, action, device, value) {
     if (device === "keyboard" && !validKey(value)) return "该键已用于移动/系统操作，或不支持单键绑定，请换一个键。";
     if (device === "gamepad" && !validButton(value)) return `${buttonLabel(value)} 已用于${reservedButtons.get(value) || "系统操作"}，请换一个按钮。`;
+    return "";
+  }
+  function assign(state, action, device, value) {
+    const error = conflict(state, action, device, value);
+    if (error) return { error, clearedAction: "" };
     const other = action === "mushroom" ? "iceBomb" : "mushroom";
     const suffix = device === "keyboard" ? "Key" : "GamepadButton";
-    return state[other + suffix] === value ? `该按键已绑定${other === "mushroom" ? "小蘑菇" : "冰炸弹"}，请换一个按键。` : "";
+    const clearedAction = state[other + suffix] === value ? other : "";
+    if (clearedAction) state[other + suffix] = null;
+    state[action + suffix] = value;
+    return { error: "", clearedAction };
   }
-  globalThis.BombBindings = Object.freeze({ validKey, validButton, keyLabel, buttonLabel, restore, conflict });
+  globalThis.BombBindings = Object.freeze({ validKey, validButton, keyLabel, buttonLabel, restore, conflict, assign });
 }());

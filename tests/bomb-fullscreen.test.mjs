@@ -46,5 +46,5 @@ test("待处理的全屏请求不重复发起，学习页不再创建授权弹�
   const cursor = readFileSync(new URL("../src/gamepad-cursor.js", import.meta.url), "utf8");
   assert.doesNotMatch(cursor, /showFullscreenPrompt|fullscreenPrompt|全屏授权/);
   assert.doesNotMatch(cursor, /requestFullscreen\(\)/);
-  assert.match(cursor, /back: pressed\(pad, 7\)/);
+  assert.match(cursor, /back: pressed\(pad, 5\), fullscreen: pressed\(pad, 7\)/);
 });

@@ -90,9 +90,9 @@ try {
     await page.goto(base + "theme-learning.html?cursor=1"); await advance(0.05);
     await aim('[data-series-id="festivals"]');
     const scrollBefore = await page.locator("#themeSeriesList").evaluate(node => node.scrollLeft);
-    await tap(5);
+    await tap(6);
     const scrollAfter = await page.locator("#themeSeriesList").evaluate(node => node.scrollLeft);
-    assert.ok(scrollAfter > scrollBefore, "RB scrolls the horizontal theme list");
+    assert.ok(scrollAfter > scrollBefore, "L2 scrolls the horizontal theme list");
     await page.locator('[data-series-id="basics"]').scrollIntoViewIfNeeded();
     await aim('[data-series-id="basics"]'); await tap();
     await aim('[data-theme-id="body"]'); await tap();

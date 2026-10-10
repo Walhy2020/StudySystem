@@ -51,9 +51,9 @@ test("左摇杆只瞄准、十字键只移动，死区和主轴避免斜移", ()
   h.button(15, true); assert.equal(h.reader.poll().direction, "");
 });
 
-test("手柄攻击/确认/R1只在新按下触发一次，R2由共享返回入口处理", () => {
+test("手柄攻击/确认只在新按下触发一次，R1/R2由共享入口处理", () => {
   const h = harness(); h.reader.poll();
-  for (const [index, action] of [[0, "mushroom"], [1, "ice"], [9, "confirm"], [5, "refresh"]]) {
+  for (const [index, action] of [[0, "mushroom"], [1, "ice"], [9, "confirm"]]) {
     h.button(index, true); assert.equal(h.reader.poll()[action], true);
     assert.equal(h.reader.poll()[action], false);
     h.button(index, false); h.reader.poll();
@@ -89,10 +89,10 @@ test("连接、受伤重置、暂停和重连时按住不误动作，必须回�
   h.pad.axes = [1, 0]; h.connect([h.pad]); assert.equal(h.reader.poll().direction, "");
 });
 
-test("菜单中R1/R2可用、战斗禁用，失焦或重连后按住不重触发", () => {
+test("战斗读入器不重复处理R1/R2，菜单禁用攻击", () => {
   const h = harness(); h.reader.poll(false, true);
   h.button(5, true); h.button(0, true);
-  assert.equal(h.reader.poll(false, true).refresh, true);
+  assert.equal(h.reader.poll(false, true).refresh, false);
   assert.equal(h.reader.poll(false, true).mushroom, false);
   assert.equal(h.reader.poll(false, true).refresh, false);
   h.reader.poll(false, false);

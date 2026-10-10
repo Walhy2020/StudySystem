@@ -146,7 +146,7 @@ try {
       await page.setViewportSize({ width, height: 900 });
     }
     await page.screenshot({ path: `tmp/bomb-gamepad-help-${width}.png` });
-    // Fullscreen now uses its settings button; R2 return has a separate focused check.
+    // Explicit fullscreen button remains available; R1/R2 have a focused check.
     await page.evaluate(() => {
       window.__fullCalls = [];
       document.querySelector(".bomb-game-app").requestFullscreen = async () => { window.__fullCalls.push("enter"); };
@@ -161,9 +161,9 @@ try {
     });
     await page.locator("#bombSettingsToggle").click(); await page.locator("#bombFullscreenToggle").click(); assert.equal(await page.locator("#bombMessage").isVisible(), false);
     assert.equal(await page.locator("#bombSettingsMenu").isVisible(), true);
-    // R1 really navigates/reloads the page and keeps progress behind the Continue gate.
+    // Browser reload keeps progress behind the Continue gate; R1 no longer reloads.
     const beforeRefresh = await read();
-    await Promise.all([page.waitForEvent("load"), button(5, true).then(() => advance(0.02))]);
+    await page.reload();
     await advance(0.02);
     assert.equal(await page.evaluate(() => window.__BOMB_GAME__.isAwaitingContinue()), true);
     assert.deepEqual((await read()).player, beforeRefresh.player);

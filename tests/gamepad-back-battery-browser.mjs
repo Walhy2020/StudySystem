@@ -6,13 +6,14 @@ const browser = await (await loadChromium()).launch({ headless: true,
   executablePath: "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe" });
 fs.mkdirSync("tmp", { recursive: true });
 const results = [];
+const shortcutsOnly = process.argv.includes("--shortcuts-only");
 try {
   for (const width of [1440, 390]) {
     const context = await browser.newContext({ viewport: { width, height: 844 }, hasTouch: width === 390 });
     await context.addInitScript(() => {
       window.__pad = { index: 0, id: "Xbox Wireless Controller (XInput)", connected: true, mapping: "standard",
         axes: [0, 0, 0, 0], buttons: Array.from({ length: 17 }, () => ({ pressed: false, value: 0 })) };
-      if (location.search.includes("held")) window.__pad.buttons[7] = { pressed: true, value: 1 };
+      if (location.search.includes("held")) window.__pad.buttons[location.search.includes("fullscreen") ? 7 : 5] = { pressed: true, value: 1 };
       Object.defineProperty(navigator, "getGamepads", { value: () => window.__pad.connected ? [window.__pad] : [] });
       window.__hidRequests = 0;
       const hid = new EventTarget(); hid.getDevices = async () => [];
@@ -32,22 +33,22 @@ try {
       await page.waitForFunction(() => window.STUDY_GAMEPAD_CURSOR);
       await page.waitForTimeout(100);
     }
-    const setR2 = down => page.evaluate(down => { window.__pad.buttons[7] = { pressed: down, value: down ? 1 : 0 }; }, down);
+    const setR1 = down => page.evaluate(down => { window.__pad.buttons[5] = { pressed: down, value: down ? 1 : 0 }; }, down);
     async function back() {
-      await setR2(false); await page.waitForTimeout(80);
-      await setR2(true); await page.waitForTimeout(100);
+      await setR1(false); await page.waitForTimeout(80);
+      await setR1(true); await page.waitForTimeout(100);
       // A destination must re-arm only after release, even across navigation.
-      await setR2(false); await page.waitForTimeout(100);
+      await setR1(false); await page.waitForTimeout(100);
     }
     const home = () => page.waitForURL(/index\.html$/);
     await load("scenario-learning", "?held=1");
     assert.ok(await page.locator("#scenarioPicker").isVisible(), "held-on-connect must not return home");
-    await setR2(false); await page.waitForTimeout(100);
+    await setR1(false); await page.waitForTimeout(100);
     await page.locator(".scenario-card button").first().click();
-    await setR2(true); await page.waitForTimeout(300);
+    await setR1(true); await page.waitForTimeout(300);
     assert.ok(await page.locator("#scenarioPicker").isVisible());
     assert.match(page.url(), /scenario-learning/); // No hold cascade to home.
-    await setR2(false); await page.waitForTimeout(100); await back(); await home();
+    await setR1(false); await page.waitForTimeout(100); await back(); await home();
     await load("theme-learning");
     await page.locator('[data-series-id="basics"]').click(); await page.locator("#startTheme").click();
     await back(); assert.ok(await page.locator("#backToSeries").isVisible());
@@ -60,7 +61,7 @@ try {
     }
     await load("index"); await back(); assert.match(page.url(), /index\.html$/);
     assert.equal(await page.evaluate(() => window.__fullscreenRequests), 0);
-    // Actual fullscreen, with R2 inner/home returns staying inside its owner/frame.
+    // Actual fullscreen, with R1 inner/home returns staying inside its owner/frame.
     await load("bomb-game"); await page.locator("#bombSettingsToggle").click();
     await page.locator("#bombFullscreenToggle").click();
     await page.waitForFunction(() => document.fullscreenElement);
@@ -74,19 +75,55 @@ try {
     await frame.locator(".scenario-card button").first().click();
     await frame.waitForTimeout(150);
     const frameBack = async () => {
-      await frame.evaluate(() => { window.__pad.buttons[7] = { pressed: false, value: 0 }; });
+      await frame.evaluate(() => { window.__pad.buttons[5] = { pressed: false, value: 0 }; });
       await frame.waitForTimeout(80);
-      await frame.evaluate(() => { window.__pad.buttons[7] = { pressed: true, value: 1 }; });
+      await frame.evaluate(() => { window.__pad.buttons[5] = { pressed: true, value: 1 }; });
       await frame.waitForTimeout(100);
-      await frame.evaluate(() => { window.__pad.buttons[7] = { pressed: false, value: 0 }; });
+      await frame.evaluate(() => { window.__pad.buttons[5] = { pressed: false, value: 0 }; });
       await frame.waitForTimeout(100);
     };
-    await frameBack(); assert.ok(await frame.locator("#scenarioPicker").isVisible());
+    await frameBack(); await frame.locator("#scenarioPicker").waitFor({ state: "visible" });
     assert.ok(await page.evaluate(() => Boolean(document.fullscreenElement)));
     await frameBack(); await page.waitForURL(/index\.html$/);
     assert.ok(await page.evaluate(() => Boolean(document.fullscreenElement)));
     await page.evaluate(() => document.exitFullscreen());
     await page.waitForSelector("#study-module-frame", { state: "detached" });
+    // Native R2 fullscreen on every page: single edge, no menu or navigation side effect.
+    for (const name of ["index", "pinyin", "phonetics", "book-learning", "theme-learning", "scenario-learning", "review-learning", "bomb-game"]) {
+      await load(name, "?held-fullscreen=1");
+      assert.equal(await page.evaluate(() => window.__fullscreenRequests), 0);
+      await page.evaluate(() => { window.__pad.buttons[7] = { pressed: false, value: 0 }; });
+      await page.waitForTimeout(80);
+      await page.evaluate(() => {
+        const button = document.createElement("button"); button.id = "activateFullscreenTest";
+        button.textContent = "Activate"; button.style.cssText = "position:fixed;top:0;left:0;z-index:2147483647";
+        document.body.append(button);
+      });
+      await page.locator("#activateFullscreenTest").click();
+      await page.evaluate(() => { document.getElementById("activateFullscreenTest").remove(); window.__pad.buttons[7] = { pressed: true, value: 1 }; });
+      await page.waitForFunction(() => Boolean(document.fullscreenElement));
+      await page.waitForTimeout(200);
+      assert.equal(await page.evaluate(() => window.__fullscreenRequests), 1, `${name}: no duplicate or held request`);
+      if (name === "bomb-game") assert.ok(await page.locator("#bombSettingsMenu").isHidden());
+      await page.evaluate(() => { window.__pad.buttons[7] = { pressed: false, value: 0 }; });
+      await page.waitForTimeout(80);
+      await page.evaluate(() => { window.__pad.buttons[7] = { pressed: true, value: 1 }; });
+      await page.waitForFunction(() => !document.fullscreenElement);
+      await page.evaluate(() => { window.__pad.buttons[7] = { pressed: false, value: 0 }; });
+      await page.waitForTimeout(80);
+      assert.equal(new URL(page.url()).pathname, `/${name}.html`);
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+      if (name === "scenario-learning") await page.screenshot({ path: `tmp/gamepad-shortcuts-${width}.png` });
+    }
+    // Capture and focus denial never leak a held R2 into the next active frame.
+    await page.evaluate(() => { window.STUDY_GAMEPAD_CURSOR.setInputCapture(true); window.__pad.buttons[7] = { pressed: true, value: 1 }; });
+    await page.waitForTimeout(100);
+    assert.equal(await page.evaluate(() => window.__fullscreenRequests), 1);
+    await page.evaluate(() => { window.STUDY_GAMEPAD_CURSOR.setInputCapture(false); });
+    await page.waitForTimeout(100);
+    assert.equal(await page.evaluate(() => window.__fullscreenRequests), 1);
+    await page.evaluate(() => { window.__pad.buttons[7] = { pressed: false, value: 0 }; });
+    if (!shortcutsOnly) {
     await load("bomb-game");
     await page.locator("#bombSettingsToggle").click();
     const battery = page.locator("#bombGamepadBattery");
@@ -116,11 +153,12 @@ try {
     await page.locator("#bombSettingsToggle").click();
     await page.screenshot({ path: `tmp/gamepad-back-settings-${width}.png` });
     await back(); await back(); await home();
+    }
     assert.deepEqual(errors, []);
-    for (const resource of ["src/gamepad-cursor.js?v=1.11", "src/bomb-gamepad.js?v=1.5", "src/bomb-gamepad-battery.js?v=1.1", "bomb-game.css?v=1.10", "bomb-game.js?v=2.41"]) {
+    for (const resource of ["src/gamepad-cursor.js?v=1.12", "src/bomb-gamepad.js?v=1.6", "src/bomb-gamepad-battery.js?v=1.1", "bomb-game.css?v=1.10", "bomb-game.js?v=2.42"]) {
       assert.equal((await page.request.get(base + resource)).status(), 200, resource);
     }
-    results.push({ width, backLevels: true, fullscreenPreserved: true, xboxBatteryUI: "mocked XInput levels", settingsFit: true });
+    results.push({ width, r1BackLevels: true, r2NativeFullscreenPages: 8, fullscreenPreserved: true, batteryChecks: !shortcutsOnly });
     await context.close();
   }
   console.log(JSON.stringify({ ok: true, browser: "Microsoft Edge", physicalControllerTested: false, results }));

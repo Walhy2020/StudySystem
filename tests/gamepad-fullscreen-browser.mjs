@@ -1,3 +1,3 @@
-// Compatibility entry: R2 changed from fullscreen to hierarchical back in v1.0.61.
-// The focused replacement also verifies that returning preserves fullscreen.
+// Focused R1-back/R2-fullscreen check; unrelated battery regression is excluded.
+process.argv.push("--shortcuts-only");
 import "./gamepad-back-battery-browser.mjs";

@@ -1,13 +1,37 @@
 # StudySystem cross-device handoff
 
-Last updated: 2026-10-09
+Last updated: 2026-10-10
 Repository: `https://github.com/Walhy2020/StudySystem.git`
 Branch: `main`
 Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.61** (2026-10-09). R2 / Xbox RT now returns one
+System display version: **v1.0.62** (2026-10-10). Latest user mapping supersedes
+v1.0.61: R1 / Xbox RB returns one internal level per fresh press; R2 / Xbox RT
+toggles native fullscreen on all eight pages. R1 no longer reloads the bomb page
+or scrolls learning pages. L2 / LT keeps menu scrolling; stick edge-scroll remains.
+Shared cursor owns both shoulders; bomb delegates fullscreen through one event
+to its existing save/pause/focus handler, avoiding duplicate requests. Returning
+keeps the fullscreen shell; held/connect/focus/capture guards remain. Browser
+fullscreen denial stays a real denial, without page prompts or auto-settings.
+Battery implementation, source learning records and progress schemas are unchanged.
+System mouse mode is NOT implemented; the user is being asked whether the intended
+unused left function key is Xbox View (standard index 8, not index 7 = R2 / RT).
+
+Bomb JS v2.42, cursor v1.12, reader v1.6, bindings v1.4; eight notifier/display
+imports v1.0.62; Hanzi/Pinyin/IPA entry caches v1.40/v1.14/v1.39. Syntax and 212
+Node tests passed. Only gamepad-back-battery-browser.mjs --shortcuts-only ran
+in real Microsoft Edge at 1440/390: R1 layered return/home and held safeguards,
+R2 native entry/exit on eight pages, no duplicate bomb handler/menu, capture guards,
+fullscreen-preserving inner/home routing, resources/overflow and page errors.
+Standard controller input was simulated, not a physical-button certification.
+Ignored screenshots inspected; existing tracked PNG changes preserved/excluded.
+No battery regression or unrelated module learning/browser suite ran. These static
+updates need only page refresh, not a server restart; the v1.0.61 battery endpoint
+still needs one restart if the inherited old server is being used.
+
+Previous **v1.0.61** (2026-10-09). R2 / Xbox RT now returns one
 internal level per fresh press rather than toggling fullscreen. Scenario content
 returns to its picker; Theme content returns to theme list, then series list;
 Book1 returns to letter groups. The outer level returns to index.html; at home

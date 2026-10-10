@@ -2,18 +2,18 @@
   const DEADZONE = 0.35;
 
   function createBombGamepadReader(getGamepads = () => navigator.getGamepads?.() || []) {
-    let identity = "", armed = false, previous = {}, systemArmed = false, systemPrevious = {};
+    let identity = "", armed = false, previous = {};
     let attackButtons = { mushroom: 0, ice: 1 };
     const pressed = (pad, index) => Boolean(pad.buttons?.[index]?.pressed || pad.buttons?.[index]?.value > 0.5);
     function reset() { armed = false; previous = {}; }
-    function poll(enabled = true, systemEnabled = enabled) {
+    function poll(enabled = true) {
       let pads;
       try { pads = Array.from(getGamepads() || []).filter(pad => pad?.connected !== false && pad); }
       catch { pads = []; }
       const pad = pads.find(pad => `${pad.index}:${pad.id}` === identity && pad.mapping === "standard")
         || pads.find(pad => pad.mapping === "standard") || pads[0];
       const nextIdentity = pad ? `${pad.index}:${pad.id}` : "";
-      if (nextIdentity !== identity) { identity = nextIdentity; reset(); systemArmed = false; systemPrevious = {}; }
+      if (nextIdentity !== identity) { identity = nextIdentity; reset(); }
       const result = { connected: Boolean(pad), standard: pad?.mapping === "standard",
         direction: "", aim: "", mushroom: false, ice: false, confirm: false, refresh: false, fullscreen: false, pressedButtons: [] };
       if (!pad || !result.standard) { reset(); return result; }
@@ -25,14 +25,9 @@
       const direction = directions.length === 1 ? directions[0] : "";
       const aim = Math.max(Math.abs(x), Math.abs(y)) >= DEADZONE
         ? (Math.abs(x) > Math.abs(y) ? (x > 0 ? "right" : "left") : (y > 0 ? "down" : "up")) : "";
-      // R2 return is owned by the shared cursor, including while menus are open.
-      const systemButtons = { refresh: pressed(pad, 5) };
-      if (!systemEnabled) systemArmed = false;
-      else if (!systemArmed) { if (!Object.values(systemButtons).some(Boolean)) systemArmed = true; }
-      else for (const key of Object.keys(systemButtons)) result[key] = systemButtons[key] && !systemPrevious[key];
-      systemPrevious = systemButtons;
+      // Shared cursor owns R1 return and R2 fullscreen, never browser refresh.
       const buttons = { mushroom: pressed(pad, attackButtons.mushroom), ice: pressed(pad, attackButtons.ice), confirm: pressed(pad, 9) };
-      const neutral = !aim && !directions.length && !Object.values(buttons).some(Boolean) && !Object.values(systemButtons).some(Boolean) && !pressed(pad, 7);
+      const neutral = !aim && !directions.length && !Object.values(buttons).some(Boolean) && !pressed(pad, 5) && !pressed(pad, 7);
       if (!enabled) { reset(); return result; }
       if (!armed) {
         if (neutral) armed = true;

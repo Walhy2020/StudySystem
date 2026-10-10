@@ -22,7 +22,7 @@ test("键盘和手柄捕捉支持单键，允许转移攻击键但拒绝保留�
   for (const index of [-1, 3, 4, 5, 6, 7, 9, 11, 12, 13, 14, 15, 16, 32, NaN]) assert.equal(b.validButton(index), false);
   assert.equal(b.conflict(state, "mushroom", "keyboard", "KeyB"), "");
   assert.equal(b.conflict(state, "iceBomb", "gamepad", 0), "");
-  assert.match(b.conflict(state, "mushroom", "gamepad", 5), /刷新/);
+  assert.match(b.conflict(state, "mushroom", "gamepad", 5), /返回/);
   assert.equal(b.conflict(state, "mushroom", "gamepad", 2), "");
   assert.equal(b.conflict(state, "mushroom", "keyboard", "Space"), "");
   assert.deepEqual(state, before);
@@ -42,7 +42,7 @@ test("攻击绑定转移仅清空另一攻击的同设备槽，空绑定刷新�
   assert.equal(b.keyLabel(null), "未设置");
   assert.deepEqual(b.restore(state), state);
   const before = structuredClone(state);
-  assert.match(b.assign(state, "mushroom", "gamepad", 5).error, /刷新/);
+  assert.match(b.assign(state, "mushroom", "gamepad", 5).error, /返回/);
   assert.match(b.assign(state, "mushroom", "keyboard", "KeyW").error, /移动/);
   assert.deepEqual(state, before);
   assert.equal(b.assign(state, "mushroom", "keyboard", "KeyB").clearedAction, "");
@@ -52,7 +52,7 @@ test("攻击绑定转移仅清空另一攻击的同设备槽，空绑定刷新�
 
 test("页面接入捕捉按钮、同步前验证和固定青色箭头", () => {
   const html = readFileSync(new URL("../bomb-game.html", import.meta.url), "utf8");
-  assert.match(html, /src\/bomb-bindings.js\?v=1.3/);
+  assert.match(html, /src\/bomb-bindings.js\?v=1.4/);
   assert.match(html, /<button id="mushroomAttackKey"/);
   assert.match(html, /<button id="iceBombAttackKey"/);
   assert.doesNotMatch(html, /<select/);

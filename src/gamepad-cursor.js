@@ -71,7 +71,7 @@
   const help = document.createElement("div");
   help.id = "study-gamepad-help";
   help.textContent = isGame ? "菜单已暂停游戏 · 右摇杆移动 · A / × 点选 · L1 静音 · L2 下滚 · Y / △ 回游戏"
-    : "手柄光标 · 摇杆移动 · 到上下边缘继续推可滚动 · A / × 点选 · L1 静音 · R1 下滚 · R2 返回";
+    : "手柄光标 · 摇杆移动 · 到上下边缘继续推可滚动 · A / × 点选 · L1 静音 · R1 返回 · R2 全屏";
   help.hidden = true;
   document.body.append(pointer, help);
   let positionStorage;
@@ -90,6 +90,7 @@
   let inputCapture = false;
   let lastFrame = null, identity = "", armed = false, previous = {};
   let menu = false, hovered = null, popup = null;
+  let fullscreenPending = false;
 
   function overlayHost() { return document.fullscreenElement || document.body; }
   function syncOverlayHost() {
@@ -98,6 +99,21 @@
     if (popup) host.append(popup);
   }
   document.addEventListener("fullscreenchange", syncOverlayHost);
+
+  async function toggleFullscreen() {
+    if (inputCapture || fullscreenPending) return;
+    // Bomb owns its save/pause/focus handling; only one fullscreen path may run.
+    if (isGame) {
+      window.dispatchEvent(new CustomEvent("studysystem:gamepad-fullscreen"));
+      return;
+    }
+    fullscreenPending = true;
+    try {
+      await window.STUDY_FULLSCREEN_SHELL.toggleFullscreen();
+    } catch (error) {
+      console.warn("浏览器未允许全屏切换", error);
+    } finally { fullscreenPending = false; }
+  }
 
   function returnOneLevel() {
     if (inputCapture) return;
@@ -234,7 +250,7 @@
     const right = [axis(2), axis(3)];
     const axes = isGame || Math.max(...right.map(Math.abs)) > DEADZONE ? right : [axis(0), axis(1)];
     const buttons = { click: pressed(pad, 0) || pressed(pad, 11), toggle: pressed(pad, 3),
-      mute: pressed(pad, 4), scrollDown: pressed(pad, isGame ? 6 : 5), back: pressed(pad, 7) };
+      mute: pressed(pad, 4), scrollDown: pressed(pad, 6), back: pressed(pad, 5), fullscreen: pressed(pad, 7) };
     const neutral = [0, 1, 2, 3].every(index => Math.abs(axis(index)) <= DEADZONE) &&
       ![0, 1, 3, 4, 5, 6, 7, 9, 11, 12, 13, 14, 15].some(index => pressed(pad, index));
     if (!armed) {
@@ -245,6 +261,7 @@
     if (buttons.back && !previous.back) {
       previous = buttons; returnOneLevel(); return;
     }
+    if (buttons.fullscreen && !previous.fullscreen) void toggleFullscreen();
     if (buttons.mute && !previous.mute) window.STUDY_AUDIO?.toggle();
     if (isGame && buttons.toggle && !previous.toggle) {
       if (menu) { suspend(); return; }

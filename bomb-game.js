@@ -4452,7 +4452,6 @@
       (waiting || !hasNativeKeyboardTarget(document.activeElement));
     const input = gamepad.poll(enabled, systemEnabled);
     gamepadConnected = input.connected && input.standard;
-    if (input.refresh) { clearInputState(); saveBombProgress(); location.reload(); return; }
     const status = !input.connected ? "手柄未识别：连接后按一下手柄按钮" : !input.standard
       ? "请将手柄切换到标准 / XInput 模式" : "手柄已连接";
     if (status !== gamepadStatus) {
@@ -4645,6 +4644,7 @@
     else { clearInputState(); saveBombProgress(); return; }
     event.preventDefault();
   });
+  window.addEventListener("studysystem:gamepad-fullscreen", () => { void toggleFullscreen(); });
   fullscreenToggle.addEventListener("click", () => { void toggleFullscreen(); });
   document.addEventListener("fullscreenchange", () => {
     fullscreenToggle.textContent = document.fullscreenElement ? "退出全屏" : "全屏";

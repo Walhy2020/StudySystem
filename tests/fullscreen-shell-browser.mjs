@@ -130,7 +130,7 @@ try {
     await activate(); await page.locator('a[href="./phonetics.html"]').click(); frame = await moduleFrame("phonetics");
     await page.evaluate(() => document.exitFullscreen());
     await page.waitForFunction(() => !document.fullscreenElement && !document.getElementById("study-module-frame") && location.pathname.endsWith("phonetics.html"));
-    for (const resource of ["src/fullscreen-shell.js?v=1.0", "fullscreen-shell.css?v=1.0", "src/gamepad-cursor.js?v=1.12", "bomb-game.js?v=2.34"]) {
+    for (const resource of ["src/fullscreen-shell.js?v=1.0", "fullscreen-shell.css?v=1.0", "src/gamepad-cursor.js?v=1.13", "bomb-game.js?v=2.34"]) {
       assert.equal((await page.request.get(base + resource)).status(), 200);
     }
     assert.deepEqual(errors, []);

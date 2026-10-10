@@ -274,6 +274,7 @@
   let avatarMenuOpen = false;
   let attackMenuOpen = false;
   let gamepadMenuOpen = false;
+  const systemMouseActive = () => Boolean(window.STUDY_CONTROLLER_MOUSE?.isActive());
   let settingsMenuOpen = false;
   let fullscreenPending = false;
   let gamepadConnected = false;
@@ -1685,6 +1686,7 @@
   }
 
   function startGame() {
+    if (systemMouseActive()) return;
     window.STUDY_GAMEPAD_CURSOR?.leaveMenu();
     setAvatarMenuOpen(false);
     setAttackMenuOpen(false);
@@ -3255,7 +3257,7 @@
   }
 
   function update(dt) {
-    if (awaitingContinue || settingsMenuOpen || avatarMenuOpen || attackMenuOpen || gamepadMenuOpen) return;
+    if (awaitingContinue || settingsMenuOpen || avatarMenuOpen || attackMenuOpen || gamepadMenuOpen || systemMouseActive()) return;
     if (messageTimer > 0) {
       messageTimer -= dt;
       if (messageTimer <= 0 && state.status === "playing") {
@@ -4267,7 +4269,7 @@
     lastTime = now;
     animationClock += dt;
     pollGamepad(now);
-    sounds.setMusic(state.status === "playing" && !awaitingContinue && !settingsMenuOpen && !avatarMenuOpen && !attackMenuOpen && !gamepadMenuOpen && ownsProgress &&
+    sounds.setMusic(state.status === "playing" && !awaitingContinue && !settingsMenuOpen && !avatarMenuOpen && !attackMenuOpen && !gamepadMenuOpen && !systemMouseActive() && ownsProgress &&
       !document.hidden && document.hasFocus() ? state.world : null);
     if (!document.hidden && ownsProgress) update(dt);
     render();
@@ -4434,6 +4436,13 @@
   }
 
   function pollGamepad(now) {
+    if (systemMouseActive()) {
+      cancelBindingCapture();
+      clearInputState();
+      gamepad.poll(false);
+      window.STUDY_GAMEPAD_CURSOR?.poll(now);
+      return;
+    }
     if (bindingCapture) {
       const input = gamepad.poll(false, false);
       if (document.hidden || !document.hasFocus()) { cancelBindingCapture(); return; }
@@ -4447,7 +4456,7 @@
     }
     window.STUDY_GAMEPAD_CURSOR?.poll(now);
     const waiting = awaitingContinue || state.status !== "playing";
-    const systemEnabled = !document.hidden && document.hasFocus();
+    const systemEnabled = !document.hidden && document.hasFocus() && !systemMouseActive();
     const enabled = systemEnabled && !settingsMenuOpen && !avatarMenuOpen && !attackMenuOpen && !gamepadMenuOpen &&
       (waiting || !hasNativeKeyboardTarget(document.activeElement));
     const input = gamepad.poll(enabled, systemEnabled);
@@ -4522,7 +4531,7 @@
       event.preventDefault(); setSettingsMenuOpen(false); settingsToggle.focus(); return;
     }
     if (hasNativeKeyboardTarget(event.target)) return;
-    if (settingsMenuOpen || avatarMenuOpen || attackMenuOpen || gamepadMenuOpen) return;
+    if (settingsMenuOpen || avatarMenuOpen || attackMenuOpen || gamepadMenuOpen || systemMouseActive()) return;
     const direction = KEY_DIRS[event.code];
     if (direction) {
       event.preventDefault();
@@ -4576,6 +4585,18 @@
   });
 
   window.addEventListener("blur", () => { cancelBindingCapture(); sounds.setMusic(null); clearInputState(); saveBombProgress(); });
+  window.addEventListener("studysystem:controller-mouse", () => {
+    clearInputState();
+    sounds.setMusic(null);
+    if (systemMouseActive() && state.status === "playing") {
+      awaitingContinue = true;
+      overlayStartButton.textContent = "继续";
+      startButton.textContent = "继续";
+      startLayer.classList.remove("hidden");
+      updateHud();
+    }
+    saveBombProgress();
+  });
   window.addEventListener("studysystem:gamepad-menu", event => {
     gamepadMenuOpen = event.detail.active;
     clearInputState();

@@ -7,7 +7,36 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.62** (2026-10-10). Latest user mapping supersedes
+System display version: **v1.0.63** (2026-10-10). Xbox View is confirmed by user:
+standard browser button 8 / native XInput BACK, not index 7 (R2 / RT).
+View toggles webpage-only cursor / Windows desktop mouse. Right stick moves the
+desktop pointer, A clicks left and B clicks right, once per press. Native worker
+owns the physical View edge; HTTP accepts only strict same-origin loopback JSON
+presence leases, never arbitrary coordinates/click commands. Enter only from a
+recent focused learning-page lease; exit via View anywhere. Fresh/neutral/reconnect
+guards, disconnect/5s lease loss/120s idle/30min maximum/failure reset protect input.
+No driver installation, persistent mouse mode, or source learning-schema changes.
+Windows Xbox/XInput only; unsupported controllers stay in webpage mode.
+
+Shared cursor and bomb inputs are suppressed in system/pending mode; bomb pauses
+behind explicit Continue, preventing unintended combat on return. View is reserved
+from attack capture; old View attack bindings clear only their own slot to null.
+R1 only returns; R2 remains native fullscreen. Shoulder scrolling removed entirely,
+stick edge scrolling retained. Reported physical R1-down behavior was not reproduced
+from a live user page: stale loaded page vs physical mapping remains unconfirmed.
+
+Bomb JS v2.43, cursor v1.13, reader v1.7, bindings v1.5, controller-mouse v1.0;
+eight notifier/display imports v1.0.63; Hanzi/Pinyin/IPA entry caches v1.41/v1.15/v1.40.
+pnpm check, 215 Node tests and diff-check passed. Focused real Edge1440/390:
+controller-mouse-browser.mjs and gamepad-back-battery-browser.mjs --shortcuts-only.
+Tests used simulated standard controller/local mode and pure fake native sinks;
+no actual desktop movement/click was issued, no physical Xbox certification.
+Only relevant UI acceptance ran; existing 41 tracked PNG edits remain excluded.
+Temporary53179 server ran with --disable-system-mouse and is stopped after tests.
+Inherited53177 server was preserved and needs one explicit authorized restart to
+load Python mouse (and previous battery) API; then refresh pages. No compilation.
+
+Previous **v1.0.62** (2026-10-10). Latest user mapping supersedes
 v1.0.61: R1 / Xbox RB returns one internal level per fresh press; R2 / Xbox RT
 toggles native fullscreen on all eight pages. R1 no longer reloads the bomb page
 or scrolls learning pages. L2 / LT keeps menu scrolling; stick edge-scroll remains.

@@ -1,7 +1,7 @@
 (function () {
   const reservedKeys = new Set(["KeyW", "KeyA", "KeyS", "KeyD"]);
   const reservedButtons = new Map([[3, "菜单光标"], [4, "网页静音"], [5, "返回"],
-    [6, "菜单向下滚动"], [7, "全屏"], [9, "开始/继续"], [11, "菜单点选"],
+    [6, "系统预留"], [7, "全屏"], [8, "鼠标模式切换"], [9, "开始/继续"], [11, "菜单点选"],
     [12, "向上移动"], [13, "向下移动"], [14, "向左移动"], [15, "向右移动"], [16, "系统按钮"]]);
   function validKey(code) {
     return typeof code === "string" && !reservedKeys.has(code) &&
@@ -18,14 +18,14 @@
   function buttonLabel(index) {
     if (index === null) return "未设置";
     return ({ 0: "× / A", 1: "○ / B", 2: "□ / X", 3: "△ / Y", 4: "L1", 5: "R1", 6: "L2", 7: "R2",
-      8: "Share / Select", 9: "Options / Start", 10: "L3", 11: "R3" })[index] || `手柄键 ${index}`;
+      8: "View / Share", 9: "Options / Start", 10: "L3", 11: "R3" })[index] || `手柄键 ${index}`;
   }
   function restore(saved) {
     const mushroomKey = saved.mushroomKey === null ? null : validKey(saved.mushroomKey) ? saved.mushroomKey : "Space";
     const iceBombKey = saved.iceBombKey === null ? null : validKey(saved.iceBombKey) && saved.iceBombKey !== mushroomKey
       ? saved.iceBombKey : mushroomKey === "KeyB" ? "Space" : "KeyB";
-    const mushroomGamepadButton = saved.mushroomGamepadButton === null ? null : validButton(saved.mushroomGamepadButton) ? saved.mushroomGamepadButton : 0;
-    const iceBombGamepadButton = saved.iceBombGamepadButton === null ? null : validButton(saved.iceBombGamepadButton) && saved.iceBombGamepadButton !== mushroomGamepadButton
+    const mushroomGamepadButton = saved.mushroomGamepadButton === null || saved.mushroomGamepadButton === 8 ? null : validButton(saved.mushroomGamepadButton) ? saved.mushroomGamepadButton : 0;
+    const iceBombGamepadButton = saved.iceBombGamepadButton === null || saved.iceBombGamepadButton === 8 ? null : validButton(saved.iceBombGamepadButton) && saved.iceBombGamepadButton !== mushroomGamepadButton
       ? saved.iceBombGamepadButton : mushroomGamepadButton === 1 ? 0 : 1;
     return { mushroomKey, iceBombKey, mushroomGamepadButton, iceBombGamepadButton };
   }

@@ -35,7 +35,7 @@ const calculateLayout = new Function(
 
 assert.match(html, /<canvas id="bombCanvas" width="1280" height="720"/);
 assert.ok(html.includes('bomb-game.css?v=1.10'));
-assert.ok(html.includes('bomb-game.js?v=2.42'));
+assert.ok(html.includes('bomb-game.js?v=2.43'));
 assert.ok(html.includes('id="bombAttackToggle"'));
 assert.ok(html.includes('id="mushroomThrowDistance"'));
 assert.ok(js.includes('const MUSHROOM_THROW_STEP_TIME = 0.09;'));
@@ -149,7 +149,7 @@ assert.ok(js.includes('const BOMB_PROGRESS_VERSION = 1;'));
 assert.ok(js.includes('playerAvatar,'), "selected avatar is saved in the existing bomb snapshot");
 assert.ok(js.includes('saved.playerAvatar') && js.includes('"fly-star"'), "older saves retain the current fly-star default");
 assert.ok(js.includes('getSelectedAvatar: () => playerAvatar'));
-assert.ok(js.includes('if (awaitingContinue || settingsMenuOpen || avatarMenuOpen || attackMenuOpen || gamepadMenuOpen) return;'),
+assert.ok(js.includes('if (awaitingContinue || settingsMenuOpen || avatarMenuOpen || attackMenuOpen || gamepadMenuOpen || systemMouseActive()) return;'),
   "character, attack and gamepad menus pause gameplay");
 const writes = [...js.matchAll(/localStorage\.(setItem|removeItem)\(([^,\)]+)/g)].map((match) => match[2].trim());
 assert.deepEqual([...new Set(writes)], ["BOMB_PROGRESS_KEY"], "only bomb progress storage may be mutated");

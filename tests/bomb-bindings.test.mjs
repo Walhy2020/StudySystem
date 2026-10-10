@@ -18,8 +18,8 @@ test("键盘和手柄捕捉支持单键，允许转移攻击键但拒绝保留�
   const state = b.restore({}); const before = structuredClone(state);
   for (const code of ["KeyJ", "Digit1", "Numpad3", "Slash"]) assert.equal(b.validKey(code), true);
   for (const code of ["KeyW", "ArrowUp", "Enter", "Escape", "Tab", "ShiftLeft", "F5", ""]) assert.equal(b.validKey(code), false);
-  for (const index of [0, 1, 2, 8, 10, 17]) assert.equal(b.validButton(index), true);
-  for (const index of [-1, 3, 4, 5, 6, 7, 9, 11, 12, 13, 14, 15, 16, 32, NaN]) assert.equal(b.validButton(index), false);
+  for (const index of [0, 1, 2, 10, 17]) assert.equal(b.validButton(index), true);
+  for (const index of [-1, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16, 32, NaN]) assert.equal(b.validButton(index), false);
   assert.equal(b.conflict(state, "mushroom", "keyboard", "KeyB"), "");
   assert.equal(b.conflict(state, "iceBomb", "gamepad", 0), "");
   assert.match(b.conflict(state, "mushroom", "gamepad", 5), /返回/);
@@ -52,7 +52,7 @@ test("攻击绑定转移仅清空另一攻击的同设备槽，空绑定刷新�
 
 test("页面接入捕捉按钮、同步前验证和固定青色箭头", () => {
   const html = readFileSync(new URL("../bomb-game.html", import.meta.url), "utf8");
-  assert.match(html, /src\/bomb-bindings.js\?v=1.4/);
+  assert.match(html, /src\/bomb-bindings.js\?v=1.5/);
   assert.match(html, /<button id="mushroomAttackKey"/);
   assert.match(html, /<button id="iceBombAttackKey"/);
   assert.doesNotMatch(html, /<select/);
@@ -60,4 +60,12 @@ test("页面接入捕捉按钮、同步前验证和固定青色箭头", () => {
   assert.match(source, /ctx.fillStyle = "#67e8f9"/);
   assert.match(source, /setInputCapture\(true\)/);
   assert.match(source, /syncBombProgress\(\);\s+if \(!action/);
+});
+
+test("旧 View 攻击绑定只清空对应槽，不改变其他绑定", () => {
+  const restored = b.restore({ mushroomGamepadButton: 8, iceBombGamepadButton: 2, mushroomKey: "KeyJ" });
+  assert.equal(restored.mushroomGamepadButton, null);
+  assert.equal(restored.iceBombGamepadButton, 2); assert.equal(restored.mushroomKey, "KeyJ");
+  assert.equal(b.restore({ iceBombGamepadButton: 8 }).iceBombGamepadButton, null);
+  assert.match(b.conflict(restored, "mushroom", "gamepad", 8), /鼠标模式切换/);
 });

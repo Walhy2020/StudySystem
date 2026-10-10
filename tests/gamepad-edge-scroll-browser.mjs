@@ -95,7 +95,7 @@ try {
     await page.evaluate(() => { window.__pad.buttons[0] = { pressed: false, value: 0 }; document.getElementById("edge-click").remove(); });
     await advance(0.05);
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
-    assert.equal((await page.request.get(base + "src/gamepad-cursor.js?v=1.12")).status(), 200);
+    assert.equal((await page.request.get(base + "src/gamepad-cursor.js?v=1.13")).status(), 200);
     assert.deepEqual(errors, []);
     results.push({ width, actualLearningScroll: true, stopAndReverse: true, bounds: true,
       nestedFallback: true, noHorizontalConversion: true, inputSafety: true, clickPreserved: true });

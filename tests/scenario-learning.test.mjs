@@ -165,5 +165,6 @@ test("情景使用内置imagegen正式PNG和独立文具强调图，无网页生
   }
   assert.doesNotMatch(html, /openScenarioCreator|scenarioGenerateForm|generationStatus|class="full-kid|class="kid /);
   assert.doesNotMatch(workshop, /fetch\(|OPENAI_API_KEY|\/api\/scenarios/);
-  assert.doesNotMatch(server, /ScenarioService|OPENAI_API_KEY|urlopen|def do_POST/);
+  assert.doesNotMatch(server, /ScenarioService|OPENAI_API_KEY|urlopen/);
+  assert.match(server, /if urlsplit\(self.path\).path != "\/api\/controller-mouse":\s+return self.send_error\(404\)/);
 });

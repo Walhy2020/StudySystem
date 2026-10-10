@@ -92,7 +92,7 @@ try {
     const scrollBefore = await page.locator("#themeSeriesList").evaluate(node => node.scrollLeft);
     await tap(6);
     const scrollAfter = await page.locator("#themeSeriesList").evaluate(node => node.scrollLeft);
-    assert.ok(scrollAfter > scrollBefore, "L2 scrolls the horizontal theme list");
+    assert.equal(scrollAfter, scrollBefore, "shoulders never scroll the page");
     await page.locator('[data-series-id="basics"]').scrollIntoViewIfNeeded();
     await aim('[data-series-id="basics"]'); await tap();
     await aim('[data-theme-id="body"]'); await tap();

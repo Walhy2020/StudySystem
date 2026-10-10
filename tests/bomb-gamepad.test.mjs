@@ -17,9 +17,9 @@ test("自定义手柄攻击只响应新按钮，捕捉期间仅返回原始按�
   h.button(0, false); h.reader.poll();
   h.button(2, true); assert.equal(h.reader.poll().mushroom, true);
   assert.equal(h.reader.poll().mushroom, false);
-  h.reader.setBindings(8, 10); h.button(8, true);
+  h.reader.setBindings(17, 10); h.button(17, true);
   assert.equal(h.reader.poll().mushroom, false, "remap requires neutral");
-  h.button(2, false); h.button(8, false); h.reader.poll();
+  h.button(2, false); h.button(17, false); h.reader.poll();
   h.button(10, true); assert.equal(h.reader.poll().ice, true);
   h.button(5, true); h.button(7, true);
   const capture = h.reader.poll(false, false);

@@ -70,7 +70,7 @@
   pointer.hidden = true;
   const help = document.createElement("div");
   help.id = "study-gamepad-help";
-  help.textContent = isGame ? "菜单已暂停游戏 · 右摇杆移动 · A / × 点选 · L1 静音 · L2 下滚 · Y / △ 回游戏"
+  help.textContent = isGame ? "菜单已暂停游戏 · 右摇杆移动 · A / × 点选 · L1 静音 · R1 返回 · R2 全屏 · View 切换鼠标"
     : "手柄光标 · 摇杆移动 · 到上下边缘继续推可滚动 · A / × 点选 · L1 静音 · R1 返回 · R2 全屏";
   help.hidden = true;
   document.body.append(pointer, help);
@@ -91,6 +91,7 @@
   let lastFrame = null, identity = "", armed = false, previous = {};
   let menu = false, hovered = null, popup = null;
   let fullscreenPending = false;
+  let viewHeld = true;
 
   function overlayHost() { return document.fullscreenElement || document.body; }
   function syncOverlayHost() {
@@ -245,14 +246,18 @@
     const pad = pads.find(pad => `${pad.index}:${pad.id}` === identity) || pads[0];
     if (!pad) { identity = ""; suspend(); return; }
     const nextIdentity = `${pad.index}:${pad.id}`;
-    if (nextIdentity !== identity) { identity = nextIdentity; suspend(); }
+    if (nextIdentity !== identity) { identity = nextIdentity; viewHeld = true; suspend(); }
+    const view = pressed(pad, 8);
+    if (view && !viewHeld) window.STUDY_CONTROLLER_MOUSE?.viewPressed();
+    viewHeld = view;
+    if (window.STUDY_CONTROLLER_MOUSE?.isActive()) { suspend(); return; }
     const axis = index => Number.isFinite(pad.axes?.[index]) ? pad.axes[index] : 0;
     const right = [axis(2), axis(3)];
     const axes = isGame || Math.max(...right.map(Math.abs)) > DEADZONE ? right : [axis(0), axis(1)];
     const buttons = { click: pressed(pad, 0) || pressed(pad, 11), toggle: pressed(pad, 3),
-      mute: pressed(pad, 4), scrollDown: pressed(pad, 6), back: pressed(pad, 5), fullscreen: pressed(pad, 7) };
+      mute: pressed(pad, 4), back: pressed(pad, 5), fullscreen: pressed(pad, 7) };
     const neutral = [0, 1, 2, 3].every(index => Math.abs(axis(index)) <= DEADZONE) &&
-      ![0, 1, 3, 4, 5, 6, 7, 9, 11, 12, 13, 14, 15].some(index => pressed(pad, index));
+      ![0, 1, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15].some(index => pressed(pad, index));
     if (!armed) {
       if (neutral) armed = true;
       previous = buttons;
@@ -273,13 +278,8 @@
     if (menu) {
       position = cursorStep(position, axes, dt, innerWidth, innerHeight);
       renderPosition();
-      const scroll = Number(buttons.scrollDown);
-      if (scroll) scrollAtCursor(scroll * 500 * Math.max(0, Math.min(0.05, dt)),
-        buttons.scrollDown && !previous.scrollDown);
-      else {
-        const edgeScroll = edgeScrollAmount(position, axes, dt, innerHeight);
-        if (edgeScroll) scrollAtCursor(edgeScroll, false, true);
-      }
+      const edgeScroll = edgeScrollAmount(position, axes, dt, innerHeight);
+      if (edgeScroll) scrollAtCursor(edgeScroll, false, true);
       setHover(targetAtCursor());
       if (buttons.click && !previous.click) clickAtCursor();
     } else setHover(null);
@@ -287,7 +287,9 @@
   }
   window.STUDY_GAMEPAD_CURSOR = Object.freeze({ poll, leaveMenu: suspend, isMenuActive: () => isGame && menu,
     resetInput: () => { armed = false; previous = {}; },
-    setInputCapture: active => { inputCapture = Boolean(active); armed = false; previous = {}; } });
+    setInputCapture: active => { inputCapture = Boolean(active); viewHeld = true; armed = false; previous = {};
+      window.STUDY_CONTROLLER_MOUSE?.setCapture(active); } });
+  window.addEventListener("studysystem:controller-mouse", () => { suspend(); });
   window.addEventListener("blur", suspend);
   window.addEventListener("pagehide", () => { rememberPosition(); suspend(); });
   window.addEventListener("studysystem:fullscreen-navigation", () => { rememberPosition(); suspend(); });

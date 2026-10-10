@@ -27,7 +27,7 @@
         ? (Math.abs(x) > Math.abs(y) ? (x > 0 ? "right" : "left") : (y > 0 ? "down" : "up")) : "";
       // Shared cursor owns R1 return and R2 fullscreen, never browser refresh.
       const buttons = { mushroom: pressed(pad, attackButtons.mushroom), ice: pressed(pad, attackButtons.ice), confirm: pressed(pad, 9) };
-      const neutral = !aim && !directions.length && !Object.values(buttons).some(Boolean) && !pressed(pad, 5) && !pressed(pad, 7);
+      const neutral = !aim && !directions.length && !Object.values(buttons).some(Boolean) && !pressed(pad, 5) && !pressed(pad, 7) && !pressed(pad, 8);
       if (!enabled) { reset(); return result; }
       if (!armed) {
         if (neutral) armed = true;

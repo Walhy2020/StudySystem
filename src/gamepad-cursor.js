@@ -59,6 +59,8 @@
   const base = new URL("../", source);
   if (!safeDestination(location.href, base)) return;
   const isGame = location.pathname === base.pathname + "bomb-game.html";
+  const isLearningSpacePage = location.pathname === base.pathname ||
+    ["index.html", "theme-learning.html"].some(page => location.pathname === base.pathname + page);
   const style = document.createElement("link");
   style.rel = "stylesheet";
   style.href = new URL("../gamepad-cursor.css?v=1.1", source).href;
@@ -268,6 +270,15 @@
     }
     if (buttons.fullscreen && !previous.fullscreen) void toggleFullscreen();
     if (buttons.mute && !previous.mute) window.STUDY_AUDIO?.toggle();
+    if (isLearningSpacePage && buttons.toggle && !previous.toggle) {
+      const target = document.activeElement;
+      if (!target?.matches("input,select,textarea") && !target?.isContentEditable) {
+        // Reuse the same controls as Space; no synthetic key default actions.
+        const control = document.getElementById(location.pathname === base.pathname + "theme-learning.html"
+          ? "phoneticToggle" : "currentChar");
+        if (control && !control.disabled && control.getClientRects().length) control.click();
+      }
+    }
     if (isGame && buttons.toggle && !previous.toggle) {
       if (menu) { suspend(); return; }
       setMenu(true);

@@ -1,13 +1,33 @@
 # StudySystem cross-device handoff
 
-Last updated: 2026-10-10
+Last updated: 2026-10-11
 Repository: `https://github.com/Walhy2020/StudySystem.git`
 Branch: `main`
 Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.63** (2026-10-10). Xbox View is confirmed by user:
+System display version: **v1.0.64** (2026-10-11). Standard controller button3
+(Xbox Y / PS5 triangle) invokes the existing visible Hanzi/Theme Space control.
+Hanzi keeps reveal-only Pinyin; Theme learn/review toggles phoneme breakdown.
+No synthetic keyboard default actions or new learning/storage rules. Editing,
+capture, system mouse, focus, neutral/held/reconnect guards remain; hidden Theme
+cards in picker/practice do not react. Bomb Y retains its existing menu toggle.
+Cursor v1.14; all eight notifier/display imports v1.0.64; Hanzi/Pinyin/IPA entry
+caches v1.42/v1.16/v1.41. Theme JS stays v2.21 (business logic unchanged).
+pnpm check, 215 Node tests and diff-check pass. Only focused
+gamepad-learning-space-browser.mjs ran in real Edge at1440/390 with simulated
+controller/mouse state; no native desktop mouse input or unrelated browser suite.
+User-owned tracked PNG edits remain excluded. Static update: refresh, no rebuild.
+
+Service was authorized/restarted on2026-10-10, current53177 server serves both
+mouse and battery APIs (HTTP200), mouse adapter reported supported=true/web.
+Existing Windows user-login startup shortcut starts the same server hidden,
+avoiding duplicate listeners; native mouse worker is lazily initialized by pages.
+User authorizes necessary scoped starts/restarts and required automatic startup
+without repeat confirmation; keep launches hidden and avoid unrelated processes.
+
+Previous **v1.0.63** (2026-10-10). Xbox View is confirmed by user:
 standard browser button 8 / native XInput BACK, not index 7 (R2 / RT).
 View toggles webpage-only cursor / Windows desktop mouse. Right stick moves the
 desktop pointer, A clicks left and B clicks right, once per press. Native worker

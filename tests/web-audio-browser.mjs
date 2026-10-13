@@ -62,7 +62,7 @@ try {
       if(name==="phonetics")await page.evaluate(async()=>{await(await import("./src/phonetics-tts.js?v=1.4")).speakPhoneticExample({examples:["apple"]},{delayMs:0});});
       if(["theme-learning","review-learning"].includes(name))await page.evaluate(async()=>{(await import("./theme-learning.js?v=2.21")).speakEnglish("hello");});
       if(name==="scenario-learning") {
-        await page.evaluate(async()=>{(await import("./scenario-learning.js?v=2.10")).createScenarioSpeaker({synthesis:speechSynthesis,Utterance:SpeechSynthesisUtterance,delay:0}).speak("hello");});
+        await page.evaluate(async()=>{(await import("./scenario-learning.js?v=2.11")).createScenarioSpeaker({synthesis:speechSynthesis,Utterance:SpeechSynthesisUtterance,delay:0}).speak("hello");});
         await page.waitForTimeout(30);
       }
       if(name==="book-learning") {

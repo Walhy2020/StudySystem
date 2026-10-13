@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { checkConcealedDialogue, completeDialoguePractice } from "./dialogue-practice-helper.mjs";
 import fs from "node:fs";
 import { scenarioById } from "../data/scenarios.js";
 import { BOOK1_ITEMS } from "../data/book1.js";
@@ -100,37 +101,7 @@ try {
     assert.deepEqual(await page.evaluate(() => window.__spoken.slice(-5).map(item => item.text)), scene.lines.map(line => line.text));
     assert.deepEqual((await read()).learnedWords, ["thank", "you"]);
     await act("#practiceStage");
-    for (const [index, question] of scene.practice.entries()) {
-      await page.waitForFunction(expected => document.getElementById("practiceProgress").textContent === expected, `${index + 1}/5`);
-      assert.equal(await page.locator("#practiceOptionsTitle").textContent(), "选择对应的英文");
-      assert.equal(await page.locator("#practiceSpeaker").textContent(), "中文提示");
-      assert.equal(await page.locator("#practiceAligned").getAttribute("aria-label"), scene.lines[index].chinese);
-      assert.deepEqual(await page.locator("#practiceAligned strong").allTextContents(), [scene.lines[index].chinese]);
-      assert.equal(await page.locator("#practiceAligned small").count(), 0);
-      const options = page.locator(".response-option");
-      assert.equal(await options.count(), 3);
-      assert.equal(await options.locator(":scope > small").count(), 0, "no Chinese answer leaked");
-      assert.equal(await options.evaluateAll(nodes => nodes.every(node => !/[\u4e00-\u9fff]/.test(node.textContent))), true);
-      const count = await page.evaluate(() => window.__spoken.length);
-      await act("#speakPractice");
-      await page.waitForFunction(expected => window.__spoken.length === expected, count + 1);
-      assert.equal(await page.evaluate(() => window.__spoken.at(-1).text), scene.lines[index].text);
-      if (index === 2) {
-        await page.reload(); await enter();
-        assert.equal(await page.locator("#practiceProgress").textContent(), "3/5", "refresh resumes current question");
-      }
-      await act(`[data-answer-id="${question.optionIds.find(id => id !== question.answerId)}"]`);
-      assert.equal(await page.locator("#practiceProgress").textContent(), `${index + 1}/5`);
-      assert.match(await page.locator("#practiceFeedback").textContent(), /不对应/);
-      await noOverflow();
-      if (index === 2) await page.screenshot({ path: `tmp/commands-practice-${width}.png`, fullPage: true });
-      if (width === 1440 && index === 0) {
-        await page.locator(`[data-answer-id="${question.answerId}"]`).focus();
-        await page.keyboard.press("Enter");
-      } else await act(`[data-answer-id="${question.answerId}"]`);
-    }
-    await page.locator("#practiceResult").waitFor({ state: "visible" });
-    assert.equal(await page.locator("#practiceResultScore").textContent(), "5/5");
+    await completeDialoguePractice(page, scene, act, { resumeAt: 2, enter });
     assert.deepEqual((await read()).learnedWords, ["thank", "you"], "practice completion never learns words automatically");
     assert.equal((await read()).scenarioProgress["first-meeting"].lineIndex, 4);
     await act("#returnAfterComplete");
@@ -160,16 +131,14 @@ try {
     await act("#backToScenarios");
     await act('[data-scenario-id="first-meeting"] [data-start-label]');
     await act("#practiceStage");
-    assert.equal(await page.locator("#practiceOptionsTitle").textContent(), "你会怎么回应？");
-    assert.ok(await page.locator(".response-option > small").count() > 0, "existing response exercises unchanged");
+    await checkConcealedDialogue(page);
     await act("#backToScenarios");
     await act('[data-scenario-id="what-is-it"] [data-start-label]');
     assert.equal(await page.locator("#dialogueProgress").textContent(), "1/14");
     assert.match(await page.locator("#scenarioObjectImage").getAttribute("src"), /focus-pen-v1/);
     assert.match(await page.locator("#scenarioObjectFocus").getAttribute("aria-label"), /^重点物品/);
     await act("#practiceStage");
-    assert.equal(await page.locator("#practiceOptionsTitle").textContent(), "你会怎么回应？");
-    assert.equal(await page.locator("#practicePanel").getAttribute("data-practice-mode"), "response");
+    await checkConcealedDialogue(page);
     await noOverflow();
     for (const resource of ["classroom-commands", "command-stand-up", "command-sit-down", "command-raise-hands"]) {
       const response = await page.request.get(base + `assets/scenarios/${resource}-v1.png?v=1.0`);
@@ -177,7 +146,7 @@ try {
     }
     assert.deepEqual(errors, []);
     results.push({ width, lines: 5, actionArt: true, alignedIpa: true, manualAndContinuous: true,
-      chineseMatching: 5, refreshResume: true, explicitWordLearning: true, isolatedStorage: true, geometry: true });
+      hiddenEnglishPractice: 5, refreshResume: true, explicitWordLearning: true, isolatedStorage: true, geometry: true });
     await context.close();
   }
   console.log(JSON.stringify({ ok: true, browser: "Microsoft Edge", results }));

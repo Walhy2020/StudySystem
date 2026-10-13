@@ -1,13 +1,34 @@
 # StudySystem cross-device handoff
 
-Last updated: 2026-10-11
+Last updated: 2026-10-13
 Repository: `https://github.com/Walhy2020/StudySystem.git`
 Branch: `main`
 Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.64** (2026-10-11). Standard controller button3
+System display version: **v1.0.65** (2026-10-13). Scenario practice now shares
+the learning actors/chat bubble/manual and continuous playback. English starts
+hidden and is revealed explicitly; IPA and Chinese remain visible. New sentences,
+replay/continuous restart and refresh reset visibility; same-line playback phase
+updates preserve it. Practice saves its actual stage and lineIndex in schema3;
+legacy questionIndex/data/export remain compatible but the quiz panel is inactive.
+The last revealed line enables explicit completion; source learnedWords unchanged.
+Book1 review visibility is bound to selected word ID and clears on image/Previous/
+Next changes. Original source already reset its old bool, so the user's live cause
+was not reproduced; cache freshness vs other causes is unconfirmed.
+Book1 entry v1.5; Scenario entry v2.11; styles/actors/speech unchanged. All eight
+notifier and display imports v1.0.65; Hanzi/Pinyin/IPA entries v1.43/v1.17/v1.42.
+pnpm check, 215 Node tests, diff-check and focused learning-reveal-browser.mjs
+passed in real Edge at1440/390 with mocked speech/controller-mouse endpoints.
+Hidden/reveal, Previous/Next/image reset, same-line speech, replay/continuous,
+refresh/stage resume, explicit completion, resources and geometry were checked.
+Existing scenario browser quiz assertions were updated to shared dialogue helper;
+only syntax-checked, not run this release. No unrelated browser suite or native
+controller certification. Pre-existing41 tracked PNG edits preserved/excluded.
+Refresh only; no rebuild/server change. Inherited53177 service remains running.
+
+Previous **v1.0.64** (2026-10-11). Standard controller button3
 (Xbox Y / PS5 triangle) invokes the existing visible Hanzi/Theme Space control.
 Hanzi keeps reveal-only Pinyin; Theme learn/review toggles phoneme breakdown.
 No synthetic keyboard default actions or new learning/storage rules. Editing,

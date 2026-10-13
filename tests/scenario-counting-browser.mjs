@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { completeDialoguePractice } from "./dialogue-practice-helper.mjs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -63,20 +64,7 @@ try {
     assert.equal(await page.locator("#nextLine").isDisabled(), true);
     await page.screenshot({ path: `tests/scenario-counting-${width}.png`, fullPage: true });
     await act("#practiceStage");
-    for (const [i, question] of COUNTING_PRACTICE.entries()) {
-      await page.waitForFunction(text => document.querySelector("#practiceProgress").textContent === text, `${i + 1}/12`, { polling: 100 });
-      const line = COUNTING_LINES.find(x => x.id === question.promptId);
-      assert.equal(await page.locator("#countingPracticeImage").getAttribute("src"), scene.focusObjects[line.focusObject].image);
-      await page.locator("#countingPracticeImage").evaluate(img => img.decode());
-      assert.equal(await page.locator("#countingPracticeImage").isVisible(), true);
-      await act(`[data-answer-id="${question.optionIds.find(x => x !== question.answerId)}"]`);
-      assert.equal(await page.locator("#practiceProgress").textContent(), `${i + 1}/12`, "wrong answer must not advance");
-      await noOverflow();
-      if (i === 10) await page.screenshot({ path: `tests/scenario-counting-practice-${width}.png`, fullPage: true });
-      await act(`[data-answer-id="${question.answerId}"]`);
-    }
-    await page.locator("#practiceResult").waitFor({ state: "visible" });
-    assert.equal(await page.locator("#practiceResultScore").textContent(), "12/12");
+    await completeDialoguePractice(page, scene, act);
     assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem("mario-scenario-learning-v1")).learnedWords), []);
     await act("#returnAfterComplete");
     assert.equal(await page.locator('[data-scenario-id="counting-pens"] [data-complete-badge]').isVisible(), true);

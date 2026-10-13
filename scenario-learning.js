@@ -220,12 +220,16 @@ function initializePage() {
   let practice = new ScenarioPracticeSession(scenario);
   let currentLineIndex = store.state.lineIndex;
   let stage = store.state.stage;
+  let revealedDialogueId = "";
   let practiceTimer = null;
   let playbackPhase = "manual";
   let continuousMode = false;
   const playback = createDialoguePlayback({
     count: () => scenario.lines.length,
-    show(index, phase) { currentLineIndex = index; playbackPhase = phase; renderDialogue(); },
+    show(index, phase) {
+      if (index !== currentLineIndex) revealedDialogueId = "";
+      currentLineIndex = index; playbackPhase = phase; renderDialogue();
+    },
     speak: (index, onEnd, onError) => speaker.speak(scenario.lines[index].text, { onEnd, onError }),
     cancelSpeech: () => speaker.cancel(),
     arrivalMs: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 650,
@@ -268,6 +272,14 @@ function initializePage() {
     dom.dialogueEnglish.textContent = line.text;
     dom.dialoguePhonetic.textContent = line.phonetic;
     renderAlignedSentence(dom.dialogueAligned, line);
+    const concealed = stage === "practice" && revealedDialogueId !== line.id;
+    if (concealed) {
+      dom.dialogueAligned.querySelectorAll("strong").forEach(word => { word.hidden = true; });
+      dom.dialogueAligned.setAttribute("aria-label", "当前句音标");
+    }
+    dom.revealDialogue.hidden = stage !== "practice" || !concealed;
+    dom.completeDialoguePractice.hidden = stage !== "practice" || currentLineIndex !== scenario.lines.length - 1;
+    dom.completeDialoguePractice.disabled = concealed;
     dom.dialogueChinese.textContent = line.chinese;
     for (const [name, actor] of [["Mia", dom.actorMia], ["Leo", dom.actorLeo]]) {
       const present = scenario.lines.slice(0, currentLineIndex + 1).some(item => item.speaker === name);
@@ -295,10 +307,10 @@ function initializePage() {
     dom.actorStage.classList.toggle("is-speaking", playbackPhase === "speaking");
     dom.currentBubble.dataset.speaker = line.speaker;
     dom.currentBubble.classList.toggle("is-arriving", playbackPhase === "arriving");
-    dom.speakDialogue.setAttribute("aria-label", `朗读：${line.text}`);
+    dom.speakDialogue.setAttribute("aria-label", concealed ? "朗读当前对话" : `朗读：${line.text}`);
     dom.previousLine.disabled = currentLineIndex === 0;
     dom.nextLine.disabled = currentLineIndex === scenario.lines.length - 1;
-    store.patch({ activeScenarioId: scenario.id, lineIndex: currentLineIndex, stage: "learn" });
+    store.patch({ activeScenarioId: scenario.id, lineIndex: currentLineIndex, stage });
   }
 
   function renderPractice() {
@@ -370,10 +382,12 @@ function initializePage() {
 
   function finishPractice() {
     store.complete(scenario.id);
+    stopPlayback();
+    dom.dialoguePanel.hidden = true;
     dom.practicePanel.hidden = true;
     dom.practiceResult.hidden = false;
     dom.practiceResultTitle.textContent = scenario.completionTitle || `${scenario.chineseTitle}完成！`;
-    dom.practiceResultScore.textContent = `${scenario.practice.length}/${scenario.practice.length}`;
+    dom.practiceResultScore.textContent = `共 ${scenario.lines.length} 句对话`;
     dom.practiceResultText.textContent = scenario.completionText || `你已经完成“${scenario.chineseTitle}”情景练习。`;
     syncPicker();
   }
@@ -392,14 +406,16 @@ function initializePage() {
     dom.learnStage.setAttribute("aria-pressed", String(isLearn));
     dom.practiceStage.setAttribute("aria-pressed", String(isPractice));
     dom.wordsStage.setAttribute("aria-pressed", String(isWords));
-    dom.dialoguePanel.hidden = !isLearn;
-    dom.practicePanel.hidden = !isPractice;
+    dom.dialoguePanel.hidden = isWords;
+    dom.practicePanel.hidden = true;
     dom.scenarioWordsPanel.hidden = !isWords;
     dom.practiceResult.hidden = true;
     if (isPractice) {
       practice.restart();
       if (restore) practice.restore(store.state.questionIndex);
-      renderPractice();
+      else currentLineIndex = 0;
+      revealedDialogueId = "";
+      renderDialogue();
     } else if (isWords) {
       store.patch({ activeScenarioId: scenario.id, stage: "words" });
       wordsView.render();
@@ -409,6 +425,7 @@ function initializePage() {
   }
 
   function enterScenario(id, restore = false) {
+    revealedDialogueId = "";
     scenario = scenarioById(id) || SCENARIOS[0];
     practice = new ScenarioPracticeSession(scenario);
     const saved = store.progress(scenario.id);
@@ -445,6 +462,15 @@ function initializePage() {
   dom.previousLine.addEventListener("click", () => { if (currentLineIndex > 0) playLine(currentLineIndex - 1); });
   dom.nextLine.addEventListener("click", () => { if (currentLineIndex < scenario.lines.length - 1) playLine(currentLineIndex + 1); });
   dom.speakDialogue.addEventListener("click", () => playLine(currentLineIndex));
+  dom.revealDialogue.addEventListener("click", () => {
+    if (stage !== "practice") return;
+    revealedDialogueId = scenario.lines[currentLineIndex].id;
+    renderDialogue();
+  });
+  dom.completeDialoguePractice.addEventListener("click", () => {
+    if (stage === "practice" && currentLineIndex === scenario.lines.length - 1 &&
+      revealedDialogueId === scenario.lines[currentLineIndex].id) finishPractice();
+  });
   function resetActorEntrance() {
     for (const actor of [dom.actorMia, dom.actorLeo]) {
       actor.style.transition = "none";
@@ -458,10 +484,12 @@ function initializePage() {
     playback.play(currentLineIndex, { continuous: continuousMode });
   });
   dom.replayDialogue.addEventListener("click", () => {
+    revealedDialogueId = "";
     stopPlayback(); resetActorEntrance();
     playLine(0);
   });
   dom.continuousDialogue.addEventListener("click", () => {
+    revealedDialogueId = "";
     stopPlayback(); resetActorEntrance();
     playLine(0, true);
   });

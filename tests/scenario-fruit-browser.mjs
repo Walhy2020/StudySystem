@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { completeDialoguePractice } from "./dialogue-practice-helper.mjs";
 import { FRUIT_TASTING_LINES, FRUIT_TASTING_PRACTICE, FRUIT_TASTING_VOCABULARY, scenarioById } from "../data/scenarios.js";
 import { loadChromium } from "./playwright-runtime.mjs";
 
@@ -65,19 +66,7 @@ try {
     await enter();
     assert.equal(await page.locator("#dialogueProgress").textContent(), "36/36", "refresh restores the current fruit line");
     await act("#practiceStage");
-    for (const [index, question] of FRUIT_TASTING_PRACTICE.entries()) {
-      await page.waitForFunction(expected => document.querySelector("#practiceProgress").textContent === expected, `${index + 1}/18`);
-      const prompt = scene.lines.find(({ id }) => id === question.promptId);
-      const image = page.locator("#countingPracticeImage");
-      assert.equal(await image.getAttribute("src"), scene.focusObjects[prompt.focusObject].image);
-      await image.evaluate(node => node.decode());
-      assert.equal(await image.isVisible(), true);
-      await act(`[data-answer-id="${question.optionIds.find(id => id !== question.answerId)}"]`);
-      assert.equal(await page.locator("#practiceProgress").textContent(), `${index + 1}/18`, "wrong answer does not advance");
-      await act(`[data-answer-id="${question.answerId}"]`);
-    }
-    await page.locator("#practiceResult").waitFor({ state: "visible" });
-    assert.equal(await page.locator("#practiceResultScore").textContent(), "18/18");
+    await completeDialoguePractice(page, scene, act);
     assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem("mario-scenario-learning-v1")).learnedWords), [], "practice completion does not auto-learn words");
     await page.screenshot({ path: `tests/scenario-fruit-practice-${width}.png`, fullPage: true });
     await act("#returnAfterComplete");

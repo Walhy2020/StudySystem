@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { scenarioById } from "../data/scenarios.js";
+import { completeDialoguePractice } from "./dialogue-practice-helper.mjs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -38,7 +40,7 @@ const desktopContext = await makeContext({ width: 1440, height: 1000 });
 const page = await desktopContext.newPage();
 watch(page);
 await page.goto(new URL("scenario-learning.html?test=scenario-desktop", baseUrl).href);
-assert.deepEqual(await page.locator(".scenario-nav > *").allTextContents(), ["汉字", "Book1", "主题学习", "情景模式", "总复习", "音标"]);
+assert.deepEqual(await page.locator(".scenario-nav > *").allTextContents(), ["拼音", "汉字", "Book1", "主题学习", "情景模式", "总复习", "音标"]);
 assert.equal(await page.locator(".scenario-card").count(), 6);
 assert.equal(await page.locator(".scenario-card.is-complete").count(), 0);
 assert.equal(await noOverflow(page), true);
@@ -65,26 +67,9 @@ await page.locator('[data-scenario-id="first-meeting"] [data-start-label]').clic
 assert.equal(await page.locator("#dialogueEnglish").textContent(), "How are you?", "refresh restores current line");
 
 await page.locator("#practiceStage").click();
-assert.equal(await page.locator(".response-option").count(), 3);
-assert.equal(await page.locator("#practicePrompt").textContent(), "Hello! My name is Mia.");
-await page.locator('[data-answer-id="leo-nice"]').click();
-assert.match(await page.locator("#practiceFeedback").textContent(), /再想一想/);
-assert.equal(await page.locator("#practiceProgress").textContent(), "1/3");
-const spokenBeforeAnswer = await page.evaluate(() => window.__spoken.length);
-await page.locator('[data-answer-id="leo-intro"]').click();
-await page.waitForTimeout(360);
-assert.equal(await page.evaluate(() => window.__spoken.length), spokenBeforeAnswer, "correct answers must not autoplay");
-await page.waitForTimeout(360);
-assert.equal(await page.locator("#practiceProgress").textContent(), "2/3");
-await page.reload();
-await page.locator('[data-scenario-id="first-meeting"] [data-start-label]').click();
-assert.equal(await page.locator("#practiceProgress").textContent(), "2/3", "refresh restores practice question");
-await page.locator('[data-answer-id="leo-nice"]').click();
-await page.waitForTimeout(360);
-await page.locator('[data-answer-id="leo-fine"]').click();
-await page.waitForTimeout(360);
-assert.equal(await page.locator("#practiceResult").isVisible(), true);
-assert.equal(await page.locator("#practiceResultScore").textContent(), "3/3");
+await completeDialoguePractice(page, scenarioById("first-meeting"), undefined, {
+  resumeAt: 1, enter: () => page.locator('[data-scenario-id="first-meeting"] [data-start-label]').click(),
+});
 await page.locator("#returnAfterComplete").click();
 assert.equal(await page.locator(".scenario-card.is-complete").count(), 1);
 assert.equal(await page.locator('[data-scenario-id="first-meeting"] [data-complete-badge]').isVisible(), true);
@@ -115,15 +100,9 @@ await page.reload();
 await page.locator('[data-scenario-id="what-is-it"] [data-start-label]').click();
 assert.equal(await page.locator("#dialogueProgress").textContent(), "3/14", "second scenario line persists after refresh");
 await page.locator("#practiceStage").click();
-assert.equal(await page.locator("#practiceProgress").textContent(), "1/5");
-assert.equal(await page.locator("#practiceAligned .aligned-word").count(), 5);
-for (const answerId of ["classroom-pen", "classroom-pencils", "classroom-marker", "classroom-erasers", "classroom-green-correction"]) {
-  await page.locator(`[data-answer-id="${answerId}"]`).click();
-  await page.waitForTimeout(360);
-}
-assert.equal(await page.locator("#practiceResult").isVisible(), true);
+await completeDialoguePractice(page, scenarioById("what-is-it"));
 assert.equal(await page.locator("#practiceResultTitle").textContent(), "这是什么？完成！");
-assert.equal(await page.locator("#practiceResultScore").textContent(), "5/5");
+assert.equal(await page.locator("#practiceResultScore").textContent(), "共 14 句对话");
 assert.match(await page.locator("#practiceResultText").textContent(), /文具/);
 await page.locator("#returnAfterComplete").click();
 assert.equal(await page.locator(".scenario-card.is-complete").count(), 2);

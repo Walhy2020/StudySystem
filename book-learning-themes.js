@@ -8,7 +8,7 @@ let state = storage.load();
 let theme = null;
 let stage = "learn";
 let selectedId = "";
-let revealed = false;
+let revealedWordId = "";
 let questionIndex = 0;
 let answered = false;
 let mistakes = 0;
@@ -71,7 +71,7 @@ function renderCard() {
     dom.wordCard.innerHTML = `<span class="book-tap-icon" aria-hidden="true">☝</span><h3>${stage === "review" ? "复习单词" : "点一个目标"}</h3><p>${stage === "review" ? "点击左边图片，先回忆单词，再点击显示。" : "英文、音标和中文会显示在这里。"}</p>`;
     return;
   }
-  if (stage === "review" && !revealed) {
+  if (stage === "review" && revealedWordId !== item.id) {
     dom.wordCard.innerHTML = '<h3>想一想这个单词</h3><p>先看左边图片，回忆单词，再点击显示核对。</p><button class="primary-action" type="button" data-action="reveal">显示</button>';
     return;
   }
@@ -114,8 +114,8 @@ function render() {
   }
   if (stage === "practice" && questionIndex >= theme.items.length) dom.resultScore.textContent = `${theme.items.length}/${theme.items.length} 题完成`;
 }
-function openTheme(id) { stopSpeech(); theme = book1ThemeById(id); stage = "learn"; selectedId = ""; revealed = false; render(); }
-function setStage(next) { stopSpeech(); stage = next; selectedId = ""; revealed = false; if (next === "practice") { questionIndex = 0; answered = false; mistakes = 0; } render(); }
+function openTheme(id) { stopSpeech(); theme = book1ThemeById(id); stage = "learn"; selectedId = ""; revealedWordId = ""; render(); }
+function setStage(next) { stopSpeech(); stage = next; selectedId = ""; revealedWordId = ""; if (next === "practice") { questionIndex = 0; answered = false; mistakes = 0; } render(); }
 
 dom.themeList.addEventListener("click", (event) => { const button = event.target.closest("[data-theme]"); if (button) openTheme(button.dataset.theme); });
 dom.backToThemes.addEventListener("click", () => { stopSpeech(); theme = null; render(); });
@@ -130,13 +130,13 @@ dom.pictureGrid.addEventListener("click", (event) => {
     if (item.id !== theme.items[questionIndex].id) { mistakes += 1; render(); return; }
     answered = true; render(); return;
   }
-  selectedId = item.id; revealed = stage === "learn"; render();
+  selectedId = item.id; revealedWordId = ""; render();
 });
 dom.wordCard.addEventListener("click", (event) => {
   const action = event.target.closest("[data-action]")?.dataset.action;
   const item = chosen();
   if (!item || !action) return;
-  if (action === "reveal") { revealed = true; renderCard(); }
+  if (action === "reveal") { revealedWordId = item.id; renderCard(); }
   else if (action === "speak") speak(item);
   else if (action === "phonetic") {
     const button = dom.wordCard.querySelector('[data-action="phonetic"]');
@@ -148,11 +148,11 @@ dom.wordCard.addEventListener("click", (event) => {
     const index = theme.items.findIndex((entry) => entry.id === item.id);
     const next = theme.items[index + (action === "previous" ? -1 : 1)];
     if (!next) return;
-    stopSpeech(); selectedId = next.id; revealed = stage === "learn"; render();
+    stopSpeech(); selectedId = next.id; revealedWordId = ""; render();
   }
 });
 window.addEventListener("keydown", (event) => {
-  if (event.key !== " " || event.repeat || !theme || stage === "practice" || (stage === "review" && !revealed)) return;
+  if (event.key !== " " || event.repeat || !theme || stage === "practice" || (stage === "review" && revealedWordId !== selectedId)) return;
   if (event.target instanceof Element && event.target.closest("button,a,input,textarea,select,[role='button'],[contenteditable='true']")) return;
   const button = dom.wordCard.querySelector('[data-action="phonetic"]');
   if (!button) return;

@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { completeDialoguePractice } from "./dialogue-practice-helper.mjs";
 import { scenarioById } from "../data/scenarios.js";
 import { loadChromium } from "./playwright-runtime.mjs";
 
@@ -74,15 +75,7 @@ try {
     await page.waitForFunction(() => window.__spoken.length === 13 && document.getElementById("playbackStatus").textContent === "对话播放完毕");
     assert.deepEqual(await page.evaluate(() => window.__spoken.slice(1).map(item => item.text)), scene.lines.map(line => line.text));
     await act("#practiceStage");
-    for (const [index, question] of scene.practice.entries()) {
-      await page.waitForFunction(expected => document.getElementById("practiceProgress").textContent === expected, `${index + 1}/6`);
-      assert.match(await page.locator("#practiceFeedback").textContent(), /同类信息/);
-      await act(`[data-answer-id="${question.optionIds.find(id => id !== question.answerId)}"]`);
-      assert.equal(await page.locator("#practiceProgress").textContent(), `${index + 1}/6`);
-      await act(`[data-answer-id="${question.answerId}"]`);
-    }
-    await page.locator("#practiceResult").waitFor({ state: "visible" });
-    assert.equal(await page.locator("#practiceResultScore").textContent(), "6/6");
+    await completeDialoguePractice(page, scene, act);
     await act("#returnAfterComplete");
     assert.equal(await page.locator('[data-scenario-id="self-introduction"] [data-complete-badge]').isVisible(), true);
     await enter(); await act("#wordsStage");

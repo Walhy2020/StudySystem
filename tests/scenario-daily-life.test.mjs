@@ -20,8 +20,8 @@ test("五个生活情景保留确认的20句对话，词库完整且只含当前
       new Set(dialogueWords(scene.lines.map(line => line.text).join(" "))));
     assert.ok(collectScenarioVocabulary([scene]).every(word => word.sources.length > 0));
     assert.equal(scene.actors[0].speaker, "Mom");
-    assert.match(scene.actors[0].image, /home-mom-sprite-v3\.png$/);
-    assert.match(scene.actors[1].image, /home-brother-sprite-v1\.png$/);
+    assert.match(scene.actors[0].image, /home-mom-sprite-v4\.png$/);
+    assert.match(scene.actors[1].image, /home-brother-sprite-v2\.png$/);
   }
 });
 
@@ -32,7 +32,7 @@ test("五张背景和五位家人是真实PNG，角色使用RGBA透明格式", a
     assert.equal(bytes.readUInt32BE(16), bytes.readUInt32BE(20));
     assert.ok(bytes.readUInt32BE(16) >= 1024);
   }
-  for (const name of ["mom-sprite-v3", "dad-sprite-v2", "grandma-sprite-v2", "brother-sprite-v1", "sister-sprite-v1"]) {
+  for (const name of ["mom-sprite-v4", "dad-sprite-v3", "grandma-sprite-v3", "brother-sprite-v2", "sister-sprite-v2"]) {
     const bytes = await readFile(new URL(`../assets/scenarios/home-${name}.png`, import.meta.url));
     assert.equal(bytes.subarray(0, 8).toString("hex"), "89504e470d0a1a0a");
     assert.equal(bytes[25], 6, `${name}: RGBA`);

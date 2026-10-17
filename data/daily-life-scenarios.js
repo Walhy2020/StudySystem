@@ -17,8 +17,8 @@ const dictionary = [
   ["in", "ɪn", "在……里面"], ["box", "bɒks", "盒子"], ["all", "ɔːl", "全部"], ["done", "dʌn", "完成的"],
 ];
 const actors = Object.freeze([
-  Object.freeze({ speaker: "Mom", image: "./assets/scenarios/home-mom-sprite-v3.png", label: "照片参考的妈妈，长直发、灰色上衣" }),
-  Object.freeze({ speaker: "Child", image: "./assets/scenarios/home-brother-sprite-v1.png", label: "照片参考的哥哥，短黑发、笑着说话" }),
+  Object.freeze({ speaker: "Mom", image: "./assets/scenarios/home-mom-sprite-v4.png", label: "照片参考的妈妈，长直发、灰色上衣" }),
+  Object.freeze({ speaker: "Child", image: "./assets/scenarios/home-brother-sprite-v2.png", label: "照片参考的哥哥，短黑发、笑着说话" }),
 ]);
 function homeScenario(id, number, chineseTitle, englishTitle, description, rows, words) {
   const lines = Object.freeze(rows.map(([speaker, chinese, values], index) => {

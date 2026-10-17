@@ -60,9 +60,9 @@ try {
       }
       if(name==="index")await page.evaluate(async()=>{(await import("./src/tts.js?v=1.1")).speakChineseCharacter("天");});
       if(name==="phonetics")await page.evaluate(async()=>{await(await import("./src/phonetics-tts.js?v=1.4")).speakPhoneticExample({examples:["apple"]},{delayMs:0});});
-      if(["theme-learning","review-learning"].includes(name))await page.evaluate(async()=>{(await import("./theme-learning.js?v=2.22")).speakEnglish("hello");});
+      if(["theme-learning","review-learning"].includes(name))await page.evaluate(async()=>{(await import("./theme-learning.js?v=2.23")).speakEnglish("hello");});
       if(name==="scenario-learning") {
-        await page.evaluate(async()=>{(await import("./scenario-learning.js?v=2.12")).createScenarioSpeaker({synthesis:speechSynthesis,Utterance:SpeechSynthesisUtterance,delay:0}).speak("hello");});
+        await page.evaluate(async()=>{(await import("./scenario-learning.js?v=2.13")).createScenarioSpeaker({synthesis:speechSynthesis,Utterance:SpeechSynthesisUtterance,delay:0}).speak("hello");});
         await page.waitForTimeout(30);
       }
       if(name==="book-learning") {

@@ -1,4 +1,4 @@
-import { collectScenarioVocabulary, knownScenarioWords, normalizeWord } from "./scenario-vocabulary.js?v=1.14";
+import { collectScenarioVocabulary, knownScenarioWords, normalizeWord } from "./scenario-vocabulary.js?v=1.15";
 
 const el = (tag, text, className) => {
   const node = document.createElement(tag);

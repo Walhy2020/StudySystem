@@ -1,5 +1,5 @@
 import { BOOK1_ITEMS } from "../data/book1.js";
-import { SCENARIOS } from "../data/scenarios.js?v=1.9";
+import { SCENARIOS } from "../data/scenarios.js?v=1.10";
 
 export const TOTAL_WORD_SOURCE_KEYS = Object.freeze({
   theme: "mario-theme-learned-v1",

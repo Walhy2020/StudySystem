@@ -7,7 +7,23 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.70** (2026-10-17). Adds five approved four-line
+System display version: **v1.0.71** (2026-10-17). Revises all five family sprites
+to be more cartoon-like, using BOTH existing Mia and Leo as direct style images.
+User says loose family resemblance is enough: no photo realism. Larger rounded
+heads, simplified features and warm dimensional cartoon rendering; age/role,
+hair/glasses/clothing cues retained. Momv4/Brotherv2 used in the five home scenes;
+Dadv3/Grandmav3/Sisterv2 saved for future scenes. Real transparent PNGs, outer
+low-alpha haze removed without repainting. Previous assets retained. Backgrounds,
+dialogue, reveal behavior, all storage/game/native/cursor logic unchanged. Update
+only family paths, transitive cache references and displayed/notifier version.
+No compilation/service restart required. Pre-existing41 tracked PNG edits excluded.
+Verified pnpm check,220 Node tests and diff-check. Focused family-art acceptance
+passed in real Microsoft Edge at1440/390: five home scenes load new Mom/Brother,
+all five family assetsHTTP200, actor bounds/no clipping/no horizontal overflow,
+and practice hidden-to-IPA-to-English reveal. Cleaned style comparison and both
+stage screenshots inspected under ignored tmp; no unrelated browser suites run.
+
+Previous **v1.0.70** (2026-10-17). Adds five approved four-line
 home dialogues: getting-up, going-to-bed, having-a-meal, drinking-water and
 putting-toys-away (scenario7-11). New generated backgrounds and photo-referenced
 Mom/Brother sprites match the existing rounded 3D cartoon scenario style. Dad,

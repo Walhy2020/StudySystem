@@ -83,7 +83,9 @@ try {
     await page.evaluate(() => { window.__pad.connected = false; }); await advance(0.02);
     assert.equal(await page.locator("#study-gamepad-cursor").isVisible(), false);
     await page.evaluate(() => { window.__pad.connected = true; }); await advance(0.1);
-    assert.equal(await page.locator("#study-gamepad-cursor").isVisible(), false, "reconnection waits for neutral");
+    assert.equal(await page.locator("#study-gamepad-cursor").isVisible(), true, "reconnected cursor is visible while input still waits for neutral");
+    assert.deepEqual(await page.locator("#study-gamepad-cursor").boundingBox(), bounds, "held sticks cannot move an unarmed cursor");
+    assert.equal(await page.evaluate(() => window.__count), 1, "reconnection cannot replay a click");
     await page.evaluate(() => { window.__pad.axes = [0, 0, 0, 0]; }); await advance(0.05);
     assert.equal(await page.locator("#study-gamepad-cursor").isVisible(), true);
 

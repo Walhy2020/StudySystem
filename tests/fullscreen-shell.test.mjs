@@ -11,7 +11,7 @@ test("全屏外壳仅接收同源同目录八个模块，拒绝外链与私有/�
 test("八页在手柄光标之前加载外壳，无新存储或服务接口", () => {
   for (const page of ["index", "pinyin", "book-learning", "theme-learning", "scenario-learning", "review-learning", "phonetics", "bomb-game"]) {
     const html = readFileSync(new URL(`../${page}.html`, import.meta.url), "utf8");
-    assert.equal(html.split("src/fullscreen-shell.js?v=1.0").length - 1, 1);
+    assert.equal(html.split("src/fullscreen-shell.js?v=1.1").length - 1, 1);
     assert.ok(html.indexOf("src/fullscreen-shell.js") < html.indexOf("src/gamepad-cursor.js"));
   }
   const source = readFileSync(new URL("../src/fullscreen-shell.js", import.meta.url), "utf8");

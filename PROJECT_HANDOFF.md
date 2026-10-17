@@ -7,7 +7,36 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.67** (2026-10-17). User confirmed v1.0.66 works
+System display version: **v1.0.68** (2026-10-17). Learning-page cursor visibility
+is separated from neutral-input arming: a connected focused web-mode controller
+shows its restored cursor even while a navigation button/stick is held, but cannot
+move/click/scroll/trigger shortcuts until neutral. Native system mode, missing pad,
+blur/hidden and bomb gameplay gates remain. Fullscreen navigation snapshots the
+outgoing visible cursor before suspension and carries a noninteractive visual above
+the loading iframe. The owned incoming frame clears it when its styled cursor is
+ready or when system/capture/disconnect state precludes a cursor. Parent ownership
+checks remain; no second input loop, new storage key or native mouse command.
+Frame focus starts on navigation rather than waiting for all images. Existing
+coordinates/tab isolation and fullscreen-shell routing are unchanged. Full document
+navigation still replaces the browser document; this is not an OS-level overlay.
+Cursor cache1.15; shell JS/CSS1.1; eight notifiers/display1.0.68; Hanzi/Pinyin/IPA
+entry caches1.46/1.20/1.45. Python mouse services and learning/game rules unchanged;
+refresh only, no service restart/build required. Pre-existing41 PNG edits excluded.
+Focused Edge navigation test at1440/390 covers phonetics/scenario/review, held A
+and stick, delayed document loading/visible transition/handoff, no replay, mode,
+disconnect and neutral rearming. Screenshots are ignored under tmp and inspected.
+Physical controller is simulated; no native desktop mouse input is issued.
+pnpm check,215 Node tests and diff-check passed. The only browser runs were the
+new navigation-continuity test and existing cursor-position navigation regression
+at1440/390 (windowed module links, fullscreen frame switches/exit, refresh,
+viewport clamp and tab isolation). The position fixture now mocks native presence
+responses so rapid synthetic navigation does not exhaust the server's16-client
+limit; no product API/client-limit change. Its old reconnect assertion now expects
+visible-but-unarmed, with unchanged coordinates and no click replay. Other browser
+script edits only update changed shared-resource queries; those workflows were
+not run. Test service53179 is stopped after checks; inherited53177 is unchanged.
+
+Previous **v1.0.67** (2026-10-17). User confirmed v1.0.66 works
 over USB but double motion returns over wireless. Live API showed supported=false,
 mode=web,motionGuard=true while a separate read-only XInput check saw slot0 on all
 ten samples. Old code permanently exited its worker on any read/timeout/output

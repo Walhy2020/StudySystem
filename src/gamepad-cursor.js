@@ -102,6 +102,10 @@
     if (popup) host.append(popup);
   }
   document.addEventListener("fullscreenchange", syncOverlayHost);
+  function navigationCursorReady() {
+    if (!pointer.hidden && style.sheet) window.STUDY_FULLSCREEN_SHELL?.cursorReady();
+  }
+  style.addEventListener("load", navigationCursorReady);
 
   async function toggleFullscreen() {
     if (inputCapture || fullscreenPending) return;
@@ -240,19 +244,19 @@
     const dt = lastFrame === null ? 0 : (now - lastFrame) / 1000;
     lastFrame = now;
     if (window.STUDY_FULLSCREEN_SHELL?.isHosting()) { suspend(); return; }
-    if (inputCapture) { armed = false; previous = {}; return; }
+    if (inputCapture) { armed = false; previous = {}; window.STUDY_FULLSCREEN_SHELL?.cursorReady(); return; }
     if (document.hidden || !document.hasFocus()) { suspend(); return; }
     let pads;
     try { pads = Array.from(navigator.getGamepads?.() || []).filter(pad => pad?.connected && pad.mapping === "standard"); }
     catch { pads = []; }
     const pad = pads.find(pad => `${pad.index}:${pad.id}` === identity) || pads[0];
-    if (!pad) { identity = ""; suspend(); return; }
+    if (!pad) { identity = ""; suspend(); window.STUDY_FULLSCREEN_SHELL?.cursorReady(); return; }
     const nextIdentity = `${pad.index}:${pad.id}`;
     if (nextIdentity !== identity) { identity = nextIdentity; viewHeld = true; suspend(); }
     const view = pressed(pad, 8);
     if (view && !viewHeld) window.STUDY_CONTROLLER_MOUSE?.viewPressed();
     viewHeld = view;
-    if (window.STUDY_CONTROLLER_MOUSE?.isActive()) { suspend(); return; }
+    if (window.STUDY_CONTROLLER_MOUSE?.isActive()) { suspend(); window.STUDY_FULLSCREEN_SHELL?.cursorReady(); return; }
     const axis = index => Number.isFinite(pad.axes?.[index]) ? pad.axes[index] : 0;
     const right = [axis(2), axis(3)];
     const axes = isGame || Math.max(...right.map(Math.abs)) > DEADZONE ? right : [axis(0), axis(1)];
@@ -263,6 +267,9 @@
     if (!armed) {
       if (neutral) armed = true;
       previous = buttons;
+      // Visibility is not input permission. Preserve the restored cursor while
+      // held navigation buttons/sticks still require release before any action.
+      if (!isGame) { setMenu(true); pointer.hidden = false; navigationCursorReady(); }
       return;
     }
     if (buttons.back && !previous.back) {
@@ -286,6 +293,8 @@
     if (axes.some(value => Math.abs(value) > DEADZONE)) setMenu(true);
     if (!isGame) setMenu(true);
     pointer.hidden = !menu; help.hidden = true;
+    if (!pointer.hidden) navigationCursorReady();
+    else window.STUDY_FULLSCREEN_SHELL?.cursorReady();
     if (menu) {
       position = cursorStep(position, axes, dt, innerWidth, innerHeight);
       renderPosition();

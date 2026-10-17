@@ -10,6 +10,10 @@ const results = [];
 try {
   for (const width of [1440, 390]) {
     const context = await browser.newContext({ viewport: { width, height: 900 } });
+    // Navigation-only fixture: do not allocate native presence clients for every
+    // rapidly loaded module or issue real controller/desktop input.
+    await context.route("**/api/controller-mouse", route => route.fulfill({
+      json: { supported: false, mode: "web", motionGuard: false, reason: "disabled" } }));
     await context.addInitScript(() => {
       let callbacks = [], now;
       window.requestAnimationFrame = callback => { callbacks.push(callback); return callbacks.length; };
@@ -107,7 +111,7 @@ try {
     const second = await context.newPage(); await second.goto(base + "pinyin.html"); await ready(second);
     await samePoint(second, { x: width / 2, y: 450 });
     await second.close();
-    assert.equal((await page.request.get(base + "src/gamepad-cursor.js?v=1.14")).status(), 200);
+    assert.equal((await page.request.get(base + "src/gamepad-cursor.js?v=1.15")).status(), 200);
     assert.deepEqual(errors, []);
     results.push({ width, windowedEightPages: true, pointerNavigation: true, fullscreenSwitch: true,
       exitAndReload: true, staleOwnerProtected: true, viewportClamp: true, tabIsolation: true });

@@ -1,4 +1,4 @@
-import { buildTotalWordCatalog, buildTotalWordLibrary } from "./total-word-library.js?v=1.6";
+import { buildTotalWordCatalog, buildTotalWordLibrary } from "./total-word-library.js?v=1.7";
 
 export const THEME_LEARNED_STORAGE_KEY = "mario-theme-learned-v1";
 export const THEME_LEARNED_SCHEMA_VERSION = 2;

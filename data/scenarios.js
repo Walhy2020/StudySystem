@@ -1,3 +1,4 @@
+import { DAILY_LIFE_SCENARIOS } from "./daily-life-scenarios.js?v=1.0";
 const tokens = (values) => Object.freeze(values.map(([text, phonetic]) => Object.freeze({ text, phonetic })));
 const line = (id, speaker, text, phonetic, chinese, tokenValues, focusObject = null) => Object.freeze({
   id, speaker, text, phonetic, chinese, tokens: tokens(tokenValues), ...(focusObject ? { focusObject } : {}),
@@ -311,6 +312,7 @@ export const SCENARIOS = Object.freeze([
     vocabulary: CLASSROOM_COMMAND_VOCABULARY,
     focusObjects: CLASSROOM_COMMAND_OBJECTS,
   }),
+  ...DAILY_LIFE_SCENARIOS,
 ]);
 
 export function scenarioById(id) {

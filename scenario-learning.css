@@ -34,5 +34,12 @@
 .actor-stage[data-scenario-id="classroom-commands"]{aspect-ratio:1;background:#eef7fa url("./assets/scenarios/classroom-commands-v1.png?v=1.0") center/contain no-repeat}
 .actor-stage[data-scenario-id="classroom-commands"] .scene-actor{width:24%;height:42%;bottom:1%}
 .actor-stage[data-scenario-id="classroom-commands"] .scenario-object-focus{width:55%;top:3%;border-radius:22px}
+.daily-life-stage{aspect-ratio:1;background:#f3eadf var(--scenario-backdrop) center/contain no-repeat}
+.daily-life-stage .scene-actor{width:36%;height:57%;bottom:1%}
+.daily-life-stage .actor-mia{left:0}.daily-life-stage .actor-leo{right:0;width:31%;height:43%}
+.actor-stage.is-speaking .scene-actor.is-active-speaker{filter:drop-shadow(0 0 3px #ff8a00) drop-shadow(0 0 10px #ff9800);animation:actor-glow 1s ease-in-out 3}
+.chat-bubble[data-speaker="Child"]{background:#e8f3ff;border-color:#a9d2f6;border-radius:24px 6px 24px 24px}
+.daily-life-stage[hidden],.aligned-sentence[hidden],.aligned-word>[hidden]{display:none!important}
+@media(max-width:560px){.daily-life-stage{aspect-ratio:1}.daily-life-stage .scene-actor{width:36%;height:57%;bottom:1%}.daily-life-stage .actor-leo{width:31%;height:43%}}
 .practice-panel[data-practice-mode="chinese-to-english"] #practiceAligned .aligned-word{min-width:0}
 .practice-panel[data-practice-mode="chinese-to-english"] #practiceAligned strong{font-size:clamp(28px,3vw,40px);line-height:1.4;overflow-wrap:anywhere}

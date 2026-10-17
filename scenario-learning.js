@@ -1,5 +1,5 @@
-import { SCENARIOS, scenarioById, scenarioLineById } from "./data/scenarios.js?v=1.8";
-import { initializeScenarioWords } from "./src/scenario-workshop.js?v=1.14";
+import { SCENARIOS, scenarioById, scenarioLineById } from "./data/scenarios.js?v=1.9";
+import { initializeScenarioWords } from "./src/scenario-workshop.js?v=1.15";
 import { createDialoguePlayback } from "./src/scenario-playback.js?v=1.1";
 
 export { SCENARIOS };
@@ -221,13 +221,14 @@ function initializePage() {
   let currentLineIndex = store.state.lineIndex;
   let stage = store.state.stage;
   let revealedDialogueId = "";
+  let dialogueRevealStep = 0;
   let practiceTimer = null;
   let playbackPhase = "manual";
   let continuousMode = false;
   const playback = createDialoguePlayback({
     count: () => scenario.lines.length,
     show(index, phase) {
-      if (index !== currentLineIndex) revealedDialogueId = "";
+      if (index !== currentLineIndex) { revealedDialogueId = ""; dialogueRevealStep = 0; }
       currentLineIndex = index; playbackPhase = phase; renderDialogue();
     },
     speak: (index, onEnd, onError) => speaker.speak(scenario.lines[index].text, { onEnd, onError }),
@@ -272,22 +273,37 @@ function initializePage() {
     dom.dialogueEnglish.textContent = line.text;
     dom.dialoguePhonetic.textContent = line.phonetic;
     renderAlignedSentence(dom.dialogueAligned, line);
-    const concealed = stage === "practice" && revealedDialogueId !== line.id;
+    const revealStep = stage === "practice" ? (revealedDialogueId === line.id ? dialogueRevealStep : 0) : 2;
+    const concealed = revealStep < 2;
     if (concealed) {
       dom.dialogueAligned.querySelectorAll("strong").forEach(word => { word.hidden = true; });
-      dom.dialogueAligned.setAttribute("aria-label", "当前句音标");
+      dom.dialogueAligned.setAttribute("aria-label", revealStep === 0 ? "当前句已隐藏" : "当前句音标");
     }
+    dom.dialogueAligned.querySelectorAll("small").forEach(ipa => { ipa.hidden = revealStep === 0; });
+    dom.dialogueAligned.hidden = revealStep === 0;
     dom.revealDialogue.hidden = stage !== "practice" || !concealed;
+    dom.revealDialogue.textContent = revealStep === 0 ? "显示音标" : "显示句子";
     dom.completeDialoguePractice.hidden = stage !== "practice" || currentLineIndex !== scenario.lines.length - 1;
     dom.completeDialoguePractice.disabled = concealed;
     dom.dialogueChinese.textContent = line.chinese;
-    for (const [name, actor] of [["Mia", dom.actorMia], ["Leo", dom.actorLeo]]) {
+    const actorDefinitions = scenario.actors || [
+      { speaker: "Mia", image: "./assets/scenarios/mia-sprite-v1.png", label: "Mia 微笑挥手" },
+      { speaker: "Leo", image: "./assets/scenarios/leo-sprite-v1.png", label: "Leo 微笑挥手" },
+    ];
+    for (const [index, actor] of [dom.actorMia, dom.actorLeo].entries()) {
+      const { speaker: name, image, label } = actorDefinitions[index];
+      if (actor.getAttribute("src") !== image) actor.src = image;
+      actor.alt = label;
       const present = scenario.lines.slice(0, currentLineIndex + 1).some(item => item.speaker === name);
       actor.classList.toggle("is-present", present);
+      actor.classList.toggle("is-active-speaker", line.speaker === name);
       actor.setAttribute("aria-hidden", String(!present));
     }
     dom.actorStage.dataset.speaker = line.speaker;
     dom.actorStage.dataset.scenarioId = scenario.id;
+    dom.actorStage.classList.toggle("daily-life-stage", Boolean(scenario.image));
+    if (scenario.image) dom.actorStage.style.setProperty("--scenario-backdrop", `url("${scenario.image}")`);
+    else dom.actorStage.style.removeProperty("--scenario-backdrop");
     const focusObject = line.focusObject && scenario.focusObjects?.[line.focusObject];
     dom.scenarioObjectFocus.hidden = !focusObject;
     if (!focusObject || playbackPhase !== "finished") dom.scenarioObjectFocus.classList.remove("is-breathing");
@@ -415,6 +431,7 @@ function initializePage() {
       if (restore) practice.restore(store.state.questionIndex);
       else currentLineIndex = 0;
       revealedDialogueId = "";
+      dialogueRevealStep = 0;
       renderDialogue();
     } else if (isWords) {
       store.patch({ activeScenarioId: scenario.id, stage: "words" });
@@ -426,6 +443,7 @@ function initializePage() {
 
   function enterScenario(id, restore = false) {
     revealedDialogueId = "";
+    dialogueRevealStep = 0;
     scenario = scenarioById(id) || SCENARIOS[0];
     practice = new ScenarioPracticeSession(scenario);
     const saved = store.progress(scenario.id);
@@ -451,6 +469,24 @@ function initializePage() {
     getScenario: () => scenario,
   });
 
+  // Artwork-backed scenarios use the same picker and player, never a web generation form.
+  for (const item of SCENARIOS.filter(item => item.image)) {
+    const card = document.createElement("article");
+    card.className = "scenario-card"; card.dataset.scenarioId = item.id;
+    const preview = document.createElement("div"); preview.className = "scenario-preview scene-preview";
+    const image = document.createElement("img"); image.src = item.image; image.alt = item.imageAlt;
+    image.width = 1024; image.height = 1024; preview.append(image);
+    const copy = document.createElement("div"); copy.className = "scenario-card-copy";
+    const number = document.createElement("small"); number.textContent = `情景 ${String(item.number).padStart(2, "0")}`;
+    const title = document.createElement("h3"); title.textContent = item.chineseTitle;
+    const english = document.createElement("em"); english.textContent = item.englishTitle; title.append(english);
+    const description = document.createElement("p"); description.textContent = item.description;
+    const start = document.createElement("button"); start.type = "button"; start.dataset.startLabel = ""; start.textContent = "开始情景";
+    const badge = document.createElement("span"); badge.className = "scenario-complete-badge";
+    badge.dataset.completeBadge = ""; badge.hidden = true; badge.setAttribute("aria-label", "已完成"); badge.textContent = "✓";
+    copy.append(number, title, description, start); card.append(preview, copy, badge);
+    document.querySelector(".scenario-list").append(card);
+  }
   document.querySelectorAll(".scenario-card[data-scenario-id]").forEach((card) => card.querySelector("button").addEventListener("click", () => {
     const id = card.dataset.scenarioId;
     enterScenario(id, !store.isComplete(id));
@@ -464,12 +500,14 @@ function initializePage() {
   dom.speakDialogue.addEventListener("click", () => playLine(currentLineIndex));
   dom.revealDialogue.addEventListener("click", () => {
     if (stage !== "practice") return;
-    revealedDialogueId = scenario.lines[currentLineIndex].id;
+    const id = scenario.lines[currentLineIndex].id;
+    dialogueRevealStep = revealedDialogueId === id ? Math.min(2, dialogueRevealStep + 1) : 1;
+    revealedDialogueId = id;
     renderDialogue();
   });
   dom.completeDialoguePractice.addEventListener("click", () => {
     if (stage === "practice" && currentLineIndex === scenario.lines.length - 1 &&
-      revealedDialogueId === scenario.lines[currentLineIndex].id) finishPractice();
+      revealedDialogueId === scenario.lines[currentLineIndex].id && dialogueRevealStep === 2) finishPractice();
   });
   function resetActorEntrance() {
     for (const actor of [dom.actorMia, dom.actorLeo]) {

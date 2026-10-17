@@ -7,7 +7,28 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.69** (2026-10-17). Replaces the v68 cursor-handoff
+System display version: **v1.0.70** (2026-10-17). Adds five approved four-line
+home dialogues: getting-up, going-to-bed, having-a-meal, drinking-water and
+putting-toys-away (scenario7-11). New generated backgrounds and photo-referenced
+Mom/Brother sprites match the existing rounded 3D cartoon scenario style. Dad,
+Grandma and Sister sprites are saved for future scenes; original photos excluded.
+Practice now resets to hidden English AND IPA; click1 shows IPA, click2 shows
+English+IPA. Same-line speech preserves either reveal step; changing lines,
+replay, stage entry and refresh conceal again. Final completion requires step2.
+Learn presentation and independent storage schema remain unchanged. Vocabulary
+supports let's/here's; total catalog278 and scenario words111. No learning words
+are auto-marked by finishing dialogue. Only version/cache references elsewhere;
+no game, native mouse or cursor-shell logic changes. Static refresh only, no
+compilation/service restart. Pre-existing41 tracked PNG edits remain excluded.
+Verified pnpm check,220 Node tests and diff-check. Only
+learning-reveal-browser.mjs --scenario-only ran in real Microsoft Edge at1440/390:
+five new scene imagesHTTP200/rendered, Mom/Brother images loaded, first-speaker
+presence, actor bounds/no overflow, manual replay, all20 new lines' two-click
+reveal/completion and isolated storage. Existing first-meeting covers refresh,
+replay/continuous/same-line speech and Enter/touch reveal. Screenshots in ignored
+tmp inspected; no physical controller tested.
+
+Previous **v1.0.69** (2026-10-17). Replaces the v68 cursor-handoff
 workaround with one persistent top-level cursor owner for BOTH windowed and
 fullscreen navigation. One reusable owned content frame; child modules create no
 cursor/input RAF/position store/native-presence client. Root routes hit-testing,

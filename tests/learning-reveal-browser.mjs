@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { loadChromium } from "./playwright-runtime.mjs";
-import { checkConcealedDialogue, completeDialoguePractice } from "./dialogue-practice-helper.mjs";
+import { checkConcealedDialogue, checkPhoneticOnly, completeDialoguePractice } from "./dialogue-practice-helper.mjs";
 import { SCENARIOS } from "../data/scenarios.js";
 
 const browser = await (await loadChromium()).launch({ headless: true,
@@ -25,6 +25,7 @@ try {
     page.on("response", response => { if (response.status() >= 400) errors.push(`${response.status()} ${response.url()}`); });
     const act = selector => width === 390 ? page.locator(selector).tap() : page.locator(selector).click();
     const noOverflow = async () => assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    if (!process.argv.includes("--scenario-only")) {
     await page.goto(new URL(`book-learning.html?test=reveal-${width}`, base).href);
     await act('[data-theme="opw1:letter-A"]'); await act("#reviewStage");
     await act('[data-item="opw1:word-apple"]');
@@ -45,6 +46,7 @@ try {
     await act("#learnStage"); await act('[data-item="opw1:word-apple"]');
     assert.equal(await page.locator(".card-word").textContent(), "apple");
     assert.deepEqual(await page.evaluate(() => window.__BOOK1__.state.learnedIds), []);
+    }
 
     await page.goto(new URL(`scenario-learning.html?test=reveal-${width}`, base).href);
     const enter = () => act('[data-scenario-id="first-meeting"] [data-start-label]');
@@ -60,6 +62,11 @@ try {
     await page.screenshot({ path: `tmp/scenario-concealed-${width}.png`, fullPage: true });
     if (width === 1440) { await page.locator("#revealDialogue").focus(); await page.keyboard.press("Enter"); }
     else await act("#revealDialogue");
+    await checkPhoneticOnly(page);
+    await act("#speakDialogue");
+    await page.waitForFunction(() => window.__utterances.length > 0 && document.getElementById("pauseDialogue").hidden);
+    await checkPhoneticOnly(page);
+    await act("#revealDialogue");
     assert.ok(await page.locator("#dialogueAligned strong:visible").count() > 0);
     await act("#speakDialogue");
     await page.waitForFunction(() => window.__utterances.length > 0 && document.getElementById("pauseDialogue").hidden);
@@ -100,9 +107,48 @@ try {
     }));
     assert.ok(geometry.every(Boolean), "visible controls fit at both widths");
     await page.screenshot({ path: `tmp/scenario-revealed-${width}.png`, fullPage: true });
+    await act("#backToScenarios");
+    for (const daily of SCENARIOS.filter(scene => scene.image)) {
+      const card = page.locator(`[data-scenario-id="${daily.id}"]`);
+      await card.scrollIntoViewIfNeeded();
+      const preview = card.locator("img");
+      await preview.evaluate(image => image.decode());
+      assert.equal(await preview.getAttribute("src"), daily.image);
+      assert.ok(await preview.evaluate(image => image.naturalWidth >= 1024));
+      const response = await page.request.get(new URL(daily.image, base).href);
+      assert.equal(response.status(), 200); assert.match(response.headers()["content-type"], /image\/png/);
+      await act(`[data-scenario-id="${daily.id}"] [data-start-label]`);
+      assert.equal(await page.locator("#dialogueProgress").textContent(), "1/4");
+      assert.deepEqual(await page.locator("#dialogueAligned strong:visible").allTextContents(), daily.lines[0].tokens.map(token => token.text));
+      assert.ok((await page.locator("#actorStage").evaluate(stage => getComputedStyle(stage).backgroundImage)).includes(daily.image.slice(2)));
+      for (const [slot, definition] of daily.actors.entries()) {
+        const actor = page.locator(slot === 0 ? "#actorMia" : "#actorLeo");
+        assert.equal(await actor.getAttribute("src"), definition.image);
+        await actor.evaluate(image => image.decode());
+        assert.equal(await actor.getAttribute("aria-hidden"), String(definition.speaker !== daily.lines[0].speaker));
+      }
+      await act("#replayDialogue");
+      await page.waitForFunction(() => document.getElementById("playbackStatus").textContent.includes("Next"));
+      assert.equal(await page.locator("#dialogueProgress").textContent(), "1/4", "manual replay does not auto advance");
+      await act("#nextLine");
+      await page.waitForFunction(() => !document.getElementById("currentBubble").classList.contains("is-arriving"));
+      const inBounds = await page.locator("#actorStage").evaluate(stage => {
+        const r = stage.getBoundingClientRect();
+        return [...stage.querySelectorAll(".is-present")].every(actor => {
+          const a = actor.getBoundingClientRect(); return a.left >= r.left && a.right <= r.right && a.top >= r.top && a.bottom <= r.bottom;
+        });
+      });
+      assert.ok(inBounds, "complete characters fit inside the stage");
+      await noOverflow();
+      await page.locator("#actorStage").screenshot({ path: `tmp/${daily.id}-${width}.png` });
+      await act("#practiceStage");
+      await completeDialoguePractice(page, daily, act);
+      await act("#returnAfterComplete");
+      assert.equal(await card.locator("[data-complete-badge]").isVisible(), true);
+    }
     assert.ok((await page.evaluate(() => window.__writes)).every(key => key === `mario-scenario-learning-v1:test:reveal-${width}`));
     assert.deepEqual(errors, []);
-    results.push({ width, bookWordReset: true, dialogueReveal: true, resume: true, speechPhases: true, completion: true });
+    results.push({ width, bookWordReset: !process.argv.includes("--scenario-only"), dialogueReveal: "hidden-ipa-sentence", resume: true, speechPhases: true, completion: true });
     await context.close();
   }
   console.log(JSON.stringify({ ok: true, browser: "Microsoft Edge", results }));

@@ -1,5 +1,5 @@
 import { PHONETIC_STRESS_MARKS, splitPhonetic } from "./src/phonetic-segmenter.js?v=1.0";
-import { initializeThemeProgress } from "./src/theme-overview.js?v=1.18";
+import { initializeThemeProgress } from "./src/theme-overview.js?v=1.19";
 
 export { splitPhonetic };
 

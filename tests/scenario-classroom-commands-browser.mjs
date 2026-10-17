@@ -119,8 +119,8 @@ try {
     assert.equal(await page.locator('[data-word="raise"]').count(), 0);
     const library = await page.evaluate(async suffix => {
       const { buildTotalWordLibrary } = await import("./src/total-word-library.js?v=1.9");
-      const { buildThemeCatalog } = await import("./src/theme-overview.js?v=1.18");
-      const { THEME_CONFIGS } = await import("./theme-learning.js?v=2.24");
+      const { buildThemeCatalog } = await import("./src/theme-overview.js?v=1.19");
+      const { THEME_CONFIGS } = await import("./theme-learning.js?v=2.25");
       return buildTotalWordLibrary(buildThemeCatalog(THEME_CONFIGS), localStorage, { suffix });
     }, suffix);
     assert.equal(library.filter(item => item.word === "raise").length, 1);

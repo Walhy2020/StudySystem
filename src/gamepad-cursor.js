@@ -1,5 +1,5 @@
 (function () {
-  const PAGES = ["index.html", "pinyin.html", "book-learning.html", "theme-learning.html",
+  const PAGES = ["index.html", "pinyin.html", "word-learning.html", "book-learning.html", "theme-learning.html",
     "scenario-learning.html", "review-learning.html", "phonetics.html", "bomb-game.html"];
   const DEADZONE = 0.25;
   const SPEED = 650;
@@ -28,10 +28,11 @@
       y: limit(position.y + y * SPEED * Math.max(0, Math.min(0.05, dt)), height) };
   }
 
-  function edgeScrollAmount(position, axes, dt, height) {
-    const y = axisStrength(axes[1]);
-    const outward = (y < 0 && position.y <= 12.5) || (y > 0 && position.y >= height - 12.5);
-    return outward && Number.isFinite(dt) ? y * SCROLL_SPEED * Math.max(0, Math.min(0.05, dt)) : 0;
+  function edgeScrollAmount(position, axes, dt, size, axis = "y") {
+    const strength = axisStrength(axes[axis === "x" ? 0 : 1]);
+    const coordinate = position[axis];
+    const outward = (strength < 0 && coordinate <= 12.5) || (strength > 0 && coordinate >= size - 12.5);
+    return outward && Number.isFinite(dt) ? strength * SCROLL_SPEED * Math.max(0, Math.min(0.05, dt)) : 0;
   }
 
   function restoreCursorPosition(value, width, height) {
@@ -81,7 +82,7 @@
   const pathname = () => new URL(shell?.currentUrl() || location.href).pathname;
   const isGame = () => pathname() === base.pathname + "bomb-game.html";
   const isLearningSpacePage = () => pathname() === base.pathname ||
-    ["index.html", "theme-learning.html"].some(page => pathname() === base.pathname + page);
+    ["index.html", "word-learning.html", "theme-learning.html"].some(page => pathname() === base.pathname + page);
   function moduleEvent(type, options) {
     const target = activeWindow();
     return target ? target.dispatchEvent(new target.CustomEvent(type, options)) : true;
@@ -238,29 +239,49 @@
     if (isGame() && (target.id === "bombCanvas" || target.id === "startBombGame" ||
       target.id === "overlayStartBombGame" || target.id === "restartBombGame")) setMenu(false);
   }
-  function scrollAtCursor(amount, freshPress, verticalOnly = false) {
+  const horizontalSnap = new Map();
+  function restoreHorizontalSnap(keep = null) {
+    for (const [node, previousStyle] of horizontalSnap) {
+      if (node === keep) continue;
+      if (previousStyle.value) node.style.setProperty("scroll-snap-type", previousStyle.value, previousStyle.priority);
+      else node.style.removeProperty("scroll-snap-type");
+      horizontalSnap.delete(node);
+    }
+  }
+  function scrollAtCursor(amount, axis = "y") {
     const overlay = document.elementFromPoint(position.x, position.y);
     const content = popup?.contains(overlay) ? document : activeDocument();
     if (!content) return;
-    let node = content.elementFromPoint(position.x, position.y);
+    // Probe slightly inside the content margin: the clamped cursor may sit just
+    // outside a navigation strip even though its row extends to the page edge.
+    const probeX = axis === "x" ? Math.max(32, Math.min(innerWidth - 32, position.x)) : position.x;
+    let node = content.elementFromPoint(probeX, position.y);
     const computed = node => content.defaultView.getComputedStyle(node);
+    const offset = axis === "x" ? "scrollLeft" : "scrollTop";
+    const extent = axis === "x" ? "scrollWidth" : "scrollHeight";
+    const viewport = axis === "x" ? "clientWidth" : "clientHeight";
+    const overflow = axis === "x" ? "overflowX" : "overflowY";
     while (node && node !== content.body) {
       const css = computed(node);
-      if (/(auto|scroll)/.test(css.overflowY) && node.scrollHeight > node.clientHeight + 1) {
-        const canScroll = amount > 0 ? node.scrollTop < node.scrollHeight - node.clientHeight - 1 : node.scrollTop > 0;
-        if (!verticalOnly || canScroll) { node.scrollTop += amount; return; }
-      }
-      if (!verticalOnly && /(auto|scroll)/.test(css.overflowX) && node.scrollWidth > node.clientWidth + 1) {
-        // A full step avoids mandatory scroll-snap snapping every tiny frame back to the same card.
-        if (freshPress) node.scrollLeft += Math.sign(amount) * Math.max(160, node.clientWidth * 0.8);
-        return;
+      const canScroll = amount > 0 ? node[offset] < node[extent] - node[viewport] - 1 : node[offset] > 0;
+      if (/(auto|scroll)/.test(css[overflow]) && node[extent] > node[viewport] + 1 && canScroll) {
+        if (axis === "x" && !horizontalSnap.has(node)) {
+          horizontalSnap.set(node, { value: node.style.getPropertyValue("scroll-snap-type"), priority: node.style.getPropertyPriority("scroll-snap-type") });
+          node.style.setProperty("scroll-snap-type", "none", "important");
+        }
+        node.scrollTo({ [axis === "x" ? "left" : "top"]: node[offset] + amount, behavior: "instant" });
+        return node;
       }
       node = node.parentElement;
     }
     const root = content.scrollingElement;
-    if (root && (!verticalOnly || !/(hidden|clip)/.test(computed(root).overflowY))) root.scrollTop += amount;
+    if (root && !/(hidden|clip)/.test(computed(root)[overflow])) {
+      root.scrollTo({ [axis === "x" ? "left" : "top"]: root[offset] + amount, behavior: "instant" });
+    }
+    return null;
   }
   function suspend() {
+    restoreHorizontalSnap();
     armed = false; previous = {};
     pointer.hidden = true; help.hidden = true;
     setHover(null); setMenu(false); closePopup();
@@ -307,7 +328,7 @@
       if (!target?.matches("input,select,textarea") && !target?.isContentEditable) {
         // Reuse the same controls as Space; no synthetic key default actions.
         const control = activeDocument()?.getElementById(pathname() === base.pathname + "theme-learning.html"
-          ? "phoneticToggle" : "currentChar");
+          ? "phoneticToggle" : pathname() === base.pathname + "word-learning.html" ? "currentWord" : "currentChar");
         if (control && !control.disabled && control.getClientRects().length) control.click();
       }
     }
@@ -322,7 +343,9 @@
       position = cursorStep(position, axes, dt, innerWidth, innerHeight);
       renderPosition();
       const edgeScroll = edgeScrollAmount(position, axes, dt, innerHeight);
-      if (edgeScroll) scrollAtCursor(edgeScroll, false, true);
+      if (edgeScroll) scrollAtCursor(edgeScroll);
+      const horizontalScroll = edgeScrollAmount(position, axes, dt, innerWidth, "x");
+      restoreHorizontalSnap(horizontalScroll ? scrollAtCursor(horizontalScroll, "x") : null);
       setHover(targetAtCursor());
       if (buttons.click && !previous.click) clickAtCursor();
     } else setHover(null);
@@ -330,13 +353,14 @@
   }
   window.STUDY_GAMEPAD_CURSOR = Object.freeze({ poll, leaveMenu: suspend, isMenuActive: () => isGame() && menu,
     resetInput: () => { armed = false; previous = {}; },
-    setInputCapture: active => { inputCapture = Boolean(active); viewHeld = true; armed = false; previous = {};
+    setInputCapture: active => { restoreHorizontalSnap(); inputCapture = Boolean(active); viewHeld = true; armed = false; previous = {};
       window.STUDY_CONTROLLER_MOUSE?.setCapture(active); } });
   window.addEventListener("studysystem:controller-mouse", () => { suspend(); });
   // Focusing an owned iframe is not leaving the application.
   window.addEventListener("blur", () => { if (!document.hasFocus()) suspend(); });
   window.addEventListener("pagehide", () => { rememberPosition(); suspend(); });
   window.addEventListener("studysystem:module-changing", () => {
+    restoreHorizontalSnap();
     const visible = !pointer.hidden;
     rememberPosition(); setMenu(false); setHover(null); closePopup();
     inputCapture = false; window.STUDY_CONTROLLER_MOUSE?.setCapture(false);

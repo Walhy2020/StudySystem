@@ -1,5 +1,5 @@
 (function () {
-  const pages = ["index.html", "pinyin.html", "book-learning.html", "theme-learning.html",
+  const pages = ["index.html", "pinyin.html", "word-learning.html", "book-learning.html", "theme-learning.html",
     "scenario-learning.html", "review-learning.html", "phonetics.html", "bomb-game.html"];
   function moduleUrl(href, base, current = base) {
     try {

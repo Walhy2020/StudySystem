@@ -7,7 +7,33 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.72** (2026-10-17). Distinct clothing colors for
+System display version: **v1.0.73** (2026-10-17). Adds Words immediately right
+of Hanzi in eight learning-page navigation bars (nine pages including bomb game).
+All278 catalog definitions from Book1/themes/scenarios join without learned-state
+filtering, normalized spelling deduplicated, stable word:<spelling> IDs. Directly
+uses unchanged HanziEngine:3 new,3 correct,manual finish,mixed review,fixed daily
+up to20 review and wrong repair. Saves only mario-word-learning-v1; no importing/
+rewriting other progress or changing overall-review's three-source learned pool.
+Picture-only left panel reuses clipped object images; abstract scenario words use
+their source scene, not Chinese answer tiles. English on right, click/Space/Y
+toggles IPA; new word resets concealment; native focused controls stay native.
+Shared cursor now scrolls both axes at matching viewport edges, nested fallback,
+padding-aware horizontal hit test and temporary snap suppression during scrolling.
+One persistent owner continues to route Words navigation/Y/R1/R2, no native mouse
+changes. Refresh whole page; no build/service restart. Pre-existing41 PNG edits
+remain excluded.
+Verified pnpm check,227 Node tests and diff-check. Only word-learning-browser.mjs
+and gamepad-edge-scroll-browser.mjs ran in real Microsoft Edge at1440/390. Words:
+278 unique entries,screen/3-correct/manual-finish/mixed flow,refresh ready-state,
+6 artwork samples and cropped/image resourcesHTTP200,Space/native button/Y,
+source-key isolation,persistent-owner navigation/no child cursor. Scroll:
+real390px module nav,left/right hold/stop/reverse,snap style restoration,vertical
+behavior,nested fallback,active iframe routing,capture/disconnect and simulated
+focus loss. Controllers are simulated; physical controller not certified. Desktop
+and mobile screenshots in ignored tmp inspected. No unrelated browser suites run.
+Live53177 serves the new page/resources; independent53179 test server stopped.
+
+Previous **v1.0.72** (2026-10-17). Distinct clothing colors for
 Mom (coral red), Dad (royal blue), Brother (sunny yellow), Sister (mint green).
 Four existing approved cartoon sprites edited via user-authorized imagegen CLI;
 Grandma brown sprite, backgrounds and dialogues unchanged. Momv5/Brotherv3 used

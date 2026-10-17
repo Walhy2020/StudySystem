@@ -1,0 +1,19 @@
+.word-lesson{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;min-width:0}
+.word-picture{display:grid;place-items:center;min-width:0;min-height:420px;overflow:hidden;border:1px solid var(--line);border-radius:12px;background:#fff;box-shadow:var(--shadow);padding:18px}
+.vocabulary-art{display:block;width:100%;height:100%;max-height:520px;object-fit:contain;overflow:hidden}
+.word-lesson .challenge{margin:0;min-width:0;display:flex;flex-direction:column;justify-content:center}
+.word-question{position:relative;display:grid;place-items:center;min-width:0;min-height:240px;gap:18px;padding:24px 0}
+#currentWord{width:100%;border:0;border-radius:10px;padding:12px 6px;color:var(--ink);background:#f1f6ff;font:900 clamp(32px,4.7vw,70px)/1.2 system-ui,sans-serif;overflow-wrap:anywhere;cursor:pointer}
+#currentWord:disabled{opacity:1;cursor:default}
+.word-ipa{min-height:54px;max-width:100%;font:600 clamp(27px,3.2vw,46px)/1.3 'Segoe UI',sans-serif;color:var(--blue);overflow-wrap:anywhere;text-align:center}
+.word-round{position:absolute;right:4px;top:0;color:var(--muted);font-size:23px}
+.word-tools{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px;align-items:center}
+.word-tools>span{margin-right:auto}.word-tools button{min-height:38px;padding:0 9px;font-size:13px}
+.word-learning-shell .word-chip{width:auto;min-width:64px;max-width:100%;padding:8px 12px;overflow-wrap:anywhere;font-size:20px}
+.word-learning-shell .word-chip small{display:block;margin-top:4px}
+.ordinal-word-art,.song-word-art,.counting-word-art{display:grid;place-items:center;align-content:center;gap:20px;border-radius:12px;color:#fff;background:linear-gradient(145deg,#286bd4,#8154bd)}
+.ordinal-word-art strong,.counting-word-art>strong{font-size:86px}.song-word-art i{color:#ffe272;font-size:150px;font-style:normal}
+.counting-visual{display:grid;justify-content:center;gap:6px}.counting-units{grid-template-columns:repeat(10,14px)}
+.counting-units>i{width:14px;height:14px;border-radius:50%;background:#ffdb42}
+.counting-groups{grid-template-columns:repeat(5,32px);gap:8px}.ten-frame{display:grid;grid-template-columns:repeat(2,7px);gap:2px;padding:4px;border:2px solid #fff;border-radius:4px}.ten-frame>b{width:7px;height:7px;background:#ffdb42;border-radius:50%}
+@media(max-width:760px){.word-lesson{grid-template-columns:1fr;gap:12px}.word-picture{height:290px;min-height:0;padding:12px}.word-question{min-height:170px;padding:18px 0}.word-ipa{font-size:32px}#currentWord{font-size:42px}.word-learning-shell .side-panel{grid-template-columns:1fr}}

@@ -333,7 +333,7 @@ function escapeHtml(value) {
   })[character]);
 }
 
-function renderArt(entry, className = "word-art") {
+export function renderArt(entry, className = "word-art") {
   const label = entry.word + " " + entry.chinese + " 配图";
   if (entry.art.type === "image-url") {
     return '<img class="' + className + ' library-source-image" src="' + escapeHtml(entry.art.src) +

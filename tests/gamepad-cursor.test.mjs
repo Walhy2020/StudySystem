@@ -4,9 +4,9 @@ import { readFileSync } from "node:fs";
 import "../src/gamepad-cursor.js";
 const { safeDestination, cursorStep, edgeScrollAmount, restoreCursorPosition, createPositionStore } = globalThis.StudyGamepadCursorTools;
 
-test("手柄光标只允许八个系统页面同源同目录导航，不开放外链、下载或脚本", () => {
+test("手柄光标只允许九个系统页面同源同目录导航，不开放外链、下载或脚本", () => {
   const base = "http://127.0.0.1:53177/study/";
-  for (const page of ["", "index.html", "pinyin.html", "bomb-game.html?test=1", "theme-learning.html#learn"]) {
+  for (const page of ["", "index.html", "word-learning.html", "pinyin.html", "bomb-game.html?test=1", "theme-learning.html#learn"]) {
     assert.ok(safeDestination(page, base));
   }
   for (const page of ["https://example.com/", "//other.test/index.html", "javascript:alert(1)",
@@ -38,10 +38,10 @@ test("光标只在上下边缘继续外推时滚动，松开/死区/横推/离�
   assert.equal(edgeScrollAmount({ y: 719 }, [0, 1], -1, 731), 0);
 });
 
-test("八个页面接入同一个光标资源，无新增进度存储或系统级鼠标入口", () => {
-  for (const page of ["index", "pinyin", "book-learning", "theme-learning", "scenario-learning", "review-learning", "phonetics", "bomb-game"]) {
+test("九个页面接入同一个光标资源，无新增进度存储或系统级鼠标入口", () => {
+  for (const page of ["index", "pinyin", "word-learning", "book-learning", "theme-learning", "scenario-learning", "review-learning", "phonetics", "bomb-game"]) {
     const html = readFileSync(new URL(`../${page}.html`, import.meta.url), "utf8");
-    assert.equal(html.split('src/gamepad-cursor.js?v=1.16').length - 1, 1, page);
+    assert.equal(html.split('src/gamepad-cursor.js?v=1.17').length - 1, 1, page);
   }
   const source = readFileSync(new URL("../src/gamepad-cursor.js", import.meta.url), "utf8");
   assert.doesNotMatch(source, /localStorage|window\.open|showPicker|requestPointerLock/);
@@ -49,6 +49,15 @@ test("八个页面接入同一个光标资源，无新增进度存储或系统�
   assert.match(source, /mario-gamepad-cursor-position-v1/);
   assert.match(source, /gamepad-cursor\.css\?v=1\.1/);
   assert.match(source, /if \(document\.hidden \|\| !document\.hasFocus\(\)\)/);
+});
+
+test("左右边缘持续外推可横向滚动，正交/死区/离边/反推均不滚动", () => {
+  assert.equal(edgeScrollAmount({ x: 378 }, [1, 0], .02, 390, "x"), 10);
+  assert.equal(edgeScrollAmount({ x: 12 }, [-1, 0], .02, 390, "x"), -10);
+  assert.equal(edgeScrollAmount({ x: 378 }, [.625, 0], .02, 390, "x"), 5);
+  for (const axes of [[0, 1], [0, 0], [.2, 0], [-1, 0], [NaN, 0]]) assert.equal(edgeScrollAmount({ x: 378 }, axes, .02, 390, "x"), 0);
+  assert.equal(edgeScrollAmount({ x: 360 }, [1, 0], .02, 390, "x"), 0);
+  assert.equal(edgeScrollAmount({ x: 12 }, [1, 0], .02, 390, "x"), 0);
 });
 
 test("光标坐标保留原位置，视口缩小时仅夹到边界，坏数据回退安全", () => {

@@ -16,7 +16,8 @@ The application is a build-free local learning website served by `server.py`.
 - `index.html`, `styles.css`, `src/`, `data/`: Hanzi learning and review.
 - `phonetics.html`, `phonetics.css`, `src/phonetics-*`, `data/phonetics*`: 48-IPA module.
 - `pinyin.html`, `pinyin.css`, `src/pinyin-*`, `data/pinyin.js`: standalone 63-item Pinyin module, reusing the IPA learning policy with independent state.
-- `module-navigation.css`: shared responsive seven-module navigation.
+- `word-learning.html`, `word-learning.css`, `word-learning.js`, `src/word-learning-model.js`: standalone English vocabulary module; directly reuses HanziEngine with a definition catalog automatically merged from Book1, themes and scenarios, deduplicated by normalized spelling.
+- `module-navigation.css`: shared responsive eight-module navigation.
 - `theme-learning.html`, `theme-learning.css`, `theme-learning.js`: themed English learning.
 - `scenario-learning.html`, `scenario-learning.css`, `scenario-learning.js`, `data/scenarios.js`: short-dialogue scenario learning.
 - `review-learning.html`, `review-learning.js`, `src/theme-overview.js`: independent overall review and learned-word library.
@@ -53,7 +54,7 @@ The current browser scripts reference a Codex-bundled Playwright path under the 
 - The total word library aggregates words actually learned in Book1, Theme Learning, and Scenario Learning, deduplicated by normalized English spelling. Overall review covers all of those learned words.
 - Scenario learning is an independent top-level module. Its dialogue completion is not added to the theme learned-word library.
 - Keep the bomb game independent. Preserve native Enter/Space behavior when a link, button, form control, ARIA control, or other focusable element has focus.
-- Module navigation order: Pinyin, Hanzi, Book1, Theme Learning, Scenario Learning, Overall Review, Phonetics. Pinyin is to the left of Hanzi; the previous relative order stays unchanged.
+- Module navigation order: Pinyin, Hanzi, Words, Book1, Theme Learning, Scenario Learning, Overall Review, Phonetics. Words is immediately right of Hanzi; the previous relative order stays unchanged.
 
 ## Storage boundaries
 
@@ -62,6 +63,7 @@ Browser progress is local to each browser profile and is not synchronized by Git
 - Hanzi writes `mario-hanzi-refactor-v1`; legacy `mario-literacy-desktop-mvp-v1` is migration input.
 - Phonetics writes `mario-phonetics-v1` only.
 - Pinyin writes `mario-pinyin-v1` only; it never imports or resets Hanzi/IPA progress. Each review includes all non-mastered Pinyin items (0–63).
+- Words writes `mario-word-learning-v1` only. Import all source definitions, not just learned words; IDs are `word:<normalized spelling>`. Use unchanged Hanzi rules (3 new, 3 correct each, mixed round, fixed daily review up to20). New source content joins automatically after refresh without resetting existing records. Source modules' progress and overall review aggregation remain untouched. Left lesson panel is picture-only; abstract words may use their source scene as context.
 - Bomb maze writes `mario-bomb-game-progress-v1` and only reads Hanzi sources needed for its learning pool.
 - Theme learning writes learned-word progress through `mario-theme-learned-v1`; overall review reads it together with Book1 and Scenario Learning progress through the shared read-only total-word-library aggregator.
 - Overall review saves only its own round and per-word remembered/forgotten marks in `mario-total-review-v1`. It never changes the three source modules' learned records. Refresh resumes the same round; new rounds prioritize forgotten words.
@@ -76,7 +78,7 @@ Browser progress is local to each browser profile and is not synchronized by Git
 - Preserve user-owned dirty-worktree changes. Do not use destructive Git commands.
 - When a referenced CSS or JavaScript asset changes, update its cache query and the matching tests.
 - Every delivered change must increment the displayed system version (`APP_VERSION` and `package.json`), not only asset cache queries. Report the version and Git commit after pushing.
-- Every release must also set all eight page references to `src/version-update.js?v=<package version>` so open pages detect new releases correctly; `tests/version-update.test.mjs` enforces this.
+- Every release must also set all nine page references to `src/version-update.js?v=<package version>` so open pages detect new releases correctly; `tests/version-update.test.mjs` enforces this.
 - Put final generated web assets under `assets/` with semantic versioned names. Verify dimensions, file signatures, HTTP 200, and visible page use.
 - For visual changes, verify both desktop and a 390px viewport. Check horizontal overflow, clipping, actual element geometry, keyboard/touch behavior, and resource failures.
 - Prefer real Microsoft Edge acceptance through the repository scripts. Report the actual validation surface; do not label another browser as Edge.

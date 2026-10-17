@@ -1,5 +1,5 @@
 import { SCENARIOS, scenarioById, scenarioLineById } from "./data/scenarios.js?v=1.11";
-import { initializeScenarioWords } from "./src/scenario-workshop.js?v=1.17";
+import { initializeScenarioWords } from "./src/scenario-workshop.js?v=1.18";
 import { createDialoguePlayback } from "./src/scenario-playback.js?v=1.1";
 
 export { SCENARIOS };

@@ -22,7 +22,7 @@ test("静音从当前标签会话恢复，存储不可用时仍能正常切换",
   audio.setMuted(false); assert.equal(audio.isMuted(), false);
 });
 test("八页先加载共用静音控制；L1静音不滚动，不写入学习存储", () => {
-  for (const page of ["index","pinyin","book-learning","theme-learning","scenario-learning","review-learning","phonetics","bomb-game"]) {
+  for (const page of ["index","pinyin","word-learning","book-learning","theme-learning","scenario-learning","review-learning","phonetics","bomb-game"]) {
     const html = readFileSync(new URL(`../${page}.html`, import.meta.url), "utf8");
     assert.equal(html.split("src/web-audio.js?v=1.0").length - 1, 1);
     assert.ok(html.indexOf("src/web-audio.js") < html.indexOf("src/gamepad-cursor.js"));

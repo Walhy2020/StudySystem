@@ -6,7 +6,7 @@ mkdirSync("tmp", { recursive: true });
 const browser = await (await loadChromium()).launch({ headless: true, executablePath: "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe" });
 const results = [];
 try {
-  for (const width of [1440, 390]) {
+  for (const width of [1440, 827, 390]) {
     const context = await browser.newContext({ viewport: { width, height: 960 }, hasTouch: width === 390 });
     await context.route("**/api/controller-mouse**", route => route.fulfill({ json: { supported: false, mode: "web" } }));
     await context.addInitScript(() => {
@@ -29,20 +29,34 @@ try {
     const catalog = await page.evaluate(() => window.__WORD_LEARNING__.getItems());
     assert.ok(catalog.length >= 278); assert.equal(new Set(catalog.map(item => item.word)).size, catalog.length);
     assert.equal(await page.locator("#wordPicture img,#wordPicture svg").count(), 0);
+    // Reuse the actual Hanzi geometry, rather than an independently sized layout.
+    const reference = await browser.newContext({ viewport: { width, height: 960 } });
+    const hanzi = await reference.newPage();
+    await hanzi.goto(base + "index.html?test=word-layout-reference");
+    for (const selector of [".map-visual", ".challenge", ".word-card", ".pinyin-line"]) {
+      const expected = await hanzi.locator(selector).boundingBox();
+      const actual = await page.locator(selector).boundingBox();
+      for (const axis of ["x", "y", "width", "height"]) assert.ok(Math.abs(expected[axis] - actual[axis]) <= 1, `${width} ${selector} ${axis}: ${actual[axis]} vs ${expected[axis]}`);
+    }
+    const picture = await page.locator("#wordPicture").boundingBox(), character = await hanzi.locator("#currentChar").boundingBox();
+    assert.equal(picture.width, character.width); assert.equal(picture.height, character.height);
+    await reference.close();
     await act("#startDaily");
+    assert.equal(await page.locator("#currentWord").textContent(), "显示", "picture appears without answer");
     assert.equal(await page.locator("#wordPhonetic").textContent(), "");
     assert.ok(await page.locator("#wordPicture svg").count());
     await page.evaluate(() => document.activeElement.blur());
     await page.keyboard.press("Space"); assert.ok(await page.locator("#wordPhonetic").textContent());
-    await page.keyboard.press("Space"); assert.equal(await page.locator("#wordPhonetic").textContent(), "");
+    assert.equal(await page.locator("#currentWord").textContent(), await page.evaluate(() => window.__WORD_LEARNING__.getCurrentWord().word));
+    await page.keyboard.press("Space"); assert.equal(await page.locator("#phonemeBreakdown").isVisible(), true);
     await page.locator("#currentWord").focus(); await page.keyboard.press("Space");
-    assert.ok(await page.locator("#wordPhonetic").textContent(), "focused button keeps native Space activation");
+    assert.equal(await page.locator("#phonemeBreakdown").isVisible(), false, "focused button keeps native Space activation");
     await page.evaluate(() => {
       let now = performance.now(); const poll = () => window.STUDY_GAMEPAD_CURSOR.poll(now += 20);
       poll(); poll(); window.__pad.buttons[3] = { pressed: true, value: 1 }; poll();
       window.__pad.buttons[3] = { pressed: false, value: 0 }; poll();
     });
-    assert.equal(await page.locator("#wordPhonetic").textContent(), "", "Y matches Space");
+    assert.equal(await page.locator("#phonemeBreakdown").isVisible(), true, "Y matches Space");
     for (let i = 0; i < 3; i++) await act("#markWrong");
     assert.equal((await state()).dailyPhase, "newLearning");
     for (let i = 0; i < 9; i++) await act("#markCorrect");
@@ -66,8 +80,25 @@ try {
         localStorage.setItem(api.getStorageKey(), JSON.stringify(next));
       }, item.id);
       await page.reload(); await page.waitForFunction(() => Boolean(window.__WORD_LEARNING__));
-      assert.equal(await page.locator("#currentWord").textContent(), word);
+      assert.equal(await page.locator("#currentWord").textContent(), "显示", "reload and new word hide spelling");
       assert.equal(await page.locator("#wordPhonetic").textContent(), "", "new word hides pronunciation");
+      assert.equal(await page.locator("#phonemeBreakdown").textContent(), "");
+      await act("#currentWord");
+      assert.equal(await page.locator("#currentWord").textContent(), word);
+      assert.equal(await page.locator("#wordPhonetic").textContent(), item.phonetic);
+      await act("#wordPhonetic");
+      assert.equal(await page.locator("#phonemeBreakdown").isVisible(), true);
+      const answerBounds = await page.locator(".word-question").boundingBox();
+      for (const selector of ["#currentWord", "#wordPhonetic", "#phonemeBreakdown"]) {
+        const bounds = await page.locator(selector).boundingBox();
+        assert.ok(bounds.x >= answerBounds.x && bounds.x + bounds.width <= answerBounds.x + answerBounds.width + 1, `${word} ${selector} fits horizontally`);
+        assert.ok(bounds.y >= answerBounds.y && bounds.y + bounds.height <= answerBounds.y + answerBounds.height + 1, `${word} ${selector} is not clipped`);
+      }
+      if (word === "hello") assert.ok((await page.locator(".phoneme-chip").allTextContents()).includes("əʊ"), "diphthong stays together");
+      assert.doesNotMatch(await page.locator("#phonemeBreakdown").textContent(), /重音|\//);
+      if (word === "hello") await page.screenshot({ path: `tmp/word-learning-split-${width}.png`, fullPage: true });
+      await act("#wordPhonetic");
+      assert.equal(await page.locator("#phonemeBreakdown").isVisible(), false);
       await page.locator("#wordPicture img").evaluateAll(images => Promise.all(images.map(image => image.decode())));
       if (item.art.type === "image") assert.equal(await page.locator("#wordPicture svg").getAttribute("viewBox"), item.art.viewBox);
       if (item.art.src) { const response = await page.request.get(new URL(item.art.src, base).href); assert.equal(response.status(), 200); }
@@ -85,7 +116,7 @@ try {
     assert.equal(await frame.locator("#startDaily").count(), 1);
     assert.equal(await frame.locator("#study-gamepad-cursor").count(), 0);
     assert.deepEqual(errors, []);
-    results.push({ width, words: catalog.length, flow: "Hanzi engine", artSamples: samples.length, storageIsolated: true, keyboardAndY: true, navigation: true });
+    results.push({ width, words: catalog.length, flow: "Hanzi engine", hanziGeometry: true, concealedAnswer: true, phonemeToggle: true, artSamples: samples.length, storageIsolated: true, keyboardAndY: true, navigation: true });
     await context.close();
   }
   console.log(JSON.stringify({ ok: true, browser: "Microsoft Edge", simulatedGamepad: true, results }));

@@ -7,7 +7,19 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.73** (2026-10-17). Adds Words immediately right
+System display version: **v1.0.74** (2026-10-17). Words now shares Hanzi's stage,
+map and challenge/word-card geometry, including the responsive picture dimensions.
+Each picture initially hides spelling and IPA. Click Show/Space/Y reveals both;
+later Space/Y or clicking IPA toggles shared phonetic-segmenter output. Diphthongs
+stay intact, stress is symbol-only. Each next word/reload resets concealment.
+No engine, catalog, storage or controller changes. Refresh; no build/restart.
+Verified syntax checks,228 unit tests and word-learning-browser.mjs in real Edge
+at1440/827/390: matching Hanzi geometry,conceal/reveal,Space/native activation/Y,
+IPA split/diphthongs,artwork/resources and isolated storage. Expanded answers grow
+to avoid clipping. Desktop/mobile screenshots inspected; no unrelated browser
+suite run. Existing53177 preserved; temporary53179 stopped after verification.
+
+Previous **v1.0.73** (2026-10-17). Adds Words immediately right
 of Hanzi in eight learning-page navigation bars (nine pages including bomb game).
 All278 catalog definitions from Book1/themes/scenarios join without learned-state
 filtering, normalized spelling deduplicated, stable word:<spelling> IDs. Directly

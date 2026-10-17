@@ -1,23 +1,42 @@
 import { HanziEngine } from "./src/engine.js";
-import { APP_VERSION, PHASE } from "./src/constants.js?v=1.0.73";
+import { APP_VERSION, PHASE } from "./src/constants.js?v=1.0.74";
 import { THEME_CONFIGS, speakEnglish } from "./theme-learning.js?v=2.25";
 import { buildThemeCatalog, renderArt } from "./src/theme-overview.js?v=1.19";
 import { buildWordLearningItems, WordLearningStorage } from "./src/word-learning-model.js?v=1.0";
+import { PHONETIC_STRESS_MARKS, splitPhonetic } from "./src/phonetic-segmenter.js?v=1.0";
 
 const items = buildWordLearningItems(buildThemeCatalog(THEME_CONFIGS));
 const dom = Object.fromEntries([...document.querySelectorAll("[id]")].map(node => [node.id, node]));
 let local;
 try { local = window.localStorage; } catch { /* Memory-only fallback, with notice. */ }
 const storage = new WordLearningStorage(local, items, { namespace: new URLSearchParams(location.search).get("test") || "" });
-let engine = new HanziEngine(storage.load(), items), revealed = false;
+let engine = new HanziEngine(storage.load(), items), revealed = false, phoneticExpanded = false;
 dom.appVersionLabel.textContent = `v${APP_VERSION}`;
 
 function reveal() {
   const item = engine.currentWord();
   if (!item || !engine.state.dailyTaskStarted || engine.state.dailyTaskDone) return;
-  revealed = !revealed;
-  dom.wordPhonetic.textContent = revealed ? item.phonetic : "";
-  dom.currentWord.setAttribute("aria-expanded", String(revealed));
+  if (revealed) { togglePhonetic(); return; }
+  revealed = true;
+  dom.currentWord.textContent = item.word;
+  dom.currentWord.setAttribute("aria-expanded", "true");
+  dom.currentWord.setAttribute("aria-label", `${item.word}，切换音标拆解`);
+  dom.wordPhonetic.textContent = item.phonetic;
+  dom.wordPhonetic.hidden = false;
+  dom.wordPhonetic.setAttribute("aria-label", `拆解 ${item.word} 的音标 ${item.phonetic}`);
+  dom.phonemeBreakdown.replaceChildren(...splitPhonetic(item.phonetic).map(symbol => {
+    const span = document.createElement("span");
+    span.className = "phoneme-chip" + (PHONETIC_STRESS_MARKS[symbol] ? " phoneme-stress" : "");
+    span.textContent = symbol;
+    if (PHONETIC_STRESS_MARKS[symbol]) span.setAttribute("aria-label", PHONETIC_STRESS_MARKS[symbol]);
+    return span;
+  }));
+}
+function togglePhonetic() {
+  if (!revealed) return;
+  phoneticExpanded = !phoneticExpanded;
+  dom.wordPhonetic.setAttribute("aria-expanded", String(phoneticExpanded));
+  dom.phonemeBreakdown.hidden = !phoneticExpanded;
 }
 function renderList(container, ids, source, empty) {
   container.replaceChildren();
@@ -43,8 +62,13 @@ function render() {
     : state.dailyPhase === PHASE.NEW_LEARNING ? `完成 ${progress.newDone}/${progress.newTotal} · 每词需 3 次`
     : state.dailyPhase === PHASE.MIXED_REVIEW ? `混合 ${progress.mixedDone}/${progress.newTotal}`
     : state.dailyPhase === PHASE.REVIEW ? `普通 ${progress.reviewDone}/${progress.reviewTotal} · 错词 ${progress.wrongDone}/${progress.wrongTotal}` : "";
-  revealed = false; dom.wordPhonetic.textContent = "";
-  dom.currentWord.textContent = active ? item.word : state.dailyTaskDone ? "完成" : "开始";
+  revealed = false; phoneticExpanded = false;
+  dom.wordPhonetic.textContent = ""; dom.wordPhonetic.hidden = true;
+  dom.wordPhonetic.setAttribute("aria-expanded", "false");
+  dom.wordPhonetic.setAttribute("aria-label", "拆解音标");
+  dom.phonemeBreakdown.replaceChildren(); dom.phonemeBreakdown.hidden = true;
+  dom.currentWord.textContent = active ? "显示" : state.dailyTaskDone ? "完成" : "开始";
+  dom.currentWord.setAttribute("aria-label", "显示单词和音标");
   dom.currentWord.disabled = !active; dom.currentWord.setAttribute("aria-expanded", "false");
   dom.wordPicture.replaceChildren();
   if (active) {
@@ -75,6 +99,7 @@ const actions = { startDaily: () => engine.startDaily(), startReview: () => engi
   inline: (id, source) => engine.startInlineReview(id, source) };
 for (const [id, action] of Object.entries({ startDaily: "startDaily", startReview: "startReview", markCorrect: "correct", markWrong: "wrong", markMastered: "master", finishNewWords: "finishNew", nextBatch: "nextBatch" })) dom[id].addEventListener("click", () => act(actions[action]));
 dom.currentWord.addEventListener("click", reveal);
+dom.wordPhonetic.addEventListener("click", togglePhonetic);
 dom.speakCurrent.addEventListener("click", () => { const item = engine.currentWord(); if (item) speakEnglish(item.word); });
 document.addEventListener("click", event => {
   const button = event.target.closest("[data-inline-id]");

@@ -87,3 +87,19 @@ test("全部学习页在汉字右边接入单词入口，图片侧没有文本�
   assert.match(script, /\.ordinal-word-art span,\.song-word-art strong/);
   assert.match(script, /event\.target\.closest/);
 });
+
+test("单词卡沿用汉字布局，先隐藏答案，揭示后显示英文/音标并复用双元音拆解", () => {
+  const html = readFileSync(new URL("../word-learning.html", import.meta.url), "utf8");
+  const script = readFileSync(new URL("../word-learning.js", import.meta.url), "utf8");
+  const css = readFileSync(new URL("../word-learning.css", import.meta.url), "utf8");
+  assert.match(html, /class="stage word-lesson"/);
+  for (const name of ["map-visual", "word-card", "hanzi-panel", "pinyin-line word-question"]) assert.ok(html.includes(`class="${name}"`));
+  assert.match(html, /word-learning\.css\?v=1\.1/);
+  assert.match(html, /word-learning\.js\?v=1\.1/);
+  assert.match(script, /active \? "显示"/);
+  assert.match(script, /dom\.currentWord\.textContent = item\.word/);
+  assert.match(script, /splitPhonetic\(item\.phonetic\)/);
+  assert.match(script, /dom\.wordPhonetic\.addEventListener\("click", togglePhonetic\)/);
+  assert.match(script, /dom\.phonemeBreakdown\.replaceChildren\(\); dom\.phonemeBreakdown\.hidden = true/);
+  assert.doesNotMatch(css, /min-height:420px|\.word-lesson\{display:grid/);
+});

@@ -41,7 +41,7 @@ test("光标只在上下边缘继续外推时滚动，松开/死区/横推/离�
 test("八个页面接入同一个光标资源，无新增进度存储或系统级鼠标入口", () => {
   for (const page of ["index", "pinyin", "book-learning", "theme-learning", "scenario-learning", "review-learning", "phonetics", "bomb-game"]) {
     const html = readFileSync(new URL(`../${page}.html`, import.meta.url), "utf8");
-    assert.equal(html.split('src/gamepad-cursor.js?v=1.15').length - 1, 1, page);
+    assert.equal(html.split('src/gamepad-cursor.js?v=1.16').length - 1, 1, page);
   }
   const source = readFileSync(new URL("../src/gamepad-cursor.js", import.meta.url), "utf8");
   assert.doesNotMatch(source, /localStorage|window\.open|showPicker|requestPointerLock/);
@@ -73,4 +73,15 @@ test("坐标存储仅写会话专用key的x/y，非法数据及拒绝存储不�
   const blocked = createPositionStore({ getItem() { throw Error("denied"); }, setItem() { throw Error("denied"); } }, key);
   assert.deepEqual(blocked.read(390, 900), { x: 195, y: 450 });
   assert.doesNotThrow(() => blocked.save({ x: 20, y: 30 }));
+});
+
+test("子模块仅委派到单一宿主，不能建立第二个光标或原生鼠标心跳", () => {
+  const cursor = readFileSync(new URL("../src/gamepad-cursor.js", import.meta.url), "utf8");
+  assert.ok(cursor.indexOf("if (shell?.isEmbedded())") < cursor.indexOf('const pointer = document.createElement'));
+  assert.match(cursor, /poll: \(\) => \{\}/);
+  assert.match(cursor, /activeDocument\(\)\?\.elementFromPoint/);
+  assert.doesNotMatch(cursor, /isHosting\(\)\) \{ suspend\(\); return/);
+  const mouse = readFileSync(new URL("../src/controller-mouse.js", import.meta.url), "utf8");
+  assert.ok(mouse.indexOf("if (shell?.isEmbedded())") < mouse.indexOf("const client = crypto.randomUUID()"));
+  assert.match(mouse, /shell\.mouseOwner\(\)\?\.isActive\(\)/);
 });

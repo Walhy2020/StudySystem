@@ -63,6 +63,11 @@ try {
       if (!error.message.includes("Execution context was destroyed")) throw error;
     })]);
     await advance(0.05);
+    // Navigation keeps the pointer in its owner document; the remaining cases
+    // below intentionally exercise direct-page controls, not iframe routing.
+    await page.waitForFunction(() => !window.STUDY_FULLSCREEN_SHELL.isNavigating(), null, { polling: 50 });
+    assert.equal(await page.frameLocator("#study-module-frame").locator("#study-gamepad-cursor").count(), 0);
+    await page.goto(base + "index.html?cursor=1"); await advance(0.05);
     await page.evaluate(() => {
       const box = document.createElement("div"); box.id = "cursor-fixture";
       box.style.cssText = "position:fixed;left:40px;top:160px;z-index:1000;display:grid;width:150px;gap:10px";
@@ -132,6 +137,7 @@ try {
     assert.equal(await page.locator("#iceBombAttackKey").getAttribute("aria-pressed"), "true");
     await page.keyboard.press("KeyJ");
     assert.equal((await read()).iceBombKey, "KeyJ");
+    await advance(0.05); // Sample neutral after binding capture before moving again.
     await aim("#mushroomThrowDistance"); await tap(); assert.ok((await read()).throwDistance >= 4);
     await page.screenshot({ path: `tmp/gamepad-cursor-bomb-${width}.png` });
     await tap(3); assert.equal(await page.locator("#bombAttackMenu").isVisible(), false);
@@ -141,7 +147,13 @@ try {
     await page.evaluate(() => { window.__pad.buttons[15] = { pressed: false, value: 0 }; }); await advance(0.02);
     await tap(); assert.equal((await read()).mushroomShots.length, 1);
     await tap(1); assert.equal((await read()).bombs.filter(bomb => bomb.isIce).length, 1);
-    await aim("#bombSettingsToggle"); await page.evaluate(() => window.dispatchEvent(new Event("blur")));
+    await aim("#bombSettingsToggle");
+    // Headless Edge can keep hasFocus=true for multiple pages. Simulate genuine
+    // application focus loss rather than the iframe-focus blur being fixed.
+    await page.evaluate(() => {
+      Object.defineProperty(document, "hasFocus", { value: () => false, configurable: true });
+      window.dispatchEvent(new Event("blur"));
+    }); await advance(0.05);
     assert.equal(await page.locator("#study-gamepad-cursor").isVisible(), false);
     assert.deepEqual(errors, []);
     results.push({ width, sharedPages: 8, internalNavigation: true, blockedExternal: true,

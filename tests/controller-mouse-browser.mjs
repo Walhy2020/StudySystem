@@ -79,7 +79,7 @@ try {
     await page.locator("#overlayStartBombGame").click(); await page.locator("#bombSettingsToggle").click();
     await tap(5); assert.ok(await page.locator("#bombSettingsMenu").isHidden(), "R1 closes settings");
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), "no horizontal overflow");
-    for (const asset of ["src/controller-mouse.js?v=1.1", "src/gamepad-cursor.js?v=1.15", "bomb-game.js?v=2.43"]) {
+    for (const asset of ["src/controller-mouse.js?v=1.2", "src/gamepad-cursor.js?v=1.16", "bomb-game.js?v=2.43"]) {
       assert.equal((await page.request.get(base + asset)).status(), 200);
     }
     assert.deepEqual(errors, []);

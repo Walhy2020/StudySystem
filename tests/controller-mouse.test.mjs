@@ -10,7 +10,7 @@ test("系统鼠标：物理 View 边沿、断线/空闲保护和受限同源接�
 test("八页先接入互斥层；R1只有返回，View不再绑定攻击", () => {
   for (const page of ["index", "pinyin", "book-learning", "theme-learning", "scenario-learning", "review-learning", "phonetics", "bomb-game"]) {
     const html = readFileSync(new URL(`../${page}.html`, import.meta.url), "utf8");
-    assert.equal(html.split('src/controller-mouse.js?v=1.1').length - 1, 1);
+    assert.equal(html.split('src/controller-mouse.js?v=1.2').length - 1, 1);
     assert.ok(html.indexOf("src/controller-mouse.js") < html.indexOf("src/gamepad-cursor.js"));
   }
   const cursor = readFileSync(new URL("../src/gamepad-cursor.js", import.meta.url), "utf8");

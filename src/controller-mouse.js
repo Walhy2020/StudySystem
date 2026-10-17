@@ -1,4 +1,15 @@
 (function () {
+  const shell = window.STUDY_FULLSCREEN_SHELL;
+  if (shell?.isEmbedded()) {
+    // A single owner keeps the native presence lease alive across module loads.
+    window.STUDY_CONTROLLER_MOUSE = Object.freeze({
+      isActive: () => shell.mouseOwner()?.isActive() || false,
+      viewPressed: () => shell.mouseOwner()?.viewPressed(),
+      setCapture: value => shell.mouseOwner()?.setCapture(value),
+      refresh: () => shell.mouseOwner()?.refresh(),
+    });
+    return;
+  }
   // The native worker reads physical Xbox View. HTTP only carries a presence lease,
   // never pointer coordinates, clicks, commands, or an arbitrary desktop action.
   const client = crypto.randomUUID();
@@ -6,19 +17,24 @@
   let supported = false, noticeUntil = 0, retryAfter = 0, reason = "";
   const badge = document.createElement("div");
   badge.id = "study-controller-mouse-mode";
+  badge.setAttribute("data-study-shell-overlay", "");
   badge.hidden = true;
   badge.style.cssText = "position:fixed;right:12px;bottom:12px;z-index:2147483647;pointer-events:none;background:#16324f;color:white;padding:6px 10px;border-radius:12px;font:14px sans-serif";
   document.body.append(badge);
   function blocked() { return mode === "system" || performance.now() < pendingUntil; }
   function notify() {
     window.dispatchEvent(new CustomEvent("studysystem:controller-mouse", { detail: { active: blocked(), mode } }));
+    const target = shell?.activeWindow();
+    if (target && target !== window) target.dispatchEvent(new target.CustomEvent("studysystem:controller-mouse", {
+      detail: { active: blocked(), mode },
+    }));
   }
-  function mount() { (document.fullscreenElement || document.body).append(badge); }
+  function mount() { (shell?.overlayHost() || document.fullscreenElement || document.body).append(badge); }
   async function poll() {
     if (inFlight || performance.now() < retryAfter) return;
     inFlight = true;
     try {
-      const active = !document.hidden && document.hasFocus() && !capture && !window.STUDY_FULLSCREEN_SHELL?.isHosting();
+      const active = !document.hidden && document.hasFocus() && !capture;
       const response = await fetch("./api/controller-mouse", { method: "POST", cache: "no-store",
         headers: { "Content-Type": "application/json" }, body: JSON.stringify({ client, active }), signal: AbortSignal.timeout(1200) });
       if (!response.ok) throw Error("Local mouse service unavailable");

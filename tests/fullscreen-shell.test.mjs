@@ -11,7 +11,7 @@ test("全屏外壳仅接收同源同目录八个模块，拒绝外链与私有/�
 test("八页在手柄光标之前加载外壳，无新存储或服务接口", () => {
   for (const page of ["index", "pinyin", "book-learning", "theme-learning", "scenario-learning", "review-learning", "phonetics", "bomb-game"]) {
     const html = readFileSync(new URL(`../${page}.html`, import.meta.url), "utf8");
-    assert.equal(html.split("src/fullscreen-shell.js?v=1.1").length - 1, 1);
+    assert.equal(html.split("src/fullscreen-shell.js?v=1.2").length - 1, 1);
     assert.ok(html.indexOf("src/fullscreen-shell.js") < html.indexOf("src/gamepad-cursor.js"));
   }
   const source = readFileSync(new URL("../src/fullscreen-shell.js", import.meta.url), "utf8");
@@ -33,4 +33,14 @@ test("显示版本入口使用当前 constants 缓存，防止旧版本标记覆
   for (const file of ["src/app.js", "src/pinyin-app.js", "src/phonetics-app.js"]) {
     assert.ok(readFileSync(new URL(`../${file}`, import.meta.url), "utf8").includes(`./constants.js?v=${version}`));
   }
+});
+
+test("窗口/全屏共用常驻宿主，退出全屏不销毁内容或用过渡光标冒充常驻光标", () => {
+  const shell = readFileSync(new URL("../src/fullscreen-shell.js", import.meta.url), "utf8");
+  assert.doesNotMatch(shell, /study-navigation-cursor|cursorCarry|cursorSnapshot|leaveShell/);
+  assert.doesNotMatch(shell, /if \(!frame && !owner\) return false/);
+  assert.match(shell, /frame\.contentWindow\.location\.replace\(url\.href\)/);
+  assert.match(shell, /activeWindow, currentUrl/);
+  const updater = readFileSync(new URL("../src/version-update.js", import.meta.url), "utf8");
+  assert.match(updater, /STUDY_FULLSCREEN_SHELL\.reload\(\)/);
 });

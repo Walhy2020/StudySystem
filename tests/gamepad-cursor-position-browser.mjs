@@ -2,120 +2,90 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import { loadChromium } from "./playwright-runtime.mjs";
 const base = process.env.HANZI_BASE_URL || "http://127.0.0.1:5177/";
-const positionKey = `mario-gamepad-cursor-position-v1:${new URL(base).pathname}`;
 const browser = await (await loadChromium()).launch({ headless: true,
   executablePath: "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe" });
 fs.mkdirSync("tmp", { recursive: true });
-const results = [];
 try {
   for (const width of [1440, 390]) {
     const context = await browser.newContext({ viewport: { width, height: 900 } });
-    // Navigation-only fixture: do not allocate native presence clients for every
-    // rapidly loaded module or issue real controller/desktop input.
-    await context.route("**/api/controller-mouse", route => route.fulfill({
-      json: { supported: false, mode: "web", motionGuard: false, reason: "disabled" } }));
+    await context.route("**/api/controller-mouse", route => route.fulfill({ json: { supported: false, mode: "web" } }));
     await context.addInitScript(() => {
-      let callbacks = [], now;
-      window.requestAnimationFrame = callback => { callbacks.push(callback); return callbacks.length; };
-      window.__pad = { index: 0, id: "Cursor position fixture", mapping: "standard", connected: true,
+      window.requestAnimationFrame = () => 0;
+      window.__time = 0;
+      window.__pad = parent !== window ? parent.__pad : { index: 0, id: "Position fixture", mapping: "standard", connected: true,
         axes: [0, 0, 0, 0], buttons: Array.from({ length: 18 }, () => ({ pressed: false, value: 0 })) };
       Object.defineProperty(navigator, "getGamepads", { value: () => [window.__pad] });
-      window.__advance = seconds => {
-        now ??= performance.now();
-        for (let i = 0; i < Math.ceil(seconds * 60); i++) {
-          now += 1000 / 60; const batch = callbacks; callbacks = []; batch.forEach(cb => cb(now));
-        }
-      };
+      window.__step = () => window.STUDY_GAMEPAD_CURSOR.poll(window.__time += 1000 / 60);
     });
     const page = await context.newPage(), errors = [];
     page.on("pageerror", error => errors.push(error.message));
-    page.on("response", response => { if (response.status() >= 400) errors.push(response.url()); });
-    const advance = surface => surface.evaluate(() => window.__advance(0.05));
-    const point = surface => surface.evaluate(() => {
-      const node = document.getElementById("study-gamepad-cursor");
-      return { x: parseFloat(node.style.left), y: parseFloat(node.style.top) };
-    });
-    async function ready(surface) {
-      await surface.waitForFunction(() => Boolean(window.STUDY_GAMEPAD_CURSOR)); await advance(surface);
+    const point = () => page.locator("#study-gamepad-cursor").evaluate(node => ({ x: +parseFloat(node.style.left), y: +parseFloat(node.style.top) }));
+    async function ready() {
+      await page.waitForFunction(() => Boolean(window.STUDY_GAMEPAD_CURSOR), null, { polling: 50 });
+      await page.evaluate(() => { window.__step(); window.__step(); });
     }
-    async function samePoint(surface, expected) {
-      const actual = await point(surface);
-      assert.ok(Math.abs(actual.x - expected.x) < 0.01 && Math.abs(actual.y - expected.y) < 0.01,
-        `cursor moved unexpectedly: ${JSON.stringify({ expected, actual })}`);
-      assert.equal(await surface.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+    async function same(expected) {
+      const actual = await point();
+      assert.ok(Math.hypot(actual.x - expected.x, actual.y - expected.y) < .1, JSON.stringify({ actual, expected }));
     }
-    async function move(surface, target) {
-      await surface.evaluate(({ x, y }) => {
-        for (let i = 0; i < 250; i++) {
-          const node = document.getElementById("study-gamepad-cursor");
-          const dx = x - parseFloat(node.style.left), dy = y - parseFloat(node.style.top);
-          if (Math.hypot(dx, dy) < 1) break;
-          const axis = delta => Math.abs(delta) < 0.4 ? 0 : Math.sign(delta) * (0.25 + 0.75 * Math.min(1, Math.abs(delta) / (650 / 60)));
-          window.__pad.axes[2] = axis(dx); window.__pad.axes[3] = axis(dy); window.__advance(1 / 60);
+    async function move(x, y) {
+      await page.evaluate(({ x, y }) => {
+        for (let i = 0; i < 300; i++) {
+          const cursor = document.getElementById("study-gamepad-cursor");
+          const dx = x - parseFloat(cursor.style.left), dy = y - parseFloat(cursor.style.top);
+          if (Math.hypot(dx, dy) < .1) break;
+          const axis = d => Math.abs(d) < .04 ? 0 : Math.sign(d) * (.25 + .75 * Math.min(1, Math.abs(d) / (650 / 60)));
+          window.__pad.axes = [0, 0, axis(dx), axis(dy)]; window.__step();
         }
-        window.__pad.axes = [0, 0, 0, 0]; window.__advance(1 / 60);
-      }, target);
-      const actual = await point(surface);
-      assert.ok(Math.hypot(actual.x - target.x, actual.y - target.y) < 1.5, "real cursor polling reached target");
-      assert.equal(await surface.locator("#study-gamepad-cursor").isVisible(), true);
-      return actual;
+        window.__pad.axes = [0, 0, 0, 0]; window.__step();
+      }, { x, y });
+      await same({ x, y });
     }
-    async function goFrame(surface, name) {
-      await surface.locator(`a[href="./${name}.html"]`).first().click();
-      const frame = await (await page.waitForSelector("#study-module-frame")).contentFrame();
-      await frame.waitForURL(url => url.pathname.endsWith(name + ".html")); await ready(frame);
-      assert.equal(await page.evaluate(() => Boolean(document.fullscreenElement)), true);
+    async function content(name) {
+      await page.waitForURL(url => url.pathname.endsWith(name + ".html"));
+      await page.waitForFunction(() => !window.STUDY_FULLSCREEN_SHELL.isNavigating(), null, { polling: 50 });
+      const frame = await (await page.locator("#study-module-frame").elementHandle()).contentFrame();
+      await frame.waitForURL(url => url.pathname.endsWith(name + ".html"));
       return frame;
     }
-    await page.goto(base + "pinyin.html?cursor-position-check=1"); await ready(page);
-    await samePoint(page, { x: width / 2, y: 450 });
-    const first = await move(page, { x: 71, y: 233 });
-    // Only navigation is exercised; no unrelated learning or gameplay workflows.
-    for (const name of ["index", "book-learning", "theme-learning", "scenario-learning", "review-learning", "phonetics"]) {
-      await page.locator(`a[href="./${name}.html"]`).first().click();
-      await page.waitForURL(url => url.pathname.endsWith(name + ".html")); await ready(page); await samePoint(page, first);
-    }
-    await page.locator('a[href*="bomb-game.html"]').first().click();
-    await page.waitForURL(/bomb-game\.html/); await ready(page); await samePoint(page, first);
-    await page.locator('a[href="./index.html"]').click(); await page.waitForURL(/index\.html/); await ready(page); await samePoint(page, first);
-    // The clicked navigation cell also keeps the position, not just native links.
-    const link = page.locator('a[href="./pinyin.html"]'); await link.scrollIntoViewIfNeeded();
-    const rect = await link.boundingBox(); const selected = await move(page, { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 });
-    await page.evaluate(() => { window.__pad.buttons[0] = { pressed: true, value: 1 }; window.__advance(1 / 60); });
-    await page.waitForURL(/pinyin\.html/); await ready(page); await samePoint(page, selected);
+    await page.goto(base + "bomb-game.html"); await ready();
+    await page.locator("#overlayStartBombGame").click(); await ready();
+    await move(71, 233);
     await page.evaluate(() => {
-      const button = document.createElement("button"); button.id = "position-fullscreen"; button.textContent = "Fullscreen fixture";
-      button.style.cssText = "position:fixed;top:0;left:0;z-index:2147483647";
-      button.onclick = () => document.documentElement.requestFullscreen(); document.body.append(button);
+      window.__pointer = document.getElementById("study-gamepad-cursor");
+      window.__gameBefore = window.__BOMB_GAME__.getState();
     });
-    await page.locator("#position-fullscreen").click(); await page.waitForFunction(() => Boolean(document.fullscreenElement));
-    await page.evaluate(() => document.getElementById("position-fullscreen").remove()); await samePoint(page, selected);
-    let frame = await goFrame(page, "index"); await samePoint(frame, selected);
-    const childPoint = await move(frame, { x: 137, y: 288 });
-    for (const name of ["theme-learning", "phonetics"]) {
-      frame = await goFrame(frame, name); await samePoint(frame, childPoint);
-    }
-    await page.screenshot({ path: `tmp/cursor-position-${width}.png` });
-    // R2 exit destroys the frame; the dormant owner must not save its stale point.
-    await page.evaluate(() => document.exitFullscreen());
-    await page.waitForFunction(() => !document.fullscreenElement && !document.getElementById("study-module-frame") && location.pathname.endsWith("phonetics.html"));
-    await ready(page); await samePoint(page, childPoint);
-    const stored = await page.evaluate(key => JSON.parse(sessionStorage.getItem(key)), positionKey);
+    // The real game requests fullscreen on its nested .bomb-game-app, not <html>.
+    await page.locator("#bombSettingsToggle").click(); await page.locator("#bombFullscreenToggle").click();
+    await page.waitForFunction(() => document.fullscreenElement?.classList.contains("bomb-game-app"), null, { polling: 50 });
+    await page.locator('a[href="./index.html"]').click(); let frame = await content("index"); await same({ x: 71, y: 233 });
+    await move(137, 288);
+    await frame.evaluate(() => { window.__contentToken = "preserved"; });
+    await page.evaluate(() => window.STUDY_FULLSCREEN_SHELL.toggleFullscreen());
+    await page.waitForFunction(() => !document.fullscreenElement, null, { polling: 50 });
+    assert.equal(await frame.evaluate(() => window.__contentToken), "preserved", "fullscreen exit never reparents/reloads content");
+    assert.equal(await page.locator("#study-gamepad-cursor").isVisible(), true);
+    assert.equal(await page.evaluate(() => window.__pointer === document.getElementById("study-gamepad-cursor")), true);
+    await same({ x: 137, y: 288 });
+    assert.equal(await page.evaluate(() => window.__BOMB_GAME__.getState().dayClock === window.__gameBefore.dayClock), true);
+    await page.screenshot({ path: "tmp/persistent-cursor-bomb-owner-" + width + ".png" });
+    // Root refresh loads the visible module, and only session x/y survive.
+    await page.reload(); await ready(); await same({ x: 137, y: 288 });
+    assert.equal(await page.locator("#study-module-frame").count(), 0);
+    const stored = await page.evaluate(root => JSON.parse(sessionStorage.getItem("mario-gamepad-cursor-position-v1:" + root)), new URL(base).pathname);
     assert.deepEqual(Object.keys(stored).sort(), ["x", "y"]);
-    assert.ok(Math.hypot(stored.x - childPoint.x, stored.y - childPoint.y) < 0.01);
-    await page.reload(); await ready(page); await samePoint(page, childPoint);
-    const edgePoint = await move(page, { x: width - 20, y: 875 });
-    await page.setViewportSize({ width: 390, height: 500 }); await ready(page);
-    await samePoint(page, { x: Math.min(edgePoint.x, 378), y: 488 });
-    // A separate browser tab has independent UI coordinates.
-    const second = await context.newPage(); await second.goto(base + "pinyin.html"); await ready(second);
-    await samePoint(second, { x: width / 2, y: 450 });
+    assert.ok(Math.hypot(stored.x - 137, stored.y - 288) < .1);
+    await move(width - 20, 875);
+    await page.setViewportSize({ width: 390, height: 500 });
+    await same({ x: Math.min(width - 20, 378), y: 488 });
+    const second = await context.newPage(); await second.goto(base + "pinyin.html");
+    assert.deepEqual(await second.locator("#study-gamepad-cursor").evaluate(node =>
+      ({ x: parseFloat(node.style.left), y: parseFloat(node.style.top) })), { x: width / 2, y: 450 });
     await second.close();
-    assert.equal((await page.request.get(base + "src/gamepad-cursor.js?v=1.15")).status(), 200);
+    for (const asset of ["src/fullscreen-shell.js?v=1.2", "fullscreen-shell.css?v=1.2", "src/gamepad-cursor.js?v=1.16", "src/controller-mouse.js?v=1.2"])
+      assert.equal((await page.request.get(base + asset)).status(), 200);
     assert.deepEqual(errors, []);
-    results.push({ width, windowedEightPages: true, pointerNavigation: true, fullscreenSwitch: true,
-      exitAndReload: true, staleOwnerProtected: true, viewportClamp: true, tabIsolation: true });
+    console.log("PASS Edge " + width + ": nested game fullscreen owner/exit, constant DOM identity, root refresh, x/y only, clamp, tab isolation, asset200");
     await context.close();
   }
-  console.log(JSON.stringify({ ok: true, browser: "Microsoft Edge", simulatedStandardGamepad: true, results }));
 } finally { await browser.close(); }

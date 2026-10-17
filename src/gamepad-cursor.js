@@ -58,22 +58,43 @@
   if (!source) return;
   const base = new URL("../", source);
   if (!safeDestination(location.href, base)) return;
-  const isGame = location.pathname === base.pathname + "bomb-game.html";
-  const isLearningSpacePage = location.pathname === base.pathname ||
-    ["index.html", "theme-learning.html"].some(page => location.pathname === base.pathname + page);
   const style = document.createElement("link");
   style.rel = "stylesheet";
   style.href = new URL("../gamepad-cursor.css?v=1.1", source).href;
   document.head.append(style);
+  const shell = window.STUDY_FULLSCREEN_SHELL;
+  if (shell?.isEmbedded()) {
+    // Content modules only delegate. They never create a pointer, own coordinates
+    // or start an input loop; even bomb's explicit poll calls stay with the owner.
+    window.STUDY_GAMEPAD_CURSOR = Object.freeze({
+      poll: () => {},
+      leaveMenu: () => shell.cursorOwner()?.leaveMenu(),
+      isMenuActive: () => shell.cursorOwner()?.isMenuActive() || false,
+      resetInput: () => shell.cursorOwner()?.resetInput(),
+      setInputCapture: value => shell.cursorOwner()?.setInputCapture(value),
+    });
+    window.addEventListener("studysystem:update-prompt", () => shell.cursorOwner()?.leaveMenu());
+    return;
+  }
+  const activeWindow = () => shell?.activeWindow() || (shell?.isHosting() ? null : window);
+  const activeDocument = () => activeWindow()?.document;
+  const pathname = () => new URL(shell?.currentUrl() || location.href).pathname;
+  const isGame = () => pathname() === base.pathname + "bomb-game.html";
+  const isLearningSpacePage = () => pathname() === base.pathname ||
+    ["index.html", "theme-learning.html"].some(page => pathname() === base.pathname + page);
+  function moduleEvent(type, options) {
+    const target = activeWindow();
+    return target ? target.dispatchEvent(new target.CustomEvent(type, options)) : true;
+  }
 
   const pointer = document.createElement("div");
   pointer.id = "study-gamepad-cursor";
   pointer.setAttribute("aria-hidden", "true");
+  pointer.setAttribute("data-study-shell-overlay", "");
   pointer.hidden = true;
   const help = document.createElement("div");
   help.id = "study-gamepad-help";
-  help.textContent = isGame ? "菜单已暂停游戏 · 右摇杆移动 · A / × 点选 · L1 静音 · R1 返回 · R2 全屏 · View 切换鼠标"
-    : "手柄光标 · 摇杆移动 · 到上下边缘继续推可滚动 · A / × 点选 · L1 静音 · R1 返回 · R2 全屏";
+  help.setAttribute("data-study-shell-overlay", "");
   help.hidden = true;
   document.body.append(pointer, help);
   let positionStorage;
@@ -85,8 +106,7 @@
     pointer.style.left = position.x + "px"; pointer.style.top = position.y + "px";
   }
   function rememberPosition() {
-    // A dormant fullscreen owner must never overwrite its current child module.
-    if (!window.STUDY_FULLSCREEN_SHELL?.isHosting()) positionStore.save(position);
+    positionStore.save(position);
   }
   renderPosition();
   let inputCapture = false;
@@ -95,23 +115,19 @@
   let fullscreenPending = false;
   let viewHeld = true;
 
-  function overlayHost() { return document.fullscreenElement || document.body; }
+  function overlayHost() { return shell?.overlayHost() || document.fullscreenElement || document.body; }
   function syncOverlayHost() {
     const host = overlayHost();
     host.append(pointer, help);
     if (popup) host.append(popup);
   }
   document.addEventListener("fullscreenchange", syncOverlayHost);
-  function navigationCursorReady() {
-    if (!pointer.hidden && style.sheet) window.STUDY_FULLSCREEN_SHELL?.cursorReady();
-  }
-  style.addEventListener("load", navigationCursorReady);
 
   async function toggleFullscreen() {
     if (inputCapture || fullscreenPending) return;
     // Bomb owns its save/pause/focus handling; only one fullscreen path may run.
-    if (isGame) {
-      window.dispatchEvent(new CustomEvent("studysystem:gamepad-fullscreen"));
+    if (isGame() && activeWindow()) {
+      moduleEvent("studysystem:gamepad-fullscreen");
       return;
     }
     fullscreenPending = true;
@@ -126,15 +142,14 @@
     if (inputCapture) return;
     if (popup) { closePopup(); return; }
     // Reuse module-owned exits: these also cancel speech/timers and save progress.
-    const event = new CustomEvent("studysystem:gamepad-back", { cancelable: true });
-    if (!window.dispatchEvent(event)) return;
+    if (!moduleEvent("studysystem:gamepad-back", { cancelable: true })) return;
     for (const id of ["backToScenarios", "backToThemes", "backToSeries"]) {
-      const button = document.getElementById(id);
+      const button = activeDocument()?.getElementById(id);
       if (button && !button.disabled && button.getClientRects().length) {
         button.click(); return;
       }
     }
-    if (location.pathname === base.pathname || location.pathname === base.pathname + "index.html") return;
+    if (pathname() === base.pathname || pathname() === base.pathname + "index.html") return;
     const destination = new URL("index.html", base);
     rememberPosition();
     if (!window.STUDY_FULLSCREEN_SHELL?.navigate(destination.href)) location.assign(destination.href);
@@ -144,7 +159,7 @@
   function setMenu(value) {
     if (menu === value) return;
     menu = value;
-    if (isGame) window.dispatchEvent(new CustomEvent("studysystem:gamepad-menu", { detail: { active: value } }));
+    if (isGame()) moduleEvent("studysystem:gamepad-menu", { detail: { active: value } });
     if (!value) { pointer.hidden = true; help.hidden = true; closePopup(); }
   }
   function setHover(target) {
@@ -155,13 +170,16 @@
     pointer.classList.toggle("is-clickable", Boolean(target));
   }
   function targetAtCursor() {
-    return document.elementFromPoint(position.x, position.y)?.closest(
+    const overlay = document.elementFromPoint(position.x, position.y);
+    if (popup?.contains(overlay)) return overlay.closest("button");
+    return activeDocument()?.elementFromPoint(position.x, position.y)?.closest(
       'button,a,input,select,textarea,summary,[role="button"],[role="checkbox"],[tabindex],#bombCanvas');
   }
   function openSelect(select) {
     closePopup();
     popup = document.createElement("div");
     popup.className = "study-gamepad-options";
+    popup.setAttribute("data-study-shell-overlay", "");
     popup.setAttribute("role", "group");
     popup.setAttribute("aria-label", select.getAttribute("aria-label") || "选择选项");
     for (const option of select.options) {
@@ -171,8 +189,9 @@
       button.setAttribute("aria-pressed", String(option.selected));
       button.addEventListener("click", () => {
         select.value = option.value;
-        select.dispatchEvent(new Event("input", { bubbles: true }));
-        select.dispatchEvent(new Event("change", { bubbles: true }));
+        const EventType = select.ownerDocument.defaultView.Event;
+        select.dispatchEvent(new EventType("input", { bubbles: true }));
+        select.dispatchEvent(new EventType("change", { bubbles: true }));
         closePopup();
       });
       popup.append(button);
@@ -185,13 +204,14 @@
     if (selected) popup.scrollTop = Math.max(0, selected.offsetTop - popup.clientHeight / 2);
   }
   function clickAtCursor() {
+    if (shell?.isNavigating()) return;
     const target = targetAtCursor();
     if (!target || target.matches(':disabled,[aria-disabled="true"]') || target.closest("[inert]")) return;
     if (popup?.contains(target)) { target.click(); return; }
     if (popup && !popup.contains(target)) closePopup();
     if (target.matches('input[type="file"]')) return;
     if (target.matches("a")) {
-      const destination = safeDestination(target.getAttribute("href"), base, location.href);
+      const destination = safeDestination(target.getAttribute("href"), base, target.ownerDocument.location.href);
       if (!destination || target.hasAttribute("download")) return;
       rememberPosition();
       if (!window.STUDY_FULLSCREEN_SHELL?.navigate(destination.href)) location.assign(destination.href);
@@ -204,22 +224,28 @@
       const min = Number(target.min || 0), max = Number(target.max || 100), step = Number(target.step) || 1;
       target.value = String(min + Math.round((max - min) * Math.max(0, Math.min(1,
         (position.x - rect.left) / rect.width)) / step) * step);
-      target.dispatchEvent(new Event("input", { bubbles: true }));
-      target.dispatchEvent(new Event("change", { bubbles: true }));
+      const EventType = target.ownerDocument.defaultView.Event;
+      target.dispatchEvent(new EventType("input", { bubbles: true }));
+      target.dispatchEvent(new EventType("change", { bubbles: true }));
       return;
     }
     const coordinates = { bubbles: true, cancelable: true, clientX: position.x, clientY: position.y, button: 0 };
-    target.dispatchEvent(new PointerEvent("pointerdown", { ...coordinates, pointerId: 99, pointerType: "mouse" }));
-    target.dispatchEvent(new PointerEvent("pointerup", { ...coordinates, pointerId: 99, pointerType: "mouse" }));
+    const targetWindow = target.ownerDocument.defaultView;
+    target.dispatchEvent(new targetWindow.PointerEvent("pointerdown", { ...coordinates, pointerId: 99, pointerType: "mouse" }));
+    target.dispatchEvent(new targetWindow.PointerEvent("pointerup", { ...coordinates, pointerId: 99, pointerType: "mouse" }));
     if (typeof target.click === "function") target.click();
-    else target.dispatchEvent(new MouseEvent("click", coordinates));
-    if (isGame && (target.id === "bombCanvas" || target.id === "startBombGame" ||
+    else target.dispatchEvent(new targetWindow.MouseEvent("click", coordinates));
+    if (isGame() && (target.id === "bombCanvas" || target.id === "startBombGame" ||
       target.id === "overlayStartBombGame" || target.id === "restartBombGame")) setMenu(false);
   }
   function scrollAtCursor(amount, freshPress, verticalOnly = false) {
-    let node = document.elementFromPoint(position.x, position.y);
-    while (node && node !== document.body) {
-      const css = getComputedStyle(node);
+    const overlay = document.elementFromPoint(position.x, position.y);
+    const content = popup?.contains(overlay) ? document : activeDocument();
+    if (!content) return;
+    let node = content.elementFromPoint(position.x, position.y);
+    const computed = node => content.defaultView.getComputedStyle(node);
+    while (node && node !== content.body) {
+      const css = computed(node);
       if (/(auto|scroll)/.test(css.overflowY) && node.scrollHeight > node.clientHeight + 1) {
         const canScroll = amount > 0 ? node.scrollTop < node.scrollHeight - node.clientHeight - 1 : node.scrollTop > 0;
         if (!verticalOnly || canScroll) { node.scrollTop += amount; return; }
@@ -231,8 +257,8 @@
       }
       node = node.parentElement;
     }
-    const root = document.scrollingElement;
-    if (root && (!verticalOnly || !/(hidden|clip)/.test(getComputedStyle(root).overflowY))) root.scrollTop += amount;
+    const root = content.scrollingElement;
+    if (root && (!verticalOnly || !/(hidden|clip)/.test(computed(root).overflowY))) root.scrollTop += amount;
   }
   function suspend() {
     armed = false; previous = {};
@@ -243,23 +269,22 @@
     if (lastFrame === now) return;
     const dt = lastFrame === null ? 0 : (now - lastFrame) / 1000;
     lastFrame = now;
-    if (window.STUDY_FULLSCREEN_SHELL?.isHosting()) { suspend(); return; }
-    if (inputCapture) { armed = false; previous = {}; window.STUDY_FULLSCREEN_SHELL?.cursorReady(); return; }
+    if (inputCapture) { armed = false; previous = {}; return; }
     if (document.hidden || !document.hasFocus()) { suspend(); return; }
     let pads;
     try { pads = Array.from(navigator.getGamepads?.() || []).filter(pad => pad?.connected && pad.mapping === "standard"); }
     catch { pads = []; }
     const pad = pads.find(pad => `${pad.index}:${pad.id}` === identity) || pads[0];
-    if (!pad) { identity = ""; suspend(); window.STUDY_FULLSCREEN_SHELL?.cursorReady(); return; }
+    if (!pad) { identity = ""; suspend(); return; }
     const nextIdentity = `${pad.index}:${pad.id}`;
     if (nextIdentity !== identity) { identity = nextIdentity; viewHeld = true; suspend(); }
     const view = pressed(pad, 8);
     if (view && !viewHeld) window.STUDY_CONTROLLER_MOUSE?.viewPressed();
     viewHeld = view;
-    if (window.STUDY_CONTROLLER_MOUSE?.isActive()) { suspend(); window.STUDY_FULLSCREEN_SHELL?.cursorReady(); return; }
+    if (window.STUDY_CONTROLLER_MOUSE?.isActive()) { suspend(); return; }
     const axis = index => Number.isFinite(pad.axes?.[index]) ? pad.axes[index] : 0;
     const right = [axis(2), axis(3)];
-    const axes = isGame || Math.max(...right.map(Math.abs)) > DEADZONE ? right : [axis(0), axis(1)];
+    const axes = isGame() || Math.max(...right.map(Math.abs)) > DEADZONE ? right : [axis(0), axis(1)];
     const buttons = { click: pressed(pad, 0) || pressed(pad, 11), toggle: pressed(pad, 3),
       mute: pressed(pad, 4), back: pressed(pad, 5), fullscreen: pressed(pad, 7) };
     const neutral = [0, 1, 2, 3].every(index => Math.abs(axis(index)) <= DEADZONE) &&
@@ -269,32 +294,30 @@
       previous = buttons;
       // Visibility is not input permission. Preserve the restored cursor while
       // held navigation buttons/sticks still require release before any action.
-      if (!isGame) { setMenu(true); pointer.hidden = false; navigationCursorReady(); }
+      if (!isGame() || shell?.isNavigating()) { setMenu(true); pointer.hidden = false; }
       return;
     }
-    if (buttons.back && !previous.back) {
+    if (!shell?.isNavigating() && buttons.back && !previous.back) {
       previous = buttons; returnOneLevel(); return;
     }
     if (buttons.fullscreen && !previous.fullscreen) void toggleFullscreen();
     if (buttons.mute && !previous.mute) window.STUDY_AUDIO?.toggle();
-    if (isLearningSpacePage && buttons.toggle && !previous.toggle) {
-      const target = document.activeElement;
+    if (!shell?.isNavigating() && isLearningSpacePage() && buttons.toggle && !previous.toggle) {
+      const target = activeDocument()?.activeElement;
       if (!target?.matches("input,select,textarea") && !target?.isContentEditable) {
         // Reuse the same controls as Space; no synthetic key default actions.
-        const control = document.getElementById(location.pathname === base.pathname + "theme-learning.html"
+        const control = activeDocument()?.getElementById(pathname() === base.pathname + "theme-learning.html"
           ? "phoneticToggle" : "currentChar");
         if (control && !control.disabled && control.getClientRects().length) control.click();
       }
     }
-    if (isGame && buttons.toggle && !previous.toggle) {
+    if (!shell?.isNavigating() && isGame() && buttons.toggle && !previous.toggle) {
       if (menu) { suspend(); return; }
       setMenu(true);
     }
     if (axes.some(value => Math.abs(value) > DEADZONE)) setMenu(true);
-    if (!isGame) setMenu(true);
+    if (!isGame() || shell?.isNavigating()) setMenu(true);
     pointer.hidden = !menu; help.hidden = true;
-    if (!pointer.hidden) navigationCursorReady();
-    else window.STUDY_FULLSCREEN_SHELL?.cursorReady();
     if (menu) {
       position = cursorStep(position, axes, dt, innerWidth, innerHeight);
       renderPosition();
@@ -305,14 +328,23 @@
     } else setHover(null);
     previous = buttons;
   }
-  window.STUDY_GAMEPAD_CURSOR = Object.freeze({ poll, leaveMenu: suspend, isMenuActive: () => isGame && menu,
+  window.STUDY_GAMEPAD_CURSOR = Object.freeze({ poll, leaveMenu: suspend, isMenuActive: () => isGame() && menu,
     resetInput: () => { armed = false; previous = {}; },
     setInputCapture: active => { inputCapture = Boolean(active); viewHeld = true; armed = false; previous = {};
       window.STUDY_CONTROLLER_MOUSE?.setCapture(active); } });
   window.addEventListener("studysystem:controller-mouse", () => { suspend(); });
-  window.addEventListener("blur", suspend);
+  // Focusing an owned iframe is not leaving the application.
+  window.addEventListener("blur", () => { if (!document.hasFocus()) suspend(); });
   window.addEventListener("pagehide", () => { rememberPosition(); suspend(); });
-  window.addEventListener("studysystem:fullscreen-navigation", () => { rememberPosition(); suspend(); });
+  window.addEventListener("studysystem:module-changing", () => {
+    const visible = !pointer.hidden;
+    rememberPosition(); setMenu(false); setHover(null); closePopup();
+    inputCapture = false; window.STUDY_CONTROLLER_MOUSE?.setCapture(false);
+    pointer.hidden = !visible;
+  });
+  window.addEventListener("studysystem:module-ready", () => {
+    if (isGame()) setMenu(false);
+  });
   window.addEventListener("gamepaddisconnected", suspend);
   window.addEventListener("studysystem:update-prompt", suspend);
   document.addEventListener("visibilitychange", () => { if (document.hidden) suspend(); });

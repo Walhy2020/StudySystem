@@ -1,5 +1,5 @@
 .study-fullscreen-host { overflow: hidden !important; }
-.study-fullscreen-host > :not(#study-module-frame):not(#study-navigation-cursor) { display: none !important; }
+.study-fullscreen-host > :not(#study-module-frame):not([data-study-shell-overlay]) { display: none !important; }
 #study-module-frame {
   position: fixed;
   inset: 0;
@@ -10,27 +10,5 @@
   padding: 0;
   display: block;
   background: #f4f7fb;
-  z-index: 2147483646;
+  z-index: 2147483640;
 }
-#study-navigation-cursor {
-  position: fixed;
-  z-index: 2147483647;
-  width: 24px;
-  height: 24px;
-  box-sizing: border-box;
-  transform: translate(-50%, -50%);
-  border: 3px solid #fff;
-  border-radius: 50%;
-  background: #2563eb;
-  box-shadow: 0 0 0 2px #1e3a8a, 0 0 14px #60a5fa;
-  pointer-events: none;
-}
-#study-navigation-cursor::after {
-  content: "";
-  position: absolute;
-  inset: 6px;
-  border-radius: 50%;
-  background: white;
-}
-#study-navigation-cursor.is-clickable { background: #f59e0b; box-shadow: 0 0 0 2px #78350f, 0 0 16px #fbbf24; }
-#study-navigation-cursor[hidden] { display: none !important; }

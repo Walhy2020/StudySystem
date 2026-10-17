@@ -58,7 +58,7 @@ if (typeof window !== "undefined" && typeof document !== "undefined") {
     },
     beforePrompt: () => window.dispatchEvent(new Event("studysystem:update-prompt")),
     confirmUpdate: message => window.confirm(message),
-    reload: () => window.location.reload(),
+    reload: () => window.STUDY_FULLSCREEN_SHELL ? window.STUDY_FULLSCREEN_SHELL.reload() : window.location.reload(),
   });
   setTimeout(checkVersion, 3000);
   setInterval(checkVersion, 60000);

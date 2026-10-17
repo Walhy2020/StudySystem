@@ -14,101 +14,88 @@
   const base = new URL("../", source);
   if (!moduleUrl(location.href, base)) return;
   const style = document.createElement("link"); style.rel = "stylesheet";
-  style.href = new URL("../fullscreen-shell.css?v=1.1", source).href; document.head.append(style);
-  let frame = null, currentUrl = null, exiting = false, cursorCarry = null;
-  function clearCursorCarry() { if (cursorCarry) cursorCarry.hidden = true; }
-  function cursorSnapshot() {
-    try {
-      const sourceDocument = frame ? frame.contentDocument : document;
-      const cursor = sourceDocument?.getElementById("study-gamepad-cursor");
-      if (!cursor || cursor.hidden || !cursor.getClientRects().length) return null;
-      return { x: parseFloat(cursor.style.left), y: parseFloat(cursor.style.top),
-        clickable: cursor.classList.contains("is-clickable") };
-    } catch { return null; }
-  }
-  function carryCursor(snapshot, owner) {
-    if (!owner || !snapshot || !Number.isFinite(snapshot.x) || !Number.isFinite(snapshot.y)) {
-      clearCursorCarry(); return;
-    }
-    if (!cursorCarry) {
-      cursorCarry = document.createElement("div"); cursorCarry.id = "study-navigation-cursor";
-      cursorCarry.setAttribute("aria-hidden", "true");
-    }
-    cursorCarry.style.left = Math.max(12, Math.min(innerWidth - 12, snapshot.x)) + "px";
-    cursorCarry.style.top = Math.max(12, Math.min(innerHeight - 12, snapshot.y)) + "px";
-    cursorCarry.classList.toggle("is-clickable", snapshot.clickable);
-    owner.append(cursorCarry); cursorCarry.hidden = false;
-  }
+  style.href = new URL("../fullscreen-shell.css?v=1.2", source).href; document.head.append(style);
+  let frame = null, currentUrl = new URL(location.href), navigating = false, host = null;
   function parentShell() {
     try {
       const shell = window.parent !== window && window.parent.STUDY_FULLSCREEN_SHELL;
       return shell?.ownsFrame(window) ? shell : null;
     } catch { return null; }
   }
-  function leaveShell() {
-    if (!frame || exiting) return;
-    exiting = true;
-    // Return directly to the currently displayed module, never to the dormant source.
-    location.replace(currentUrl.href);
+  function activeWindow() {
+    if (!frame) return window;
+    return navigating ? null : frame.contentWindow;
+  }
+  function mountFrame() {
+    if (!frame || host) return;
+    const owner = document.fullscreenElement || document.body;
+    host = owner;
+    host.classList.add("study-fullscreen-host");
+    for (const node of host.children) {
+      if (node === frame || node.hasAttribute("data-study-shell-overlay")) continue;
+      node.inert = true;
+    }
+    host.append(frame);
+  }
+  function moduleReady(child) {
+    if (!frame || frame.contentWindow !== child) return;
+    const loaded = moduleUrl(child.location.href, base);
+    if (!loaded || loaded.href !== currentUrl.href) return;
+    navigating = false;
+    document.title = child.document.title;
+    history.replaceState({ studyFullscreen: true }, "", loaded.href);
+    window.dispatchEvent(new Event("studysystem:module-ready"));
+    child.dispatchEvent(new child.CustomEvent("studysystem:controller-mouse"));
   }
   function navigate(href, push = true) {
     const url = moduleUrl(href, base, location.href);
     if (!url) return false;
     const parent = parentShell();
     if (parent) return parent.navigateFrame(window, url.href);
-    const owner = document.fullscreenElement;
-    if (!frame && !owner) return false;
-    const snapshot = cursorSnapshot();
-    if (frame) {
-      // Stop the outgoing module too, not only the original fullscreen owner.
-      frame.contentWindow.dispatchEvent(new Event("studysystem:fullscreen-navigation"));
-      frame.contentWindow.speechSynthesis?.cancel?.();
-    }
+    // Windowed and fullscreen navigation have the SAME persistent owner. Only
+    // the content document changes; cursor identity, coordinates and input edges do not.
+    window.dispatchEvent(new Event("studysystem:module-changing"));
+    const outgoing = activeWindow();
+    outgoing?.dispatchEvent(new outgoing.Event("studysystem:fullscreen-navigation"));
+    outgoing?.speechSynthesis?.cancel?.();
+    navigating = true;
+    currentUrl = url;
     if (!frame) {
-      window.dispatchEvent(new Event("studysystem:fullscreen-navigation"));
-      window.speechSynthesis?.cancel?.();
       frame = document.createElement("iframe"); frame.id = "study-module-frame";
       frame.title = "马里奥学习系统当前模块"; frame.allow = "fullscreen; gamepad";
-      owner.classList.add("study-fullscreen-host");
-      for (const node of owner.children) node.inert = true;
-      owner.append(frame);
-      frame.addEventListener("load", () => {
-        try {
-          const loaded = moduleUrl(frame.contentWindow.location.href, base);
-          if (!loaded) return;
-          currentUrl = loaded; document.title = frame.contentDocument.title;
-          history.replaceState({ studyFullscreen: true }, "", loaded.href);
-          frame.focus();
-        } catch { /* Only same-origin system modules are accepted. */ }
-      });
-    }
-    currentUrl = url;
+      // Replacing subsequent frame documents avoids duplicate browser-history entries.
+      frame.src = url.href;
+      mountFrame();
+    } else frame.contentWindow.location.replace(url.href);
     if (push && location.href !== url.href) history.pushState({ studyFullscreen: true }, "", url.href);
-    frame.src = url.href;
-    carryCursor(snapshot, owner);
-    // Focus need not wait for images or other late resources to finish loading.
     frame.focus();
     return true;
   }
   async function toggleFullscreen() {
     const parent = parentShell();
     if (parent) return parent.toggleFrameFullscreen(window);
-    if (frame) return document.exitFullscreen();
     if (document.fullscreenElement) return document.exitFullscreen();
-    return document.documentElement.requestFullscreen();
+    return (host || document.documentElement).requestFullscreen();
   }
   window.STUDY_FULLSCREEN_SHELL = Object.freeze({
     navigate, toggleFullscreen,
     isHosting: () => Boolean(frame),
     isEmbedded: () => Boolean(parentShell()),
+    isNavigating: () => navigating,
+    activeWindow, currentUrl: () => currentUrl.href,
+    overlayHost: () => host || document.fullscreenElement || document.body,
     isFullscreen: () => Boolean(document.fullscreenElement || parentShell()?.isFullscreen()),
     ownsFrame: child => Boolean(frame && frame.contentWindow === child),
-    cursorReady: () => parentShell()?.cursorReadyFor(window),
-    cursorReadyFor: child => { if (frame?.contentWindow === child) clearCursorCarry(); },
+    cursorOwner: () => parentShell()?.cursorFor(window),
+    mouseOwner: () => parentShell()?.mouseFor(window),
+    cursorFor: child => frame?.contentWindow === child ? window.STUDY_GAMEPAD_CURSOR : null,
+    mouseFor: child => frame?.contentWindow === child ? window.STUDY_CONTROLLER_MOUSE : null,
+    moduleReady,
     navigateFrame: (child, href) => frame?.contentWindow === child ? navigate(href) : false,
     toggleFrameFullscreen: child => frame?.contentWindow === child ? toggleFullscreen() : Promise.reject(new Error("Not the active module")),
+    reload: () => parentShell() ? parentShell().reloadFrame(window) : location.reload(),
+    reloadFrame: child => { if (frame?.contentWindow === child) location.reload(); },
   });
-  // Native mouse/keyboard links and the gamepad pointer share the same routing.
   document.addEventListener("click", event => {
     if (event.defaultPrevented || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
     const link = event.target instanceof Element ? event.target.closest("a[href]") : null;
@@ -117,12 +104,7 @@
     if (!url || (url.pathname === location.pathname && url.search === location.search)) return;
     if (navigate(url.href)) event.preventDefault();
   });
-  document.addEventListener("fullscreenchange", () => { if (frame && !document.fullscreenElement) leaveShell(); });
+  // Exiting fullscreen no longer reloads the owner or destroys the real cursor.
   window.addEventListener("popstate", () => { if (frame) navigate(location.href, false); });
-  window.addEventListener("blur", () => { if (!document.hasFocus()) clearCursorCarry(); });
-  window.addEventListener("studysystem:controller-mouse", () => {
-    if (window.STUDY_CONTROLLER_MOUSE?.isActive()) clearCursorCarry();
-  });
-  window.addEventListener("gamepaddisconnected", clearCursorCarry);
-  document.addEventListener("visibilitychange", () => { if (document.hidden) clearCursorCarry(); });
+  if (parentShell()) document.addEventListener("DOMContentLoaded", () => parentShell()?.moduleReady(window), { once: true });
 }());

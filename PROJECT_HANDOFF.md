@@ -7,7 +7,41 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.68** (2026-10-17). Learning-page cursor visibility
+System display version: **v1.0.69** (2026-10-17). Replaces the v68 cursor-handoff
+workaround with one persistent top-level cursor owner for BOTH windowed and
+fullscreen navigation. One reusable owned content frame; child modules create no
+cursor/input RAF/position store/native-presence client. Root routes hit-testing,
+clicks, hover, select/range events, scroll, Y/back/fullscreen and game menu/capture
+to the active same-origin content. Root coordinates/input edges survive module
+loads and held-stick movement continues while loading; held A never replays.
+Removed temporary navigation-cursor snapshots. The frame is never reparented on
+fullscreen transitions, so exiting fullscreen keeps the current lesson document.
+Single root native presence lease stays alive while navigating; View mode events
+reach the active child. No Python/native guard/learning-storage/game-rule changes.
+Pagehide saves only existing session x/y for full refresh; separate tabs stay
+isolated. Browser history tracks outer module entries without duplicate iframe
+history steps. Version-update reload now refreshes the persistent owner as well,
+not just its content. Refresh the entire page once to load this architecture;
+no compilation or service restart required. Cursor1.16, shell JS/CSS1.2,
+controller-mouse1.2, all notifiers/display1.0.69, Hanzi/Pinyin/IPA entry1.47/1.21/1.46.
+Pre-existing41 tracked PNG changes remain excluded. Targeted Edge checks use
+simulated standard controllers and mocked presence responses, not physical input.
+The fullscreen-shell browser entry now reuses the identity/navigation and position
+scripts instead of retaining obsolete child-cursor/fullscreen-exit assumptions.
+Verified: pnpm check,217 Node tests and diff-check pass. Only the three relevant
+Edge scripts ran at1440/390: gamepad-cursor-navigation-browser.mjs (constant root
+DOM/API identity, loading motion without x/y fixture resets, no A replay, active
+click/hover/select/range/scroll/Space/Y, root-only presence lease, history/R1/R2,
+mode/disconnect/capture and embedded game pause/Continue); gamepad-cursor-position-
+browser.mjs (nested bomb fullscreen host, no reload on exit, root refresh, session
+x/y/clamp/tab isolation and resource200); gamepad-cursor-browser.mjs (existing
+direct-page pointer/game/menu controls). Existing fixtures now sample neutral
+after binding capture and distinguish iframe-focus blur from true focus loss.
+Headless focus-loss in the latter is simulated; physical-controller behavior is
+not certified. Screenshots under ignored tmp inspected at desktop and390px.
+Live53177 serves package1.0.69 and shared shellHTTP200; no restart needed.
+
+Previous **v1.0.68** (2026-10-17). Learning-page cursor visibility
 is separated from neutral-input arming: a connected focused web-mode controller
 shows its restored cursor even while a navigation button/stick is held, but cannot
 move/click/scroll/trigger shortcuts until neutral. Native system mode, missing pad,

@@ -12,6 +12,7 @@ test("返回优先模块退出入口，隐藏按钮跳过，最后回首页而�
       const base = new URL('http://localhost/study/');
       const inputCapture = ${capture}, popup = ${popup};
       const closePopup = () => calls.push('popup'), rememberPosition = () => calls.push('position');
+      const moduleEvent = () => window.dispatchEvent(), activeDocument = () => document, pathname = () => location.pathname;
       ${handler}
       return returnOneLevel;
     `)({ dispatchEvent: () => !consumed, STUDY_FULLSCREEN_SHELL: { navigate: href => { calls.push(['shell', href]); return embedded; } } },

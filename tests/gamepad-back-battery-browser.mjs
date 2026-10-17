@@ -13,6 +13,7 @@ try {
     await context.addInitScript(() => {
       window.__pad = { index: 0, id: "Xbox Wireless Controller (XInput)", connected: true, mapping: "standard",
         axes: [0, 0, 0, 0], buttons: Array.from({ length: 17 }, () => ({ pressed: false, value: 0 })) };
+      if (parent !== window) window.__pad = parent.__pad;
       if (location.search.includes("held")) window.__pad.buttons[location.search.includes("fullscreen") ? 7 : 5] = { pressed: true, value: 1 };
       Object.defineProperty(navigator, "getGamepads", { value: () => window.__pad.connected ? [window.__pad] : [] });
       window.__hidRequests = 0;
@@ -87,7 +88,8 @@ try {
     await frameBack(); await page.waitForURL(/index\.html$/);
     assert.ok(await page.evaluate(() => Boolean(document.fullscreenElement)));
     await page.evaluate(() => document.exitFullscreen());
-    await page.waitForSelector("#study-module-frame", { state: "detached" });
+    await page.waitForFunction(() => !document.fullscreenElement);
+    assert.equal(await page.locator("#study-module-frame").count(), 1, "windowed content retains the same shell");
     // Native R2 fullscreen on every page: single edge, no menu or navigation side effect.
     for (const name of ["index", "pinyin", "phonetics", "book-learning", "theme-learning", "scenario-learning", "review-learning", "bomb-game"]) {
       await load(name, "?held-fullscreen=1");
@@ -155,7 +157,7 @@ try {
     await back(); await back(); await home();
     }
     assert.deepEqual(errors, []);
-    for (const resource of ["src/gamepad-cursor.js?v=1.15", "src/bomb-gamepad.js?v=1.7", "src/bomb-gamepad-battery.js?v=1.1", "bomb-game.css?v=1.10", "bomb-game.js?v=2.43"]) {
+    for (const resource of ["src/gamepad-cursor.js?v=1.16", "src/bomb-gamepad.js?v=1.7", "src/bomb-gamepad-battery.js?v=1.1", "bomb-game.css?v=1.10", "bomb-game.js?v=2.43"]) {
       assert.equal((await page.request.get(base + resource)).status(), 200, resource);
     }
     results.push({ width, r1BackLevels: true, r2NativeFullscreenPages: 8, fullscreenPreserved: true, batteryChecks: !shortcutsOnly });

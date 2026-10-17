@@ -1,4 +1,4 @@
-import { DAILY_LIFE_SCENARIOS } from "./daily-life-scenarios.js?v=1.1";
+import { DAILY_LIFE_SCENARIOS } from "./daily-life-scenarios.js?v=1.2";
 const tokens = (values) => Object.freeze(values.map(([text, phonetic]) => Object.freeze({ text, phonetic })));
 const line = (id, speaker, text, phonetic, chinese, tokenValues, focusObject = null) => Object.freeze({
   id, speaker, text, phonetic, chinese, tokens: tokens(tokenValues), ...(focusObject ? { focusObject } : {}),

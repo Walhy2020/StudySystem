@@ -16,7 +16,7 @@ try {
     page.on("response", response => { if (response.status() >= 400) errors.push(`${response.status()} ${response.url()}`); });
     const act = selector => width === 390 ? page.locator(selector).tap() : page.locator(selector).click();
     await page.goto(new URL(`scenario-learning.html?test=family-art-${width}`, base).href);
-    for (const name of ["home-mom-sprite-v4", "home-dad-sprite-v3", "home-grandma-sprite-v3", "home-brother-sprite-v2", "home-sister-sprite-v2"]) {
+    for (const name of ["home-mom-sprite-v5", "home-dad-sprite-v4", "home-grandma-sprite-v3", "home-brother-sprite-v3", "home-sister-sprite-v3"]) {
       const response = await page.request.get(new URL(`assets/scenarios/${name}.png`, base).href);
       assert.equal(response.status(), 200);
       assert.match(response.headers()["content-type"], /image\/png/);

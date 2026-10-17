@@ -7,7 +7,21 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.71** (2026-10-17). Revises all five family sprites
+System display version: **v1.0.72** (2026-10-17). Distinct clothing colors for
+Mom (coral red), Dad (royal blue), Brother (sunny yellow), Sister (mint green).
+Four existing approved cartoon sprites edited via user-authorized imagegen CLI;
+Grandma brown sprite, backgrounds and dialogues unchanged. Momv5/Brotherv3 used
+in all five home scenes; Dadv4/Sisterv3 saved for future scenes. Real RGBA with
+exterior alpha-haze cleanup; previous assets retained. No learning/storage/game/
+native/cursor changes, only artwork paths, transitive caches and release version.
+No build or service restart required. Pre-existing41 tracked PNG edits excluded.
+Verified pnpm check,220 Node tests and diff-check. Only focused family-art Edge
+acceptance ran at1440/390: all five family PNGsHTTP200, five home scenes show new
+Mom/Brother without clipping/overflow, practice reveal preserved. Preview and both
+stage screenshots inspected; Grandma unchanged. Test server53179 stopped after
+checks, inherited53177 preserved.
+
+Previous **v1.0.71** (2026-10-17). Revises all five family sprites
 to be more cartoon-like, using BOTH existing Mia and Leo as direct style images.
 User says loose family resemblance is enough: no photo realism. Larger rounded
 heads, simplified features and warm dimensional cartoon rendering; age/role,

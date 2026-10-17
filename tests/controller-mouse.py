@@ -8,9 +8,31 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from controller_mouse import MouseEngine, ControllerMouse, VIEW, A, B
 from server import LearningAppHandler, ThreadingHTTPServer
+from controller_pointer_guard import MotionPolicy
 
 
 class MouseTests(unittest.TestCase):
+    def test_injected_motion_only_in_active_web_window(self):
+        policy = MotionPolicy()
+        policy.web, policy.connected = True, True
+        policy.authorize("page", True, 123, 10)
+        self.assertTrue(policy.blocks(0x0200, 1, 123, 10.5))
+        for message, flags, window, now in ((0x0200, 0, 123, 10.5),
+                                           (0x0201, 1, 123, 10.5),
+                                           (0x020A, 1, 123, 10.5),
+                                           (0x0200, 1, 456, 10.5),
+                                           (0x0200, 1, 123, 11)):
+            self.assertFalse(policy.blocks(message, flags, window, now))
+        policy.web = False
+        self.assertFalse(policy.blocks(0x0200, 1, 123, 10.5), "System mode passes immediately")
+        policy.web, policy.connected = True, False
+        self.assertFalse(policy.blocks(0x0200, 1, 123, 10.5), "Disconnect releases guard")
+        policy.connected = True
+        policy.authorize("inactive-frame", False, 123, 10.5)
+        self.assertTrue(policy.blocks(0x0200, 1, 123, 10.5), "Dormant frame cannot clear active lease")
+        policy.authorize("page", False, 123, 10.5)
+        self.assertFalse(policy.blocks(0x0200, 1, 123, 10.5), "Blur/capture releases guard")
+
     def test_toggle_output_and_safety(self):
         calls = []
         e = MouseEngine(lambda *args: calls.append(args))
@@ -73,7 +95,7 @@ class MouseTests(unittest.TestCase):
                 conn.request("POST", "/api/controller-mouse", json.dumps(data), {"Content-Type": "application/json", **headers})
                 response = conn.getresponse(); self.assertEqual(response.status, expected)
                 if expected == 200:
-                    self.assertEqual(json.loads(response.read()), {"supported": False, "mode": "web"})
+                    self.assertEqual(json.loads(response.read()), {"supported": False, "mode": "web", "motionGuard": False})
                     self.assertEqual(response.getheader("Cache-Control"), "no-store")
                 else:
                     response.read()
@@ -86,14 +108,32 @@ class MouseTests(unittest.TestCase):
         def fail_read():
             raise OSError("device failed")
         calls = []
-        service = ControllerMouse(io_factory=lambda: (fail_read, lambda *args: calls.append(args)))
+        class FakeGuard:
+            installed = True
+            closed = False
+            updates = []
+
+            def authorize(self, client, active):
+                self.authorization = (client, active)
+
+            def update(self, mode, connected):
+                self.updates.append((mode, connected))
+
+            def close(self):
+                self.closed = True
+
+        guard = FakeGuard()
+        service = ControllerMouse(io_factory=lambda: (fail_read, lambda *args: calls.append(args)), guard_factory=lambda: guard)
         try:
             service.attach("abcdefgh-12345678", True)
             service.worker.join(timeout=1)
-            self.assertEqual(service.status(), {"supported": False, "mode": "web"})
+            self.assertEqual(service.status(), {"supported": False, "mode": "web", "motionGuard": True})
+            self.assertEqual(guard.updates[-1], ("system", False), "Failure stops filtering")
+            self.assertEqual(guard.authorization, ("abcdefgh-12345678", True))
             self.assertEqual(calls, [])
         finally:
             service.close()
+        self.assertTrue(guard.closed)
         limited = ControllerMouse(disabled=True)
         with patch("controller_mouse.time.monotonic", return_value=10):
             for i in range(16):

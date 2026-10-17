@@ -1,13 +1,39 @@
 # StudySystem cross-device handoff
 
-Last updated: 2026-10-13
+Last updated: 2026-10-17
 Repository: `https://github.com/Walhy2020/StudySystem.git`
 Branch: `main`
 Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.65** (2026-10-13). Scenario practice now shares
+System display version: **v1.0.66** (2026-10-17). Native mouse service adds a
+WH_MOUSE_LL motion-only guard for focused web-cursor mode. Injected WM_MOUSEMOVE
+is suppressed only with a connected controller and a matching foreground-window
+presence lease under one second old. View system mode, window switch, disconnection,
+capture/blur lease removal, expiry, output failure and shutdown release the guard.
+Hardware mouse, buttons, wheel and keyboard pass unchanged; no ClipCursor,
+SetCursorPos, JoyXoff configuration/service changes or persistent OS settings.
+Injection cannot be attributed to a particular sender, so other software-injected
+motion is also suppressed under the same narrow conditions. JoyXoff's independent
+View/pause state is not synchronized by this change. API adds motionGuard installation
+status only; POST remains presence-only with unchanged same-origin restrictions.
+New controller_pointer_guard.py is loaded lazily with the existing mouse worker;
+--disable-system-mouse also disables the guard for acceptance servers. Python
+service restart is required. User explicitly authorized this scoped restart;
+53177 was restarted hidden and returns supported=true, mode=web, motionGuard=true,
+package1.0.66 and homepageHTTP200. Existing startup command remains unchanged.
+The isolated53179 acceptance service created here was stopped. No learning keys,
+schemas, game rules or visual layout change. Pre-existing41 PNG edits excluded.
+Version/notifier imports1.0.66; Hanzi/Pinyin/IPA entry caches1.44/1.18/1.43.
+Native hook installation/clean shutdown checked locally without injecting input.
+Physical Xbox/JoyXoff motion has NOT been certified; Computer Use still fails
+before execution with CryptUnprotectData2148073483.
+pnpm check,215 Node tests, diff-check and controller-mouse-browser.mjs passed.
+Only mouse switching Edge acceptance ran at1440/390 using simulated controller
+and native-mode responses; it does not certify the physical Windows motion filter.
+
+Previous **v1.0.65** (2026-10-13). Scenario practice now shares
 the learning actors/chat bubble/manual and continuous playback. English starts
 hidden and is revealed explicitly; IPA and Chinese remain visible. New sentences,
 replay/continuous restart and refresh reset visibility; same-line playback phase

@@ -77,7 +77,7 @@ try {
     assert.equal(await page.evaluate(() => window.__spaceEvents), 0, "bomb Y still toggles menu only");
     assert.equal(await page.evaluate(() => window.STUDY_GAMEPAD_CURSOR.isMenuActive()), true);
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
-    for (const asset of ["src/gamepad-cursor.js?v=1.14", "src/app.js?v=1.43", "theme-learning.js?v=2.21"]) {
+    for (const asset of ["src/gamepad-cursor.js?v=1.14", "src/app.js?v=1.44", "theme-learning.js?v=2.21"]) {
       assert.equal((await page.request.get(base + asset)).status(), 200);
     }
     assert.deepEqual(errors, []);

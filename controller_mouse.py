@@ -4,6 +4,7 @@ import math
 import sys
 import threading
 import time
+from controller_pointer_guard import windows_motion_guard
 
 VIEW, A, B = 0x0020, 0x1000, 0x2000
 
@@ -118,8 +119,9 @@ def windows_io():
 
 
 class ControllerMouse:
-    def __init__(self, disabled=False, io_factory=windows_io):
+    def __init__(self, disabled=False, io_factory=windows_io, guard_factory=windows_motion_guard):
         self.disabled, self.io_factory = disabled, io_factory
+        self.guard_factory, self.guard = guard_factory, None
         self.lock = threading.RLock()
         self.stop = threading.Event()
         self.clients = {}
@@ -137,15 +139,19 @@ class ControllerMouse:
             if self.worker is None and not self.disabled:
                 io = self.io_factory()
                 if io:
+                    self.guard = self.guard_factory()
                     self.engine = MouseEngine(io[1])
                     self.supported = True
                     self.worker = threading.Thread(target=self.run, args=(io[0],), daemon=True)
                     self.worker.start()
+            if self.guard:
+                self.guard.authorize(client, active)
             return self.status()
 
     def status(self):
         with self.lock:
-            return {"supported": self.supported, "mode": self.engine.mode if self.engine else "web"}
+            return {"supported": self.supported, "mode": self.engine.mode if self.engine else "web",
+                    "motionGuard": bool(self.guard and self.guard.installed)}
 
     def run(self, read):
         last = time.monotonic()
@@ -160,10 +166,14 @@ class ControllerMouse:
                     active = any(enabled and now - at < 1.5 for at, enabled in self.clients.values())
                     alive = any(now - at < 5 for at, _ in self.clients.values())
                     self.engine.step(pads, active, alive, after_read, after_read - last)
+                    if self.guard:
+                        self.guard.update(self.engine.mode, bool(pads))
             except Exception:
                 with self.lock:
                     self.engine.reset()
                     self.supported = False
+                    if self.guard:
+                        self.guard.update("system", False)
                 break  # Fail closed, never repeatedly inject after a device/output failure.
             last = now
 
@@ -174,3 +184,5 @@ class ControllerMouse:
         with self.lock:
             if self.engine:
                 self.engine.reset()
+            if self.guard:
+                self.guard.close()

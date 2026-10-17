@@ -14,13 +14,13 @@ try {
       if (location.search.includes("held-view")) window.__pad.buttons[8] = { pressed: true, value: 1 };
       Object.defineProperty(navigator, "getGamepads", { value: () => window.__pad.connected ? [window.__pad] : [] });
     });
-    let mode = "web", activeLease = false;
+    let mode = "web", activeLease = false, supported = true, reason = "";
     // Native engine has separate pure tests. Browser test never controls desktop input.
     await context.route("**/api/controller-mouse", route => {
       const request = route.request().postDataJSON();
       assert.deepEqual(Object.keys(request).sort(), ["active", "client"]);
       activeLease = request.active;
-      return route.fulfill({ contentType: "application/json", body: JSON.stringify({ supported: true, mode }) });
+      return route.fulfill({ contentType: "application/json", body: JSON.stringify({ supported, mode, reason }) });
     });
     const page = await context.newPage(), errors = [];
     page.on("pageerror", error => errors.push(error.message));
@@ -79,9 +79,26 @@ try {
     await page.locator("#overlayStartBombGame").click(); await page.locator("#bombSettingsToggle").click();
     await tap(5); assert.ok(await page.locator("#bombSettingsMenu").isHidden(), "R1 closes settings");
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), "no horizontal overflow");
-    for (const asset of ["src/controller-mouse.js?v=1.0", "src/gamepad-cursor.js?v=1.14", "bomb-game.js?v=2.43"]) {
+    for (const asset of ["src/controller-mouse.js?v=1.1", "src/gamepad-cursor.js?v=1.14", "bomb-game.js?v=2.43"]) {
       assert.equal((await page.request.get(base + asset)).status(), 200);
     }
+    assert.deepEqual(errors, []);
+    await page.goto(base + "index.html"); await page.bringToFront();
+    supported = false;
+    for (const [failure, message] of [["controller-read-failed", "手柄连接恢复中，请稍候"],
+      ["controller-read-timeout", "手柄连接恢复中，请稍候"],
+      ["native-output-failed", "系统鼠标输出失败，网页鼠标仍可使用"],
+      ["unsupported", "系统鼠标暂不可用（需 Xbox / Windows）"]]) {
+      reason = failure;
+      await page.evaluate(() => window.STUDY_CONTROLLER_MOUSE.refresh());
+      await page.waitForTimeout(500);
+      await page.evaluate(() => window.STUDY_CONTROLLER_MOUSE.viewPressed());
+      assert.equal(await page.locator("#study-controller-mouse-mode").textContent(), message);
+    }
+    supported = true; reason = "";
+    await page.evaluate(() => window.STUDY_CONTROLLER_MOUSE.refresh());
+    await page.waitForTimeout(500);
+    assert.equal(await page.locator("#study-controller-mouse-mode").textContent(), "网页鼠标");
     assert.deepEqual(errors, []);
     console.log(`PASS Edge ${width}: R1 return, View互斥、重连/捕捉、防重复点击与游戏暂停（模拟手柄/本机状态）`);
     await context.close();

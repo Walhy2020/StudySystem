@@ -3,7 +3,7 @@
   // never pointer coordinates, clicks, commands, or an arbitrary desktop action.
   const client = crypto.randomUUID();
   let mode = "web", pendingUntil = 0, capture = false, inFlight = false, available = false;
-  let supported = false, noticeUntil = 0, retryAfter = 0;
+  let supported = false, noticeUntil = 0, retryAfter = 0, reason = "";
   const badge = document.createElement("div");
   badge.id = "study-controller-mouse-mode";
   badge.hidden = true;
@@ -23,7 +23,7 @@
         headers: { "Content-Type": "application/json" }, body: JSON.stringify({ client, active }), signal: AbortSignal.timeout(1200) });
       if (!response.ok) throw Error("Local mouse service unavailable");
       const data = await response.json();
-      available = true; supported = data.supported === true;
+      available = true; supported = data.supported === true; reason = data.reason || "";
       const next = supported && data.mode === "system" ? "system" : "web";
       if (next !== mode) { mode = next; pendingUntil = 0; notify(); }
       if (mode === "system") badge.textContent = "系统鼠标";
@@ -43,7 +43,10 @@
     pendingUntil = performance.now() + 2500;
     notify();
     if (!available || !supported) {
-      badge.textContent = available ? "系统鼠标暂不可用（需 Xbox / Windows）" : "系统鼠标需要重启本地服务";
+      badge.textContent = !available ? "系统鼠标需要重启本地服务" :
+        reason.startsWith("controller-read-") ? "手柄连接恢复中，请稍候" :
+        reason === "native-output-failed" ? "系统鼠标输出失败，网页鼠标仍可使用" :
+        "系统鼠标暂不可用（需 Xbox / Windows）";
       badge.hidden = false; mount();
       setTimeout(() => { if (mode !== "system") badge.hidden = true; }, 3000);
     }

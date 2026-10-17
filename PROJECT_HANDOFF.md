@@ -7,7 +7,37 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.66** (2026-10-17). Native mouse service adds a
+System display version: **v1.0.67** (2026-10-17). User confirmed v1.0.66 works
+over USB but double motion returns over wireless. Live API showed supported=false,
+mode=web,motionGuard=true while a separate read-only XInput check saw slot0 on all
+ten samples. Old code permanently exited its worker on any read/timeout/output
+exception and disabled motion policy. The historical exception was not logged,
+so its precise trigger cannot be claimed. New code separates transient reads from
+rejected output: read exceptions or >250ms reads reset/discard state, clear previous
+buttons and retry after500ms without holding the HTTP lease lock during XInput.
+Held View after reconnect is ignored; fresh neutral/repress is required. Rejected
+desktop output is never retried automatically, but fresh read-only samples continue
+to maintain web guarding. API reason distinguishes read-failed/read-timeout/output-
+failed/unsupported/disabled/not-started; no arbitrary HTTP input commands are added.
+UI shows connection recovery or output failure instead of always blaming Xbox.
+Native guard policy, hardware mouse, clicks/wheels, learning storage and game rules
+are unchanged. Controller-mouse cache1.1, eight notifiers/display1.0.67, Hanzi/Pinyin/
+IPA entry caches1.45/1.19/1.44. USB-to-wireless physical effect still needs user
+confirmation; tests with fake native sinks do not certify hardware.
+User renewed standing authorization on2026-10-17: perform necessary scoped restarts
+of this project's learning/mouse services without asking again. Resolve/verify PID,
+project command and port first; no unrelated service restarts or computer reboot.
+AGENTS.md now records this exception to inherited-server preservation.
+Verification: pnpm check and215 Node tests pass; Python mouse suite contains8
+tests covering read exception/timeout recovery, new-slot heldView and rejected
+output with continued web guarding. Only controller-mouse-browser.mjs ran in
+real Edge at1440/390 with simulated controller/API states, including all new
+failure messages and recovered web mode. diff-check passes;41 pre-existing PNG
+edits remain excluded. Scoped53177 restart completed; API reports supported=true,
+mode=web,motionGuard=true,reason=""; homepageHTTP200 and package1.0.67. The test
+server53179 was stopped. Physical USB-to-wireless confirmation remains pending.
+
+Previous **v1.0.66** (2026-10-17). Native mouse service adds a
 WH_MOUSE_LL motion-only guard for focused web-cursor mode. Injected WM_MOUSEMOVE
 is suppressed only with a connected controller and a matching foreground-window
 presence lease under one second old. View system mode, window switch, disconnection,

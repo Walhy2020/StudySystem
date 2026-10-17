@@ -11,7 +11,87 @@ from server import LearningAppHandler, ThreadingHTTPServer
 from controller_pointer_guard import MotionPolicy
 
 
+class FakeGuard:
+    installed = True
+
+    def __init__(self):
+        self.closed = False
+        self.updates = []
+        self.updated = threading.Event()
+
+    def authorize(self, client, active):
+        self.authorization = (client, active)
+
+    def update(self, mode, connected):
+        self.updates.append((mode, connected))
+        self.updated.set()
+
+    def close(self):
+        self.closed = True
+
+
 class MouseTests(unittest.TestCase):
+    def polled_service(self, emit):
+        service = ControllerMouse(disabled=True)
+        service.engine = MouseEngine(emit)
+        service.guard = FakeGuard()
+        import time
+        service.clients = {"test-client": (time.monotonic(), True)}
+        return service
+
+    def test_read_error_recovers_without_replaying_held_view(self):
+        import time
+        calls = []
+        service = self.polled_service(lambda *args: calls.append(args))
+        def read_error():
+            raise OSError("wireless transition")
+        last, fresh = service.poll_once(read_error, time.monotonic())
+        self.assertFalse(fresh)
+        self.assertEqual(service.reason, "controller-read-failed")
+        self.assertEqual(service.guard.updates[-1], ("web", False))
+        def poll(buttons):
+            nonlocal last
+            last, fresh = service.poll_once(lambda: {1: (buttons, 0, 0)}, last)
+            self.assertTrue(fresh)
+        poll(VIEW)
+        self.assertTrue(service.supported)
+        self.assertEqual(service.reason, "")
+        self.assertEqual(service.guard.updates[-1], ("web", True))
+        self.assertEqual(service.engine.mode, "web", "Reconnect-held View ignored on new slot")
+        poll(0); poll(VIEW)
+        self.assertEqual(service.engine.mode, "system", "Fresh press works after reconnection")
+        self.assertEqual(calls, [])
+
+    def test_slow_read_is_discarded_then_guard_recovers(self):
+        service = self.polled_service(lambda *args: self.fail("No desktop output"))
+        with patch("controller_mouse.time.monotonic", side_effect=[10, 10.3]):
+            last, fresh = service.poll_once(lambda: {0: (VIEW, 1, 1)}, 9)
+        self.assertFalse(fresh)
+        self.assertEqual(service.reason, "controller-read-timeout")
+        self.assertEqual(service.engine.previous, {})
+        with patch("controller_mouse.time.monotonic", side_effect=[11, 11.01]):
+            _, fresh = service.poll_once(lambda: {0: (VIEW, 1, 1)}, last)
+        self.assertTrue(fresh)
+        self.assertEqual(service.engine.mode, "web")
+        self.assertEqual(service.guard.updates[-1], ("web", True))
+
+    def test_rejected_output_never_retries_but_web_guard_survives(self):
+        import time
+        calls = []
+        def rejected(*args):
+            calls.append(args)
+            raise OSError("output rejected")
+        service = self.polled_service(rejected)
+        service.engine.mode, service.engine.slot, service.engine.armed = "system", 0, True
+        service.engine.started = service.engine.last_input = time.monotonic()
+        last, _ = service.poll_once(lambda: {0: (0, 1, 0)}, time.monotonic() - .03)
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(service.reason, "native-output-failed")
+        self.assertEqual(service.guard.updates[-1], ("web", True))
+        service.poll_once(lambda: {0: (A, 1, 0)}, last)
+        self.assertEqual(len(calls), 1, "Never automatically retry rejected mouse injection")
+        self.assertFalse(service.supported)
+
     def test_injected_motion_only_in_active_web_window(self):
         policy = MotionPolicy()
         policy.web, policy.connected = True, True
@@ -95,7 +175,7 @@ class MouseTests(unittest.TestCase):
                 conn.request("POST", "/api/controller-mouse", json.dumps(data), {"Content-Type": "application/json", **headers})
                 response = conn.getresponse(); self.assertEqual(response.status, expected)
                 if expected == 200:
-                    self.assertEqual(json.loads(response.read()), {"supported": False, "mode": "web", "motionGuard": False})
+                    self.assertEqual(json.loads(response.read()), {"supported": False, "mode": "web", "motionGuard": False, "reason": "disabled"})
                     self.assertEqual(response.getheader("Cache-Control"), "no-store")
                 else:
                     response.read()
@@ -108,27 +188,14 @@ class MouseTests(unittest.TestCase):
         def fail_read():
             raise OSError("device failed")
         calls = []
-        class FakeGuard:
-            installed = True
-            closed = False
-            updates = []
-
-            def authorize(self, client, active):
-                self.authorization = (client, active)
-
-            def update(self, mode, connected):
-                self.updates.append((mode, connected))
-
-            def close(self):
-                self.closed = True
-
         guard = FakeGuard()
         service = ControllerMouse(io_factory=lambda: (fail_read, lambda *args: calls.append(args)), guard_factory=lambda: guard)
         try:
             service.attach("abcdefgh-12345678", True)
-            service.worker.join(timeout=1)
-            self.assertEqual(service.status(), {"supported": False, "mode": "web", "motionGuard": True})
-            self.assertEqual(guard.updates[-1], ("system", False), "Failure stops filtering")
+            self.assertTrue(guard.updated.wait(timeout=1))
+            self.assertTrue(service.worker.is_alive(), "Transient read failure cannot kill hotplug worker")
+            self.assertEqual(service.status(), {"supported": False, "mode": "web", "motionGuard": True, "reason": "controller-read-failed"})
+            self.assertEqual(guard.updates[-1], ("web", False), "Read failure releases guard until fresh connection")
             self.assertEqual(guard.authorization, ("abcdefgh-12345678", True))
             self.assertEqual(calls, [])
         finally:

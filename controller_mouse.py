@@ -128,6 +128,8 @@ class ControllerMouse:
         self.worker = None
         self.engine = None
         self.supported = False
+        self.reason = "disabled" if disabled else "not-started"
+        self.output_failed = False
 
     def attach(self, client, active):
         with self.lock:
@@ -142,8 +144,11 @@ class ControllerMouse:
                     self.guard = self.guard_factory()
                     self.engine = MouseEngine(io[1])
                     self.supported = True
+                    self.reason = ""
                     self.worker = threading.Thread(target=self.run, args=(io[0],), daemon=True)
                     self.worker.start()
+                else:
+                    self.reason = "unsupported"
             if self.guard:
                 self.guard.authorize(client, active)
             return self.status()
@@ -151,31 +156,55 @@ class ControllerMouse:
     def status(self):
         with self.lock:
             return {"supported": self.supported, "mode": self.engine.mode if self.engine else "web",
-                    "motionGuard": bool(self.guard and self.guard.installed)}
+                    "motionGuard": bool(self.guard and self.guard.installed), "reason": self.reason}
+
+    def read_failed(self, reason):
+        with self.lock:
+            self.engine.reset()
+            self.engine.previous = {}  # Reconnected/held View cannot become a fresh edge.
+            self.supported = False
+            self.reason = reason
+            if self.guard:
+                self.guard.update("web", False)
+
+    def poll_once(self, read, last):
+        # USB removal / wireless reconnection can stall XInput. Do not hold the
+        # HTTP lease lock while reading, and never permanently kill the worker.
+        before_read = time.monotonic()
+        try:
+            pads = read()
+        except Exception:
+            self.read_failed("controller-read-failed")
+            return time.monotonic(), False
+        after_read = time.monotonic()
+        if after_read - before_read > .25:
+            self.read_failed("controller-read-timeout")
+            return after_read, False  # Discard stale buttons and movement.
+        with self.lock:
+            if not self.output_failed:
+                self.supported, self.reason = True, ""
+                active = any(enabled and after_read - at < 1.5 for at, enabled in self.clients.values())
+                alive = any(after_read - at < 5 for at, _ in self.clients.values())
+                try:
+                    self.engine.step(pads, active, alive, after_read, after_read - last)
+                except Exception:
+                    # Never repeatedly retry rejected desktop output. Web-only
+                    # guarding still needs fresh read-only connection samples.
+                    self.output_failed = True
+                    self.engine.reset()
+                    self.engine.previous = {}
+            if self.output_failed:
+                self.supported, self.reason = False, "native-output-failed"
+            if self.guard:
+                self.guard.update(self.engine.mode, bool(pads))
+        return after_read, True
 
     def run(self, read):
         last = time.monotonic()
         while not self.stop.wait(1 / 60):
-            now = time.monotonic()
-            try:
-                with self.lock:
-                    pads = read()
-                    after_read = time.monotonic()
-                    if after_read - now > .25:
-                        raise OSError("Stale controller read; native mouse disabled")
-                    active = any(enabled and now - at < 1.5 for at, enabled in self.clients.values())
-                    alive = any(now - at < 5 for at, _ in self.clients.values())
-                    self.engine.step(pads, active, alive, after_read, after_read - last)
-                    if self.guard:
-                        self.guard.update(self.engine.mode, bool(pads))
-            except Exception:
-                with self.lock:
-                    self.engine.reset()
-                    self.supported = False
-                    if self.guard:
-                        self.guard.update("system", False)
-                break  # Fail closed, never repeatedly inject after a device/output failure.
-            last = now
+            last, fresh = self.poll_once(read, last)
+            if not fresh and self.stop.wait(.5):
+                break  # Back off transient failures; shutdown remains immediate.
 
     def close(self):
         self.stop.set()

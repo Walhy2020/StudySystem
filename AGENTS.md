@@ -80,7 +80,7 @@ Browser progress is local to each browser profile and is not synchronized by Git
 - Put final generated web assets under `assets/` with semantic versioned names. Verify dimensions, file signatures, HTTP 200, and visible page use.
 - For visual changes, verify both desktop and a 390px viewport. Check horizontal overflow, clipping, actual element geometry, keyboard/touch behavior, and resource failures.
 - Prefer real Microsoft Edge acceptance through the repository scripts. Report the actual validation surface; do not label another browser as Edge.
-- Do not stop an inherited local server. If a separate server is needed, use an isolated port and stop only the process started for that check.
+- Do not stop unrelated local servers. The user authorizes necessary scoped restarts of this project's learning-system/mouse services without asking again. Before restarting, verify the exact PID, project path and port; preserve browser progress and launch replacements hidden. Use an isolated port for acceptance and stop only the test process created for that check.
 - Minimum completion gate for code changes: `pnpm run check`, `pnpm test`, targeted browser acceptance when the UI changes, and `git diff --check`.
 
 ## Git workflow

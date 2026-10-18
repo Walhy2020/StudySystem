@@ -22,6 +22,7 @@ test("单词自动包含Book1/主题/情景定义，拼写去重、全部有配�
   for (const scenario of SCENARIOS) for (const word of scenario.vocabulary) assert.ok(items.some(item => item.word === word.word.toLowerCase().replaceAll("’", "'")), word.word);
   for (const item of items) {
     assert.equal(item.id, `word:${item.word}`);
+    assert.ok(typeof item.chinese === "string" && item.chinese.trim(), `Chinese translation for ${item.word}`);
     assert.notEqual(item.art.type, "meaning");
     if (["image", "image-url"].includes(item.art.type)) assert.ok(item.art.src, item.word);
   }
@@ -94,8 +95,11 @@ test("单词卡沿用汉字布局，先隐藏答案，揭示后显示英文/音�
   const css = readFileSync(new URL("../word-learning.css", import.meta.url), "utf8");
   assert.match(html, /class="stage word-lesson"/);
   for (const name of ["map-visual", "word-card", "hanzi-panel", "pinyin-line word-question"]) assert.ok(html.includes(`class="${name}"`));
-  assert.match(html, /word-learning\.css\?v=1\.1/);
-  assert.match(html, /word-learning\.js\?v=1\.1/);
+  assert.match(html, /word-learning\.css\?v=1\.2/);
+  assert.match(html, /word-learning\.js\?v=1\.2/);
+  assert.match(html, /id="wordTranslation" hidden/);
+  assert.match(script, /dom\.wordTranslation\.textContent = item\.chinese/);
+  assert.match(script, /dom\.wordTranslation\.textContent = ""; dom\.wordTranslation\.hidden = true/);
   assert.match(script, /active \? "显示"/);
   assert.match(script, /dom\.currentWord\.textContent = item\.word/);
   assert.match(script, /splitPhonetic\(item\.phonetic\)/);

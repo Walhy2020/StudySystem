@@ -1,13 +1,24 @@
 # StudySystem cross-device handoff
 
-Last updated: 2026-10-17
+Last updated: 2026-10-18
 Repository: `https://github.com/Walhy2020/StudySystem.git`
 Branch: `main`
 Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.74** (2026-10-17). Words now shares Hanzi's stage,
+System display version: **v1.0.75** (2026-10-18). Words adds Chinese translation
+at the bottom of the answer card and larger English/IPA typography. Translation
+reveals with spelling/IPA via Show/Space/Y; next word/reload hides and clears it.
+Phonetic split keeps the translation. No engine/catalog/storage changes.
+Refresh; no build/restart.
+Verified syntax checks,228 unit tests,diff-check and the targeted Words Edge script
+at1440/827/390. Includes translation hide/reveal/reset,larger computed font sizes,
+bottom ordering,expanded IPA and longest spelling without clipping/overflow.
+Screenshots inspected; no unrelated browser suite run. Existing53177 remains;
+this run's isolated53179 test server stopped after checks.
+
+Previous **v1.0.74** (2026-10-17). Words now shares Hanzi's stage,
 map and challenge/word-card geometry, including the responsive picture dimensions.
 Each picture initially hides spelling and IPA. Click Show/Space/Y reveals both;
 later Space/Y or clicking IPA toggles shared phonetic-segmenter output. Diphthongs

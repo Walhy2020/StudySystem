@@ -44,10 +44,16 @@ try {
     await act("#startDaily");
     assert.equal(await page.locator("#currentWord").textContent(), "显示", "picture appears without answer");
     assert.equal(await page.locator("#wordPhonetic").textContent(), "");
+    assert.equal(await page.locator("#wordTranslation").textContent(), "");
+    assert.equal(await page.locator("#wordTranslation").isVisible(), false);
     assert.ok(await page.locator("#wordPicture svg").count());
     await page.evaluate(() => document.activeElement.blur());
     await page.keyboard.press("Space"); assert.ok(await page.locator("#wordPhonetic").textContent());
     assert.equal(await page.locator("#currentWord").textContent(), await page.evaluate(() => window.__WORD_LEARNING__.getCurrentWord().word));
+    assert.equal(await page.locator("#wordTranslation").textContent(), await page.evaluate(() => window.__WORD_LEARNING__.getCurrentWord().chinese));
+    const fontSizes = await page.evaluate(() => ["currentWord", "wordPhonetic"].map(id => parseFloat(getComputedStyle(document.getElementById(id)).fontSize)));
+    assert.ok(fontSizes[0] >= (width === 390 ? 52 : 57), "larger English word");
+    assert.ok(fontSizes[1] >= (width === 390 ? 40 : 41), "larger IPA");
     await page.keyboard.press("Space"); assert.equal(await page.locator("#phonemeBreakdown").isVisible(), true);
     await page.locator("#currentWord").focus(); await page.keyboard.press("Space");
     assert.equal(await page.locator("#phonemeBreakdown").isVisible(), false, "focused button keeps native Space activation");
@@ -58,6 +64,7 @@ try {
     });
     assert.equal(await page.locator("#phonemeBreakdown").isVisible(), true, "Y matches Space");
     for (let i = 0; i < 3; i++) await act("#markWrong");
+    assert.equal(await page.locator("#wordTranslation").textContent(), "", "next word hides translation again");
     assert.equal((await state()).dailyPhase, "newLearning");
     for (let i = 0; i < 9; i++) await act("#markCorrect");
     assert.equal(await page.locator("#finishNewWords").isVisible(), true);
@@ -69,7 +76,8 @@ try {
     assert.equal(await page.evaluate(() => window.__speechCalls), 0, "no automatic speech");
 
     // Check each existing art representation, plus abstract contextual pictures.
-    const samples = ["head", "apple", "hello", "first", "one", "twinkle"];
+    const longestWord = [...catalog].sort((a, b) => b.word.length - a.word.length)[0].word;
+    const samples = [...new Set(["arm", "apple", "hello", "first", "one", "twinkle", longestWord])];
     for (const word of samples) {
       const item = catalog.find(item => item.word === word); assert.ok(item, word);
       await page.evaluate(async id => {
@@ -83,17 +91,22 @@ try {
       assert.equal(await page.locator("#currentWord").textContent(), "显示", "reload and new word hide spelling");
       assert.equal(await page.locator("#wordPhonetic").textContent(), "", "new word hides pronunciation");
       assert.equal(await page.locator("#phonemeBreakdown").textContent(), "");
+      assert.equal(await page.locator("#wordTranslation").textContent(), "");
       await act("#currentWord");
       assert.equal(await page.locator("#currentWord").textContent(), word);
       assert.equal(await page.locator("#wordPhonetic").textContent(), item.phonetic);
+      assert.equal(await page.locator("#wordTranslation").textContent(), item.chinese);
+      assert.equal(await page.locator("#wordTranslation").isVisible(), true);
       await act("#wordPhonetic");
       assert.equal(await page.locator("#phonemeBreakdown").isVisible(), true);
       const answerBounds = await page.locator(".word-question").boundingBox();
-      for (const selector of ["#currentWord", "#wordPhonetic", "#phonemeBreakdown"]) {
+      for (const selector of ["#currentWord", "#wordPhonetic", "#phonemeBreakdown", "#wordTranslation"]) {
         const bounds = await page.locator(selector).boundingBox();
         assert.ok(bounds.x >= answerBounds.x && bounds.x + bounds.width <= answerBounds.x + answerBounds.width + 1, `${word} ${selector} fits horizontally`);
         assert.ok(bounds.y >= answerBounds.y && bounds.y + bounds.height <= answerBounds.y + answerBounds.height + 1, `${word} ${selector} is not clipped`);
       }
+      const translationBounds = await page.locator("#wordTranslation").boundingBox(), splitBounds = await page.locator("#phonemeBreakdown").boundingBox();
+      assert.ok(translationBounds.y >= splitBounds.y + splitBounds.height, "Chinese translation sits below IPA breakdown");
       if (word === "hello") assert.ok((await page.locator(".phoneme-chip").allTextContents()).includes("əʊ"), "diphthong stays together");
       assert.doesNotMatch(await page.locator("#phonemeBreakdown").textContent(), /重音|\//);
       if (word === "hello") await page.screenshot({ path: `tmp/word-learning-split-${width}.png`, fullPage: true });
@@ -105,6 +118,7 @@ try {
       assert.equal(await page.locator("#wordPicture").evaluate(node => /[a-zA-Z\u4e00-\u9fff]/.test(node.textContent.replace(/\d+(?:st|nd|rd|th)?/g, ""))), false, "picture side contains only artwork or numeric illustration");
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
       if (word === "apple") await page.screenshot({ path: `tmp/word-learning-${width}.png`, fullPage: true });
+      if (word === "arm") await page.screenshot({ path: `tmp/word-learning-arm-${width}.png`, fullPage: true });
     }
     const sources = await page.evaluate(() => Object.entries(localStorage).filter(([key]) => !key.startsWith("mario-word-learning-v1") && !key.startsWith("mario-gamepad")));
     assert.ok(sources.every(([, value]) => value === "source-sentinel"), JSON.stringify(sources));

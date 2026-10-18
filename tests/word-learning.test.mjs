@@ -96,12 +96,12 @@ test("单词卡沿用汉字布局，先隐藏答案，揭示后显示英文/音�
   assert.match(html, /class="stage word-lesson"/);
   for (const name of ["map-visual", "word-card", "hanzi-panel", "pinyin-line word-question"]) assert.ok(html.includes(`class="${name}"`));
   assert.match(html, /word-learning\.css\?v=1\.2/);
-  assert.match(html, /word-learning\.js\?v=1\.3/);
+  assert.match(html, /word-learning\.js\?v=1\.4/);
   assert.match(html, /id="wordTranslation" hidden/);
   assert.match(script, /dom\.wordTranslation\.textContent = item\.chinese/);
   assert.match(script, /dom\.wordTranslation\.textContent = ""; dom\.wordTranslation\.hidden = true/);
   assert.match(script, /active \? "显示"/);
-  assert.match(script, /dom\.currentWord\.textContent = item\.word/);
+  assert.match(script, /dom\.currentWord\.textContent = item\.displayWord \|\| item\.word/);
   assert.match(script, /splitPhonetic\(item\.phonetic\)/);
   assert.match(script, /dom\.wordPhonetic\.addEventListener\("click", togglePhonetic\)/);
   assert.match(script, /dom\.phonemeBreakdown\.replaceChildren\(\); dom\.phonemeBreakdown\.hidden = true/);

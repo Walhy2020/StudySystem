@@ -50,6 +50,10 @@ export function themeWordKey(themeId, wordId) {
 }
 
 function artFor(themeId, word, index) {
+  if (themeId === "beContractions") {
+    // Chinese + form is unique even when the full/short forms have the same meaning.
+    return Object.freeze({ type: "meaning", label: word.chinese + " · " + word.formLabel });
+  }
   if (themeId === "midAutumn") {
     return Object.freeze({ type: "image", src: "./assets/themes/mid-autumn/mid-autumn-scene-v1.png",
       width: 1536, height: 1024,
@@ -457,7 +461,7 @@ export function initializeThemeOverview({ configs, splitPhonetic, stressMarks, s
       '<article class="library-card" data-word-key="' + escapeHtml(entry.key) + '">' +
       '<div class="library-art-wrap">' + renderArt(entry, "library-word-art") + "</div>" +
       '<div class="library-card-copy"><span class="library-theme-label">' + escapeHtml(entry.sourceLabel) + "</span>" +
-      '<h3>' + escapeHtml(entry.word) + "</h3>" +
+      '<h3>' + escapeHtml(entry.displayWord || entry.word) + "</h3>" +
       '<button class="library-phonetic" type="button" aria-expanded="false" aria-label="拆分 ' + escapeHtml(entry.word) + " 的音标 " + escapeHtml(entry.phonetic) + '">' + escapeHtml(entry.phonetic) + "</button>" +
       '<div class="library-phonemes phoneme-breakdown" hidden>' + phonemeMarkup(entry, splitPhonetic, stressMarks) + "</div>" +
       '<strong class="library-translation">' + escapeHtml(entry.chinese) + "</strong>" +
@@ -501,7 +505,7 @@ export function initializeThemeOverview({ configs, splitPhonetic, stressMarks, s
     const target = reviewSession.target();
     if (!target) return finishReview();
     dom.totalReviewProgress.textContent = "第 " + (reviewSession.questionIndex + 1) + "/" + reviewSession.questions.length + " 题";
-    dom.totalReviewWord.textContent = target.word;
+    dom.totalReviewWord.textContent = target.displayWord || target.word;
     dom.totalReviewPhonetic.textContent = target.phonetic;
     dom.totalReviewPhonetic.setAttribute("aria-label", "拆分 " + target.word + " 的音标 " + target.phonetic);
     dom.totalReviewPhonetic.setAttribute("aria-expanded", "false");
@@ -520,7 +524,7 @@ export function initializeThemeOverview({ configs, splitPhonetic, stressMarks, s
     dom.totalReviewFeedback.textContent = "选择与 " + target.word + " 对应的图片或中文释义。";
     dom.totalReviewOptions.innerHTML = reviewSession.options().map((entry) =>
       '<button class="review-option" type="button" data-review-key="' + escapeHtml(entry.key) +
-      '" aria-label="选择 ' + escapeHtml(entry.chinese) + '">' +
+      '" aria-label="选择 ' + escapeHtml(entry.chinese + (entry.formLabel ? " " + entry.formLabel : "")) + '">' +
       renderArt(entry, "review-word-art") + "</button>"
     ).join("");
     dom.totalReviewOptions.querySelectorAll(".review-option").forEach((button) => {

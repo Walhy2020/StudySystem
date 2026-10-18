@@ -83,7 +83,7 @@ async function openSeries(page, seriesId, action = "click") {
   assert.equal(await page.locator("#themeSeriesList").isHidden(), true);
   assert.equal(await page.locator("#themeSeriesPanel").isVisible(), true);
   assert.equal(await page.evaluate(() => window.__THEME_LEARNING__.activeSeriesId), seriesId);
-  const expected = { basics: 2, counting: 4, songs: 1, items: 4, classroom: 1 }[seriesId];
+  const expected = { basics: 3, counting: 4, songs: 1, items: 4, classroom: 1 }[seriesId];
   assert.equal(await page.locator(".theme-card:visible").count(), expected);
 }
 
@@ -632,8 +632,8 @@ assert.ok((await page.locator(".module-tab").allTextContents()).some((item) => i
 assert.deepEqual(await page.locator(".top-actions > *").allTextContents().then((x) => x.map((v) => v.trim())), ["炸弹迷宫"]);
 await page.locator('.module-tab[href="./theme-learning.html"]').click();
 await page.waitForURL(/theme-learning\.html/);
-assert.deepEqual(await page.locator(".theme-card h3").allTextContents().then((items) => items.map((x) => x.replace(/\s+/g, " ").trim())), ["中秋节 Mid-Autumn Festival", "身体 Body", "颜色 Colors", "数字 1–10 Numbers 1–10", "数字 11–19 Numbers 11–19", "整十 10–100 Tens 10–100", "第1到第10 First–Tenth", "一闪一闪小星星 Twinkle, Twinkle, Little Star", "经典道具 I Classic Items I", "经典道具 II Classic Items II", "经典道具 III Classic Items III", "经典道具 IV Classic Items IV", "教室用品 Classroom Things"]);
-assert.equal(await page.locator(".theme-reviewed-badge").count(), 13);
+assert.deepEqual(await page.locator(".theme-card h3").allTextContents().then((items) => items.map((x) => x.replace(/\s+/g, " ").trim())), ["人称与缩写 I am · He is · It is", "中秋节 Mid-Autumn Festival", "身体 Body", "颜色 Colors", "数字 1–10 Numbers 1–10", "数字 11–19 Numbers 11–19", "整十 10–100 Tens 10–100", "第1到第10 First–Tenth", "一闪一闪小星星 Twinkle, Twinkle, Little Star", "经典道具 I Classic Items I", "经典道具 II Classic Items II", "经典道具 III Classic Items III", "经典道具 IV Classic Items IV", "教室用品 Classroom Things"]);
+assert.equal(await page.locator(".theme-reviewed-badge").count(), 14);
 assert.equal(await page.locator(".theme-reviewed-badge:visible").count(), 0);
 assert.equal(await page.locator("#themeSeriesPanel").isHidden(), true);
 assert.equal(await page.locator("#themePicker > .picker-copy").count(), 0);

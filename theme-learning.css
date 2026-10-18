@@ -53,3 +53,24 @@ main{max-width:1280px;margin:auto}
 /* Match Scenario's wrapping list: two columns on desktop, one on narrow screens. */
 @media(max-width:1050px){.theme-series-list{grid-template-columns:1fr}}
 @media(max-width:560px){.theme-series-cell{grid-template-columns:1fr}.series-preview{height:230px}}
+
+.contractions-card-art{background:linear-gradient(145deg,#214fbd,#7554c9)}
+.theme-card-art .contractions-cover{position:static;width:auto;height:auto;background:none;color:#fff;font-size:40px;font-weight:900;line-height:1.15;text-align:center}
+.contraction-board{display:grid;gap:14px;margin-top:18px}
+.contraction-pair{min-width:0;border:1px solid #bad2ee;border-radius:20px;padding:14px;background:#f3f8ff}
+.contraction-pair h3{margin:0 0 10px;color:var(--blue);font-size:19px}
+.contraction-pair-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.contraction-target{position:relative;display:grid;min-width:0;min-height:110px;align-content:center;justify-items:center;gap:10px;border:3px solid #b4ccec;border-radius:16px;padding:14px 8px;color:var(--ink);background:#fff}
+.contraction-form{color:var(--muted);font-size:14px;font-weight:800}
+.contraction-spelling{font-size:clamp(27px,3vw,38px);line-height:1.15}
+.contraction-target.is-selected,.contraction-target.is-hint{border-color:var(--blue);box-shadow:0 0 0 3px #65a6ff44}
+.contraction-target.is-correct{border-color:var(--green);background:#e2f8ec}
+.contraction-target.is-wrong{border-color:var(--red);background:#ffefee}
+.contraction-help{margin:16px 0 0;color:var(--muted);line-height:1.8;overflow-wrap:anywhere}
+.contraction-explanation{margin:12px 0 20px;border-radius:16px;padding:12px 16px;background:#edf4ff;text-align:left}
+.contraction-explanation p{margin:5px 0;font-size:16px;line-height:1.6;overflow-wrap:anywhere}
+.contraction-explanation .contraction-equivalence{color:var(--blue);font-size:24px;font-weight:900;text-align:center}
+.sentence-chinese{margin:4px 0 10px;color:var(--muted);font-size:18px}
+.is-word-review .contraction-spelling{visibility:hidden}
+.is-word-review .contraction-help{display:none}
+@media(max-width:520px){.contraction-pair{padding:12px}.contraction-pair-options{gap:8px}.contraction-target{min-height:96px;padding:12px 5px}.contraction-spelling{font-size:29px}}

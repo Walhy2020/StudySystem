@@ -75,7 +75,7 @@ try {
       await noOverflow();
       await act("#backToSeries");
     }
-    assert.equal(themeCount, 13);
+    assert.equal(themeCount, 14);
 
     await page.locator("[data-series-id='basics']").focus(); await page.keyboard.press("Space");
     await act("#startTheme");
@@ -90,7 +90,8 @@ try {
     assert.equal(await page.evaluate(() => window.__THEME_LEARNING__.progress.store.isThemeLearned("body")), true);
     await page.evaluate(() => {
       const api = window.__THEME_LEARNING__;
-      api.progress.markReviewed("body"); api.progress.markReviewed("colors"); api.syncThemeCards();
+      for (const id of api.series.basics.themeIds) api.progress.markReviewed(id);
+      api.syncThemeCards();
     });
     await act("#backToSeries");
     assert.equal(await page.locator("[data-series-id='basics']").evaluate(node => node.classList.contains("is-complete")), true);
@@ -98,7 +99,7 @@ try {
     assert.ok((await page.evaluate(() => window.__writes)).every(key => key === "mario-theme-learned-v1"));
     await page.reload(); await page.waitForFunction(() => Boolean(window.__THEME_LEARNING__));
     assert.equal(await page.locator("[data-series-id='basics']").evaluate(node => node.classList.contains("is-complete")), true);
-    assert.equal(await page.locator("[data-series-id='basics'] [data-series-progress]").textContent(), "2/2 已复习");
+    assert.equal(await page.locator("[data-series-id='basics'] [data-series-progress]").textContent(), "3/3 已复习");
     const writes = await page.evaluate(() => window.__writes);
     assert.ok(writes.every(key => key === "mario-theme-learned-v1"), JSON.stringify(writes));
     await noOverflow();

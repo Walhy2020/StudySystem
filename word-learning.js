@@ -1,7 +1,7 @@
 import { HanziEngine } from "./src/engine.js";
-import { APP_VERSION, PHASE } from "./src/constants.js?v=1.0.76";
-import { THEME_CONFIGS, speakEnglish } from "./theme-learning.js?v=2.25";
-import { buildThemeCatalog, renderArt } from "./src/theme-overview.js?v=1.19";
+import { APP_VERSION, PHASE } from "./src/constants.js?v=1.0.77";
+import { THEME_CONFIGS, speakEnglish } from "./theme-learning.js?v=2.26";
+import { buildThemeCatalog, renderArt } from "./src/theme-overview.js?v=1.20";
 import { buildWordLearningItems, WordLearningStorage } from "./src/word-learning-model.js?v=1.0";
 import { PHONETIC_STRESS_MARKS, splitPhonetic } from "./src/phonetic-segmenter.js?v=1.0";
 
@@ -18,7 +18,7 @@ function reveal() {
   if (!item || !engine.state.dailyTaskStarted || engine.state.dailyTaskDone) return;
   if (revealed) { togglePhonetic(); return; }
   revealed = true;
-  dom.currentWord.textContent = item.word;
+  dom.currentWord.textContent = item.displayWord || item.word;
   dom.currentWord.setAttribute("aria-expanded", "true");
   dom.currentWord.setAttribute("aria-label", `${item.word}，切换音标拆解`);
   dom.wordPhonetic.textContent = item.phonetic;
@@ -49,7 +49,7 @@ function renderList(container, ids, source, empty) {
     const done = engine.isMastered(id) || count >= 3 || source === "today-new" && engine.state.dailyMixedDoneIds.includes(id);
     const button = document.createElement("button");
     button.type = "button"; button.className = `word-chip ${done ? "done" : source === "review-wrong" ? "wrong" : "pending"}`;
-    button.textContent = item.word; button.dataset.inlineId = id; button.dataset.inlineSource = source;
+    button.textContent = item.displayWord || item.word; button.dataset.inlineId = id; button.dataset.inlineSource = source;
     const detail = document.createElement("small"); detail.textContent = `${count}/3`; button.append(detail);
     button.disabled = engine.isMastered(id); container.append(button);
   }

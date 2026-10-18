@@ -1,5 +1,8 @@
 import { PHONETIC_STRESS_MARKS, splitPhonetic } from "./src/phonetic-segmenter.js?v=1.0";
-import { initializeThemeProgress } from "./src/theme-overview.js?v=1.19";
+import { initializeThemeProgress } from "./src/theme-overview.js?v=1.20";
+import { BE_CONTRACTION_PAIRS, BE_CONTRACTION_WORDS } from "./data/be-contractions.js?v=1.0";
+
+export { BE_CONTRACTION_PAIRS, BE_CONTRACTION_WORDS };
 
 export { splitPhonetic };
 
@@ -271,12 +274,21 @@ export const THEME_CONFIGS = Object.freeze({
     retryLabel: (word) => word.ariaLabel, instruction: (word) => word.instruction,
     completePrompt: "完成！六个中秋单词全部找对", completeTitle: "六个中秋单词全部找对！",
     completeText: "你完成了中秋节 Mid-Autumn Festival 的听音点击练习。"
+  }),
+  beContractions: Object.freeze({
+    id: "beContractions", chineseTitle: "人称与缩写", englishTitle: "I am · He is · It is", words: BE_CONTRACTION_WORDS,
+    sceneId: "beContractionsScene", sceneLabel: "我是、他是、它是的完整形式与缩写对照卡",
+    learnPrompt: "点击完整形式或缩写，比较三组表达", practicePrompt: "看清题目，在完整形式与缩写之间互选",
+    learnPlaceholderTitle: "点一个表达", learnPlaceholderText: "学习 I am、He is、It is，以及对应的 I'm、He's、It's。",
+    retryLabel: word => word.word + "（" + word.formLabel + "）", instruction: word => word.instruction,
+    completePrompt: "完成！三组完整形式和缩写全部找对", completeTitle: "人称与缩写全部找对！",
+    completeText: "你学会了 I am ↔ I'm、He is ↔ He's、It is ↔ It's。"
   })
 });
 
 export const THEME_SERIES = Object.freeze({
   festivals: Object.freeze({ id: "festivals", title: "节日", description: "通过配图认识节日里的事物和习俗。", themeIds: Object.freeze(["midAutumn"]) }),
-  basics: Object.freeze({ id: "basics", title: "基础认知", description: "认识身体部位和常见颜色。", themeIds: Object.freeze(["body", "colors"]) }),
+  basics: Object.freeze({ id: "basics", title: "基础认知", description: "认识身体部位、常见颜色，以及人称与缩写。", themeIds: Object.freeze(["body", "colors", "beContractions"]) }),
   counting: Object.freeze({ id: "counting", title: "数字天地", description: "从 1 数到 100，并学习第1到第10。", themeIds: Object.freeze(["numbers1", "numbersTeens", "tens", "ordinals"]) }),
   songs: Object.freeze({ id: "songs", title: "英文童谣", description: "跟着经典童谣学习歌词、音标和核心单词。", themeIds: Object.freeze(["twinkle"]) }),
   items: Object.freeze({ id: "items", title: "经典道具", description: "分四个系列认识马里奥世界里的经典道具。", themeIds: Object.freeze(["items1", "items2", "items3", "items4"]) }),
@@ -440,6 +452,13 @@ function renderCountingScenes() {
 
 function initializePage() {
   renderCountingScenes();
+  document.querySelector("#beContractionsFigure").innerHTML = BE_CONTRACTION_PAIRS.map(pair =>
+    '<div class="contraction-pair"><h3>' + pair.chinese + '</h3><div class="contraction-pair-options">' +
+    BE_CONTRACTION_WORDS.filter(word => word.fullForm === pair.full).map(word =>
+      '<button class="scene-target contraction-target" type="button" data-target="' + word.id + '" aria-label="' + word.ariaLabel + '">' +
+      '<span class="contraction-form">' + word.formLabel + '</span><strong class="contraction-spelling">' + word.word + '</strong></button>'
+    ).join('') + '</div></div>'
+  ).join('');
   const dom = Object.fromEntries([...document.querySelectorAll("[id]")].map((node) => [node.id, node]));
   const scenes = [...document.querySelectorAll(".theme-scene")];
   const targetLabels = new Map([...document.querySelectorAll(".scene-target")].map((node) => [node, node.getAttribute("aria-label")]));
@@ -569,6 +588,21 @@ function initializePage() {
     dom.wordCard.className = "word-detail";
     dom.wordCard.innerHTML = '<h3 class="word-en">' + word.word + '</h3><button class="phonetic phonetic-toggle" id="phoneticToggle" type="button" aria-expanded="false" aria-controls="phonemeBreakdown" aria-label="拆分 ' + word.word + ' 的音标 ' + word.phonetic + '">' + word.phonetic + '</button><div class="phoneme-breakdown" id="phonemeBreakdown" aria-label="' + word.word + ' 音素拆解" hidden>' + phonemeMarkup + '</div><span class="translation">' + word.chinese + '</span><p class="sentence">' + word.sentence + '</p><div class="word-navigation"><button class="primary-button icon-action sound-action theme-sound-button" id="repeatWord" type="button" aria-label="朗读 ' + word.word + ' 和例句" title="朗读 ' + word.word + ' 和例句"><span aria-hidden="true">🔊</span></button><button class="word-nav-button" id="previousWord" type="button" aria-label="Previous word"' + previousDisabled + '>Previous</button><button class="word-nav-button" id="nextWord" type="button" aria-label="Next word"' + nextDisabled + '>Next</button></div>';
     dom.wordCard.querySelector("#phoneticToggle").addEventListener("click", toggleCurrentPhonetic);
+    if (word.fullForm) {
+      const explanation = document.createElement("div");
+      explanation.className = "contraction-explanation";
+      const equivalence = document.createElement("p");
+      equivalence.className = "contraction-equivalence";
+      equivalence.textContent = word.fullForm + " ↔ " + word.shortForm;
+      const note = document.createElement("p");
+      note.textContent = word.note;
+      const translation = document.createElement("p");
+      translation.className = "sentence-chinese";
+      translation.textContent = word.sentenceChinese;
+      dom.wordCard.querySelector(".sentence").after(translation);
+      explanation.append(equivalence, note);
+      dom.wordCard.querySelector(".word-navigation").before(explanation);
+    }
     dom.wordCard.querySelector("#previousWord").addEventListener("click", () => {
       const previousWord = session.words[wordIndex - 1];
       if (previousWord) selectTarget(previousWord.id);
@@ -588,6 +622,10 @@ function initializePage() {
     dom.wordCard.innerHTML = selected
       ? '<h3>想一想这个单词</h3><p>先看左边的图片，回忆单词，再点击显示核对。</p><button class="primary-action review-reveal" id="revealReviewWord" type="button">显示</button>'
       : '<span class="tap-icon" aria-hidden="true">☝</span><h3>复习单词</h3><p>点击左边的图片，先自己回忆单词。</p>';
+    if (activeThemeId === "beContractions") {
+      dom.wordCard.querySelector("h3").textContent = selected ? "想一想这个表达" : "复习人称与缩写";
+      dom.wordCard.querySelector("p").textContent = selected ? "根据中文和形式提示回忆英文，再点击显示核对。" : "点击左边的完整形式或缩写卡片，先自己回忆英文。";
+    }
     if (selected) dom.wordCard.querySelector("#revealReviewWord").addEventListener("click", () => {
       const word = session?.word(reviewCurrentId);
       if (!word || stage !== "review") return;
@@ -649,7 +687,7 @@ function initializePage() {
     dom.reviewWordStage.setAttribute("aria-pressed", String(review));
     dom.practiceStage.setAttribute("aria-pressed", String(practice));
     dom.stageTitle.textContent = practice ? "第三部分 · 互动练习" : review ? "第二部分 · 复习单词" : "第一部分 · 认识单词";
-    dom.scenePrompt.textContent = practice ? config.practicePrompt : review ? "点击图片，回忆单词后再显示" : config.learnPrompt;
+    dom.scenePrompt.textContent = practice ? config.practicePrompt : review ? (activeThemeId === "beContractions" ? "点击形式提示卡，回忆英文后再显示" : "点击图片，回忆单词后再显示") : config.learnPrompt;
     if (practice) {
       session.startRound();
       renderQuestion();

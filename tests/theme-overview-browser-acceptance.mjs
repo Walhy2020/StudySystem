@@ -232,7 +232,7 @@ await page.goto(new URL("review-learning.html", baseUrl).href);
 await assertNoOverflow(page);
 assert.deepEqual(await page.locator(".theme-nav .nav-link").allTextContents().then((items) => items.map((item) => item.trim())), ["拼音", "汉字", "单词", "Book1", "主题", "情景", "总复习", "音标"]);
 assert.equal((await page.locator("#totalReviewCount").textContent()).trim(), "0 个已学");
-assert.equal((await page.locator("#wordLibraryCount").textContent()).trim(), "0/227");
+assert.equal((await page.locator("#wordLibraryCount").textContent()).trim(), "0/284");
 assert.equal(await page.locator("#totalReviewEmpty").isVisible(), true);
 
 await page.click("#openWordLibrary");
@@ -263,7 +263,7 @@ await page.click("#backToThemes");
 await page.locator('.theme-nav a[href="./review-learning.html"]').click();
 await page.waitForURL(/review-learning\.html/);
 assert.equal((await page.locator("#totalReviewCount").textContent()).trim(), "6 个已学");
-assert.equal((await page.locator("#wordLibraryCount").textContent()).trim(), "6/227");
+assert.equal((await page.locator("#wordLibraryCount").textContent()).trim(), "6/284");
 await page.click("#openWordLibrary");
 assert.equal(await page.locator(".library-card").count(), 6);
 
@@ -273,7 +273,7 @@ await completeTheme(page, "ordinals", 16);
 await page.locator('.theme-nav a[href="./review-learning.html"]').click();
 await page.waitForURL(/review-learning\.html/);
 assert.equal((await page.locator("#totalReviewCount").textContent()).trim(), "16 个已学");
-assert.equal((await page.locator("#wordLibraryCount").textContent()).trim(), "16/227");
+assert.equal((await page.locator("#wordLibraryCount").textContent()).trim(), "16/284");
 
 await page.locator('.theme-nav a[href="./theme-learning.html"]').click();
 await page.waitForURL(/theme-learning\.html/);
@@ -286,7 +286,7 @@ assert.equal(themeStorageMutations.filter(({ key }) => key === learnedKey).lengt
 await page.locator('.theme-nav a[href="./review-learning.html"]').click();
 await page.waitForURL(/review-learning\.html/);
 assert.equal((await page.locator("#totalReviewCount").textContent()).trim(), "89 个已学");
-assert.equal((await page.locator("#wordLibraryCount").textContent()).trim(), "89/251");
+assert.equal((await page.locator("#wordLibraryCount").textContent()).trim(), "89/284");
 saved = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), learnedKey);
 assert.equal(saved.version, 2);
 assert.equal(saved.learned.length, 91);
@@ -313,7 +313,7 @@ assert.equal(await page.evaluate(() => window.__spoken.length), spokenBefore + 1
 await page.screenshot({ path: "tests/theme-library-desktop.png", fullPage: true });
 
 await page.reload();
-assert.equal((await page.locator("#wordLibraryCount").textContent()).trim(), "89/251");
+assert.equal((await page.locator("#wordLibraryCount").textContent()).trim(), "89/284");
 await page.click("#openWordLibrary");
 await page.click("#startLibraryReview");
 assert.equal(await page.locator("#totalReviewPanel").isVisible(), true);

@@ -2,7 +2,7 @@
 <html lang="zh-CN"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="Cache-Control" content="no-cache,no-store,must-revalidate"><link rel="icon" href="data:,">
-<title>马里奥学习系统 · 主题</title><link rel="stylesheet" href="./theme-learning.css?v=3.6">
+<title>马里奥学习系统 · 主题</title><link rel="stylesheet" href="./theme-learning.css?v=3.7">
   <link rel="stylesheet" href="./module-navigation.css?v=1.1" />
 <script src="./src/web-audio.js?v=1.0"></script>
 </head><body><div class="theme-shell">
@@ -12,7 +12,7 @@
 <section class="theme-picker" id="themePicker" aria-label="主题系列选择">
 <div class="theme-series-list" id="themeSeriesList" aria-label="主题系列">
 <button class="theme-series-cell" type="button" data-series-id="festivals" aria-label="节日，1个主题"><span class="series-preview items-series-preview" aria-hidden="true"><img src="./assets/themes/mid-autumn/mid-autumn-scene-v1.png" alt=""></span><span class="series-cell-copy"><small>1 个主题</small><strong>节日</strong><em>Festivals</em><span data-series-progress>0/1 已复习</span></span><span class="series-arrow" aria-hidden="true">›</span></button>
-<button class="theme-series-cell basics-series-cell" type="button" data-series-id="basics" aria-label="基础认知，2个主题"><span class="series-preview basics-series-preview" aria-hidden="true"><img src="./assets/themes/body/body-character-anime-v2.png" alt=""></span><span class="series-cell-copy"><small>2 个主题</small><strong>基础认知</strong><em>Body &amp; Colors</em><span data-series-progress>0/2 已复习</span></span><span class="series-arrow" aria-hidden="true">›</span></button>
+<button class="theme-series-cell basics-series-cell" type="button" data-series-id="basics" aria-label="基础认知，3个主题"><span class="series-preview basics-series-preview" aria-hidden="true"><img src="./assets/themes/body/body-character-anime-v2.png" alt=""></span><span class="series-cell-copy"><small>3 个主题</small><strong>基础认知</strong><em>Body · Colors · I am</em><span data-series-progress>0/3 已复习</span></span><span class="series-arrow" aria-hidden="true">›</span></button>
 <button class="theme-series-cell counting-series-cell" type="button" data-series-id="counting" aria-label="数字天地，4个主题"><span class="series-preview counting-series-preview" aria-hidden="true"><b>1</b><b>10</b><b>100</b><i></i><i></i><i></i><i></i><i></i></span><span class="series-cell-copy"><small>4 个主题</small><strong>数字天地</strong><em>Counting &amp; Ordinals</em><span data-series-progress>0/4 已复习</span></span><span class="series-arrow" aria-hidden="true">›</span></button>
 
 <button class="theme-series-cell songs-series-cell" type="button" data-series-id="songs" aria-label="英文童谣，1个主题"><span class="series-preview songs-series-preview" aria-hidden="true"><i class="song-preview-moon"></i><b>★</b><i></i><i></i><i></i><i></i><i></i></span><span class="series-cell-copy"><small>1 个主题</small><strong>英文童谣</strong><em>Nursery Rhymes</em><span data-series-progress>0/1 已复习</span></span><span class="series-arrow" aria-hidden="true">›</span></button>
@@ -22,6 +22,7 @@
 <section class="theme-series-panel" id="themeSeriesPanel" aria-labelledby="seriesTitle" hidden>
 <div class="series-panel-heading"><button class="back-series" id="backToSeries" type="button">返回主题系列</button><div><span class="section-kicker">选择一个小主题</span><h2 id="seriesTitle">基础认知</h2><p id="seriesDescription">认识身体部位和常见颜色。</p></div></div>
 <div class="theme-grid">
+<article class="theme-card contractions-card" data-series="basics"><div class="theme-card-art contractions-card-art" aria-hidden="true"><span class="contractions-cover">I am<br>↕<br>I'm</span></div><div class="theme-card-copy"><span class="theme-number">主题 14</span><h3>人称与缩写 <em>I am · He is · It is</em></h3><p>学习“我是、他是、它是”，对照完整形式与 I'm、He's、It's。</p><button class="primary-action" id="startBeContractions" data-theme-id="beContractions" type="button">开始主题</button></div></article>
 <article class="theme-card items-card midautumn-card" data-series="festivals"><div class="theme-card-art items-card-art" aria-hidden="true"><img src="./assets/themes/mid-autumn/mid-autumn-scene-v1.png" alt=""><strong>MID-AUTUMN</strong></div><div class="theme-card-copy"><span class="theme-number">主题 13</span><h3>中秋节 <em>Mid-Autumn Festival</em></h3><p>赏圆月、吃月饼，认识灯笼、兔子、茶和家人。</p><button class="primary-action" id="startMidAutumn" data-theme-id="midAutumn" type="button">开始主题</button></div></article>
 <article class="theme-card body-card" data-series="basics"><div class="theme-card-art" aria-hidden="true"><span></span><strong>BODY</strong></div>
 <div class="theme-card-copy"><span class="theme-number">主题 01</span><h3>身体 <em>Body</em></h3><p>认识头、手、手臂、腿、脚和身体。</p><button class="primary-action" id="startTheme" data-theme-id="body" type="button">开始主题</button></div></article>
@@ -182,10 +183,14 @@
 </div>
 <button class="song-speak-button" id="speakSongLyrics" type="button" aria-label="朗读 Twinkle Twinkle Little Star 第一段歌词" title="朗读歌词"><span aria-hidden="true">🔊</span> 朗读歌词</button>
 </div><p class="scene-note">每句英文下方都有对应音标；点击上方单词可单独学习。</p></div>
+<div class="theme-scene" id="beContractionsScene" data-theme="beContractions" hidden>
+<div class="contraction-board" id="beContractionsFigure" role="group" aria-label="三组完整形式与缩写卡片"></div>
+<p class="contraction-help">I 和 am 搭配，he / it 和 is 搭配。缩写用撇号 ' 代替省略的字母，意思不变。本主题 He's / It's 表示 He is / It is；It's 不等于表示“它的”的 its。</p>
+</div>
 </section>
 <section class="info-panel" id="learnPanel"><div id="wordCard" class="word-card-placeholder"><span class="tap-icon" aria-hidden="true">☝</span><h3>点一个目标</h3><p>英文、音标、中文和例句会显示在这里。</p></div><div class="theme-learning-completion"><button class="primary-action" id="completeThemeLearning" type="button">学习完毕</button><p id="themeLearningStatus" role="status">点击后，本主题全部单词会加入总词库。</p></div></section>
 <section class="info-panel" id="practicePanel" hidden><span class="card-label">LISTEN &amp; TOUCH</span><p class="round-progress" id="roundProgress">第 1/6 题</p><h3 class="practice-instruction" id="practiceInstruction">准备好了吗？</h3><button class="sound-button" id="playInstruction" type="button">🔊 播放指令</button><p class="practice-feedback" id="practiceFeedback" role="status">听清楚后，点击正确目标。</p></section>
 <section class="info-panel result-panel" id="resultPanel" hidden><span class="result-star" aria-hidden="true">★</span><span class="card-label">ROUND COMPLETE</span><h3 id="resultTitle">六个目标全部找对！</h3><p id="resultText">你完成了听音点击练习。</p><strong id="resultScore">6/6</strong><button class="primary-action" id="restartRound" type="button">再来一轮</button></section>
 </div><p class="tts-notice" id="ttsNotice" role="status" hidden>当前浏览器无法朗读，但仍可继续点击学习。</p>
 </section>
-</main></div><script type="module" src="./theme-learning.js?v=2.25"></script><script src="./src/fullscreen-shell.js?v=1.3"></script><script src="./src/controller-mouse.js?v=1.2"></script><script src="./src/gamepad-cursor.js?v=1.17"></script><script type="module" src="./src/version-update.js?v=1.0.76"></script></body></html>
+</main></div><script type="module" src="./theme-learning.js?v=2.26"></script><script src="./src/fullscreen-shell.js?v=1.3"></script><script src="./src/controller-mouse.js?v=1.2"></script><script src="./src/gamepad-cursor.js?v=1.17"></script><script type="module" src="./src/version-update.js?v=1.0.77"></script></body></html>

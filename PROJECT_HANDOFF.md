@@ -7,7 +7,31 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.76** (2026-10-18). Theme series picker now uses
+System display version: **v1.0.77** (2026-10-18). Basic Recognition adds
+Person & Contractions (beContractions): I am / I'm, He is / He's, It is / It's.
+Six forms have British IPA, Chinese meanings, paired examples and beginner notes
+(capital I, am/is agreement, It's versus its; only BE contractions taught here).
+Exact HTML/CSS comparison cards need no generated artwork. Learn/manual speech,
+answer-hidden review and six bidirectional conversion questions reuse the existing
+ThemeSession, wrong retry and green completion. Theme count14, records103,
+unique theme expressions100; combined Book1/theme/scenario definition catalog284.
+All six autojoin Words definitions; only explicit theme learning adds them to the
+learned library/overall review. Unique Chinese/form meaning cards distinguish
+full/short answers there. Optional displayWord preserves canonical capitalization
+without changing normalized IDs, existing ordering, storage keys or prior progress.
+Theme CSS3.7/JS2.26; overview1.20; notifier/display1.0.77; transitive caches updated.
+Refresh the whole page; no build or server restart required.
+Verified syntax checks,234 Node tests,diff-check and targeted real Microsoft Edge:
+be-contractions-browser.mjs at1440/390 (six forms,IPA splitting,explicit speech,
+review conceal/reveal/reset,wrong retry,6/6 conversion,completion/reload,library and
+Words integration,old-record preservation,storage isolation,keyboard/touch,no
+clipping/overflow/resource errors); theme-list-browser.mjs and
+word-learning-browser.mjs at1440/827/390 also pass. Desktop/mobile learning
+screenshots inspected in ignored tmp. Speech callbacks and Words controller input
+are simulated,not manual audio/physical-controller certification. No full browser
+suite run; other scripts' cache/count assertions updated only. Live5177 preserved.
+
+Previous **v1.0.76** (2026-10-18). Theme series picker now uses
 the same wrapping vertical-list layout as Scenario: two columns above1050px,
 one column below; cards stack preview/copy below560px. Six series and thirteen
 themes retain existing grouping, learning actions and completion/storage rules.
@@ -1320,11 +1344,12 @@ In the ChatGPT/Codex desktop app, add the cloned repository as a local project a
 ### Theme learning
 
 - Entry: `theme-learning.html`.
-- Thirteen delivered themes with 97 theme records (94 unique words): Body, Colors, Numbers 1-10, Numbers 11-19, Tens 10-100, Ordinals 1-10, Twinkle Twinkle Little Star, Classic Items I-IV, Classroom Things, and Mid-Autumn Festival.
+- Fourteen delivered themes with 103 theme records (100 unique expressions): Body, Colors, Numbers 1-10, Numbers 11-19, Tens 10-100, Ordinals 1-10, Twinkle Twinkle Little Star, Classic Items I-IV, Classroom Things, Mid-Autumn Festival, and Person & Contractions.
 - Theme word cards support IPA display and phoneme segmentation, manual sound playback, previous/next navigation, keyboard/touch interaction, learning, and practice.
 - The outer picker groups themes into six preview series in a vertical wrapping list (two columns on desktop, one at1050px and below): Festivals, Basic Recognition, Counting World, Nursery Rhymes, Classic Items, and Classroom Things. Individual reviewed themes keep their green checks, and a series turns green when all themes inside it are reviewed.
 - The Nursery Rhymes series currently contains Twinkle, Twinkle, Little Star: six lyric lines each place complete British IPA directly below the English line, eight core words remain clickable, and full-verse speech is manual rather than automatic.
 - Counting artwork is code-native and exact: 1-19 use the matching number of coin dots; 10-100 uses one to ten ten-frames, each containing exactly ten dots.
+- Basic Recognition includes Body, Colors and Person & Contractions. The latter uses exact text comparison cards for I am/I'm, He is/He's and It is/It's; six forms, simple examples and bidirectional practice are defined in `data/be-contractions.js`. Review hides English and comparison help until explicit reveal; learned library cards distinguish complete/short forms by Chinese labels. `displayWord` keeps canonical spelling while normalized word IDs stay stable.
 - Project assets live under `assets/themes/` and have been checked against their mapped words/hotspots.
 - Classroom Things teaches pencil, pen, eraser, ruler, book, schoolbag, desk, and chair using `assets/themes/classroom/classroom-things-scene-v1.png`. The 4×2 scene has eight independent non-overlapping hotspots and supplies per-word cropped artwork to the shared word library.
 - Theme learned records remain in `mario-theme-learned-v1` and are one of the three sources of the shared total word library.

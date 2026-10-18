@@ -44,8 +44,8 @@ try {
     await act("#startDaily");
     assert.equal(await page.locator("#currentWord").textContent(), "显示", "picture appears without answer");
     assert.equal(await page.locator("#wordPhonetic").textContent(), "");
-    assert.equal(await page.locator("#wordTranslation").textContent(), "");
-    assert.equal(await page.locator("#wordTranslation").isVisible(), false);
+    assert.equal(await page.locator("#wordTranslation").textContent(), await page.evaluate(() => window.__WORD_LEARNING__.getCurrentWord().chinese));
+    assert.equal(await page.locator("#wordTranslation").isVisible(), true, "Chinese prompt visible before English reveal");
     assert.ok(await page.locator("#wordPicture svg").count());
     await page.evaluate(() => document.activeElement.blur());
     await page.keyboard.press("Space"); assert.ok(await page.locator("#wordPhonetic").textContent());
@@ -64,7 +64,7 @@ try {
     });
     assert.equal(await page.locator("#phonemeBreakdown").isVisible(), true, "Y matches Space");
     for (let i = 0; i < 3; i++) await act("#markWrong");
-    assert.equal(await page.locator("#wordTranslation").textContent(), "", "next word hides translation again");
+    assert.equal(await page.locator("#wordTranslation").textContent(), await page.evaluate(() => window.__WORD_LEARNING__.getCurrentWord().chinese), "next word immediately updates Chinese prompt");
     assert.equal((await state()).dailyPhase, "newLearning");
     for (let i = 0; i < 9; i++) await act("#markCorrect");
     assert.equal(await page.locator("#finishNewWords").isVisible(), true);
@@ -73,6 +73,8 @@ try {
     await act("#finishNewWords");
     for (let i = 0; i < 3; i++) await act("#markCorrect");
     assert.equal((await state()).dailyTaskDone, true);
+    assert.equal(await page.locator("#wordTranslation").isVisible(), false, "completion clears Chinese prompt");
+    assert.equal(await page.locator("#wordTranslation").textContent(), "");
     assert.equal(await page.evaluate(() => window.__speechCalls), 0, "no automatic speech");
 
     // Check each existing art representation, plus abstract contextual pictures.
@@ -91,7 +93,9 @@ try {
       assert.equal(await page.locator("#currentWord").textContent(), "显示", "reload and new word hide spelling");
       assert.equal(await page.locator("#wordPhonetic").textContent(), "", "new word hides pronunciation");
       assert.equal(await page.locator("#phonemeBreakdown").textContent(), "");
-      assert.equal(await page.locator("#wordTranslation").textContent(), "");
+      assert.equal(await page.locator("#wordTranslation").textContent(), item.chinese);
+      assert.equal(await page.locator("#wordTranslation").isVisible(), true, "reload keeps Chinese prompt while concealing English/IPA");
+      if (word === "arm") await page.screenshot({ path: `tmp/word-learning-prompt-${width}.png`, fullPage: true });
       await act("#currentWord");
       assert.equal(await page.locator("#currentWord").textContent(), word);
       assert.equal(await page.locator("#wordPhonetic").textContent(), item.phonetic);
@@ -100,13 +104,14 @@ try {
       await act("#wordPhonetic");
       assert.equal(await page.locator("#phonemeBreakdown").isVisible(), true);
       const answerBounds = await page.locator(".word-question").boundingBox();
-      for (const selector of ["#currentWord", "#wordPhonetic", "#phonemeBreakdown", "#wordTranslation"]) {
+      for (const selector of ["#currentWord", "#wordPhonetic", "#phonemeBreakdown"]) {
         const bounds = await page.locator(selector).boundingBox();
         assert.ok(bounds.x >= answerBounds.x && bounds.x + bounds.width <= answerBounds.x + answerBounds.width + 1, `${word} ${selector} fits horizontally`);
         assert.ok(bounds.y >= answerBounds.y && bounds.y + bounds.height <= answerBounds.y + answerBounds.height + 1, `${word} ${selector} is not clipped`);
       }
-      const translationBounds = await page.locator("#wordTranslation").boundingBox(), splitBounds = await page.locator("#phonemeBreakdown").boundingBox();
-      assert.ok(translationBounds.y >= splitBounds.y + splitBounds.height, "Chinese translation sits below IPA breakdown");
+      const translationBounds = await page.locator("#wordTranslation").boundingBox(), pictureBounds = await page.locator("#wordPicture").boundingBox();
+      assert.ok(translationBounds.y >= pictureBounds.y + pictureBounds.height, "Chinese prompt sits below picture");
+      assert.ok(Math.abs(translationBounds.x - pictureBounds.x) <= 1 && Math.abs(translationBounds.width - pictureBounds.width) <= 1, "Chinese prompt stays in picture column");
       if (word === "hello") assert.ok((await page.locator(".phoneme-chip").allTextContents()).includes("əʊ"), "diphthong stays together");
       assert.doesNotMatch(await page.locator("#phonemeBreakdown").textContent(), /重音|\//);
       if (word === "hello") await page.screenshot({ path: `tmp/word-learning-split-${width}.png`, fullPage: true });

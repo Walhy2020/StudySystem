@@ -95,11 +95,13 @@ test("单词卡沿用汉字布局，先隐藏答案，揭示后显示英文/音�
   const css = readFileSync(new URL("../word-learning.css", import.meta.url), "utf8");
   assert.match(html, /class="stage word-lesson"/);
   for (const name of ["map-visual", "word-card", "hanzi-panel", "pinyin-line word-question"]) assert.ok(html.includes(`class="${name}"`));
-  assert.match(html, /word-learning\.css\?v=1\.2/);
-  assert.match(html, /word-learning\.js\?v=1\.4/);
+  assert.match(html, /word-learning\.css\?v=1\.3/);
+  assert.match(html, /word-learning\.js\?v=1\.5/);
   assert.match(html, /id="wordTranslation" hidden/);
-  assert.match(script, /dom\.wordTranslation\.textContent = item\.chinese/);
-  assert.match(script, /dom\.wordTranslation\.textContent = ""; dom\.wordTranslation\.hidden = true/);
+  assert.match(html, /class="word-picture-panel">[\s\S]*?id="wordPicture"[\s\S]*?id="wordTranslation"[\s\S]*?class="pinyin-line word-question"/);
+  assert.match(script, /dom\.wordTranslation\.textContent = active \? item\.chinese : ""/);
+  assert.match(script, /dom\.wordTranslation\.hidden = !active/);
+  assert.doesNotMatch(script.slice(script.indexOf("function reveal()"), script.indexOf("function togglePhonetic()")), /wordTranslation/);
   assert.match(script, /active \? "显示"/);
   assert.match(script, /dom\.currentWord\.textContent = item\.displayWord \|\| item\.word/);
   assert.match(script, /splitPhonetic\(item\.phonetic\)/);

@@ -7,7 +7,22 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.77** (2026-10-18). Basic Recognition adds
+System display version: **v1.0.78** (2026-10-18). Words Chinese translation
+is now an always-visible prompt below the left picture during active lessons,
+not part of the concealed right-side answer. Switching words/reloading immediately
+updates Chinese while English/IPA reset to hidden; Show/Space/Y reveal only those.
+Completion clears the prompt. Picture badge remains anchored to its artwork.
+No learning-engine, catalog, storage or controller changes. Words CSS1.3/JS1.5;
+display/notifier1.0.78 and matching entry caches refreshed. No build/restart.
+Verified syntax checks,234 Node tests,diff-check and only the targeted Words
+Microsoft Edge acceptance at1440/827/390: prompt before reveal,word switch/reload,
+completion clearing,picture-column bounds,English/IPA concealment and splitting,
+keyboard/touch/simulated Y,storage isolation,no clipping/overflow/resource errors.
+Desktop/mobile prompt screenshots inspected in ignored tmp. Physical controller
+not certified; no full browser suite. Pre-existing41 PNG changes remain excluded.
+Live53177 unchanged; isolated53179 test server stopped after acceptance.
+
+Previous **v1.0.77** (2026-10-18). Basic Recognition adds
 Person & Contractions (beContractions): I am / I'm, He is / He's, It is / It's.
 Six forms have British IPA, Chinese meanings, paired examples and beginner notes
 (capital I, am/is agreement, It's versus its; only BE contractions taught here).

@@ -1,5 +1,5 @@
 import { HanziEngine } from "./src/engine.js";
-import { APP_VERSION, PHASE } from "./src/constants.js?v=1.0.77";
+import { APP_VERSION, PHASE } from "./src/constants.js?v=1.0.78";
 import { THEME_CONFIGS, speakEnglish } from "./theme-learning.js?v=2.26";
 import { buildThemeCatalog, renderArt } from "./src/theme-overview.js?v=1.20";
 import { buildWordLearningItems, WordLearningStorage } from "./src/word-learning-model.js?v=1.0";
@@ -23,8 +23,6 @@ function reveal() {
   dom.currentWord.setAttribute("aria-label", `${item.word}，切换音标拆解`);
   dom.wordPhonetic.textContent = item.phonetic;
   dom.wordPhonetic.hidden = false;
-  dom.wordTranslation.textContent = item.chinese;
-  dom.wordTranslation.hidden = false;
   dom.wordPhonetic.setAttribute("aria-label", `拆解 ${item.word} 的音标 ${item.phonetic}`);
   dom.phonemeBreakdown.replaceChildren(...splitPhonetic(item.phonetic).map(symbol => {
     const span = document.createElement("span");
@@ -66,12 +64,13 @@ function render() {
     : state.dailyPhase === PHASE.REVIEW ? `普通 ${progress.reviewDone}/${progress.reviewTotal} · 错词 ${progress.wrongDone}/${progress.wrongTotal}` : "";
   revealed = false; phoneticExpanded = false;
   dom.wordPhonetic.textContent = ""; dom.wordPhonetic.hidden = true;
-  dom.wordTranslation.textContent = ""; dom.wordTranslation.hidden = true;
+  dom.wordTranslation.textContent = active ? item.chinese : "";
+  dom.wordTranslation.hidden = !active;
   dom.wordPhonetic.setAttribute("aria-expanded", "false");
   dom.wordPhonetic.setAttribute("aria-label", "拆解音标");
   dom.phonemeBreakdown.replaceChildren(); dom.phonemeBreakdown.hidden = true;
   dom.currentWord.textContent = active ? "显示" : state.dailyTaskDone ? "完成" : "开始";
-  dom.currentWord.setAttribute("aria-label", "显示单词、音标和中文");
+  dom.currentWord.setAttribute("aria-label", "显示单词和音标");
   dom.currentWord.disabled = !active; dom.currentWord.setAttribute("aria-expanded", "false");
   dom.wordPicture.replaceChildren();
   if (active) {

@@ -34,7 +34,7 @@ const desktop = await context({ width: 1440, height: 1000 });
 const page = await desktop.newPage();
 watch(page);
 await page.goto(new URL("book-learning.html?test=book1-theme-desktop", baseUrl).href);
-assert.deepEqual(await page.locator(".book-nav > *").allTextContents(), ["汉字", "Book1", "主题学习", "情景模式", "总复习", "音标"]);
+assert.deepEqual(await page.locator(".book-nav > *").allTextContents(), ["拼音", "汉字", "单词", "Book1", "主题", "情景", "总复习", "音标"]);
 assert.equal(await page.locator(".book-theme-card").count(), 26);
 assert.equal(await page.locator(".book-progress-panel").count(), 0);
 assert.equal(await noOverflow(page), true);

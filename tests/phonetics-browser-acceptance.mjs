@@ -78,7 +78,7 @@ const pageErrors = [];
 page.on("pageerror", (error) => pageErrors.push(error.message));
 
 await page.goto(mainUrl);
-assert.deepEqual(await page.locator(".module-tabs .module-tab").allTextContents(), ["汉字", "Book1", "主题学习", "情景模式", "总复习", "音标"]);
+assert.deepEqual(await page.locator(".module-tabs .module-tab").allTextContents(), ["拼音", "汉字", "单词", "Book1", "主题", "情景", "总复习", "音标"]);
 assert.equal(await page.locator('.module-tabs a[href="./phonetics.html"]').isVisible(), true);
 assert.equal(await page.locator("header .top-actions #bombGameEntry").isVisible(), true);
 assert.equal(await page.locator('.module-tabs a[href*="bomb-game"]').count(), 0);
@@ -111,7 +111,7 @@ const assetStatuses = await page.evaluate(async () => {
 assert.ok(Object.values(assetStatuses).every((status) => status === 200), JSON.stringify(assetStatuses));
 assert.equal(await page.locator("#bootError").isHidden(), true);
 assert.equal(await page.locator('.module-tabs a[href="./index.html"]').isVisible(), true);
-assert.deepEqual(await page.locator(".module-tabs .module-tab").allTextContents(), ["汉字", "Book1", "主题学习", "情景模式", "总复习", "音标"]);
+assert.deepEqual(await page.locator(".module-tabs .module-tab").allTextContents(), ["拼音", "汉字", "单词", "Book1", "主题", "情景", "总复习", "音标"]);
 assert.equal(await page.locator("header .phonetics-header-actions #bombGameEntry").isVisible(), true);
 assert.equal(await page.locator("header #resetPhonetics").count(), 0);
 assert.equal(await page.locator(".map-visual #bombGameEntry").count(), 0);

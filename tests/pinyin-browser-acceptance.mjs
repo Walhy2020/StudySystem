@@ -97,7 +97,7 @@ try {
     await dispatch("startReview"); assert.equal((await read()).dailyReviewIds.length, 0);
     const sentinels = await page.evaluate(keys => Object.fromEntries(keys.map(key => [key, JSON.parse(localStorage.getItem(key))])), protectedKeys);
     for (const key of protectedKeys) assert.deepEqual(sentinels[key], { pinyinSentinel: key });
-    const names = ["拼音", "汉字", "Book1", "主题学习", "情景模式", "总复习", "音标"];
+    const names = ["拼音", "汉字", "单词", "Book1", "主题", "情景", "总复习", "音标"];
     // Navigation-only checks: do not run the other modules' learning/gameplay suites.
     for (const module of ["pinyin", "index", "phonetics", "book-learning", "theme-learning", "scenario-learning", "review-learning"]) {
       await page.goto(base + `${module}.html?test=pinyin-nav`);

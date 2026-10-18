@@ -70,9 +70,11 @@ async function assertSeriesList(page, complete = false) {
     const preview = cell.querySelector(".series-preview").getBoundingClientRect();
     return { left: box.left, right: box.right, top: box.top, bottom: box.bottom, width: box.width, height: box.height, previewWidth: preview.width, previewHeight: preview.height, complete: cell.classList.contains("is-complete") };
   }));
-  assert.ok(geometry.every(({ width, height, previewWidth, previewHeight }) => width >= 300 && height >= 300 && previewWidth >= 290 && previewHeight >= 170), JSON.stringify(geometry));
-  assert.ok(geometry.every(({ top }) => Math.abs(top - geometry[0].top) <= 1), JSON.stringify(geometry));
-  for (let index = 0; index < geometry.length - 1; index += 1) assert.ok(geometry[index].right <= geometry[index + 1].left, JSON.stringify(geometry));
+  assert.ok(geometry.every(({ width, height, previewWidth, previewHeight }) => width >= 300 && height >= 300 && previewWidth >= 170 && previewHeight >= 230), JSON.stringify(geometry));
+  assert.ok(geometry.at(-1).top > geometry[0].top, JSON.stringify(geometry));
+  if (page.viewportSize().width <= 1050) {
+    for (let index = 0; index < geometry.length - 1; index += 1) assert.ok(geometry[index].bottom <= geometry[index + 1].top, JSON.stringify(geometry));
+  }
   assert.equal(geometry.every(({ complete: value }) => value), complete);
 }
 async function openSeries(page, seriesId, action = "click") {
@@ -626,7 +628,7 @@ const desktopContext = await prepareContext({ viewport: { width: 1440, height: 1
 const page = await desktopContext.newPage();
 watchPage(page);
 await page.goto(baseUrl);
-assert.ok((await page.locator(".module-tab").allTextContents()).some((item) => item.trim() === "主题学习"));
+assert.ok((await page.locator(".module-tab").allTextContents()).some((item) => item.trim() === "主题"));
 assert.deepEqual(await page.locator(".top-actions > *").allTextContents().then((x) => x.map((v) => v.trim())), ["炸弹迷宫"]);
 await page.locator('.module-tab[href="./theme-learning.html"]').click();
 await page.waitForURL(/theme-learning\.html/);

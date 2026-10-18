@@ -7,7 +7,23 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.75** (2026-10-18). Words adds Chinese translation
+System display version: **v1.0.76** (2026-10-18). Theme series picker now uses
+the same wrapping vertical-list layout as Scenario: two columns above1050px,
+one column below; cards stack preview/copy below560px. Six series and thirteen
+themes retain existing grouping, learning actions and completion/storage rules.
+All eight learning-page navs use the short labels 主题 / 情景; those two page
+headings and document titles match. Source-library labels remain unchanged.
+Theme CSS3.6; notifier/display1.0.76; refreshed display entry caches only.
+Refresh the whole page; no build or server restart required.
+Verified syntax checks,230 Node tests,diff-check and only the targeted
+theme-list-browser.mjs in real Microsoft Edge at1440/827/390. Eight navs,
+Scenario-matched columns,all13 theme entries,actual image bounds,keyboard/touch,
+explicit learning,green completion and reload persistence,no foreign progress
+writes,no horizontal overflow or failed resources passed. Ignored tmp screenshots
+inspected. Existing browser scripts' navigation/cache expectations updated;
+those unrelated workflows were not run. Inherited5177 service remains unchanged.
+
+Previous **v1.0.75** (2026-10-18). Words adds Chinese translation
 at the bottom of the answer card and larger English/IPA typography. Translation
 reveals with spelling/IPA via Show/Space/Y; next word/reload hides and clears it.
 Phonetic split keeps the translation. No engine/catalog/storage changes.
@@ -1306,7 +1322,7 @@ In the ChatGPT/Codex desktop app, add the cloned repository as a local project a
 - Entry: `theme-learning.html`.
 - Thirteen delivered themes with 97 theme records (94 unique words): Body, Colors, Numbers 1-10, Numbers 11-19, Tens 10-100, Ordinals 1-10, Twinkle Twinkle Little Star, Classic Items I-IV, Classroom Things, and Mid-Autumn Festival.
 - Theme word cards support IPA display and phoneme segmentation, manual sound playback, previous/next navigation, keyboard/touch interaction, learning, and practice.
-- The outer picker groups themes into six horizontal preview series: Festivals, Basic Recognition, Counting World, Nursery Rhymes, Classic Items, and Classroom Things. Individual reviewed themes keep their green checks, and a series turns green when all themes inside it are reviewed.
+- The outer picker groups themes into six preview series in a vertical wrapping list (two columns on desktop, one at1050px and below): Festivals, Basic Recognition, Counting World, Nursery Rhymes, Classic Items, and Classroom Things. Individual reviewed themes keep their green checks, and a series turns green when all themes inside it are reviewed.
 - The Nursery Rhymes series currently contains Twinkle, Twinkle, Little Star: six lyric lines each place complete British IPA directly below the English line, eight core words remain clickable, and full-verse speech is manual rather than automatic.
 - Counting artwork is code-native and exact: 1-19 use the matching number of coin dots; 10-100 uses one to ten ten-frames, each containing exactly ten dots.
 - Project assets live under `assets/themes/` and have been checked against their mapped words/hotspots.

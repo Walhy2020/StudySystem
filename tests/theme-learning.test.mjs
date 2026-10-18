@@ -519,7 +519,7 @@ test("主题页十二个卡片、九十一个互动目标、歌词音标、阶�
 
   assert.doesNotMatch(html, /id="openTotalReview"|id="openWordLibrary"|id="wordLibraryView"|id="totalReviewView"/);
   assert.match(html, /href="\.\/review-learning\.html">总复习<\/a>/);
-  assert.match(html, /theme-learning\.css\?v=3\.5/);
+  assert.match(html, /theme-learning\.css\?v=3\.6/);
   assert.match(html, /theme-learning\.js\?v=2\.25/);
   assert.match(html, /id="reviewWordStage"[^>]*>2 复习单词<\/button>/);
   assert.match(html, /id="practiceStage"[^>]*>3 互动练习<\/button>/);
@@ -557,7 +557,7 @@ test("主题页十二个卡片、九十一个互动目标、歌词音标、阶�
   assert.doesNotMatch(learnBranch, /speak\s*\(/);
   assert.doesNotMatch(html, /WORD CARD/);
   const css = await readFile(new URL("../theme-learning.css", import.meta.url), "utf8");
-  assert.match(css, /\.theme-series-list\{display:flex/);
+  assert.match(css, /\.theme-series-list\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
   assert.match(css, /\.theme-series-cell/);
   assert.match(css, /\.series-preview/);
   assert.match(css, /--phonetic-font:/);
@@ -602,7 +602,7 @@ test("总复习是独立并列模块，主题页只记录学习进度", async ()
   assert.match(reviewHtml, /id="openWordLibrary"/);
   assert.match(reviewHtml, /id="totalReviewView"/);
   assert.match(reviewHtml, /id="wordLibraryView" hidden/);
-  assert.match(reviewHtml, /theme-learning\.css\?v=3\.5/);
+  assert.match(reviewHtml, /theme-learning\.css\?v=3\.6/);
   assert.match(reviewHtml, /review-learning\.js\?v=1\.22/);
   assert.match(reviewHtml, /id="wordLibraryCount">0\/251<\/b>/);
   assert.match(reviewScript, /theme-learning\.js\?v=2\.25/);

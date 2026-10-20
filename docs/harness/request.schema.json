@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "StudySystem analysis-only request",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "status", "sourceVersion", "request", "taskType", "modules", "decision", "facts", "ruleIds", "questions", "assumptions", "affectedFiles", "proposedChecks", "missingCapabilities", "limitations"],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "status": {"const": "analysis_only"},
+    "sourceVersion": {"type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$"},
+    "request": {"type": "string", "minLength": 1},
+    "taskType": {"enum": ["query", "bugfix", "content", "feature", "policy_change", "progress"]},
+    "modules": {"type": "array", "uniqueItems": true, "items": {"enum": ["pinyin", "hanzi", "words", "book1", "theme", "scenario", "review", "phonetics", "bomb", "platform"]}},
+    "decision": {"enum": ["answer", "clarify", "implementation_review", "policy_conflict", "capability_gap"]},
+    "facts": {
+      "type": "array",
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["statement", "evidence"],
+        "properties": {
+          "statement": {"type": "string", "minLength": 1},
+          "evidence": {
+            "type": "array", "minItems": 1,
+            "items": {"type": "object", "additionalProperties": false, "required": ["sourceId", "anchor"], "properties": {"sourceId": {"type": "string", "minLength": 1}, "anchor": {"type": "string", "minLength": 1}}}
+          }
+        }
+      }
+    },
+    "ruleIds": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^R\\d{2}$"}},
+    "questions": {"type": "array", "items": {"type": "string", "minLength": 1}},
+    "assumptions": {"type": "array", "items": {"type": "string"}},
+    "affectedFiles": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+    "proposedChecks": {"type": "array", "items": {"type": "string"}},
+    "missingCapabilities": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+    "limitations": {"type": "array", "items": {"type": "string"}}
+  },
+  "allOf": [
+    {"if": {"properties": {"decision": {"const": "clarify"}}}, "then": {"properties": {"questions": {"minItems": 1}}}},
+    {"if": {"properties": {"decision": {"const": "capability_gap"}}}, "then": {"properties": {"missingCapabilities": {"minItems": 1}}}},
+    {"if": {"properties": {"decision": {"const": "implementation_review"}}}, "then": {"properties": {"modules": {"minItems": 1}, "affectedFiles": {"minItems": 1}, "proposedChecks": {"minItems": 1}}}}
+  ]
+}

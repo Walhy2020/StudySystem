@@ -1,13 +1,38 @@
 # StudySystem cross-device handoff
 
-Last updated: 2026-10-18
+Last updated: 2026-10-20
 Repository: `https://github.com/Walhy2020/StudySystem.git`
 Branch: `main`
 Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.78** (2026-10-18). Words Chinese translation
+System display version: **v1.0.79** (2026-10-20). Adds offline Harness knowledge
+under docs/harness/: current module/storage map,20 sourced rules,analysis-only JSON
+schema/instructions,20 synthetic evaluation cases with follow-up turns,and human
+acceptance criteria. scripts/harness-knowledge.mjs checks normalized SHA-256 source
+fingerprints,release version,anchors and references before returning module-scoped
+context; it excludes evaluator answers. pnpm knowledge:check/knowledge:refresh/
+knowledge:context expose the workflow. Refresh fingerprints ONLY after auditing
+the changed facts; hashes do not prove semantic correctness. Snapshot baseline is
+the pre-delivery HEAD,with current working-file hashes and release version recorded.
+No DeepSeek/API calls,WeCom connector,executable skill registry,action policy or
+learning-progress ingestion is implemented; model-understanding evaluation is NOT
+RUN. No learning/storage/native/controller behavior changes. Release display/entry
+caches and all nine notifier imports updated; refresh only,no server restart.
+Verified pnpm check,240 Node tests,knowledge check and diff-check. Six new offline
+tests cover stale-source/version refusal,scoped/global facts,hidden evaluator data,
+unknown modules,path boundaries,CRLF and actual CLI JSON/separator handling.
+Only version-update-browser.mjs ran in real Microsoft Edge: nine desktop pages,
+Words/bomb at390px,same-version silence,cancel/re-prompt,accepted reload and storage
+sentinel preservation. Added Words to this existing script and corrected reported
+page count. No visual layout change or unrelated browser suite; no physical input
+certification. Isolated53179 server created here was stopped; inherited services
+were preserved. Knowledge index also distinguishes Words' full definitions from
+overall-review's three-source actually-learned pool; old historical counts below
+are not authoritative learner progress or current catalog totals.
+
+Previous **v1.0.78** (2026-10-18). Words Chinese translation
 is now an always-visible prompt below the left picture during active lessons,
 not part of the concealed right-side answer. Switching words/reloading immediately
 updates Chinese while English/IPA reset to hidden; Show/Space/Y reveal only those.

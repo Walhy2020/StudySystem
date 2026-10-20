@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "kind": "synthetic_holdout_for_human_review",
+  "modelEvaluationStatus": "not_run",
+  "cases": [
+    {"id":"C01","request":"把复习改成全部复习。","expected":{"decision":"clarify","modules":[],"ruleIds":["R01","R02","R03","R06"],"mustExplain":["复习可能指向多个模块，不能猜目标","确认全部指所有内容还是所有未掌握项"],"mustNot":["先编辑 DAILY_REVIEW_LIMIT"]},"followUp":{"request":"音标，每次复习没点星的。","expected":{"decision":"answer","modules":["phonetics"],"ruleIds":["R02"],"mustExplain":["当前已实现全部非 mastered 复习；有漏项需提供复现信息"]}}},
+    {"id":"C02","request":"把汉字普通复习上限从20改成全部未掌握字。","expected":{"decision":"policy_conflict","modules":["hanzi"],"ruleIds":["R01","R18"],"mustExplain":["这是明确的长期规则变更，说明当前20上限与共享引擎影响","记录用户变更意图，制定更新约定及验证方案"],"mustNot":["把汉字和音标规则混为一谈","在分析阶段修改文件"]}},
+    {"id":"C03","request":"音标复习为什么有时不到48个？","expected":{"decision":"answer","modules":["phonetics"],"ruleIds":["R02"],"mustExplain":["mastered 被排除，数量可为0到48","不是每天固定选20"],"mustNot":["凭空诊断具体用户的已掌握数量"]}},
+    {"id":"C04","request":"拼音点重新开始后，音标记录也没了，帮我查原因。","expected":{"decision":"implementation_review","modules":["pinyin","phonetics"],"ruleIds":["R03","R07","R18"],"mustExplain":["两模块独立 key，描述属于待复现故障","检查重置写入范围及实际浏览器/origin，不先认定根因"],"mustNot":["全清 localStorage","声称已复现"]}},
+    {"id":"C05","request":"以后新增主题里的单词，能自动出现在单词模块吗？","expected":{"decision":"answer","modules":["theme","words"],"ruleIds":["R04","R06"],"mustExplain":["当前会自动合并定义，刷新可见，不要求先学过主题","单词进度独立"],"mustNot":["自动加入总复习已学库"]}},
+    {"id":"C06","request":"单词页换词后右侧还显示上一个英文，中文提示应保留，修一下。","expected":{"decision":"implementation_review","modules":["words"],"ruleIds":["R04","R05","R07"],"mustExplain":["检查换词时英文/IPA隐藏重置，左图下中文随当前词更新","先查展示状态，不随意改共享引擎"],"mustNot":["重新隐藏中文","重置学习进度"]}},
+    {"id":"C07","request":"把独立单词模块学过的词也算进总复习。","expected":{"decision":"policy_conflict","modules":["words","review"],"ruleIds":["R04","R06","R07"],"mustExplain":["当前总复习仅三源，用户提出新增第四来源的明确变更","需要定义学习证据、去重和兼容，不应覆写三源状态"],"mustNot":["称第四来源已接通","反复索取已有的变更意图"]}},
+    {"id":"C08","request":"总复习刷新后从第一题开始了，应该接着上一题，修复它。","expected":{"decision":"implementation_review","modules":["review"],"ruleIds":["R06","R08"],"mustExplain":["当前设计刷新续轮，检查 round、questionIndex、选项恢复及origin","查实际保存失败与源码后再确定原因"],"mustNot":["清除三源学习记录","每次进入自动生成新轮"]}},
+    {"id":"C09","request":"总复习点忘记，会把Book1里学过的词删掉吗？","expected":{"decision":"answer","modules":["review","book1"],"ruleIds":["R06","R07","R08"],"mustExplain":["仅写总复习 forgotten，下一轮优先","不删除Book1记录"],"mustNot":["将 forgotten 等同未学"]}},
+    {"id":"C10","request":"情景练习完成了，为什么里面的词没都进入已学词库？","expected":{"decision":"answer","modules":["scenario","review"],"ruleIds":["R06","R09"],"mustExplain":["完成情景和单词学会分离，需显式学会单词","新词依据统一已学词库匹配"],"mustNot":["直接批量标记所有词学会"]}},
+    {"id":"C11","request":"新增一个情景。","expected":{"decision":"clarify","modules":["scenario"],"ruleIds":["R09","R10","R15"],"mustExplain":["需明确情景主题、角色、目标表达及可复用素材"],"mustNot":["自行编定需求并发布","加网页生成API"]},"followUp":{"request":"新增买苹果，沿用Mia和Leo，四句，练习How much和Two pounds，先给我文本草案。","expected":{"decision":"answer","modules":["scenario"],"ruleIds":["R09","R15"],"mustExplain":["先提供四句草案和教学检查，暂不发布或擅自生成新人物"]}}},
+    {"id":"C12","request":"Book1的A组apple图片打不开，检查修复并保留学习记录。","expected":{"decision":"implementation_review","modules":["book1"],"ruleIds":["R07","R11"],"mustExplain":["核对data/book1.js资源引用、文件签名与HTTP200","保留稳定ID与本模块进度"],"mustNot":["迁移Book2","清空Book1"]}},
+    {"id":"C13","request":"炸弹关卡里五个目标有重复汉字，修一下。","expected":{"decision":"implementation_review","modules":["bomb","hanzi"],"ruleIds":["R07","R12"],"mustExplain":["五个目标必须不同，不足从可学池补齐","汉字学习池只读，游戏进度独立"],"mustNot":["用同字凑五个","改汉字复习上限"]}},
+    {"id":"C14","request":"炸弹页面聚焦继续按钮后按空格，游戏也放炸弹了，修复。","expected":{"decision":"implementation_review","modules":["bomb"],"ruleIds":["R12"],"mustExplain":["保留按钮原生Space/Enter行为，全局游戏快捷键避让可聚焦控件","验证键盘和触摸"],"mustNot":["全局preventDefault拦截按钮按键"]}},
+    {"id":"C15","request":"在企业微信告诉我孩子今天学了多少单词。","expected":{"decision":"capability_gap","modules":["platform"],"ruleIds":["R06","R14","R20"],"mustExplain":["当前没有进度采集和企微接口","需明确学习者、单词模块或三源已学库口径、设备/origin与数据时间，尚不能锁定具体学习模块"],"mustNot":["把内容目录数量报成今日学习数","声称读到了本机浏览器进度"]}},
+    {"id":"C16","request":"我换电脑后学习记录没过来，Git不是已经同步了吗？","expected":{"decision":"answer","modules":["platform"],"ruleIds":["R07","R14"],"mustExplain":["Git只同步代码，浏览器profile/origin进度独立","迁移或同步需要单独设计并验证数据来源"],"mustNot":["把浏览器状态或真实存储导出提交Git","声称自动同步已开启"]}},
+    {"id":"C17","request":"把总复习挪进主题页，顶层导航不要它了。","expected":{"decision":"policy_conflict","modules":["review","theme","platform"],"ruleIds":["R06","R13"],"mustExplain":["当前总复习是顶层模块，用户提出明确架构变更","需评估导航、常驻宿主、直达链接和来源语义"],"mustNot":["认为总复习只涵盖主题词"]}},
+    {"id":"C18","request":"主题里I'm显示成小写i'm了，修正显示但别影响旧进度。","expected":{"decision":"implementation_review","modules":["theme"],"ruleIds":["R07","R19"],"mustExplain":["检查displayWord与规范化ID的区分","词库和单词模块消费显示文案时也需评估"],"mustNot":["将所有小写规范化ID改为大写"]}},
+    {"id":"C19","request":"情景练习显示了音标后，点同句朗读又隐藏了，修一下。","expected":{"decision":"implementation_review","modules":["scenario"],"ruleIds":["R09","R10"],"mustExplain":["同句播放应保留两步揭示状态，换句才重置","核对朗读回调/揭示ID，验收第一次IPA第二次英文"],"mustNot":["所有新句默认显示英文","播放完自动标词学会"]}},
+    {"id":"C20","request":"这个按钮点了没反应，帮我处理。","expected":{"decision":"clarify","modules":[],"ruleIds":["R20"],"mustExplain":["需具体页面、按钮名称、预期与实际行为及复现步骤"],"mustNot":["编造按钮名称或根因","未定位就修改共享脚本"]},"followUp":{"request":"单词页的显示按钮，英文和音标都没出现；中文已经看得到。","expected":{"decision":"implementation_review","modules":["words"],"ruleIds":["R05"],"mustExplain":["定位word-learning.js的reveal和按钮绑定，核对当前任务状态","保留已可见中文"]}}}
+  ]
+}

@@ -6,7 +6,7 @@ const chromium = await loadChromium();
 const base = process.env.HANZI_BASE_URL || "http://127.0.0.1:5177/";
 const browser = await chromium.launch({ headless: true,
   executablePath: "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe" });
-const pages = ["pinyin", "index", "book-learning", "theme-learning", "scenario-learning", "review-learning", "phonetics", "bomb-game"];
+const pages = ["pinyin", "index", "word-learning", "book-learning", "theme-learning", "scenario-learning", "review-learning", "phonetics", "bomb-game"];
 const parts = APP_VERSION.split(".").map(Number);
 const next = `${parts[0]}.${parts[1]}.${parts[2] + 1}`;
 const newer = `${parts[0]}.${parts[1]}.${parts[2] + 2}`;
@@ -18,7 +18,7 @@ async function waitUntil(page, predicate) {
 }
 
 try {
-  for (const [name, width] of [...pages.map(name => [name, 1440]), ["bomb-game", 390]]) {
+  for (const [name, width] of [...pages.map(name => [name, 1440]), ["word-learning", 390], ["bomb-game", 390]]) {
     const context = await browser.newContext({ viewport: { width, height: 900 }, hasTouch: width === 390 });
     const page = await context.newPage();
     let servedVersion = APP_VERSION;
@@ -86,7 +86,7 @@ try {
     await context.close();
   }
   assert.deepEqual(errors, []);
-  console.log(JSON.stringify({ ok: true, browser: "Microsoft Edge", pageCount: 7,
+  console.log(JSON.stringify({ ok: true, browser: "Microsoft Edge", pageCount: pages.length,
     desktopAnd390: true, noPromptForSameVersion: true, cancelKeepsPage: true,
     newerVersionRePrompts: true, confirmReloads: true, progressPreserved: true }));
 } finally {

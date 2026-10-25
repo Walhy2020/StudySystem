@@ -7,7 +7,31 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.81** (2026-10-25). Snake now uses a compact top
+System display version: **v1.0.82** (2026-10-25). Snake upgraded from upstream
+v0.1.0 to v0.2.9 at c9b0d607f25530365c9f1b25acac6373e03813cb. Runtime modules
+are preserved under src/snake-upstream-v029/; new star body, tiled floor and four
+virus palettes live in assets/snake (SOURCE.md records provenance). Current compact
+top menu/stage and StudySystem shared controls remain. Added configurable large
+world/minimap, virus growth, enclosing supers, roaming virus snakes, collision
+tail loss and shared-mute-aware synthesized music/effects. Correct learning answers
+award stars and advance the existing independent five-target/bidirectional model;
+body growth now comes from viruses. Settings contains numeric tuning controls.
+Snake snapshot v2 includes config, growth, consumed viruses, enemy trails/respawns
+and damage cooldown. v1 questions/counts/body length/score migrate; old body glyphs
+become blank stars. Only the original Snake key is written; demo remains isolated.
+Display and ten update imports1.0.82; Snake entry/CSS/JS1.2 and all four version
+display entry caches bumped. Static refresh only, no build or service restart.
+
+Verification: required check/test/diff and knowledge checks; only Snake browser
+acceptance in real Microsoft Edge at1440/390 plus short-height geometry. Covers
+actual learning/virus collisions, damage cooldown, config/ecosystem reload, v1
+migration, demo/reset isolation, resource use, native inputs, simulated controller,
+fullscreen and persistent-cursor routing. Bitmap signatures/dimensions/HTTP200
+verified and desktop/mobile screenshots inspected. No physical controller or
+manual audio certification. The41 pre-existing tracked PNG changes stay excluded;
+inherited53177 untouched, only task-owned53179 used and stopped after verification.
+
+Previous **v1.0.81** (2026-10-25). Snake now uses a compact top
 HUD and viewport-filling stage, following bomb's interface structure. Removed
 brand introduction, sidebar glyph inventory, duplicate collection/length stats
 and persistent visible hints/toasts. Target/type, level/progress and core actions

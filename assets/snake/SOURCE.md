@@ -1,6 +1,28 @@
 # Snake integration provenance
 
-Imported from https://github.com/Walhy2020/Snake at commit
+Current runtime upgraded from https://github.com/Walhy2020/Snake **v0.2.9** at
+`c9b0d607f25530365c9f1b25acac6373e03813cb` (verified 2026-10-25).
+The owner's update request includes the current artwork and gameplay.
+
+Unmodified modules under `src/snake-upstream-v029/`: trail, motion, world,
+rewards, enclosure, virus-snakes, config, steering, audio, star-burst and random.
+Relevant upstream unit tests use the versioned module paths. StudySystem's
+snake-game.js adapts that runtime to its existing learning model, compact layout,
+shared controls/audio mute, explicit Continue gate and independent persistence.
+`src/snake-ecosystem.js` persists the world and enemies in the existing Snake key.
+Upstream browser controls, tuning UI, update service and storage APIs are not used.
+
+Current artwork copied without modification: flystar-head-v1.png, sprites.json,
+hanzi-star-v2.png, arena-floor-v2.jpg, virus-purple-v1.png, virus-small-v4.png,
+virus-medium-v4.png, virus-super-v2.png and twelve
+virus-{small,medium,large,super}-{coral,mint,sky}-v1.png palette variants.
+Upstream attributes the new body to an existing gold star layer, the tiled floor
+to generated bitmap artwork, and the viruses to existing AI artwork plus local
+crop/resize/recolor processing. No generation API, credentials, source-layer
+folders, working drafts or nested repository are imported. The older segment and
+meadow below remain as historical files; the current page uses the v0.2.9 assets.
+
+Original v0.1.0 integration imported from https://github.com/Walhy2020/Snake at commit
 `94d36a64a8fdfbaecbe1301b737347765bb6b029` (2026-10-24), at the repository
 owner's explicit request to integrate that game into StudySystem.
 
@@ -16,8 +38,9 @@ raster layers (without feet), the meadow to a previously generated scene,
 and the blank segment to offline imagegen/gpt-image-2 generation. The game
 draws Chinese text at runtime. No generation API or key is needed or imported.
 
-src/snake-trail.js preserves the upstream trail implementation; snake-game.js,
-snake-game.css and snake-game.html adapt the original game, layout and controls.
+src/snake-trail.js preserves the earlier upstream trail implementation for history;
+the active trail implementation is now in src/snake-upstream-v029/trail.js.
+snake-game.css and snake-game.html adapt the layout and controls.
 src/snake-learning.js independently mirrors the current bomb-game.js learning
 policy without changing bomb rules or storage. Only the three runtime images
 and metadata are imported; source layers, generated drafts and nested Git

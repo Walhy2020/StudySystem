@@ -1,6 +1,14 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { GlyphTrail, samplePath, turnTowards } from "../src/snake-trail.js";
+import { GlyphTrail, samplePath, turnTowards } from "../src/snake-upstream-v029/trail.js";
+
+test("damage removes two tail segments without moving the remaining body", () => {
+  const trail = new GlyphTrail({ glyphs: ["★", "★", "★"], spacing: 16, leadGap: 50 });
+  trail.reset([{ x: 100, y: 0 }, { x: -1000, y: 0 }]);
+  const before = trail.positions();
+  assert.equal(trail.shrink(2), 2); assert.deepEqual(trail.positions(), before.slice(0,1));
+  assert.equal(trail.shrink(2), 1); assert.equal(trail.shrink(2), 0);
+});
 
 test("segments follow the travelled corner, rather than a line toward the head", () => {
   const path = [{ x: 100, y: 0 }, { x: 50, y: 0 }, { x: 50, y: 100 }];

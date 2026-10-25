@@ -22,7 +22,7 @@ The application is a build-free local learning website served by `server.py`.
 - `scenario-learning.html`, `scenario-learning.css`, `scenario-learning.js`, `data/scenarios.js`: short-dialogue scenario learning.
 - `review-learning.html`, `review-learning.js`, `src/theme-overview.js`: independent overall review and learned-word library.
 - `bomb-game.html`, `bomb-game.css`, `bomb-game.js`: independent bomb-maze game.
-- `snake-game.html`, `snake-game.css`, `snake-game.js`, `src/snake-learning.js`, `src/snake-trail.js`: independent Flying Star snake game adapted from Walhy2020/Snake; artwork/provenance under `assets/snake/`.
+- `snake-game.html`, `snake-game.css`, `snake-game.js`, `src/snake-learning.js`, `src/snake-upstream-v029/`, `src/snake-ecosystem.js`: independent Flying Star snake game adapted from Walhy2020/Snake; artwork/provenance under `assets/snake/`.
 - `assets/`: project-consumed images and sprites. Image-generation working outputs belong in ignored `output/`, not in page references.
 - `tests/`: Node tests, Microsoft Edge acceptance scripts, and approved screenshots.
 

@@ -1,10 +1,19 @@
-import { GlyphTrail, turnTowards } from "./src/snake-trail.js?v=1.0";
+import { GlyphTrail, samplePath } from "./src/snake-upstream-v029/trail.js";
+import { StarMotion } from "./src/snake-upstream-v029/motion.js";
+import { VirusField, VIRUS_COLORS, WORLD_BOUNDS, setWorldSize, headingInsideMap } from "./src/snake-upstream-v029/world.js";
+import { RunRewards, VIRUS_TYPES } from "./src/snake-upstream-v029/rewards.js";
+import { findEnclosure } from "./src/snake-upstream-v029/enclosure.js";
+import { VirusSnakes } from "./src/snake-upstream-v029/virus-snakes.js";
+import { DEFAULT_CONFIG, CONFIG_FIELDS, normalizeConfig } from "./src/snake-upstream-v029/config.js";
+import { SteeringInput, actionForKey } from "./src/snake-upstream-v029/steering.js";
+import { Soundscape } from "./src/snake-upstream-v029/audio.js";
+import { StarBursts } from "./src/snake-upstream-v029/star-burst.js";
+import { saveEcosystem, restoreEcosystem } from "./src/snake-ecosystem.js?v=1.0";
 import { SnakeLearning, SNAKE_PROGRESS_KEY, readObject } from "./src/snake-learning.js?v=1.0";
 
 const $ = (id) => document.getElementById(id);
 const canvas = $("game");
 const ctx = canvas.getContext("2d");
-const WORLD = { width: 1600, height: 1067, margin: 220 };
 let storage;
 try { storage = localStorage; } catch { /* Play remains available without storage. */ }
 const words = window.MARIO_WORD_BANK || [];
@@ -12,7 +21,15 @@ const readings = word => window.MARIO_PINYIN_READINGS.getReadings(word, words);
 let learning, demoCheckpoint = null, menuPaused = false, fullscreenPending = false;
 const gamepad = window.createBombGamepadReader();
 let lastSave = 0;
-const trail = new GlyphTrail({ spacing: 45, leadGap: 80 });
+let config = normalizeConfig(readObject(storage, SNAKE_PROGRESS_KEY)?.config);
+setWorldSize(config.mapSize);
+const trail = new GlyphTrail({ spacing: config.spacing, leadGap: config.leadGap });
+const virusField = new VirusField(), virusSnakes = new VirusSnakes({ count: config.virusSnakeCount });
+const rewards = new RunRewards(config.growthPerSegment), controls = new SteeringInput();
+const sound = new Soundscape(), starBursts = new StarBursts();
+let motion, viruses = [], target, autoSeekingVirus = true, directPadAngle = null, padNeedsNeutral = true;
+let previousCamera, floorPattern, fieldTimer = 0, enclosureTimer = 0, captureFlash = null, capturedSuper = 0;
+let lastDamageAt = -10, damageFlashUntil = -10, damageHits = 0, lastDamageCause = null;
 let head, angle, desiredAngle, collected, foods, mode = "manual";
 let paused = true, ready = false, pointer = null, viewWidth = 900, viewHeight = 550;
 let zoom = 1, camera = { x: 800, y: 550 }, clock = 0, lastTime = 0;
@@ -24,8 +41,43 @@ function notify(text) {
   $("message").textContent = text;
 }
 
+function syncSound() {
+  const enabled = ready && !paused && !document.hidden && !window.STUDY_FULLSCREEN_SHELL?.isHosting() && !window.STUDY_AUDIO?.isMuted();
+  if (!enabled || !sound.enabled || !sound.context) void sound.setEnabled(enabled).catch(() => {});
+}
+
+function applyConfig(patch) {
+  const previous = config;
+  config = normalizeConfig(patch, config); setWorldSize(config.mapSize);
+  motion?.configure(config); trail.setLayout(config.spacing, config.leadGap);
+  rewards.threshold = config.growthPerSegment;
+  growBody(rewards.addGrowth(0));
+  if (previous.virusSnakeCount !== config.virusSnakeCount) virusSnakes.setCount(config.virusSnakeCount, head);
+  if (previous.mapSize !== config.mapSize) {
+    head = { x: clamp(head.x, WORLD_BOUNDS.minX + 150, WORLD_BOUNDS.maxX - 150), y: clamp(head.y, WORLD_BOUNDS.minY + 150, WORLD_BOUNDS.maxY - 150) };
+    motion.x = head.x; motion.y = head.y; trail.reset([head, {x:head.x-1000,y:head.y}], trail.glyphs);
+    virusField.reset(); virusSnakes.reset(head); camera = { ...head }; fitCamera(); previousCamera = { ...camera }; spawnFoods();
+  }
+  resize(); updateUI(); save();
+  for (const field of CONFIG_FIELDS) $("tune-" + field.key).value = config[field.key];
+}
+
+// All settings share the existing Snake save; do not use upstream storage keys.
+for (const field of CONFIG_FIELDS) {
+  const label = document.createElement("label"), input = document.createElement("input");
+  label.textContent = field.label;
+  input.type = "number"; input.id = "tune-" + field.key; input.min = field.min; input.max = field.max; input.step = field.step;
+  input.value = config[field.key]; input.title = field.help; input.setAttribute("aria-label", field.label);
+  input.addEventListener("change", () => applyConfig({ [field.key]: input.valueAsNumber }));
+  label.append(input); $("tuningFields").append(label);
+}
+$("resetTuning").addEventListener("click", () => applyConfig(DEFAULT_CONFIG));
+
 function updateUI() {
   if (!learning) return;
+  $("starScore").textContent = rewards.stars;
+  $("growthCount").textContent = `${rewards.growthPoints}/${rewards.threshold}`;
+  $("growthCount").setAttribute("aria-label", `成长 ${rewards.growthPoints}，满 ${rewards.threshold} 长一节`);
   $("targetGlyph").textContent = learning.complete ? "完成" : learning.prompt;
   $("missionLabel").textContent = learning.isPinyin ? "找汉字" : "找拼音";
   $("batchCount").textContent = `第 ${learning.batch} 关 · ${learning.done.length}/${learning.targets.length}`;
@@ -59,62 +111,83 @@ window.addEventListener("studysystem:gamepad-back", event => {
 });
 
 function spawnFoods() {
-  if (!learning.active) { foods = []; return; }
-  const mobile = viewWidth < 500;
-  const radius = mobile ? 145 : 215;
-  const halfW = viewWidth / zoom / 2 - 45, halfH = viewHeight / zoom / 2 - 45;
-  const bounds = mobile ? { left: Math.max(250, camera.x - halfW), right: Math.min(1350, camera.x + halfW),
-    top: Math.max(240, camera.y - halfH), bottom: Math.min(815, camera.y + halfH) } : { left: 250, right: 1350, top: 240, bottom: 815 };
-  const fit = point => ({ x: clamp(point.x, bounds.left, bounds.right), y: clamp(point.y, bounds.top, bounds.bottom) });
-  const turn = collected % 4 < 2 ? 0.85 : -0.85;
-  let destination = {
-    x: head.x + Math.cos(angle + turn) * radius,
-    y: head.y + Math.sin(angle + turn) * radius,
-  };
-  destination.x = clamp(destination.x, WORLD.margin + 40, WORLD.width - WORLD.margin - 40);
-  destination.y = clamp(destination.y, WORLD.margin + 20, WORLD.height - WORLD.margin - 20);
-  if (distance(head, destination) < (mobile ? 90 : 130)) {
-    const towardCenter = Math.atan2(WORLD.height / 2 - head.y, WORLD.width / 2 - head.x);
-    destination = { x: head.x + Math.cos(towardCenter) * 200, y: head.y + Math.sin(towardCenter) * 200 };
+  if (!learning.active) { foods = []; target = null; return; }
+  virusField.sync(head, Math.max(850, Math.hypot(viewWidth, viewHeight) / zoom / 2 + 300));
+  const halfW = viewWidth / zoom / 2 - 60, halfH = viewHeight / zoom / 2 - 65;
+  const bounds = { left: Math.max(WORLD_BOUNDS.minX + 150, camera.x - halfW), right: Math.min(WORLD_BOUNDS.maxX - 150, camera.x + halfW),
+    top: Math.max(WORLD_BOUNDS.minY + 150, camera.y - halfH), bottom: Math.min(WORLD_BOUNDS.maxY - 150, camera.y + halfH) };
+  const bosses = virusField.nearby().filter(v => v.tier === "super");
+  foods = [];
+  for (const [index, option] of learning.options.entries()) {
+    const candidates = Array.from({length: 48}, (_, i) => {
+      const direction = angle + (index === 0 ? .85 : index === 1 ? -1.2 : 2.1) + i * 2.399963;
+      const radius = Math.min(230 + Math.floor(i / 12) * 70, halfW * .85, halfH * .85);
+      return { x: clamp(head.x + Math.cos(direction) * radius, bounds.left, bounds.right),
+        y: clamp(head.y + Math.sin(direction) * radius, bounds.top, bounds.bottom) };
+    });
+    const safe = p => bosses.every(v => distance(v,p) > 288 / 2 + 65);
+    const spot = candidates.find(p => safe(p) && distance(p,head) > 95 && foods.every(f => distance(p,f) > 125)) ||
+      candidates.find(p => safe(p) && foods.every(f => distance(p,f) > 95));
+    // Never force a learning choice into a super-virus hitbox; relocate the
+    // obstructing world spawn instead when a narrow viewport has no safe space.
+    const fallback = candidates.find(p => foods.every(f => distance(p,f) > 95)) || candidates[0];
+    if (!spot) bosses.filter(v => distance(v,fallback) <= 209).forEach(v => virusField.consume(v.id));
+    foods.push({ ...(spot || fallback), ...option });
   }
-  const correct = learning.options.find(o => o.correct);
-  foods = [{ ...fit(destination), ...correct }];
-  learning.options.filter(o => !o.correct).forEach((option, index) => {
-    const dir = angle + (index === 0 ? -1.2 : 2.1);
-    const point = fit({ x: head.x + Math.cos(dir) * (mobile ? 145 : 205 + index * 25),
-      y: head.y + Math.sin(dir) * (mobile ? 145 : 205 + index * 25) });
-    // Keep choices separated at boundaries, including wide polyphonic labels.
-    const alternatives = [point, { x: bounds.left, y: bounds.top }, { x: bounds.right, y: bounds.top },
-      { x: bounds.left, y: bounds.bottom }, { x: bounds.right, y: bounds.bottom }];
-    const spot = alternatives.find(p => distance(p, head) > (mobile ? 80 : 120) && foods.every(f => distance(p, f) > (mobile ? 110 : 180))) || point;
-    foods.push({ ...spot, ...option });
+  target = foods.find(f => f.correct);
+  refreshField();
+}
+
+function refreshField() {
+  const radius = Math.max(850, Math.hypot(viewWidth, viewHeight) / zoom / 2 + 300);
+  virusField.sync(head, radius);
+  viruses = virusField.nearby().filter((virus) => {
+    const type = VIRUS_TYPES.find((entry) => entry.tier === virus.tier);
+    return type.encircle || foods.every(food => distance(virus, food) > type.size / 2 + 65);
   });
+  const mapX = (head.x - WORLD_BOUNDS.minX) / WORLD_BOUNDS.size * 100;
+  const mapY = (head.y - WORLD_BOUNDS.minY) / WORLD_BOUNDS.size * 100;
+  $("mapDot").style.left = `${mapX}%`;
+  $("mapDot").style.top = `${mapY}%`;
+  $("mapView").style.left = `${mapX}%`;
+  $("mapView").style.top = `${mapY}%`;
+  $("mapView").style.width = `${viewWidth / zoom / WORLD_BOUNDS.size * 100}%`;
+  $("mapView").style.height = `${viewHeight / zoom / WORLD_BOUNDS.size * 100}%`;
+  fieldTimer = 0;
 }
 
 function reset() {
   learning = new SnakeLearning(words, storage, readings, Math.random, learning ?
     { counts: learning.counts, seen: learning.seen, history: learning.history } : {});
-  head = { x: 850, y: 550 };
+  head = { x: 0, y: 0 };
   angle = -0.35;
+  motion = new StarMotion({ ...head, angle, ...config });
   desiredAngle = angle;
   collected = 0;
   pointer = null;
+  controls.clear(); directPadAngle = null;
+  rewards.reset(config.growthPerSegment); collected = 0;
+  virusField.reset(); virusSnakes.setCount(config.virusSnakeCount, head); virusSnakes.reset(head);
+  starBursts.clear(); capturedSuper = 0; captureFlash = null; enclosureTimer = fieldTimer = 0;
+  lastDamageAt = damageFlashUntil = -10; damageHits = 0; lastDamageCause = null;
   growthFlash = -10;
   // Seed actual route history so the assembled body has a curve immediately.
   const history = [];
-  for (let d = 0; d <= 1000; d += 4) {
+  for (let d = 0; d <= 1500; d += 3) {
     history.push({ x: head.x - d * 0.81, y: head.y + Math.sin(d / 135) * 96 });
   }
-  // Keep upstream's eight-segment silhouette, using this game's eligible pool.
-  trail.reset(history, learning.runIds.slice(0, 8).map(id => learning.byId.get(id).char));
-  camera = { x: 780, y: 560 };
+  // v0.2.9 uses a continuous star body; characters remain learning choices.
+  trail.setLayout(config.spacing, config.leadGap);
+  trail.reset(history, Array(8).fill("★"));
+  camera = { x: 0, y: 0 };
+  previousCamera = { ...camera };
   fitCamera();
   paused = true;
   $("pauseTitle").textContent = "小飞星 · 汉字长龙";
   $("pauseOverlay").hidden = false;
   spawnFoods();
   updateUI();
-  notify("找到上方目标，吃对一个字，队伍长一节", 5);
+  notify("认字得星星，吃病毒攒成长", 5);
 }
 
 function setMode(next) {
@@ -130,47 +203,73 @@ function setMode(next) {
   $("pauseOverlay").hidden = paused;
   desiredAngle = angle;
   updateUI();
-  notify(mode === "auto" ? "小飞星带你看：吃字，转弯，再长一节" : "轮到你啦！找到上面的目标字");
+  syncSound();
+  notify(mode === "auto" ? "自动演示" : "轮到你啦！找到上面的目标字");
 }
 
 function setPaused(value, title = "休息一下") {
   if (!ready) return;
   paused = value;
   pointer = null;
+  controls.clear(); directPadAngle = null;
+  padNeedsNeutral = true;
   $("pauseTitle").textContent = learning.complete ? "五个目标完成！" : !learning.targets.length ? "所有汉字已掌握，暂无可学目标" : title;
   $("pauseOverlay").hidden = !value;
   gamepad.reset();
+  syncSound();
   updateUI();
   save();
 }
 
 function snapshot() {
-  return { version: 1, learning: learning.snapshot(), head: { ...head }, angle, desiredAngle,
+  return { version: 2, upstream: "0.2.9", config: { ...config }, learning: learning.snapshot(), head: { ...head }, angle, desiredAngle,
     collected, glyphs: trail.glyphs.slice(), points: trail.points.map(p => ({ ...p })), foods,
-    camera: { ...camera } };
+    camera: { ...camera }, ecosystem: saveEcosystem(virusField, virusSnakes), clock,
+    rewards: { stars: rewards.stars, growthPoints: rewards.growthPoints, glyphs: [...rewards.glyphs] },
+    damageHits, lastDamageAt, damageFlashUntil, capturedSuper };
 }
 function save() {
   if (!ready || mode === "auto" || window.STUDY_FULLSCREEN_SHELL?.isHosting()) return;
   try { storage?.setItem(SNAKE_PROGRESS_KEY, JSON.stringify(snapshot())); } catch { /* Storage can be unavailable. */ }
 }
 function restore(saved) {
-  const point = p => p && Number.isFinite(p.x) && Number.isFinite(p.y) && p.x >= -2000 && p.x <= 4000 && p.y >= -2000 && p.y <= 4000;
-  if (saved.version !== 1 || !point(saved.head) || !Number.isFinite(saved.angle) ||
+  const point = p => p && Number.isFinite(p.x) && Number.isFinite(p.y) && Math.abs(p.x) <= 30000 && Math.abs(p.y) <= 30000;
+  if (![1, 2].includes(saved.version) || !point(saved.head) || !Number.isFinite(saved.angle) ||
       !Array.isArray(saved.points) || !saved.points.length || saved.points.length > 100000 || !saved.points.every(point) ||
-      !Array.isArray(saved.glyphs) || !saved.glyphs.every(g => typeof g === "string" && [...g].length === 1)) return false;
+      !Array.isArray(saved.glyphs) || saved.glyphs.length > 5000 || !saved.glyphs.every(g => typeof g === "string" && [...g].length === 1)) return false;
+  config = normalizeConfig(saved.config); setWorldSize(config.mapSize);
+  trail.setLayout(config.spacing, config.leadGap);
   learning = new SnakeLearning(words, storage, readings, Math.random, saved.learning);
   head = { ...saved.head }; angle = saved.angle;
+  motion = new StarMotion({ ...head, angle, ...config });
   desiredAngle = Number.isFinite(saved.desiredAngle) ? saved.desiredAngle : angle;
   collected = Number.isSafeInteger(saved.collected) && saved.collected >= 0 ? saved.collected : 0;
-  trail.reset(saved.points, saved.glyphs);
+  trail.reset(saved.points, saved.version === 1 ? saved.glyphs.map(() => "★") : saved.glyphs);
+  rewards.reset(config.growthPerSegment); rewards.stars = collected;
+  if (saved.version === 2 && saved.rewards) {
+    const r = saved.rewards;
+    rewards.growthPoints = Number.isSafeInteger(r.growthPoints) && r.growthPoints >= 0 && r.growthPoints < rewards.threshold ? r.growthPoints : 0;
+    rewards.glyphs = new Set(Array.isArray(r.glyphs) ? r.glyphs.filter(g => typeof g === "string" && [...g].length === 1) : []);
+  }
+  virusField.reset(); virusSnakes.setCount(config.virusSnakeCount, head); virusSnakes.reset(head);
+  restoreEcosystem(saved.ecosystem, virusField, virusSnakes);
+  clock = Number.isFinite(saved.clock) && saved.clock >= 0 ? saved.clock : 0;
+  damageHits = Number.isSafeInteger(saved.damageHits) && saved.damageHits >= 0 ? saved.damageHits : 0;
+  lastDamageAt = Number.isFinite(saved.lastDamageAt) ? saved.lastDamageAt : -10;
+  damageFlashUntil = Number.isFinite(saved.damageFlashUntil) ? saved.damageFlashUntil : -10;
+  capturedSuper = Number.isSafeInteger(saved.capturedSuper) && saved.capturedSuper >= 0 ? saved.capturedSuper : 0;
+  captureFlash = null; starBursts.clear();
   camera = point(saved.camera) ? { ...saved.camera } : { ...head };
   fitCamera();
+  previousCamera = { ...camera };
   // Restore exact option positions only while they still match the sanitized question.
   const matches = Array.isArray(saved.foods) && saved.foods.length === learning.options.length &&
     saved.foods.every(f => point(f) && learning.options.some(o => o.wordId === f.wordId && o.glyph === f.glyph && o.correct === f.correct)) &&
     new Set(saved.foods.map(f => f.wordId)).size === saved.foods.length;
   if (matches) foods = saved.foods.map(f => ({ ...f })); else spawnFoods();
-  paused = true; pointer = null;
+  target = foods.find(f => f.correct); refreshField();
+  paused = true; pointer = null; controls.clear(); directPadAngle = null;
+  for (const field of CONFIG_FIELDS) $("tune-" + field.key).value = config[field.key];
   return true;
 }
 function resume() {
@@ -191,58 +290,153 @@ function resize() {
   canvas.width = Math.round(viewWidth * dpr);
   canvas.height = Math.round(viewHeight * dpr);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  // Keep the enlarged stage within the meadow, including tall phones/wide screens.
-  zoom = Math.max(viewWidth / WORLD.width, viewHeight / WORLD.height,
-    viewWidth < 500 ? 0.77 : Math.min(1.1, viewWidth / 820));
+  // Keep world-space scale consistent across tall phones and wide screens.
+  zoom = (viewWidth < 500 ? 0.77 : Math.min(1.1, viewWidth / 820)) * config.zoom;
   fitCamera();
+  if (ready) refreshField();
 }
 
 function fitCamera() {
-  camera.x = clamp(camera.x, viewWidth / zoom / 2, WORLD.width - viewWidth / zoom / 2);
-  camera.y = clamp(camera.y, viewHeight / zoom / 2, WORLD.height - viewHeight / zoom / 2);
+  camera.x = clamp(camera.x, WORLD_BOUNDS.minX + viewWidth / zoom / 2, WORLD_BOUNDS.maxX - viewWidth / zoom / 2);
+  camera.y = clamp(camera.y, WORLD_BOUNDS.minY + viewHeight / zoom / 2, WORLD_BOUNDS.maxY - viewHeight / zoom / 2);
+}
+
+function growBody(count) {
+  for (let index = 0; index < count; index++) trail.grow("★");
+  if (count > 0) {
+    trail.setLayout(config.spacing, config.leadGap);
+    growthFlash = clock;
+  }
+}
+
+function takeDamage(cause) {
+  if (clock - lastDamageAt < config.damageCooldown) return false;
+  const lost = trail.shrink(2);
+  lastDamageAt = clock;
+  damageFlashUntil = clock + 0.8;
+  damageHits += 1;
+  lastDamageCause = cause;
+  sound.play("damage");
+  updateUI();
+  notify(lost ? `${cause}！尾巴掉了 ${lost} 节，快转向避开！`
+    : `${cause}！尾巴已经掉光，快转向避开！`, 1.2);
+  return true;
 }
 
 function update(dt) {
   clock += dt;
-  if (mode === "auto" && foods[0]) desiredAngle = Math.atan2(foods[0].y - head.y, foods[0].x - head.x);
+  let directTurnRate = null;
+  if (mode === "auto") {
+    const nearestVirus = autoSeekingVirus && viruses.filter(virus => virus.tier !== "super").reduce((nearest, virus) =>
+      !nearest || distance(head, virus) < distance(head, nearest) ? virus : nearest, null);
+    const destination = nearestVirus || target;
+    if (destination) desiredAngle = Math.atan2(destination.y - head.y, destination.x - head.x);
+  }
   else if (pointer) {
     const destination = { x: (pointer.x - viewWidth / 2) / zoom + camera.x,
       y: (pointer.y - viewHeight / 2) / zoom + camera.y };
-    if (distance(head, destination) > 12) desiredAngle = Math.atan2(destination.y - head.y, destination.x - head.x);
+    if (distance(head, destination) > config.pointerDeadzone) desiredAngle = Math.atan2(destination.y - head.y, destination.x - head.x);
+  } else if (directPadAngle !== null) {
+    desiredAngle = directPadAngle;
+  } else {
+    const input = controls.read();
+    if (input.turn !== null) {
+      desiredAngle = angle;
+      directTurnRate = input.turn * config.keyboardTurnSpeed * Math.PI / 180;
+    } else if (input.angle !== null) desiredAngle = input.angle;
   }
-  // Preserve upstream's gentle boundary steering and non-colliding body.
-  if (mode === "manual" && (head.x < 220 || head.x > 1380 || head.y < 210 || head.y > 857)) {
-    desiredAngle = Math.atan2(WORLD.height / 2 - head.y, WORLD.width / 2 - head.x);
-  }
-  angle = turnTowards(angle, desiredAngle, 3.3 * dt);
-  head.x += Math.cos(angle) * 116 * dt;
-  head.y += Math.sin(angle) * 116 * dt;
+  const boundedAngle = mode === "auto" ? headingInsideMap(head, desiredAngle) : desiredAngle;
+  motion.advance(boundedAngle, dt, boundedAngle === desiredAngle ? directTurnRate : null);
+  const hitBoundary = mode !== "auto" && (motion.x < WORLD_BOUNDS.minX + 65 || motion.x > WORLD_BOUNDS.maxX - 65
+    || motion.y < WORLD_BOUNDS.minY + 65 || motion.y > WORLD_BOUNDS.maxY - 65);
+  motion.x = clamp(motion.x, WORLD_BOUNDS.minX + 65, WORLD_BOUNDS.maxX - 65);
+  motion.y = clamp(motion.y, WORLD_BOUNDS.minY + 65, WORLD_BOUNDS.maxY - 65);
+  head = { x: motion.x, y: motion.y };
+  angle = motion.angle;
   trail.moveTo(head);
-  const food = foods.find((item) => distance(head, item) < 31);
+  if (hitBoundary) takeDamage("撞到边界");
+  virusField.advance(dt, config.virusDriftSpeed);
+  fieldTimer += dt;
+  if (target && distance(head, target) > 650) spawnFoods();
+  else if (fieldTimer >= 0.3) refreshField();
+  const npcEaten = virusSnakes.advance(dt, { speed:config.virusSnakeSpeed, player:head, foods:viruses,
+    recycleDistance:Math.max(2400,Math.hypot(viewWidth,viewHeight)/zoom/2+500),
+    consume:id=>virusField.consume(id) });
+  if (npcEaten.length) {
+    const ids=new Set(npcEaten);
+    viruses=viruses.filter(virus=>!ids.has(virus.id));
+  }
+  const defeated = virusSnakes.defeatOnBody(head, trail.positions(), config.bodySize / 2 + 18);
+  if (defeated.length) {
+    let dropped = 0;
+    for (const snake of defeated) dropped += virusField.spill(snake.head, snake.length).length;
+    refreshField();
+    notify(`病毒蛇撞上星星身体，散成 ${dropped} 颗可吃的病毒！`, 3);
+  }
+  const food = foods.find(item => distance(head,item) < 31);
   if (food?.correct) {
     const result = learning.answer(food.wordId);
-    trail.grow(result.word.char);
-    collected += 1;
-    growthFlash = clock;
-    notify(`找到「${result.word.char}」啦，队伍又长一节`);
-    spawnFoods();
-    updateUI();
+    rewards.collectGlyph(result.word.char); collected = rewards.stars;
+    starBursts.add(food.x, food.y, clock); sound.play("glyph");
+    autoSeekingVirus = true; spawnFoods(); updateUI();
     if (result.complete) {
       if (mode === "auto") { learning.nextBatch(); spawnFoods(); updateUI(); }
       else setPaused(true, "五个目标完成！");
     }
     save();
   } else if (food && clock - lastWrong > 2.5) {
-    lastWrong = clock;
-    learning.answer(food.wordId);
-    notify(`再找找看，目标是「${learning.prompt}」`, 2);
-    save();
+    lastWrong = clock; learning.answer(food.wordId); save();
   }
-  const follow = 1 - Math.exp(-dt * 3);
-  const aim = { x: head.x - Math.cos(angle) * 78, y: head.y - Math.sin(angle) * 40 };
-  const halfW = viewWidth / zoom / 2, halfH = viewHeight / zoom / 2;
-  camera.x += (clamp(aim.x, halfW, WORLD.width - halfW) - camera.x) * follow;
-  camera.y += (clamp(aim.y, halfH, WORLD.height - halfH) - camera.y) * follow;
+  const virus = viruses.find((item) => {
+    const type = VIRUS_TYPES.find((entry) => entry.tier === item.tier);
+    return !type.encircle && distance(head, item) < type.size / 2 + 12;
+  });
+  if (virus) {
+    const type = VIRUS_TYPES.find((entry) => entry.tier === virus.tier);
+    const value = config[type.valueKey];
+    const grown = rewards.addGrowth(value);
+    growBody(grown);
+    sound.play(grown ? "growth" : "virus");
+    virusField.consume(virus.id);
+    viruses = viruses.filter((item) => item.id !== virus.id);
+    autoSeekingVirus = false;
+    notify(`${type.label} +${value} 成长${grown ? `，长了 ${grown} 节！` : `，还差 ${rewards.threshold - rewards.growthPoints} 点长一节`}`);
+    updateUI();
+  }
+  enclosureTimer += dt;
+  if (enclosureTimer >= Math.min(0.08, config.enclosureGap / Math.max(1, motion.speed))) {
+    enclosureTimer = 0;
+    const superType = VIRUS_TYPES.find(type => type.encircle);
+    const bosses = viruses.filter(item => item.tier === "super");
+    const enclosure = findEnclosure(trail.points, {
+      bodyLength: trail.leadGap + (trail.glyphs.length - 1) * trail.spacing,
+      bodyRadius: config.bodySize * 0.35, closureGap: config.enclosureGap,
+    }, bosses.map(boss => ({ ...boss, radius: superType.size / 2 })));
+    if (enclosure) {
+      const ids = new Set(enclosure.enclosed.map(boss => boss.id));
+      for (const id of ids) virusField.consume(id);
+      viruses = viruses.filter(item => !ids.has(item.id));
+      const value = ids.size * config.superVirusValue;
+      const grown = rewards.addGrowth(value);
+      growBody(grown);
+      sound.play("capture");
+      capturedSuper += ids.size;
+      captureFlash = { polygon: enclosure.polygon, until: clock + 1 };
+      notify(`圈住超级病毒啦！成长 +${value}${grown ? `，长了 ${grown} 节！` : ""}`, 4);
+      updateUI();
+    }
+  }
+  const superType = VIRUS_TYPES.find(type => type.encircle);
+  const hitSuper = viruses.some(virus => virus.tier === "super" && distance(head, virus) < superType.size / 2 + 20);
+  const hitSnake = virusSnakes.snakes.some(snake => distance(head, snake.head) < 44
+    || snake.trail.positions().some(segment => distance(head, segment) < 32));
+  if (hitSuper) takeDamage("碰到超级病毒");
+  else if (hitSnake) takeDamage("碰到病毒蛇");
+  previousCamera = { ...camera };
+  const follow = 1 - Math.exp(-dt * config.cameraFollow);
+  const halfWidth = viewWidth / zoom / 2, halfHeight = viewHeight / zoom / 2;
+  camera.x += (clamp(head.x, WORLD_BOUNDS.minX + halfWidth, WORLD_BOUNDS.maxX - halfWidth) - camera.x) * follow;
+  camera.y += (clamp(head.y, WORLD_BOUNDS.minY + halfHeight, WORLD_BOUNDS.maxY - halfHeight) - camera.y) * follow;
 }
 
 function tile(x, y, size, glyph, alpha = 1) {
@@ -263,41 +457,119 @@ function tile(x, y, size, glyph, alpha = 1) {
   ctx.restore();
 }
 
-function draw() {
+function draw(alpha) {
+  const lag = paused ? 0 : motion.speed / config.physicsHz * (1 - alpha);
+  const renderHead = samplePath(trail.points, [lag])[0];
+  const renderCamera = paused ? camera : {
+    x: previousCamera.x + (camera.x - previousCamera.x) * alpha,
+    y: previousCamera.y + (camera.y - previousCamera.y) * alpha,
+  };
   ctx.clearRect(0, 0, viewWidth, viewHeight);
   ctx.save();
   ctx.translate(viewWidth / 2, viewHeight / 2);
   ctx.scale(zoom, zoom);
-  ctx.translate(-camera.x, -camera.y);
-  ctx.drawImage(assets.meadow, 0, 0, WORLD.width, WORLD.height);
-  // Independent image sprites, not a stretched full-character illustration.
-  for (const food of foods) {
-    const bob = Math.sin(clock * 2.4 + food.x) * 3;
+  ctx.translate(-renderCamera.x, -renderCamera.y);
+  const left = renderCamera.x - viewWidth / zoom / 2 - 2, top = renderCamera.y - viewHeight / zoom / 2 - 2;
+  ctx.fillStyle = "#508a94";
+  ctx.fillRect(left, top, viewWidth / zoom + 4, viewHeight / zoom + 4);
+  ctx.fillStyle = floorPattern;
+  const floorLeft = Math.max(left, WORLD_BOUNDS.minX), floorTop = Math.max(top, WORLD_BOUNDS.minY);
+  ctx.fillRect(floorLeft, floorTop, Math.min(left + viewWidth / zoom + 4, WORLD_BOUNDS.maxX) - floorLeft,
+    Math.min(top + viewHeight / zoom + 4, WORLD_BOUNDS.maxY) - floorTop);
+  ctx.strokeStyle = "#d9f3ed";
+  ctx.lineWidth = 10;
+  ctx.strokeRect(WORLD_BOUNDS.minX, WORLD_BOUNDS.minY, WORLD_BOUNDS.size, WORLD_BOUNDS.size);
+  if (captureFlash && clock < captureFlash.until) {
     ctx.save();
-    ctx.shadowColor = "#4a64393b";
-    ctx.shadowBlur = 8;
-    ctx.shadowOffsetY = 5;
-    tile(food.x, food.y + bob, 61, food.glyph);
+    ctx.globalAlpha = (captureFlash.until - clock) * 0.4;
+    ctx.beginPath();
+    captureFlash.polygon.forEach((point, i) => i ? ctx.lineTo(point.x, point.y) : ctx.moveTo(point.x, point.y));
+    ctx.closePath();
+    ctx.fillStyle = "#ffe39a";
+    ctx.fill();
     ctx.restore();
   }
-  const segments = trail.positions();
+  for (const virus of viruses) {
+    const type = VIRUS_TYPES.find((entry) => entry.tier === virus.tier);
+    const { rotation, scale } = virusField.pose(virus);
+    const visibleMargin = type.size * Math.max(1, scale) / 2 + 25;
+    if (Math.abs(virus.x - renderCamera.x) > viewWidth / zoom / 2 + visibleMargin
+      || Math.abs(virus.y - renderCamera.y) > viewHeight / zoom / 2 + visibleMargin) continue;
+    ctx.save();
+    ctx.translate(virus.x, virus.y);
+    ctx.rotate(rotation);
+    ctx.scale(scale, scale);
+    ctx.drawImage(assets.virusPalettes[virus.tier][virus.color] || assets[type.asset] || assets.virus,
+      -type.size / 2, -type.size / 2, type.size, type.size);
+    ctx.restore();
+    ctx.font = `${type.encircle ? "800 17" : virus.tier === "small" ? "600 12" : "700 14"}px "Microsoft YaHei", sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    ctx.lineWidth = type.encircle ? 5 : 3;
+    ctx.strokeStyle = "#fffdf4";
+    const label = `${type.encircle ? "圈住吃 " : ""}+${config[type.valueKey]}`;
+    ctx.strokeText(label, virus.x, virus.y + type.size / 2 + 3);
+    ctx.fillStyle = type.encircle ? "#87541f" : "#806e92";
+    ctx.fillText(label, virus.x, virus.y + type.size / 2 + 3);
+  }
+  for (const snake of virusSnakes.snakes) {
+    if (Math.abs(snake.head.x-renderCamera.x)>viewWidth/zoom/2+450
+      ||Math.abs(snake.head.y-renderCamera.y)>viewHeight/zoom/2+450) continue;
+    const body=snake.trail.positions();
+    for (let index=body.length-1;index>=0;index--) {
+      const point=body[index],size=20+4*(1-index/Math.max(1,body.length-1));
+      ctx.drawImage(assets.virusPalettes.small[snake.color],point.x-size/2,point.y-size/2,size,size);
+    }
+    ctx.drawImage(assets.virusPalettes.large[snake.color],snake.head.x-24,snake.head.y-24,48,48);
+  }
+  // Independent image sprites, not a stretched full-character illustration.
+  for (const food of foods) {
+    if (Math.abs(food.x - renderCamera.x) > viewWidth / zoom / 2 + 75
+      || Math.abs(food.y - renderCamera.y) > viewHeight / zoom / 2 + 75) continue;
+    const bob = Math.sin(clock * 2 + food.x) * 2;
+    ctx.save();
+    ctx.shadowColor = food.id === "target" ? "#fff1a3" : "#326e7540";
+    ctx.shadowBlur = 8;
+    ctx.shadowOffsetY = 5;
+    tile(food.x, food.y + bob, food.id === "target" ? 74 : 61, food.glyph, food.id === "target" ? 1 : 0.94);
+    ctx.restore();
+  }
+  const segments = trail.positions(lag);
+  ctx.save();
+  if (clock < damageFlashUntil && Math.floor(clock * 22) % 2 === 0) ctx.globalAlpha = 0.2;
+  // Small stars bridge the tips, so the body reads as one continuous star chain.
+  const links = samplePath(trail.points, segments.map((_, i) => lag + trail.leadGap + (i - 0.5) * trail.spacing));
+  for (const link of links) tile(link.x, link.y, config.bodySize * 0.54, "");
   for (let i = segments.length - 1; i >= 0; i--) {
     const item = segments[i];
     const newlyGrown = i === segments.length - 1 && clock - growthFlash < 0.65;
-    const size = newlyGrown ? 55 + Math.sin((clock - growthFlash) / 0.65 * Math.PI) * 12 : 55;
-    tile(item.x, item.y, size, item.glyph);
+    const size = newlyGrown ? config.bodySize * (1 + Math.sin((clock - growthFlash) / 0.65 * Math.PI) * 0.135) : config.bodySize;
+    tile(item.x, item.y, size, "");
   }
-  const neck = trail.neck();
-  tile(neck.x, neck.y, 47, "");
+  if (segments.length) {
+    const neck = trail.neck(lag);
+    tile(neck.x, neck.y, config.bodySize * 0.69, "");
+  }
   ctx.save();
-  ctx.translate(head.x, head.y - 4 + Math.sin(clock * 4) * 2);
-  ctx.rotate(Math.sin(angle) * 0.07);
+  ctx.translate(renderHead.x, renderHead.y - 4 + Math.sin(clock * 3) * config.hover);
+  ctx.rotate(clamp(motion.turnRate / motion.maxTurnRate, -1, 1) * config.headBank * Math.PI / 180);
   ctx.shadowColor = "#4a57362b";
   ctx.shadowBlur = 8;
   ctx.shadowOffsetY = 7;
-  const scale = 128 / metadata.head.width;
+  const scale = config.headSize / metadata.head.width;
   ctx.drawImage(assets.head, -metadata.head.anchor.x * scale, -metadata.head.anchor.y * scale,
     metadata.head.width * scale, metadata.head.height * scale);
+  ctx.restore();
+  for (const star of starBursts.active(clock)) {
+    ctx.save();
+    ctx.translate(star.x, star.y);
+    ctx.rotate(star.rotation);
+    ctx.globalAlpha *= star.opacity;
+    ctx.shadowColor = "#fff1a2";
+    ctx.shadowBlur = 9;
+    ctx.drawImage(assets.segment, -star.size / 2, -star.size / 2, star.size, star.size);
+    ctx.restore();
+  }
   ctx.restore();
   ctx.restore();
 }
@@ -310,11 +582,11 @@ function frame(time) {
   if (ready) {
     // Substeps preserve collision checks and smooth route samples on slower devices.
     while (!paused && remaining > 0) {
-      const step = Math.min(remaining, 1 / 60);
+      const step = Math.min(remaining, 1 / config.physicsHz);
       update(step);
       remaining -= step;
     }
-    draw();
+    draw(1);
     if (time - lastSave > 1000) { lastSave = time; save(); }
   }
   requestAnimationFrame(frame);
@@ -323,17 +595,17 @@ function frame(time) {
 function steer(direction) {
   if (!ready || paused || window.STUDY_CONTROLLER_MOUSE?.isActive()) return;
   if (mode !== "manual") setMode("manual");
-  pointer = null;
+  pointer = null; controls.clear(); directPadAngle = null;
   desiredAngle = { up: -Math.PI / 2, right: 0, down: Math.PI / 2, left: Math.PI }[direction];
 }
 
-const keys = { ArrowUp: "up", w: "up", ArrowLeft: "left", a: "left", ArrowDown: "down", s: "down", ArrowRight: "right", d: "right" };
 document.addEventListener("keydown", (event) => {
   if (window.STUDY_FULLSCREEN_SHELL?.isHosting() || nativeTarget(event.target) || window.STUDY_CONTROLLER_MOUSE?.isActive()) return;
-  const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
-  if (keys[key]) { event.preventDefault(); steer(keys[key]); }
+  const action = actionForKey(event.key);
+  if (action && !paused) { event.preventDefault(); controls.press(event.code, action); directPadAngle = null; pointer = null; }
   if (event.code === "Space") { event.preventDefault(); if (!event.repeat) { if (paused) resume(); else setPaused(true); } }
 });
+document.addEventListener("keyup", event => controls.release(event.code));
 function nativeTarget(target) {
   return target instanceof Element && target !== canvas && Boolean(target.closest('a,button,input,textarea,select,summary,[contenteditable]:not([contenteditable="false"]),[role="button"],[role="link"],[role="checkbox"],[role="radio"],[role="switch"],[role="slider"],[role="tab"],[role="menuitem"],[role="option"],[role="combobox"],[tabindex]'));
 }
@@ -360,6 +632,7 @@ canvas.addEventListener("pointerdown", (event) => {
   if (mode !== "manual") setMode("manual");
   canvas.focus({ preventScroll: true });
   canvas.setPointerCapture(event.pointerId);
+  controls.clear(); directPadAngle = null;
   pointerPosition(event);
 });
 canvas.addEventListener("pointermove", (event) => { if (pointer) pointerPosition(event); });
@@ -376,7 +649,7 @@ $("speakButton").addEventListener("click", () => {
   window.speechSynthesis.cancel();
   window.speechSynthesis.speak(window.STUDY_AUDIO?.prepareSpeech(speech) || speech);
 });
-window.addEventListener("studysystem:audiochange", updateUI);
+window.addEventListener("studysystem:audiochange", () => { syncSound(); updateUI(); });
 $("muteButton").addEventListener("click", () => { window.STUDY_AUDIO?.toggle(); });
 async function fullscreen() {
   if (fullscreenPending) return;
@@ -402,14 +675,25 @@ window.addEventListener("gamepaddisconnected", () => { menuPaused = false; setPa
 function pollGamepad(time) {
   window.STUDY_GAMEPAD_CURSOR?.poll(time);
   const enabled = ready && !document.hidden && document.hasFocus() && !window.STUDY_CONTROLLER_MOUSE?.isActive() &&
-    !window.STUDY_GAMEPAD_CURSOR?.isMenuActive() && !window.STUDY_FULLSCREEN_SHELL?.isHosting();
+    $("settingsMenu").hidden && !window.STUDY_GAMEPAD_CURSOR?.isMenuActive() && !window.STUDY_FULLSCREEN_SHELL?.isHosting();
   const input = gamepad.poll(enabled);
-  if (!enabled) return;
+  if (!enabled) { directPadAngle = null; padNeedsNeutral = true; return; }
   if ((input.confirm || input.mushroom) && (paused || !nativeTarget(document.activeElement))) {
     if (paused) resume(); else if (input.confirm) setPaused(true);
     return;
   }
-  if (input.direction || input.aim) steer(input.direction || input.aim);
+  // Sample Snake directions separately so its configurable deadzone and diagonal
+  // D-pad input do not change the bomb game's reader. The right stick stays a cursor.
+  const pads = Array.from(navigator.getGamepads?.() || []).filter(p => p?.connected && p.mapping === "standard");
+  const pad = pads[0], x = pad?.axes?.[0] || 0, y = pad?.axes?.[1] || 0;
+  const pressed = index => Boolean(pad?.buttons?.[index]?.pressed || pad?.buttons?.[index]?.value > .5);
+  const dx = Number(pressed(15)) - Number(pressed(14)), dy = Number(pressed(13)) - Number(pressed(12));
+  const analog = Math.hypot(x,y) > config.gamepadDeadzone;
+  if (!pad || paused) { padNeedsNeutral = true; directPadAngle = null; return; }
+  if (padNeedsNeutral) { if (!analog && !dx && !dy) padNeedsNeutral = false; return; }
+  if (analog || dx || dy) {
+    pointer = null; controls.clear(); directPadAngle = analog ? Math.atan2(y,x) : Math.atan2(dy,dx);
+  } else directPadAngle = null;
 }
 new ResizeObserver(resize).observe($("stage"));
 
@@ -427,6 +711,10 @@ Object.defineProperty(window, "__snakeDemo", { value: Object.freeze({ getState: 
   ready, paused, mode, collected, length: trail.glyphs.length, head: head && { ...head }, angle,
   segments: trail.positions(), target: foods?.[0] && { ...foods[0] }, foods: foods?.map(f => ({ ...f })),
   learning: learning && { ...learning.snapshot(), type: learning.type, prompt: learning.prompt, source: learning.source },
+  upstream: "0.2.9", config: { ...config }, rewards: { stars: rewards.stars, growthPoints: rewards.growthPoints, threshold: rewards.threshold },
+  viruses: viruses.map(v => ({ ...v, pose: virusField.pose(v) })), virusSnakes: virusSnakes.getState(),
+  enemyDefeats: virusSnakes.defeated, damage: { hits: damageHits, lastCause: lastDamageCause, flashing: clock < damageFlashUntil },
+  enclosure: { capturedSuper }, world: { ...WORLD_BOUNDS }, starParticles: starBursts.active(clock).length,
   viewport: { width: viewWidth, height: viewHeight, zoom, camera: { ...camera } },
 }) }) });
 
@@ -434,10 +722,18 @@ try {
   const response = await fetch("./assets/snake/sprites.json?v=1.0");
   if (!response.ok) throw new Error("素材配置加载失败");
   metadata = await response.json();
-  const [headImage, segment, meadow] = await Promise.all([
-    loadImage("./assets/snake/flystar-head-v1.png?v=1.0"), loadImage("./assets/snake/hanzi-segment-v1.png?v=1.0"), loadImage("./assets/snake/meadow-v1.jpg?v=1.0"),
+  const variants = VIRUS_TYPES.flatMap(type => VIRUS_COLORS.slice(1).map(color => ({ tier: type.tier, color })));
+  const [headImage, segment, floor, virus, virusSmall, virusMedium, virusSuper, ...variantImages] = await Promise.all([
+    loadImage("./assets/snake/flystar-head-v1.png?v=0.2.9"), loadImage("./assets/snake/hanzi-star-v2.png?v=0.2.9"), loadImage("./assets/snake/arena-floor-v2.jpg?v=0.2.9"),
+    loadImage("./assets/snake/virus-purple-v1.png?v=0.2.9"),
+    loadImage("./assets/snake/virus-small-v4.png?v=0.2.9"), loadImage("./assets/snake/virus-medium-v4.png?v=0.2.9"), loadImage("./assets/snake/virus-super-v2.png?v=0.2.9"),
+    ...variants.map(({ tier, color }) => loadImage(`./assets/snake/virus-${tier}-${color}-v1.png?v=0.2.9`)),
   ]);
-  assets = { head: headImage, segment, meadow };
+  const baseViruses = { small: virusSmall, medium: virusMedium, large: virus, super: virusSuper };
+  const virusPalettes = Object.fromEntries(VIRUS_TYPES.map(type => [type.tier, { violet: baseViruses[type.tier] }]));
+  variants.forEach(({ tier, color }, index) => { virusPalettes[tier][color] = variantImages[index]; });
+  assets = { head: headImage, segment, floor, virus, virusSmall, virusMedium, virusSuper, virusPalettes };
+  floorPattern = ctx.createPattern(assets.floor, "repeat");
   resize();
   reset();
   const restored = restore(readObject(storage, SNAKE_PROGRESS_KEY));

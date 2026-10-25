@@ -31,7 +31,7 @@
     "bomb-entry": "bomb-game.js",
     "snake-entry": "snake-game.js",
     "snake-learning": "src/snake-learning.js",
-    "snake-trail": "src/snake-trail.js",
+    "snake-trail": "src/snake-upstream-v029/trail.js",
     "snake-style": "snake-game.css",
     "snake-origin": "assets/snake/SOURCE.md",
     "server": "server.py",
@@ -50,7 +50,7 @@
     {"id":"review","label":"总复习","summary":"只读聚合 Book1/主题/情景实际已学词，独立保存轮次和记忆标记。","entry":"review-learning.html","sourceIds":["word-library","theme-overview","review-entry","review-state"],"storageKey":"mario-total-review-v1","tests":["tests/total-word-library.test.mjs","tests/review-progress.test.mjs"],"browserTests":["tests/review-progress-browser.mjs","tests/theme-overview-browser-acceptance.mjs"]},
     {"id":"phonetics","label":"音标","summary":"48 IPA；每次复习所有非 mastered 项，新学每项认识一次后手动完成。","entry":"phonetics.html","sourceIds":["ipa-engine","ipa-entry","ipa-storage"],"storageKey":"mario-phonetics-v1","tests":["tests/phonetics-engine.test.mjs"],"browserTests":["tests/phonetics-browser-acceptance.mjs"]},
     {"id":"bomb","label":"炸弹迷宫","summary":"独立游戏，每关 5 个不同目标；保留交互控件原生按键。","entry":"bomb-game.html","sourceIds":["bomb-entry"],"storageKey":"mario-bomb-game-progress-v1","tests":["tests/bomb-game.test.mjs"],"browserTests":["tests/bomb-browser-acceptance.mjs"]},
-    {"id":"snake","label":"贪吃蛇","summary":"小飞星汉字长龙，独立100字池与五字关卡，双向汉字/拼音题；保留原美术、路线跟随与吃对增长，演示不写存档。","entry":"snake-game.html","sourceIds":["snake-entry","snake-learning","snake-trail","snake-style","snake-origin"],"storageKey":"mario-snake-game-progress-v1","tests":["tests/snake-learning.test.mjs","tests/snake-trail.test.mjs"],"browserTests":["tests/snake-browser.mjs"]},
+    {"id":"snake","label":"贪吃蛇","summary":"小飞星汉字长龙，独立100字池与五字关卡，双向汉字/拼音题；接入Snake v0.2.9美术与大地图，认字得星星、吃病毒攒成长，演示不写存档。","entry":"snake-game.html","sourceIds":["snake-entry","snake-learning","snake-trail","snake-style","snake-origin"],"storageKey":"mario-snake-game-progress-v1","tests":["tests/snake-learning.test.mjs","tests/snake-trail.test.mjs","tests/snake-ecosystem.test.mjs","tests/snake-v029-rewards.test.mjs","tests/snake-v029-virus-snakes.test.mjs"],"browserTests":["tests/snake-browser.mjs"]},
     {"id":"platform","label":"共享服务与导航","summary":"本地静态服务、常驻宿主、手柄与版本更新；没有学习进度业务 API。","entry":"server.py","sourceIds":["server","shell","cursor","version","package"],"storageKey":null,"tests":["tests/fullscreen-shell.test.mjs","tests/version-update.test.mjs"],"browserTests":["tests/version-update-browser.mjs"]}
   ],
   "rules": [
@@ -74,7 +74,7 @@
     {"id":"R18","scope":["hanzi","words","pinyin","phonetics"],"statement":"汉字引擎被单词直接复用，音标继承汉字，拼音继承音标；共享实现修改须评估四模块影响，不能将独立存储误当实现隔离。","evidence":[{"sourceId":"ipa-engine","anchor":"extends HanziEngine"},{"sourceId":"pinyin-engine","anchor":"extends PhoneticsEngine"},{"sourceId":"words-entry","anchor":"import { HanziEngine }"}]},
     {"id":"R19","scope":["theme","words","review"],"statement":"显示文案和稳定 ID 区分：课堂显示 desk 保留内部 table/classroom:table；BE 缩写的显示大小写不改变规范化词 ID。","evidence":[{"sourceId":"theme-entry","anchor":"id: \"table\", word: \"desk\""},{"sourceId":"be-data","anchor":"displayWord"},{"sourceId":"word-library","anchor":"normalizeLibraryWord"}]},
     {"id":"R20","scope":["global"],"statement":"目前只有静态网站与手柄相关 API；企业微信、DeepSeek 调度、可执行技能注册、学习进度上传和作业下发均待实现。分析记录不是执行结果或运行时权限校验。","evidence":[{"sourceId":"server","anchor":"def do_POST(self):"},{"sourceId":"server","anchor":"if urlsplit(self.path).path != \"/api/controller-mouse\""}]},
-    {"id":"R21","scope":["snake","platform"],"statement":"贪吃蛇只写独立游戏key，汉字/旧汉字只读；沿用炸弹的已学优先、未掌握补池、100字池、每关5字、五小关内奇偶双向题及同音排除。吃对增长/推进，找错重试，刷新暂停续玩；自动演示和从演示重开不导入演示答题。保留原美术、原生控件键盘及单宿主手柄互斥，不改炸弹规则。","evidence":[{"sourceId":"snake-learning","anchor":"RUN_SIZE = 100"},{"sourceId":"snake-learning","anchor":"BATCH_SIZE = 5"},{"sourceId":"snake-learning","anchor":"mario-snake-game-progress-v1"},{"sourceId":"snake-entry","anchor":"mode === \"auto\" || window.STUDY_FULLSCREEN_SHELL?.isHosting()"},{"sourceId":"snake-entry","anchor":"if (demoCheckpoint) restore(demoCheckpoint)"}]}
+    {"id":"R21","scope":["snake","platform"],"statement":"贪吃蛇只写独立游戏key，汉字/旧汉字只读；沿用炸弹的已学优先、未掌握补池、100字池、每关5字、五小关内奇偶双向题及同音排除。认字得星星并推进，吃普通病毒攒成长、圈住超级病毒获成长，危险碰撞掉尾；找错重试，刷新暂停续玩；自动演示和从演示重开不导入演示答题。保留原美术、原生控件键盘及单宿主手柄互斥，不改炸弹规则。","evidence":[{"sourceId":"snake-learning","anchor":"RUN_SIZE = 100"},{"sourceId":"snake-learning","anchor":"BATCH_SIZE = 5"},{"sourceId":"snake-learning","anchor":"mario-snake-game-progress-v1"},{"sourceId":"snake-entry","anchor":"mode === \"auto\" || window.STUDY_FULLSCREEN_SHELL?.isHosting()"},{"sourceId":"snake-entry","anchor":"if (demoCheckpoint) restore(demoCheckpoint)"}]}
   ],
   "capabilities": {
     "available": ["local_static_website", "node_unit_tests", "scoped_edge_acceptance_scripts", "offline_knowledge_context"],

@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#f4f7ee">
   <title>贪吃蛇 · 小飞星汉字长龙 - 马里奥学习系统</title>
   <link rel="icon" href="./assets/snake/flystar-head-v1.png?v=1.0">
-  <link rel="stylesheet" href="./snake-game.css?v=1.1">
+  <link rel="stylesheet" href="./snake-game.css?v=1.2">
   <script src="./src/web-audio.js?v=1.0"></script>
 </head>
 <body>
@@ -14,6 +14,7 @@
     <header class="game-topbar">
       <div class="mission" aria-label="当前目标">
         <span id="batchCount"></span>
+        <span class="snake-rewards" aria-label="积分与成长"><img src="./assets/snake/hanzi-star-v2.png?v=0.2.9" alt="星星"><b id="starScore">0</b><span id="growthCount">0/10</span></span>
         <span class="mission-label" id="missionLabel">找汉字</span>
         <strong id="targetGlyph"></strong>
         <button id="speakButton" type="button" aria-label="听目标字的读音" title="听读音">♪</button>
@@ -27,7 +28,9 @@
           <button id="muteButton" type="button">声音开启 · L1</button>
           <button id="fullscreenButton" type="button">全屏 · R2</button>
           <button id="autoButton" type="button" aria-pressed="false">自动演示</button>
-          <p>方向键 / WASD / 左摇杆转向，也可拖动场地。空格暂停，A / Start 继续。</p>
+          <details id="snakeTuning"><summary>游戏参数 · Snake v0.2.9</summary><div id="tuningFields"></div><button id="resetTuning" type="button">恢复默认参数</button></details>
+          <p>方向键 / WASD / 左摇杆转向，Q / E 连续转弯，也可拖动场地。空格暂停，A / Start 继续。</p>
+          <p>认字得星星；吃普通病毒积攒成长，围住超级病毒获得成长。碰到边界、超级病毒或病毒蛇会掉两节尾巴。</p>
           <p>右摇杆 / Y 菜单 · R1 返回 · View 切换鼠标</p>
           <button id="closeSettings" type="button">关闭设置</button>
         </div>
@@ -38,6 +41,7 @@
       <div id="loading" class="loading">小飞星准备出发…</div>
       <div id="pauseOverlay" class="pause-overlay" hidden><span id="pauseTitle">休息一下</span><button id="resumeButton" type="button">继续出发</button></div>
       <div id="message" class="sr-only" aria-live="polite"></div>
+      <div class="snake-minimap" aria-label="地图位置"><i id="mapView"></i><b id="mapDot"></b></div>
       <div class="direction-pad" aria-label="方向控制"><button data-direction="up" aria-label="向上" type="button">↑</button><button data-direction="left" aria-label="向左" type="button">←</button><button data-direction="down" aria-label="向下" type="button">↓</button><button data-direction="right" aria-label="向右" type="button">→</button></div>
     </section>
   </main>
@@ -45,7 +49,7 @@
   <script src="./data/pinyin-readings.js?v=1.0"></script>
   <script src="./src/fullscreen-shell.js?v=1.4"></script><script src="./src/controller-mouse.js?v=1.2"></script><script src="./src/gamepad-cursor.js?v=1.18"></script>
   <script src="./src/bomb-gamepad.js?v=1.7"></script>
-  <script type="module" src="./snake-game.js?v=1.1"></script>
-  <script type="module" src="./src/version-update.js?v=1.0.81"></script>
+  <script type="module" src="./snake-game.js?v=1.2"></script>
+  <script type="module" src="./src/version-update.js?v=1.0.82"></script>
 </body>
 </html>

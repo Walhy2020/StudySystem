@@ -26,6 +26,12 @@ try {
         axes: [0, 0, 0, 0], buttons: Array.from({ length: 18 }, () => ({ pressed: false, value: 0 })) };
       Object.defineProperty(navigator, "getGamepads", { value: () => [window.__pad] });
       window.__speech = 0; speechSynthesis.speak = () => { window.__speech++; };
+      window.__drawnAssets = [];
+      const drawImage = CanvasRenderingContext2D.prototype.drawImage;
+      CanvasRenderingContext2D.prototype.drawImage = function(image, ...args) {
+        if (image.src && !window.__drawnAssets.includes(image.src)) window.__drawnAssets.push(image.src);
+        return drawImage.call(this, image, ...args);
+      };
     }, { sourceKeys, key });
     const page = await context.newPage(), errors = [];
     page.on("pageerror", e => errors.push(e.message));
@@ -42,6 +48,8 @@ try {
     await page.goto(base + `snake-game.html?test=snake-${width}`); await waitReady();
     const originalSource = await beforeSource();
     const initial = await state(); assert.equal(initial.paused, true); assert.equal(initial.learning.source, "hanzi");
+    assert.equal(initial.upstream, "0.2.9"); assert.equal(initial.world.size, 12800);
+    assert.equal(initial.virusSnakes.length, 5); assert.ok(initial.viruses.length > 20);
     assert.equal(initial.learning.targets[0], "0010"); assert.equal(initial.learning.targets.length, 5);
     assert.equal(initial.learning.type, "pinyin-to-hanzi");
     if (width === 390) {
@@ -53,8 +61,11 @@ try {
       }
     }
     assert.equal(await page.locator("#targetGlyph").textContent(), initial.learning.prompt);
+    assert.ok(await page.evaluate(() => window.__drawnAssets.some(s => s.includes("hanzi-star-v2.png"))));
+    assert.ok(await page.evaluate(() => window.__drawnAssets.some(s => /virus-/.test(s))));
+    assert.ok(await page.evaluate(() => performance.getEntriesByType("resource").some(r => r.name.includes("arena-floor-v2.jpg"))));
     const initialHead = initial.head; await step(120); assert.deepEqual((await state()).head, initialHead, "entry waits for explicit Continue");
-    for (const [asset, signature] of [["flystar-head-v1.png", "89504e470d0a1a0a"], ["hanzi-segment-v1.png", "89504e470d0a1a0a"], ["meadow-v1.jpg", "ffd8ff"]]) {
+    for (const [asset, signature] of [["flystar-head-v1.png", "89504e470d0a1a0a"], ["hanzi-star-v2.png", "89504e470d0a1a0a"], ["arena-floor-v2.jpg", "ffd8ff"], ["virus-super-v2.png", "89504e470d0a1a0a"], ["virus-small-mint-v1.png", "89504e470d0a1a0a"]]) {
       const response = await page.request.get(base + "assets/snake/" + asset); assert.equal(response.status(), 200);
       assert.ok((await response.body()).toString("hex").startsWith(signature));
     }
@@ -89,7 +100,7 @@ try {
     await act("#settingsButton"); await page.keyboard.press("Escape");
     assert.equal(await page.locator("#settingsMenu").isVisible(), false);
     await act("#resumeButton");
-    const angle = (await state()).angle; await page.keyboard.press("ArrowDown"); await step(15); assert.notEqual((await state()).angle, angle);
+    const angle = (await state()).angle; await page.keyboard.down("ArrowDown"); await step(15); await page.keyboard.up("ArrowDown"); assert.notEqual((await state()).angle, angle);
     await page.keyboard.press("Space"); assert.equal((await state()).paused, true);
     if (width === 390) { await act("#resumeButton"); await act('[data-direction="left"]'); await step(10); assert.equal((await state()).paused, false); await page.keyboard.press("Space"); }
     await page.locator("#game").focus(); await step(3); await button(0, true, 20); assert.equal((await state()).paused, false, "A confirms once");
@@ -98,6 +109,9 @@ try {
     const oldAngle = (await state()).angle;
     await page.evaluate(() => { window.__pad.axes[0] = -1; window.__step(12); });
     assert.notEqual((await state()).angle, oldAngle, "left stick controls snake without opening cursor menu");
+    const analogAngle = (await state()).angle;
+    await page.evaluate(() => { window.__pad.axes[0] = 0; window.__pad.axes[1] = .25; window.__step(15); window.__pad.axes[1] = 0; });
+    assert.notEqual((await state()).angle, analogAngle, "Snake's 0.2 deadzone works below the bomb reader's 0.35 threshold");
     await page.evaluate(() => { window.__pad.axes[0] = 0; window.__step(3); window.__pad.axes[2] = .8; window.__step(8); });
     assert.equal((await state()).paused, true); assert.equal(await page.evaluate(() => STUDY_GAMEPAD_CURSOR.isMenuActive()), true);
     const menuHead = (await state()).head; await step(40); assert.deepEqual((await state()).head, menuHead);
@@ -128,7 +142,8 @@ try {
       await act("#resumeButton"); await step(18); return { before, after: await state() };
     };
     let hit = await collision(false); assert.equal(hit.after.collected, hit.before.collected); assert.ok(hit.after.learning.retry.includes(hit.before.learning.active));
-    hit = await collision(true); assert.equal(hit.after.collected, hit.before.collected + 1); assert.equal(hit.after.length, hit.before.length + 1);
+    hit = await collision(true); assert.equal(hit.after.collected, hit.before.collected + 1); assert.equal(hit.after.rewards.stars, hit.before.rewards.stars + 1);
+    assert.equal(hit.after.length, hit.before.length, "correct answers award stars; virus growth builds the body");
     assert.equal(hit.after.learning.done.length, 1); assert.ok(!hit.after.learning.retry.includes(hit.before.learning.active));
     await page.screenshot({ path: `tmp/snake-active-${width}.png`, fullPage: true });
     const savedState = await state(); await page.reload(); await waitReady(); const resumed = await state();
@@ -149,6 +164,46 @@ try {
     await act("#settingsButton"); await act("#autoButton"); await step(600); await act("#resetButton");
     assert.equal((await state()).collected, 0); assert.equal((await state()).paused, true);
     assert.equal(countSum((await state()).learning.counts), beforeDemoReset + 1, "resetting from demo never imports its appearance history");
+    // New gameplay uses the real loop with controlled virus positions, independent of learning answers.
+    const virusFixture = async tier => {
+      await page.evaluate(({key,tier}) => {
+        window.dispatchEvent(new Event("pagehide"));
+        const saved = JSON.parse(localStorage.getItem(key));
+        saved.config.speed = 0; saved.config.virusSnakeCount = 0;
+        const field = saved.ecosystem.field;
+        const virus = structuredClone(field.cells.flatMap(c => c[1]).find(v => v.tier !== "super"));
+        for (const [,cell] of field.cells) for (const v of cell) v.consumed = true;
+        field.drops = [{...virus,id:"fixture-virus",tier,x:saved.head.x,y:saved.head.y,homeX:saved.head.x,homeY:saved.head.y,consumed:false}];
+        saved.ecosystem.enemies.snakes = []; saved.ecosystem.enemies.respawns = [];
+        saved.rewards.growthPoints = tier === "large" ? 5 : 0;
+        saved.lastDamageAt = -10; saved.damageFlashUntil = -10;
+        sessionStorage.setItem("snake-acceptance-fixture", JSON.stringify(saved));
+      }, {key,tier});
+      await page.reload(); await waitReady(); const before = await state();
+      await act("#resumeButton"); await step(3); return {before,after:await state()};
+    };
+    let gameplay = await virusFixture("large");
+    assert.equal(gameplay.after.length, gameplay.before.length + 1); assert.equal(gameplay.after.rewards.growthPoints, 0);
+    assert.equal(gameplay.after.collected, gameplay.before.collected, "virus growth never completes a learning answer");
+    gameplay = await virusFixture("super");
+    assert.equal(gameplay.after.length, gameplay.before.length - 2); assert.equal(gameplay.after.damage.hits, gameplay.before.damage.hits + 1);
+    await step(20); assert.equal((await state()).damage.hits, gameplay.after.damage.hits, "damage cooldown prevents immediate repeated loss");
+    await act("#settingsButton"); await act("#snakeTuning summary");
+    await page.locator("#tune-speed").fill("175"); await page.locator("#tune-speed").dispatchEvent("change");
+    const ecosystem = await page.evaluate(key => JSON.parse(localStorage.getItem(key)).ecosystem, key);
+    await page.reload(); await waitReady();
+    assert.equal((await state()).config.speed, 175); assert.equal((await state()).paused, true);
+    assert.deepEqual(await page.evaluate(key => JSON.parse(localStorage.getItem(key)).ecosystem,key), ecosystem);
+    // v0.1.0 snapshots migrate without losing questions, appearance history or body length.
+    const old = await state();
+    await page.evaluate(key => {
+      const saved = JSON.parse(localStorage.getItem(key)); saved.version = 1; saved.glyphs.fill("字");
+      for (const name of ["config","ecosystem","rewards","clock","damageHits","lastDamageAt","damageFlashUntil","capturedSuper"]) delete saved[name];
+      sessionStorage.setItem("snake-acceptance-fixture",JSON.stringify(saved));
+    },key);
+    await page.reload(); await waitReady();
+    assert.deepEqual((await state()).learning,old.learning); assert.equal((await state()).length,old.length);
+    assert.equal((await state()).collected,old.collected); assert.equal((await state()).config.speed,201);
     assert.deepEqual(await beforeSource(), originalSource, "all foreign source keys are unchanged");
     // Real fullscreen via a trusted click; gamepad R2 uses the same single handler.
     await act("#settingsButton"); await act("#fullscreenButton"); await waitFor(() => Boolean(document.fullscreenElement));
@@ -187,7 +242,7 @@ try {
     await waitFor(() => STUDY_FULLSCREEN_SHELL.activeWindow()?.location.pathname.endsWith("/index.html"));
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     assert.deepEqual(errors, []);
-    results.push({ width, realBrowser: "Microsoft Edge", sourceIsolation: true, collisionGrowth: true, bidirectional: true, savedContinue: true, simulatedGamepad: true, resources: "200", errors });
+    results.push({ width, realBrowser: "Microsoft Edge", upstream:"0.2.9", sourceIsolation: true, virusGrowthDamage:true, migration:true, configPersistence:true, bidirectional: true, savedContinue: true, simulatedGamepad: true, resources: "200", errors });
     await context.close();
   }
   console.log(JSON.stringify(results, null, 2));

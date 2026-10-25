@@ -7,7 +7,21 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.87** (2026-10-25). Poison speed defaults to50%
+System display version: **v1.0.88** (2026-10-25). Snake fullscreen now shows
+the existing star artwork and current owned count at top right, alongside the
+target at top left. Award/cure updates use the same rewards.stars value as the
+normal header. Both direct and shell-hosted fullscreen show it; windowed mode
+hides the duplicate badge. Pointer input passes through. Version/notifiers1.0.88,
+Snake JS/entry1.8/CSS1.5 and version-display caches updated. Refresh only.
+Real Microsoft Edge at1440/390 verified the badge's top-right geometry, no
+overlap with the target, loaded star image, reward/cure counter updates,
+windowed hiding and hosted fullscreen visibility. Screenshots inspected.
+Only Snake browser acceptance was run; existing41 PNG changes stay excluded.
+Syntax checks passed. The standard parallel Node run hit an existing20ms
+scenario-playback timing race; isolated playback passed and a serial run of all
+303 Node tests passed. No scenario source or tests were changed for this release.
+
+Previous **v1.0.87** (2026-10-25). Poison speed defaults to50%
 of normal, including the same-input aligned boost; cure restores full speed.
 The percentage is configurable and persists, with50% supplied to older saves.
 Choices spawn farther from the head within visible safe bounds. choiceLayout2

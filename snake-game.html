@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#f4f7ee">
   <title>贪吃蛇 · 小飞星汉字长龙 - 马里奥学习系统</title>
   <link rel="icon" href="./assets/snake/flystar-head-v1.png?v=1.0">
-  <link rel="stylesheet" href="./snake-game.css?v=1.4">
+  <link rel="stylesheet" href="./snake-game.css?v=1.5">
   <script src="./src/web-audio.js?v=1.0"></script>
 </head>
 <body>
@@ -40,6 +40,7 @@
     <section class="stage" id="stage" aria-label="贪吃蛇游戏">
       <canvas id="game" tabindex="0" aria-label="小飞星游戏区域，方向键或 WASD 转向，空格暂停"></canvas>
       <strong id="fullscreenTarget" class="fullscreen-target" aria-label="当前目标" hidden></strong>
+      <span id="fullscreenStars" class="fullscreen-stars" aria-label="星星 0" hidden><img src="./assets/snake/hanzi-star-v2.png?v=0.2.9" alt=""><b id="fullscreenStarScore">0</b></span>
       <div id="loading" class="loading">小飞星准备出发…</div>
       <div id="pauseOverlay" class="pause-overlay" hidden><span id="pauseTitle">休息一下</span><button id="resumeButton" type="button">继续出发</button></div>
       <div id="message" class="sr-only" aria-live="polite"></div>
@@ -63,7 +64,7 @@
   <script src="./data/pinyin-readings.js?v=1.0"></script>
   <script src="./src/fullscreen-shell.js?v=1.4"></script><script src="./src/controller-mouse.js?v=1.2"></script><script src="./src/gamepad-cursor.js?v=1.18"></script>
   <script src="./src/bomb-gamepad.js?v=1.7"></script>
-  <script type="module" src="./snake-game.js?v=1.7"></script>
-  <script type="module" src="./src/version-update.js?v=1.0.87"></script>
+  <script type="module" src="./snake-game.js?v=1.8"></script>
+  <script type="module" src="./src/version-update.js?v=1.0.88"></script>
 </body>
 </html>

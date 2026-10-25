@@ -117,7 +117,8 @@ $("tuningToggle").addEventListener("click", () => {
 
 function updateUI() {
   if (!learning) return;
-  $("starScore").textContent = rewards.stars;
+  $("starScore").textContent = $("fullscreenStarScore").textContent = rewards.stars;
+  $("fullscreenStars").setAttribute("aria-label", `星星 ${rewards.stars}`);
   $("starScore").parentElement.title=poison.active?`已中毒，解毒需要 ${config.antidoteCost} 颗星星`:"星星";
   $("antidoteButton").title=`解毒需要 ${config.antidoteCost} 颗星星`;
   $("antidoteButton").disabled=!poison.active || rewards.stars<config.antidoteCost;
@@ -677,6 +678,7 @@ function syncFullscreenState() {
   if (document.body.classList.contains("snake-fullscreen") === active) return;
   document.body.classList.toggle("snake-fullscreen", active);
   $("fullscreenTarget").hidden = !active;
+  $("fullscreenStars").hidden = !active;
   if (active) { closeSettings(); closeTuning(); }
 }
 document.addEventListener("fullscreenchange", syncFullscreenState);

@@ -59,6 +59,7 @@ try {
     assert.equal(initial.virusSnakes.length, 5); assert.ok(initial.viruses.length > 20);
     assert.equal(initial.learning.targets[0], "0010"); assert.equal(initial.learning.targets.length, 5);
     assert.equal(initial.learning.type, "pinyin-to-hanzi");
+    assert.equal(await page.locator("#fullscreenStars").isVisible(),false);
     assert.ok(initial.foods.every(food => Math.hypot(food.x-initial.head.x,food.y-initial.head.y)>=300), "choices leave room around the head");
     if (width === 390) {
       const { viewport, foods } = initial;
@@ -168,6 +169,7 @@ try {
     let hit = await collision(false); assert.equal(hit.after.collected, hit.before.collected); assert.ok(hit.after.learning.retry.includes(hit.before.learning.active));
     assert.equal(hit.after.damage.hits, hit.before.damage.hits + 1); assert.equal(hit.after.length, hit.before.length - 2);
     hit = await collision(true); assert.equal(hit.after.collected, hit.before.collected + 1); assert.equal(hit.after.rewards.stars, hit.before.rewards.stars + 1);
+    assert.equal(await page.locator("#fullscreenStarScore").textContent(),String(hit.after.rewards.stars),"star award updates fullscreen counter");
     assert.equal(hit.after.length, hit.before.length, "correct answers award stars; virus growth builds the body");
     assert.equal(hit.after.learning.done.length, 1); assert.ok(!hit.after.learning.retry.includes(hit.before.learning.active));
     await page.screenshot({ path: `tmp/snake-active-${width}.png`, fullPage: true });
@@ -280,6 +282,7 @@ try {
     await page.reload(); await waitReady(); assert.equal((await state()).poison.active,true,"refresh retains poison");
     await act("#resumeButton"); await page.keyboard.press("j");
     assert.equal((await state()).poison.active,false); assert.equal((await state()).collected,5);
+    assert.equal(await page.locator("#fullscreenStarScore").textContent(),"5","cure updates current owned stars");
     await step(2); assert.equal((await state()).speed,100,"cure restores normal speed");
     const curedLength=(await state()).length;
     await step(120); assert.equal((await state()).length,curedLength,"cure stops tail loss");
@@ -317,6 +320,13 @@ try {
     assert.equal(await page.locator(".game-topbar").isVisible(), false);
     assert.equal(await page.locator("#settingsMenu").isVisible(), false);
     assert.equal(await page.locator("#fullscreenTarget").textContent(), (await state()).learning.prompt);
+    assert.equal(await page.locator("#fullscreenStars").isVisible(),true);
+    assert.equal(await page.locator("#fullscreenStarScore").textContent(),String((await state()).rewards.stars));
+    const badge=await page.locator("#fullscreenStars").boundingBox();
+    const targetBox=await page.locator("#fullscreenTarget").boundingBox();
+    assert.ok(badge.y>=0 && badge.y<40 && badge.x>width/2 && badge.x+badge.width<=width,"stars stay at top right");
+    assert.ok(targetBox.x+targetBox.width<=badge.x,"target and stars do not overlap");
+    assert.equal(await page.locator("#fullscreenStars img").evaluate(img=>img.complete&&img.naturalWidth>0),true);
     const fullStage = await page.locator("#game").boundingBox();
     const screenSize = await page.evaluate(() => ({ width:innerWidth,height:innerHeight }));
     assert.ok(Math.abs(fullStage.width - screenSize.width) < 2 && Math.abs(fullStage.height - screenSize.height) < 2);
@@ -329,6 +339,7 @@ try {
     await button(7, true); await waitFor(() => !document.fullscreenElement); await button(7, false);
     await waitFor(() => !document.body.classList.contains("snake-fullscreen"));
     assert.equal(await page.locator(".game-topbar").isVisible(), true);
+    assert.equal(await page.locator("#fullscreenStars").isVisible(),false);
     // Focused return link retains native Enter; shell keeps exactly one owner.
     await page.locator("#snakeBack").focus(); await page.keyboard.press("Enter");
     await waitFor(() => STUDY_FULLSCREEN_SHELL.activeWindow()?.location.pathname.endsWith("/index.html"));
@@ -367,6 +378,7 @@ try {
     await embedded.locator("#settingsButton").click(); await embedded.locator("#fullscreenButton").click();
     await waitFor(() => Boolean(document.fullscreenElement)); await step(3);
     assert.equal(await embedded.locator(".game-topbar").isVisible(), false, "embedded Snake follows the owner's fullscreen state");
+    assert.equal(await embedded.locator("#fullscreenStars").isVisible(),true,"hosted fullscreen shows stars too");
     assert.equal(await embedded.locator("#fullscreenTarget").textContent(), await page.evaluate(() => STUDY_FULLSCREEN_SHELL.activeWindow().__snakeDemo.getState().learning.prompt));
     await button(7,true); await waitFor(() => !document.fullscreenElement); await button(7,false); await step(3);
     assert.equal(await embedded.locator(".game-topbar").isVisible(), true);

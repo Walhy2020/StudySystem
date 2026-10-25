@@ -59,6 +59,9 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; }
 #bindingStatus { color: #63785b; line-height: 1.6; }
 .fullscreen-target { position: absolute; top: max(12px, env(safe-area-inset-top)); left: max(14px, env(safe-area-inset-left)); z-index: 4; max-width: calc(100% - 28px); font-size: calc(clamp(30px, 4vw, 42px) * var(--target-scale, 2)); line-height: 1.3; color: #234d42; text-shadow: 0 1px 3px #fff, 0 0 10px #fff; overflow-wrap: anywhere; pointer-events: none; }
 .snake-fullscreen .app { padding: 0; gap: 0; }
+.snake-fullscreen .fullscreen-target { max-width: calc(100% - 150px); }
+.fullscreen-stars { position: absolute; top: max(14px, env(safe-area-inset-top)); right: max(14px, env(safe-area-inset-right)); z-index: 4; display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 10px; background: #fffdf4df; color: #304b40; font-size: clamp(22px, 3vw, 30px); font-variant-numeric: tabular-nums; pointer-events: none; }
+.fullscreen-stars img { width: 36px; height: 36px; object-fit: contain; }
 .snake-fullscreen .game-topbar, .snake-fullscreen .tuning-panel { display: none; }
 .snake-fullscreen .stage { border: 0; border-radius: 0; }
 @media (max-width: 760px) {

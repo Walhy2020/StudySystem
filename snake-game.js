@@ -4,9 +4,9 @@ import { VirusField, VIRUS_COLORS, WORLD_BOUNDS, setWorldSize, headingInsideMap 
 import { RunRewards, VIRUS_TYPES } from "./src/snake-upstream-v029/rewards.js";
 import { findEnclosure } from "./src/snake-upstream-v029/enclosure.js";
 import { VirusSnakes } from "./src/snake-upstream-v029/virus-snakes.js";
-import { normalizeConfig } from "./src/snake-config.js?v=1.0";
-import { setupTuning } from "./src/snake-tuning.js?v=1.0";
-import { HoldVacuum, PoisonState, VACUUM_SECONDS, speedForInput, pullViruses } from "./src/snake-actions.js?v=1.0";
+import { normalizeConfig } from "./src/snake-config.js?v=1.1";
+import { setupTuning } from "./src/snake-tuning.js?v=1.1";
+import { HoldVacuum, PoisonState, VACUUM_SECONDS, speedForInput, pullViruses } from "./src/snake-actions.js?v=1.1";
 import { DEFAULT_BINDINGS, normalizeBindings, bindingError, keyLabel, buttonLabel } from "./src/snake-bindings.js?v=1.0";
 import { createPoisonSprites } from "./src/snake-render-assets.js?v=1.0";
 import { SteeringInput, actionForKey } from "./src/snake-upstream-v029/steering.js";
@@ -167,10 +167,10 @@ function spawnFoods() {
   for (const [index, option] of learning.options.entries()) {
     const candidates = Array.from({length: 48}, (_, i) => {
       const direction = angle + (index === 0 ? .85 : index === 1 ? -1.2 : 2.1) + i * 2.399963;
-      const radius = Math.min(230 + Math.floor(i / 12) * 70, halfW * .85, halfH * .85);
+      const radius = 340 + Math.floor(i / 12) * 60;
       return { x: clamp(head.x + Math.cos(direction) * radius, bounds.left, bounds.right),
         y: clamp(head.y + Math.sin(direction) * radius, bounds.top, bounds.bottom) };
-    });
+    }).sort((a,b) => Math.min(320,distance(b,head)) - Math.min(320,distance(a,head)));
     const safe = p => bosses.every(v => distance(v,p) > 288 / 2 + 65);
     const spot = candidates.find(p => safe(p) && distance(p,head) > 95 && foods.every(f => distance(p,f) > 125)) ||
       candidates.find(p => safe(p) && foods.every(f => distance(p,f) > 95));
@@ -272,7 +272,7 @@ function setPaused(value, title = "休息一下") {
 }
 
 function snapshot() {
-  return { version: 2, upstream: "0.2.9", config: { ...config }, learning: learning.snapshot(), head: { ...head }, angle, desiredAngle,
+  return { version: 2, choiceLayout: 2, upstream: "0.2.9", config: { ...config }, learning: learning.snapshot(), head: { ...head }, angle, desiredAngle,
     collected, glyphs: trail.glyphs.slice(), points: trail.points.map(p => ({ ...p })), foods,
     camera: { ...camera }, ecosystem: saveEcosystem(virusField, virusSnakes), clock,
     rewards: { stars: rewards.stars, growthPoints: rewards.growthPoints, glyphs: [...rewards.glyphs] },
@@ -317,7 +317,7 @@ function restore(saved) {
   fitCamera();
   previousCamera = { ...camera };
   // Restore exact option positions only while they still match the sanitized question.
-  const matches = Array.isArray(saved.foods) && saved.foods.length === learning.options.length &&
+  const matches = saved.choiceLayout === 2 && Array.isArray(saved.foods) && saved.foods.length === learning.options.length &&
     saved.foods.every(f => point(f) && learning.options.some(o => o.wordId === f.wordId && o.glyph === f.glyph && o.correct === f.correct)) &&
     new Set(saved.foods.map(f => f.wordId)).size === saved.foods.length;
   if (matches) foods = saved.foods.map(f => ({ ...f })); else spawnFoods();
@@ -407,7 +407,7 @@ function update(dt) {
       directTurnRate = input.turn * config.keyboardTurnSpeed * Math.PI / 180;
     } else if (input.angle !== null) movementRequest = desiredAngle = input.angle;
   }
-  motion.speed = speedForInput(config, angle, movementRequest);
+  motion.speed = speedForInput(config, angle, movementRequest, poison.active);
   const boundedAngle = mode === "auto" ? headingInsideMap(head, desiredAngle) : desiredAngle;
   motion.advance(boundedAngle, dt, boundedAngle === desiredAngle ? directTurnRate : null);
   const hitBoundary = mode !== "auto" && (motion.x < WORLD_BOUNDS.minX + 65 || motion.x > WORLD_BOUNDS.maxX - 65

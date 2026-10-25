@@ -7,7 +7,25 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.86** (2026-10-25). Removed poison's rising bubbles
+System display version: **v1.0.87** (2026-10-25). Poison speed defaults to50%
+of normal, including the same-input aligned boost; cure restores full speed.
+The percentage is configurable and persists, with50% supplied to older saves.
+Choices spawn farther from the head within visible safe bounds. choiceLayout2
+regenerates older saved positions once without changing learning progress.
+The focused connected/live web mouse guard also filters software-injected Escape
+down/up pairs to prevent external B mappings exiting fullscreen. Physical Escape,
+other keys and system mouse mode pass. R2 remains the controller fullscreen key.
+Version/notifiers1.0.87, Snake JS/entry1.7, config/actions/tuning1.1 and display
+entry caches updated. Restart the project service for native hook changes,
+then refresh; no build. Actual controller/JoyXoff interaction needs observation.
+Validation: check and303 Node tests passed;11 native controller-policy tests
+passed. Real Microsoft Edge1440/390 verified50% actual game-loop speed, cure
+recovery, configurable percentage persistence, distant choices, old-position
+migration and B retaining fullscreen/R2 exiting using simulated controller input.
+No resource errors or viewport overflow; green-only poison screenshots inspected.
+Existing41 PNG edits remain excluded; no unrelated browser suites were run.
+
+Previous **v1.0.86** (2026-10-25). Removed poison's rising bubbles
 and their per-frame particle drawing. Poison now only selects the cached green
 head/body sprites; timers, tail loss, cure cost, shortcuts and storage stay the
 same. Version/notifiers1.0.86, Snake JS/entry1.6 and display-entry caches updated.

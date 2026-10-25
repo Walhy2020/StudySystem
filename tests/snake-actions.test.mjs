@@ -33,6 +33,13 @@ test("configured vacuum range changes reach without pulling larger viruses", () 
   pullViruses(viruses,{x:0,y:0},0,.1,260); assert.equal(viruses[0].x,350);
   pullViruses(viruses,{x:0,y:0},0,.1,400); assert.ok(viruses[0].x<350); assert.equal(viruses[1].x,350);
 });
+test("poison halves normal movement including aligned boost and cure restores full speed", () => {
+  const config=normalizeConfig({speed:100});
+  assert.equal(speedForInput(config,0,null,true),50);
+  assert.equal(speedForInput(config,0,0,true),75);
+  assert.equal(speedForInput(config,0,null,false),100);
+  assert.equal(speedForInput(normalizeConfig({speed:100,poisonSpeedPercent:60}),0,null,true),60);
+});
 test("poison persists, damages continuously, requires stars and schedules the next poisoning after cure", () => {
   const config=normalizeConfig(), poison=new PoisonState(0,config), losses=[];
   poison.update(29.9,config,n=>losses.push(n)); assert.equal(poison.active,false);

@@ -1,7 +1,8 @@
 """Keep software-injected motion and button clicks out of web-cursor mode.
 
-Physical mouse input is never blocked. No cursor warping, clipping, keyboard
-hooks, JoyXoff configuration changes, or persistent Windows settings are used.
+Physical mouse/keyboard input is never blocked. A second narrow hook filters only
+software-injected Escape in focused web mode, preventing controller B mappings
+from leaving browser fullscreen. No keystrokes are recorded or settings changed.
 """
 import ctypes
 from ctypes import wintypes
@@ -21,6 +22,7 @@ class MotionPolicy:
         self.web = False
         self.connected = False
         self.blocked_buttons = set()
+        self.blocked_escape = False
 
     def authorize(self, client, active, foreground, now):
         leases = {key: value for key, value in self.leases.items() if value[1] > now}
@@ -29,6 +31,22 @@ class MotionPolicy:
         else:
             leases.pop(client, None)
         self.leases = leases
+
+    def guarded(self, foreground, now):
+        return (self.web and self.connected and bool(foreground)
+                and any(window == foreground and until > now
+                        for window, until in self.leases.values()))
+
+    def blocks_key(self, message, key, flags, foreground, now):
+        if key != 0x1B or not flags & 0x10:  # VK_ESCAPE + LLKHF_INJECTED only.
+            return False
+        if message in (0x0101, 0x0105):
+            blocked, self.blocked_escape = self.blocked_escape, False
+            return blocked
+        if message in (0x0100, 0x0104) and (self.blocked_escape or self.guarded(foreground, now)):
+            self.blocked_escape = True
+            return True
+        return False
 
     def blocks(self, message, flags, foreground, now):
         # Hardware input always passes. Pair rejected injected downs with their
@@ -41,9 +59,7 @@ class MotionPolicy:
                 return False
             self.blocked_buttons.remove(button)
             return True
-        guarded = (self.web and self.connected and bool(foreground)
-                   and any(window == foreground and until > now
-                           for window, until in self.leases.values()))
+        guarded = self.guarded(foreground, now)
         if message in BUTTON_DOWN:
             button = BUTTON_DOWN[message]
             if guarded or button in self.blocked_buttons:
@@ -80,6 +96,11 @@ class WindowsMotionGuard:
                         ("flags", wintypes.DWORD), ("time", wintypes.DWORD),
                         ("extra", ctypes.c_size_t)]
 
+        class KeyRecord(ctypes.Structure):
+            _fields_ = [("key", wintypes.DWORD), ("scan", wintypes.DWORD),
+                        ("flags", wintypes.DWORD), ("time", wintypes.DWORD),
+                        ("extra", ctypes.c_size_t)]
+
         user = self.user
         user.SetWindowsHookExW.argtypes = [ctypes.c_int, callback_type, wintypes.HINSTANCE, wintypes.DWORD]
         user.SetWindowsHookExW.restype = wintypes.HANDLE
@@ -88,7 +109,7 @@ class WindowsMotionGuard:
         user.UnhookWindowsHookEx.argtypes = [wintypes.HANDLE]
         kernel = ctypes.WinDLL("kernel32")
         kernel.GetModuleHandleW.restype = wintypes.HMODULE
-        hook = None
+        hook = key_hook = None
 
         @callback_type
         def callback(code, message, data):
@@ -101,14 +122,27 @@ class WindowsMotionGuard:
                 pass  # Fail open: never strand the user's pointer after an error.
             return user.CallNextHookEx(None, code, message, data)
 
+        @callback_type
+        def key_callback(code, message, data):
+            try:
+                if code >= 0 and message in (0x0100, 0x0101, 0x0104, 0x0105):
+                    record = ctypes.cast(data, ctypes.POINTER(KeyRecord)).contents
+                    if self.policy.blocks_key(message, record.key, record.flags,
+                                              user.GetForegroundWindow(), time.monotonic()):
+                        return 1
+            except Exception:
+                pass
+            return user.CallNextHookEx(None, code, message, data)
+
         try:
             self.thread_id = kernel.GetCurrentThreadId()
             message = wintypes.MSG()
             user.PeekMessageW(ctypes.byref(message), None, 0, 0, 0)  # Create shutdown queue before ready.
             hook = user.SetWindowsHookExW(14, callback, kernel.GetModuleHandleW(None), 0)
-            self.installed = bool(hook)
+            key_hook = user.SetWindowsHookExW(13, key_callback, kernel.GetModuleHandleW(None), 0)
+            self.installed = bool(hook and key_hook)
             self.ready.set()
-            if hook:
+            if hook or key_hook:
                 while user.GetMessageW(ctypes.byref(message), None, 0, 0) > 0:
                     user.TranslateMessage(ctypes.byref(message))
                     user.DispatchMessageW(ctypes.byref(message))
@@ -117,6 +151,8 @@ class WindowsMotionGuard:
             self.policy.web = False
             if hook:
                 user.UnhookWindowsHookEx(hook)
+            if key_hook:
+                user.UnhookWindowsHookEx(key_hook)
             self.ready.set()
 
     def close(self):

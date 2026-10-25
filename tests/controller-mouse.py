@@ -139,6 +139,23 @@ class MouseTests(unittest.TestCase):
         finally:
             server.server_close()
 
+    def test_only_injected_escape_is_filtered_in_web_mode(self):
+        policy = MotionPolicy()
+        policy.web = policy.connected = True
+        policy.authorize("snake", True, 123, 10)
+        self.assertFalse(policy.blocks_key(0x0100, 0x1B, 0, 123, 10.1), "Physical Escape stays usable")
+        self.assertFalse(policy.blocks_key(0x0100, 0x42, 0x10, 123, 10.1), "Keyboard B and other keys pass")
+        self.assertTrue(policy.blocks_key(0x0100, 0x1B, 0x10, 123, 10.1), "Injected controller Escape cannot leave fullscreen")
+        self.assertTrue(policy.blocks_key(0x0100, 0x1B, 0x10, 123, 10.2), "Held Escape remains suppressed")
+        self.assertFalse(policy.blocks_key(0x0101, 0x1B, 0, 123, 10.2), "Physical key up passes")
+        policy.web = False
+        self.assertTrue(policy.blocks_key(0x0101, 0x1B, 0x10, 456, 12), "Rejected pair survives View/blur/lease expiry")
+        self.assertFalse(policy.blocks_key(0x0100, 0x1B, 0x10, 123, 10.1), "System mode passes")
+        policy.web = True
+        self.assertFalse(policy.blocks_key(0x0101, 0x1B, 0x10, 123, 10.1), "Allowed down's up passes")
+        self.assertFalse(policy.blocks_key(0x0100, 0x1B, 0x10, 456, 10.1), "Other windows pass")
+        self.assertFalse(policy.blocks_key(0x0100, 0x1B, 0x10, 123, 11), "Expired lease passes")
+
     def test_toggle_output_and_safety(self):
         calls = []
         e = MouseEngine(lambda *args: calls.append(args))

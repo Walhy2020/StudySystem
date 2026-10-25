@@ -59,6 +59,7 @@ try {
     assert.equal(initial.virusSnakes.length, 5); assert.ok(initial.viruses.length > 20);
     assert.equal(initial.learning.targets[0], "0010"); assert.equal(initial.learning.targets.length, 5);
     assert.equal(initial.learning.type, "pinyin-to-hanzi");
+    assert.ok(initial.foods.every(food => Math.hypot(food.x-initial.head.x,food.y-initial.head.y)>=300), "choices leave room around the head");
     if (width === 390) {
       const { viewport, foods } = initial;
       for (const food of foods) {
@@ -94,6 +95,15 @@ try {
     }
     await page.setViewportSize({ width, height: 960 }); await page.waitForTimeout(80);
     await page.screenshot({ path: `tmp/snake-ready-${width}.png`, fullPage: true });
+    await page.evaluate(key=>{
+      window.dispatchEvent(new Event("pagehide")); const saved=JSON.parse(localStorage.getItem(key));
+      delete saved.choiceLayout;
+      saved.foods.forEach(food=>{food.x=saved.head.x+80;food.y=saved.head.y;});
+      sessionStorage.setItem("snake-acceptance-fixture",JSON.stringify(saved));
+    },key);
+    await page.reload(); await waitReady();
+    assert.deepEqual((await state()).learning,initial.learning,"layout migration keeps learning progress");
+    assert.ok((await state()).foods.every(food=>Math.hypot(food.x-initial.head.x,food.y-initial.head.y)>=300),"old nearby choices are repositioned");
     // Keyboard keeps native focused button Space; canvas directions cannot bypass a saved gate.
     await page.locator("#game").focus(); await page.keyboard.press("ArrowUp"); assert.equal((await state()).paused, true);
     await page.locator("#resumeButton").focus(); await page.keyboard.press("Space"); assert.equal((await state()).paused, false);
@@ -241,7 +251,7 @@ try {
     // Isolate timed poison and actual configurable keyboard/controller/touch actions.
     await page.evaluate(key=>{
       window.dispatchEvent(new Event("pagehide")); const saved=JSON.parse(localStorage.getItem(key));
-      saved.config.speed=0; saved.config.virusSnakeCount=0; saved.config.poisonInterval=5;
+      saved.config.speed=100; saved.config.virusSnakeCount=0; saved.config.poisonInterval=5;
       saved.config.poisonTickInterval=.5; saved.config.poisonTailLoss=1; saved.config.antidoteCost=3;
       saved.config.vacuumRange=400; saved.bindings={vacuum:{key:"KeyH",button:6},antidote:{key:"KeyJ",button:11}};
       saved.poison={active:false,nextPoisonAt:saved.clock+5,nextDamageAt:saved.clock+.5,poisonings:0};
@@ -253,6 +263,7 @@ try {
     await page.reload(); await waitReady(); const healthy=await state();
     await step(400); assert.equal((await state()).poison.active,false,"paused time never poisons");
     await act("#resumeButton"); await step(307); assert.equal((await state()).poison.active,true);
+    assert.equal((await state()).speed,50,"poison moves at half the normal speed");
     assert.equal((await state()).length,healthy.length); await step(33);
     assert.equal((await state()).length,healthy.length-1);
     await page.keyboard.press("j"); assert.equal((await state()).poison.active,true,"insufficient stars cannot cure");
@@ -269,6 +280,7 @@ try {
     await page.reload(); await waitReady(); assert.equal((await state()).poison.active,true,"refresh retains poison");
     await act("#resumeButton"); await page.keyboard.press("j");
     assert.equal((await state()).poison.active,false); assert.equal((await state()).collected,5);
+    await step(2); assert.equal((await state()).speed,100,"cure restores normal speed");
     const curedLength=(await state()).length;
     await step(120); assert.equal((await state()).length,curedLength,"cure stops tail loss");
     await step(190); assert.equal((await state()).poison.active,true,"poison returns after configured interval");
@@ -310,6 +322,8 @@ try {
     assert.ok(Math.abs(fullStage.width - screenSize.width) < 2 && Math.abs(fullStage.height - screenSize.height) < 2);
     await waitFor(() => window.__snakeDemo.getState().viewport.height === innerHeight);
     await act("#resumeButton"); await step(3);
+    await button(1,true); await button(1,false);
+    assert.equal(await page.evaluate(()=>Boolean(document.fullscreenElement)),true,"B never toggles fullscreen");
     await page.screenshot({ path:`tmp/snake-fullscreen-${width}.png` });
     await page.evaluate(() => { window.__pad.buttons[7] = { pressed: false, value: 0 }; window.__step(3); });
     await button(7, true); await waitFor(() => !document.fullscreenElement); await button(7, false);

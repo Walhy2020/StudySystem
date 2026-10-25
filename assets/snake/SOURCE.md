@@ -16,6 +16,9 @@ with `src/snake-config.js` wrapping the unchanged upstream numeric fields. Local
 uses `src/snake-bindings.js`. Their callbacks write only the existing Snake
 snapshot. Learning choices use local Canvas hexagons, body stars retain upstream
 artwork and poison only changes the head/body color, without particle effects.
+Local poison movement defaults to50% of normal speed, configurable in properties,
+and returns to full speed after cure. Local choice placement keeps more space
+around the head, regenerating only positions from older snapshots.
 Poison tint is pre-rendered
 once by `src/snake-render-assets.js` and cached for head/body draws instead of
 filtering the main canvas on every segment/frame. Upstream browser controls,

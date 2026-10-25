@@ -63,7 +63,7 @@ try {
     assert.equal(await page.evaluate(() => JSON.parse(window.__copiedTuning).speed), 178);
     await page.locator("#tuningJson").fill("bad json"); await page.locator("#tuningApplyJson").click();
     assert.equal((await state()).config.speed, 178); assert.match(await page.locator("#tuningStatus").textContent(), /格式不正确/);
-    for (const [key,value] of [["targetScale",3],["vacuumRange",400],["poisonInterval",45],["poisonTickInterval",.5],["poisonTailLoss",2],["antidoteCost",3]]) {
+    for (const [key,value] of [["targetScale",3],["vacuumRange",400],["poisonInterval",45],["poisonSpeedPercent",60],["poisonTickInterval",.5],["poisonTailLoss",2],["antidoteCost",3]]) {
       const group=page.locator(".tuning-group").filter({has:page.locator(`#tune-${key}`)});
       if (!await group.evaluate(el=>el.open)) await group.locator("summary").click();
       await page.locator(`#tune-${key}`).fill(String(value)); await page.locator(`#tune-${key}`).press("Tab");
@@ -91,6 +91,7 @@ try {
     assert.equal((await state()).config.alignedSpeedBoost,75);
     assert.equal((await state()).config.vacuumRange,400); assert.equal((await state()).config.targetScale,3);
     assert.equal((await state()).config.poisonInterval,45); assert.equal((await state()).config.antidoteCost,3);
+    assert.equal((await state()).config.poisonSpeedPercent,60);
     assert.deepEqual((await state()).bindings,saved.bindings);
     assert.deepEqual((await state()).learning, { ...saved.learning, type:(await state()).learning.type, prompt:(await state()).learning.prompt, source:(await state()).learning.source });
     await page.locator("#tuningToggle").click(); await page.keyboard.press("Escape");

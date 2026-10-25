@@ -10,10 +10,11 @@ export class HoldVacuum {
   remaining(time) { return this.sources.size ? Math.max(0, VACUUM_SECONDS - (time - this.startedAt)) : 0; }
   active(time) { return this.remaining(time) > 0; }
 }
-export function speedForInput(config, angle, requestedAngle) {
-  if (!Number.isFinite(requestedAngle)) return config.speed;
+export function speedForInput(config, angle, requestedAngle, poisoned = false) {
+  const speed = config.speed * (poisoned ? config.poisonSpeedPercent / 100 : 1);
+  if (!Number.isFinite(requestedAngle)) return speed;
   const delta = Math.atan2(Math.sin(requestedAngle - angle), Math.cos(requestedAngle - angle));
-  return config.speed * (Math.abs(delta) <= .2 ? 1 + config.alignedSpeedBoost / 100 : 1);
+  return speed * (Math.abs(delta) <= .2 ? 1 + config.alignedSpeedBoost / 100 : 1);
 }
 export function pullViruses(viruses, head, angle, dt, range = VACUUM_RANGE) {
   for (const virus of viruses) {

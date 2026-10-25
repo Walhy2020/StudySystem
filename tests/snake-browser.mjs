@@ -27,8 +27,15 @@ try {
       Object.defineProperty(navigator, "getGamepads", { value: () => [window.__pad] });
       window.__speech = 0; speechSynthesis.speak = () => { window.__speech++; };
       window.__drawnAssets = [];
+      window.__poisonDraws = 0; window.__mainFilters = 0;
+      const filter = Object.getOwnPropertyDescriptor(CanvasRenderingContext2D.prototype,"filter");
+      Object.defineProperty(CanvasRenderingContext2D.prototype,"filter",{...filter,set(value) {
+        if (this.canvas.id==="game" && value!=="none") window.__mainFilters++;
+        filter.set.call(this,value);
+      }});
       const drawImage = CanvasRenderingContext2D.prototype.drawImage;
       CanvasRenderingContext2D.prototype.drawImage = function(image, ...args) {
+        if (this.canvas.id==="game" && image.dataset?.snakePoisonSprite) window.__poisonDraws++;
         if (image.src && !window.__drawnAssets.includes(image.src)) window.__drawnAssets.push(image.src);
         return drawImage.call(this, image, ...args);
       };
@@ -114,16 +121,21 @@ try {
     await page.evaluate(() => { window.__pad.axes[0] = 0; window.__pad.axes[1] = .25; window.__step(15); window.__pad.axes[1] = 0; });
     assert.notEqual((await state()).angle, analogAngle, "Snake's 0.2 deadzone works below the bomb reader's 0.35 threshold");
     await page.evaluate(() => { window.__pad.axes[0] = 0; window.__step(3); window.__pad.axes[2] = .8; window.__step(8); });
-    assert.equal((await state()).paused, true); assert.equal(await page.evaluate(() => STUDY_GAMEPAD_CURSOR.isMenuActive()), true);
-    const menuHead = (await state()).head; await step(40); assert.deepEqual((await state()).head, menuHead);
-    await page.evaluate(() => { window.__pad.axes[2] = 0; window.__step(3); });
+    assert.equal((await state()).paused, false); assert.equal(await page.evaluate(() => STUDY_GAMEPAD_CURSOR.isMenuActive()), true);
+    const menuHead = (await state()).head; await step(40); assert.notDeepEqual((await state()).head, menuHead,"cursor movement never pauses play");
+    assert.equal(await page.locator("#pauseOverlay").isVisible(),false);
+    await button(9,true,20); assert.equal((await state()).paused,true,"Menu/Start pauses even with cursor active");
+    await button(9,false); await button(9,true); await button(9,false); assert.equal((await state()).paused,false);
+    await page.evaluate(()=>window.dispatchEvent(new Event("blur"))); await step(3);
+    assert.equal((await state()).paused,false,"focus/input reset does not create a rest prompt");
+    await page.evaluate(() => { window.__pad.axes[2] = 0; window.__step(3); window.__pad.axes[2] = .8; window.__step(5); window.__pad.axes[2] = 0; window.__step(3); });
     await button(3, true); assert.equal(await page.evaluate(() => STUDY_GAMEPAD_CURSOR.isMenuActive()), false); assert.equal((await state()).paused, false); await button(3, false);
     await button(4, true); assert.equal(await page.evaluate(() => STUDY_AUDIO.isMuted()), true); await button(4, false);
     assert.equal(await page.locator("#speakButton").isDisabled(), true);
     await button(4, true); await button(4, false); await act("#speakButton"); assert.equal(await page.evaluate(() => window.__speech), 1);
     mouseMode = "system"; await button(8, true);
     await waitFor(() => STUDY_CONTROLLER_MOUSE.isActive());
-    const viewHead = (await state()).head; await button(0, true, 30); assert.equal((await state()).paused, true); assert.deepEqual((await state()).head, viewHead);
+    const viewHead = (await state()).head; await button(0, true, 30); assert.equal((await state()).paused, false); assert.deepEqual((await state()).head, viewHead);
     await button(0, false, 3); await button(8, false);
     await page.waitForTimeout(100);
     mouseMode = "web"; await button(8, true);
@@ -152,8 +164,9 @@ try {
     const savedState = await state(); await page.reload(); await waitReady(); const resumed = await state();
     assert.equal(resumed.paused, true); assert.deepEqual(resumed.head, savedState.head); assert.deepEqual(resumed.foods, savedState.foods);
     assert.deepEqual(resumed.learning.counts, savedState.learning.counts); assert.deepEqual(resumed.learning.done, savedState.learning.done);
+    await act("#settingsButton"); await act("#autoButton");
     const checkpoint = await page.evaluate(key => localStorage.getItem(key), key);
-    await act("#settingsButton"); await act("#autoButton"); await step(600); assert.ok((await state()).collected > resumed.collected);
+    await step(600); assert.ok((await state()).collected > resumed.collected);
     assert.equal(await page.evaluate(key => localStorage.getItem(key), key), checkpoint, "demo does not overwrite real progress");
     await act("#startButton"); assert.equal((await state()).collected, resumed.collected); assert.deepEqual((await state()).learning.counts, resumed.learning.counts);
     for (let i = 0; i < 4; i++) await collision(true);
@@ -244,6 +257,8 @@ try {
     assert.equal((await state()).length,healthy.length-1);
     await page.keyboard.press("j"); assert.equal((await state()).poison.active,true,"insufficient stars cannot cure");
     await page.screenshot({path:`tmp/snake-poison-${width}.png`});
+    assert.ok(await page.evaluate(()=>__poisonDraws>0),"poison uses cached green sprites");
+    assert.equal(await page.evaluate(()=>__mainFilters),0,"no per-frame full-canvas or per-segment filters");
     await page.keyboard.down("f"); await step(2); assert.equal((await state()).vacuum.active,false,"old shortcut stops acting"); await page.keyboard.up("f");
     await page.keyboard.down("h"); await step(2); assert.equal((await state()).vacuum.active,true); await page.keyboard.up("h");
     await button(6,true); assert.equal((await state()).vacuum.active,true); await button(6,false);
@@ -311,6 +326,7 @@ try {
     assert.equal(await page.evaluate(() => STUDY_FULLSCREEN_SHELL.activeWindow().__snakeDemo.getState().paused), true);
     await step(4); await button(0, true, 8); await button(0, false);
     assert.equal(await page.evaluate(() => STUDY_FULLSCREEN_SHELL.activeWindow().__snakeDemo.getState().paused), false, "embedded game shares owner controller");
+    await button(9,true); await button(9,false);
     await page.evaluate(() => {
       const target = STUDY_FULLSCREEN_SHELL.activeWindow().document.getElementById("resumeButton");
       window.__pad.axes[2] = .8; window.__step(3); window.__pad.axes[2] = 0;

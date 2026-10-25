@@ -7,7 +7,35 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.84** (2026-10-25). Snake learning choices now use
+System display version: **v1.0.85** (2026-10-25). Poison sprites are tinted once
+at load with src/snake-render-assets.js and reused by all head/body draws; no
+main-canvas per-segment/per-frame filter remains. Nine rising bubbles remain.
+MotionPolicy now filters injected mouse button pairs as well as motion under the
+existing focused web/connected/live lease. Hardware clicks and wheel input pass;
+View system mode passes new clicks. Rejected down/up pairs stay matched across
+focus/lease/View changes; an allowed down's up is never swallowed. This addresses
+JoyXoff X right-click leakage while vacuuming. It applies to software-injected
+clicks regardless of injector, since Windows does not identify their source.
+LearningHTTPServer uses Windows exclusive binding to prevent duplicate workers
+sharing53177 and disagreeing on mouse mode. The two identified project53177
+instances were replaced by one hidden service; startup shortcut stays unchanged.
+Snake no longer pauses from cursor-menu events, blur/visibility/controller-mode
+events or disconnect. Background/system mode suspends simulation without a rest
+overlay, then resumes. Menu/Start (button9) explicitly toggles pause even when the
+web cursor is active; Space/page controls and intentional property/settings entry
+retain manual pause. Initial saved entry still requires Continue. Shared cursor
+and bomb behavior stay unchanged. Version/notifiers1.0.85, Snake JS/entry1.5 and
+version-display entry caches updated; no learning-storage changes.
+
+Validation: required check/test/knowledge/diff checks; targeted real Edge Snake
+desktop/390 checks cached poison draws with zero main-canvas filter assignments,
+manual Menu/Start pause, cursor/blur without rest, and existing gameplay/storage.
+Pure native tests cover injected/hardware clicks, View/focus pair transitions and
+duplicate-port rejection. Live Windows guard installation and single53177 listener
+checked. Actual controller/JoyXoff interaction still needs user observation.
+Existing41 PNG changes excluded; only own temporary53179 used for acceptance.
+
+Previous **v1.0.84** (2026-10-25). Snake learning choices now use
 Canvas-drawn cream hexagons with centered Hanzi/pinyin; star body/particles stay.
 Fullscreen hides the entire top menu, closes settings/properties and expands the
 stage to viewport bounds, with only the current prompt at top left. State follows

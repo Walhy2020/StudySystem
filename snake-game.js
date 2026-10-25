@@ -8,6 +8,7 @@ import { normalizeConfig } from "./src/snake-config.js?v=1.0";
 import { setupTuning } from "./src/snake-tuning.js?v=1.0";
 import { HoldVacuum, PoisonState, VACUUM_SECONDS, speedForInput, pullViruses } from "./src/snake-actions.js?v=1.0";
 import { DEFAULT_BINDINGS, normalizeBindings, bindingError, keyLabel, buttonLabel } from "./src/snake-bindings.js?v=1.0";
+import { createPoisonSprites } from "./src/snake-render-assets.js?v=1.0";
 import { SteeringInput, actionForKey } from "./src/snake-upstream-v029/steering.js";
 import { Soundscape } from "./src/snake-upstream-v029/audio.js";
 import { StarBursts } from "./src/snake-upstream-v029/star-burst.js";
@@ -21,7 +22,7 @@ let storage;
 try { storage = localStorage; } catch { /* Play remains available without storage. */ }
 const words = window.MARIO_WORD_BANK || [];
 const readings = word => window.MARIO_PINYIN_READINGS.getReadings(word, words);
-let learning, demoCheckpoint = null, menuPaused = false, fullscreenPending = false;
+let learning, demoCheckpoint = null, fullscreenPending = false;
 const gamepad = window.createBombGamepadReader();
 let lastSave = 0;
 let config = normalizeConfig(readObject(storage, SNAKE_PROGRESS_KEY)?.config);
@@ -41,7 +42,7 @@ let lastDamageAt = -10, damageFlashUntil = -10, damageHits = 0, lastDamageCause 
 let head, angle, desiredAngle, collected, foods, mode = "manual";
 let paused = true, ready = false, pointer = null, viewWidth = 900, viewHeight = 550;
 let zoom = 1, camera = { x: 800, y: 550 }, clock = 0, lastTime = 0;
-let assets, metadata, lastWrong = -10, growthFlash = -10;
+let assets, poisonedAssets, metadata, lastWrong = -10, growthFlash = -10;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 
@@ -50,7 +51,7 @@ function notify(text) {
 }
 
 function syncSound() {
-  const enabled = ready && !paused && !document.hidden && !window.STUDY_FULLSCREEN_SHELL?.isHosting() && !window.STUDY_AUDIO?.isMuted();
+  const enabled = ready && !paused && !document.hidden && document.hasFocus() && !window.STUDY_CONTROLLER_MOUSE?.isActive() && !window.STUDY_FULLSCREEN_SHELL?.isHosting() && !window.STUDY_AUDIO?.isMuted();
   if (!enabled || !sound.enabled || !sound.context) void sound.setEnabled(enabled).catch(() => {});
 }
 
@@ -111,7 +112,7 @@ function closeTuning(focus = false) {
   if (focus) $("tuningToggle").focus({ preventScroll: true });
 }
 $("tuningToggle").addEventListener("click", () => {
-  if (!$("tuningPanel").hidden) { closeSettings(); menuPaused = false; setPaused(true); }
+  if (!$("tuningPanel").hidden) { closeSettings(); setPaused(true); }
 });
 
 function updateUI() {
@@ -142,7 +143,6 @@ function closeSettings(focus = false) {
 $("settingsButton").addEventListener("click", () => {
   if (!$("settingsMenu").hidden) { closeSettings(true); return; }
   closeTuning();
-  menuPaused = false;
   setPaused(true);
   $("settingsMenu").hidden = false;
   $("settingsButton").setAttribute("aria-expanded", "true");
@@ -500,10 +500,10 @@ function update(dt) {
   camera.y += (clamp(head.y, WORLD_BOUNDS.minY + halfHeight, WORLD_BOUNDS.maxY - halfHeight) - camera.y) * follow;
 }
 
-function tile(x, y, size, glyph, alpha = 1) {
+function tile(x, y, size, glyph, alpha = 1, sprite = assets.segment) {
   ctx.save();
   ctx.globalAlpha = alpha;
-  ctx.drawImage(assets.segment, x - size / 2, y - size / 2, size, size);
+  ctx.drawImage(sprite, x - size / 2, y - size / 2, size, size);
   if (glyph) {
     ctx.font = `700 ${Math.round(size * 0.49)}px "Microsoft YaHei", "PingFang SC", sans-serif`;
     ctx.textAlign = "center";
@@ -633,20 +633,20 @@ function draw(alpha) {
   }
   const segments = trail.positions(lag);
   ctx.save();
-  if (poison.active) ctx.filter="hue-rotate(65deg) saturate(1.35)";
+  const bodyAssets = poison.active ? poisonedAssets : assets;
   if (clock < damageFlashUntil && Math.floor(clock * 22) % 2 === 0) ctx.globalAlpha = 0.2;
   // Small stars bridge the tips, so the body reads as one continuous star chain.
   const links = samplePath(trail.points, segments.map((_, i) => lag + trail.leadGap + (i - 0.5) * trail.spacing));
-  for (const link of links) tile(link.x, link.y, config.bodySize * 0.54, "");
+  for (const link of links) tile(link.x, link.y, config.bodySize * 0.54, "", 1, bodyAssets.segment);
   for (let i = segments.length - 1; i >= 0; i--) {
     const item = segments[i];
     const newlyGrown = i === segments.length - 1 && clock - growthFlash < 0.65;
     const size = newlyGrown ? config.bodySize * (1 + Math.sin((clock - growthFlash) / 0.65 * Math.PI) * 0.135) : config.bodySize;
-    tile(item.x, item.y, size, "");
+    tile(item.x, item.y, size, "", 1, bodyAssets.segment);
   }
   if (segments.length) {
     const neck = trail.neck(lag);
-    tile(neck.x, neck.y, config.bodySize * 0.69, "");
+    tile(neck.x, neck.y, config.bodySize * 0.69, "", 1, bodyAssets.segment);
   }
   ctx.save();
   ctx.translate(renderHead.x, renderHead.y - 4 + Math.sin(clock * 3) * config.hover);
@@ -655,7 +655,7 @@ function draw(alpha) {
   ctx.shadowBlur = 8;
   ctx.shadowOffsetY = 7;
   const scale = config.headSize / metadata.head.width;
-  ctx.drawImage(assets.head, -metadata.head.anchor.x * scale, -metadata.head.anchor.y * scale,
+  ctx.drawImage(bodyAssets.head, -metadata.head.anchor.x * scale, -metadata.head.anchor.y * scale,
     metadata.head.width * scale, metadata.head.height * scale);
   ctx.restore();
   for (const star of starBursts.active(clock)) {
@@ -669,7 +669,7 @@ function draw(alpha) {
     ctx.restore();
   }
   if (poison.active) {
-    ctx.filter="none"; ctx.fillStyle="#72e76088"; ctx.strokeStyle="#337d2fbb"; ctx.lineWidth=1.5;
+    ctx.fillStyle="#72e76088"; ctx.strokeStyle="#337d2fbb"; ctx.lineWidth=1.5;
     for (let i=0;i<9;i++) {
       const phase=(clock*.7+i*.173)%1, px=renderHead.x+Math.sin(i*2.4+clock)*55, py=renderHead.y-15-phase*95;
       ctx.beginPath(); ctx.arc(px,py,3+(i%3)*2,0,Math.PI*2); ctx.fill(); ctx.stroke();
@@ -696,7 +696,7 @@ function frame(time) {
   pollGamepad(time);
   if (ready) {
     // Substeps preserve collision checks and smooth route samples on slower devices.
-    while (!paused && remaining > 0) {
+    while (!paused && !document.hidden && document.hasFocus() && !window.STUDY_CONTROLLER_MOUSE?.isActive() && remaining > 0) {
       const step = Math.min(remaining, 1 / config.physicsHz);
       update(step);
       remaining -= step;
@@ -738,7 +738,7 @@ $("autoButton").addEventListener("click", () => { closeSettings(); setMode("auto
 $("resetButton").addEventListener("click", () => {
   if (!ready) return;
   if (demoCheckpoint) restore(demoCheckpoint);
-  mode = "manual"; demoCheckpoint = null; menuPaused = false;
+  mode = "manual"; demoCheckpoint = null;
   closeSettings(); closeTuning();
   reset(); save();
 });
@@ -769,8 +769,14 @@ canvas.addEventListener("pointerdown", (event) => {
 });
 canvas.addEventListener("pointermove", (event) => { if (pointer) pointerPosition(event); });
 for (const name of ["pointerup", "pointercancel", "lostpointercapture"]) canvas.addEventListener(name, () => { pointer = null; });
-window.addEventListener("blur", () => { pointer = null; setPaused(true); });
-document.addEventListener("visibilitychange", () => { if (document.hidden) setPaused(true); });
+function releaseInput() {
+  pointer = null; controls.clear(); directPadAngle = touchSteeringAngle = null;
+  vacuum.reset(); gamepad.reset(); padNeedsNeutral = true;
+  save(); syncSound();
+}
+window.addEventListener("blur", releaseInput);
+window.addEventListener("focus", syncSound);
+document.addEventListener("visibilitychange", releaseInput);
 $("speakButton").addEventListener("click", () => {
   if (!("speechSynthesis" in window)) { notify("这台浏览器暂时没有朗读功能"); return; }
   if (!learning.current || window.STUDY_AUDIO?.isMuted()) return;
@@ -792,22 +798,15 @@ async function fullscreen() {
 }
 $("fullscreenButton").addEventListener("click", fullscreen);
 window.addEventListener("studysystem:gamepad-fullscreen", fullscreen);
-window.addEventListener("studysystem:gamepad-menu", event => {
-  if (event.detail.active) { menuPaused = !paused; setPaused(true, "菜单"); }
-  else if (menuPaused && $("settingsMenu").hidden && $("tuningPanel").hidden) { menuPaused = false; setPaused(false); }
-});
-window.addEventListener("studysystem:controller-mouse", () => {
-  if (window.STUDY_CONTROLLER_MOUSE?.isActive()) { menuPaused = false; setPaused(true); }
-  gamepad.reset();
-});
+window.addEventListener("studysystem:controller-mouse", releaseInput);
 for (const name of ["pagehide", "studysystem:fullscreen-navigation", "studysystem:update-prompt"]) {
-  window.addEventListener(name, () => { menuPaused = false; setPaused(true); window.speechSynthesis?.cancel(); });
+  window.addEventListener(name, () => { releaseInput(); window.speechSynthesis?.cancel(); });
 }
-window.addEventListener("gamepaddisconnected", () => { menuPaused = false; setPaused(true); });
+window.addEventListener("gamepaddisconnected", releaseInput);
 function pollGamepad(time) {
   window.STUDY_GAMEPAD_CURSOR?.poll(time);
   const enabled = ready && !document.hidden && document.hasFocus() && !window.STUDY_CONTROLLER_MOUSE?.isActive() &&
-    $("settingsMenu").hidden && $("tuningPanel").hidden && !window.STUDY_GAMEPAD_CURSOR?.isMenuActive() && !window.STUDY_FULLSCREEN_SHELL?.isHosting();
+    $("settingsMenu").hidden && $("tuningPanel").hidden && !window.STUDY_FULLSCREEN_SHELL?.isHosting();
   const input = gamepad.poll(enabled);
   const freshButtons=input.pressedButtons.filter(button=>!previousBindingButtons.has(button));
   previousBindingButtons=new Set(input.pressedButtons);
@@ -820,7 +819,7 @@ function pollGamepad(time) {
   if (enabled&&!paused&&antidotePressed&&!padAntidoteDown) attemptAntidote();
   padAntidoteDown=antidotePressed;
   if (!enabled) { directPadAngle = null; padNeedsNeutral = true; return; }
-  if ((input.confirm || input.mushroom) && (paused || !nativeTarget(document.activeElement))) {
+  if ((input.confirm || input.mushroom && !window.STUDY_GAMEPAD_CURSOR?.isMenuActive()) && (input.confirm || paused || !nativeTarget(document.activeElement))) {
     if (paused) resume(); else if (input.confirm) setPaused(true);
     return;
   }
@@ -878,6 +877,7 @@ try {
   const virusPalettes = Object.fromEntries(VIRUS_TYPES.map(type => [type.tier, { violet: baseViruses[type.tier] }]));
   variants.forEach(({ tier, color }, index) => { virusPalettes[tier][color] = variantImages[index]; });
   assets = { head: headImage, segment, floor, virus, virusSmall, virusMedium, virusSuper, virusPalettes };
+  poisonedAssets = createPoisonSprites({ head: headImage, segment });
   floorPattern = ctx.createPattern(assets.floor, "repeat");
   resize();
   reset();

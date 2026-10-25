@@ -5,6 +5,8 @@ import argparse
 import ipaddress
 import json
 import re
+import socket
+import sys
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlsplit, unquote
@@ -12,6 +14,16 @@ from controller_battery import read_controller_batteries
 from controller_mouse import ControllerMouse
 
 ROOT = Path(__file__).resolve().parent
+
+class LearningHTTPServer(ThreadingHTTPServer):
+    # Windows SO_REUSEADDR otherwise permits two app processes to share a port,
+    # splitting web/system mouse leases between independent native workers.
+    allow_reuse_address = sys.platform != "win32"
+
+    def server_bind(self):
+        if sys.platform == "win32":
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+        super().server_bind()
 
 class LearningAppHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
@@ -97,7 +109,7 @@ def main():
     parser.add_argument("--port", type=int, default=5177)
     parser.add_argument("--disable-system-mouse", action="store_true", help="Disable native controller mouse (e.g. isolated acceptance server)")
     args = parser.parse_args()
-    server = ThreadingHTTPServer((args.bind, args.port), LearningAppHandler)
+    server = LearningHTTPServer((args.bind, args.port), LearningAppHandler)
     server.controller_mouse = ControllerMouse(disabled=args.disable_system_mouse)
     print(f"Mario learning app: http://{args.bind}:{args.port}/")
     try:

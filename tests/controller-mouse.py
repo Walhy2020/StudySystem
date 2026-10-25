@@ -7,7 +7,7 @@ import unittest
 from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from controller_mouse import MouseEngine, ControllerMouse, VIEW, A, B
-from server import LearningAppHandler, ThreadingHTTPServer
+from server import LearningAppHandler, ThreadingHTTPServer, LearningHTTPServer
 from controller_pointer_guard import MotionPolicy
 
 
@@ -98,7 +98,6 @@ class MouseTests(unittest.TestCase):
         policy.authorize("page", True, 123, 10)
         self.assertTrue(policy.blocks(0x0200, 1, 123, 10.5))
         for message, flags, window, now in ((0x0200, 0, 123, 10.5),
-                                           (0x0201, 1, 123, 10.5),
                                            (0x020A, 1, 123, 10.5),
                                            (0x0200, 1, 456, 10.5),
                                            (0x0200, 1, 123, 11)):
@@ -112,6 +111,33 @@ class MouseTests(unittest.TestCase):
         self.assertTrue(policy.blocks(0x0200, 1, 123, 10.5), "Dormant frame cannot clear active lease")
         policy.authorize("page", False, 123, 10.5)
         self.assertFalse(policy.blocks(0x0200, 1, 123, 10.5), "Blur/capture releases guard")
+
+    def test_web_mode_blocks_injected_click_pairs_but_preserves_physical_and_system_clicks(self):
+        policy = MotionPolicy()
+        policy.web = policy.connected = True
+        policy.authorize("snake", True, 123, 10)
+        for down, up in ((0x0201, 0x0202), (0x0204, 0x0205), (0x0207, 0x0208), (0x020B, 0x020C)):
+            self.assertFalse(policy.blocks(down, 0, 123, 10.1), "Hardware down always passes")
+            self.assertTrue(policy.blocks(down, 1, 123, 10.1), "JoyXoff down cannot click while playing")
+            self.assertFalse(policy.blocks(up, 0, 123, 10.1), "Hardware up always passes")
+            self.assertTrue(policy.blocks(up, 1, 123, 10.1))
+        policy.web = False
+        self.assertFalse(policy.blocks(0x0204, 1, 123, 10.1), "System mode allows right click")
+        policy.web = True
+        self.assertFalse(policy.blocks(0x0205, 1, 123, 10.1), "Do not strand an allowed down across View")
+        self.assertTrue(policy.blocks(0x0204, 1, 123, 10.2))
+        policy.web = False
+        self.assertTrue(policy.blocks(0x0205, 1, 456, 12), "Rejected down's up remains rejected after blur/expiry/View")
+        self.assertFalse(policy.blocks(0x0204, 1, 456, 12), "Outside application remains usable")
+
+    def test_duplicate_learning_server_cannot_own_same_port(self):
+        server = LearningHTTPServer(("127.0.0.1", 0), LearningAppHandler)
+        try:
+            with self.assertRaises(OSError):
+                duplicate = LearningHTTPServer(server.server_address, LearningAppHandler)
+                duplicate.server_close()
+        finally:
+            server.server_close()
 
     def test_toggle_output_and_safety(self):
         calls = []

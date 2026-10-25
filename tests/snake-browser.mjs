@@ -59,14 +59,36 @@ try {
       assert.ok((await response.body()).toString("hex").startsWith(signature));
     }
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
-    for (const selector of ["#targetGlyph", ".mission-bar", "#game", "#batchCount"]) {
+    for (const selector of ["#targetGlyph", ".game-topbar", "#game", "#batchCount"]) {
       const box = await page.locator(selector).boundingBox(); assert.ok(box.width > 0 && box.x >= 0 && box.x + box.width <= width + 1, selector);
     }
+    assert.equal(await page.evaluate(() => document.documentElement.scrollHeight <= innerHeight), true, "one-screen layout");
+    assert.ok((await page.locator("#game").boundingBox()).height > 800, "stage uses the main screen area");
+    assert.equal(await page.locator(".sidebar, .page-header, .stage-hint, .keyboard-hint").count(), 0);
+    assert.equal(await page.locator("#settingsMenu").isVisible(), false);
+    for (const height of [640, 430]) {
+      await page.setViewportSize({ width, height });
+      await page.waitForTimeout(80);
+      const bounds = await page.locator("#game").boundingBox();
+      assert.ok(bounds.height >= height - 120 && bounds.y + bounds.height <= height, "short viewport stays on screen");
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth && document.documentElement.scrollHeight <= innerHeight), true);
+    }
+    await page.setViewportSize({ width, height: 960 }); await page.waitForTimeout(80);
     await page.screenshot({ path: `tmp/snake-ready-${width}.png`, fullPage: true });
     // Keyboard keeps native focused button Space; canvas directions cannot bypass a saved gate.
     await page.locator("#game").focus(); await page.keyboard.press("ArrowUp"); assert.equal((await state()).paused, true);
     await page.locator("#resumeButton").focus(); await page.keyboard.press("Space"); assert.equal((await state()).paused, false);
     await step(25); assert.notDeepEqual((await state()).head, initialHead);
+    await act("#settingsButton");
+    assert.equal((await state()).paused, true);
+    const settingsHead = (await state()).head; await step(40); assert.deepEqual((await state()).head, settingsHead);
+    assert.equal(await page.locator("#settingsButton").getAttribute("aria-expanded"), "true");
+    await button(5, true); await button(5, false);
+    assert.equal(await page.locator("#settingsMenu").isVisible(), false, "R1 closes settings before returning");
+    assert.equal((await state()).paused, true);
+    await act("#settingsButton"); await page.keyboard.press("Escape");
+    assert.equal(await page.locator("#settingsMenu").isVisible(), false);
+    await act("#resumeButton");
     const angle = (await state()).angle; await page.keyboard.press("ArrowDown"); await step(15); assert.notEqual((await state()).angle, angle);
     await page.keyboard.press("Space"); assert.equal((await state()).paused, true);
     if (width === 390) { await act("#resumeButton"); await act('[data-direction="left"]'); await step(10); assert.equal((await state()).paused, false); await page.keyboard.press("Space"); }
@@ -113,7 +135,7 @@ try {
     assert.equal(resumed.paused, true); assert.deepEqual(resumed.head, savedState.head); assert.deepEqual(resumed.foods, savedState.foods);
     assert.deepEqual(resumed.learning.counts, savedState.learning.counts); assert.deepEqual(resumed.learning.done, savedState.learning.done);
     const checkpoint = await page.evaluate(key => localStorage.getItem(key), key);
-    await act("#autoButton"); await step(600); assert.ok((await state()).collected > resumed.collected);
+    await act("#settingsButton"); await act("#autoButton"); await step(600); assert.ok((await state()).collected > resumed.collected);
     assert.equal(await page.evaluate(key => localStorage.getItem(key), key), checkpoint, "demo does not overwrite real progress");
     await act("#startButton"); assert.equal((await state()).collected, resumed.collected); assert.deepEqual((await state()).learning.counts, resumed.learning.counts);
     for (let i = 0; i < 4; i++) await collision(true);
@@ -124,14 +146,15 @@ try {
     await step(3); await page.screenshot({ path: `tmp/snake-pinyin-${width}.png`, fullPage: true });
     const countSum = counts => Object.values(counts).reduce((a, b) => a + b, 0);
     const beforeDemoReset = countSum((await state()).learning.counts);
-    await act("#autoButton"); await step(600); await act("#resetButton");
+    await act("#settingsButton"); await act("#autoButton"); await step(600); await act("#resetButton");
     assert.equal((await state()).collected, 0); assert.equal((await state()).paused, true);
     assert.equal(countSum((await state()).learning.counts), beforeDemoReset + 1, "resetting from demo never imports its appearance history");
     assert.deepEqual(await beforeSource(), originalSource, "all foreign source keys are unchanged");
     // Real fullscreen via a trusted click; gamepad R2 uses the same single handler.
-    await act("#fullscreenButton"); await waitFor(() => Boolean(document.fullscreenElement));
+    await act("#settingsButton"); await act("#fullscreenButton"); await waitFor(() => Boolean(document.fullscreenElement));
     await page.evaluate(() => { window.__pad.buttons[7] = { pressed: false, value: 0 }; window.__step(3); });
     await button(7, true); await waitFor(() => !document.fullscreenElement); await button(7, false);
+    await act("#closeSettings");
     // Focused return link retains native Enter; shell keeps exactly one owner.
     await page.locator("#snakeBack").focus(); await page.keyboard.press("Enter");
     await waitFor(() => STUDY_FULLSCREEN_SHELL.activeWindow()?.location.pathname.endsWith("/index.html"));

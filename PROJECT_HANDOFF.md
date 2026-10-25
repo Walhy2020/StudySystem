@@ -7,7 +7,28 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.80** (2026-10-25). Independent Snake entry on
+System display version: **v1.0.81** (2026-10-25). Snake now uses a compact top
+HUD and viewport-filling stage, following bomb's interface structure. Removed
+brand introduction, sidebar glyph inventory, duplicate collection/length stats
+and persistent visible hints/toasts. Target/type, level/progress and core actions
+remain; mute/fullscreen/demo/help are inside Settings. Opening Settings pauses;
+closing it keeps the explicit Continue gate; Escape/R1 close it before navigation.
+Mobile directions overlay the stage. Zoom/camera bounds keep tall/wide viewports
+inside the meadow. Learning policy, original artwork, source keys and independent
+save/demo isolation remain unchanged. Snake CSS/JS/entry caches1.1; display and all
+ten notifier imports1.0.81, release-dependent entry caches updated. Refresh only.
+
+Verification: pnpm check/test, knowledge check and git diff --check; targeted real
+Microsoft Edge Snake acceptance at1440/390, plus640/430px height geometry checks.
+Includes Settings pause/R1/Escape, native keys, touch, collision growth/retry,
+five-target/bidirectional questions, refresh, demo isolation, fullscreen, shared
+simulated Gamepad and embedded cursor routing. Screenshots in ignored tmp inspected.
+Speech/system-mouse responses are mocked; no physical controller certification.
+The41 pre-existing tracked PNG edits remain excluded. Inherited53177 untouched;
+only this task's isolated53179 process is used for acceptance and stopped afterward.
+Harness source facts reviewed before fingerprint refresh; no model evaluation.
+
+Previous **v1.0.80** (2026-10-25). Independent Snake entry on
 the Hanzi homepage imports Walhy2020/Snake at94d36a64a8fdfbaecbe1301b737347765bb6b029.
 Original Flying Star head, blank body sprite, meadow and smooth route-following
 growth/soft boundary steering/non-colliding body are retained. Initial eight body

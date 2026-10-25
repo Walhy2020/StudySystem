@@ -15,41 +15,48 @@ let lastSave = 0;
 const trail = new GlyphTrail({ spacing: 45, leadGap: 80 });
 let head, angle, desiredAngle, collected, foods, mode = "manual";
 let paused = true, ready = false, pointer = null, viewWidth = 900, viewHeight = 550;
-let zoom = 1, camera = { x: 800, y: 550 }, clock = 0, lastTime = 0, toastUntil = 6;
+let zoom = 1, camera = { x: 800, y: 550 }, clock = 0, lastTime = 0;
 let assets, metadata, lastWrong = -10, growthFlash = -10;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 
-function notify(text, duration = 3) {
+function notify(text) {
   $("message").textContent = text;
-  $("message").classList.remove("is-quiet");
-  toastUntil = clock + duration;
 }
 
 function updateUI() {
   if (!learning) return;
   $("targetGlyph").textContent = learning.complete ? "完成" : learning.prompt;
-  $("missionLabel").textContent = learning.isPinyin ? "看拼音，找汉字" : "看汉字，找拼音";
+  $("missionLabel").textContent = learning.isPinyin ? "找汉字" : "找拼音";
   $("batchCount").textContent = `第 ${learning.batch} 关 · ${learning.done.length}/${learning.targets.length}`;
-  $("lengthCount").textContent = trail.glyphs.length;
-  $("collectedCount").textContent = collected;
-  $("glyphBag").replaceChildren(...trail.glyphs.map((glyph) => {
-    const span = document.createElement("span");
-    span.className = "bag-glyph";
-    span.textContent = glyph;
-    return span;
-  }));
-  $("modeLabel").textContent = mode === "auto" ? "自动演示" : "自由操控";
   $("autoButton").setAttribute("aria-pressed", String(mode === "auto"));
-  $("startButton").textContent = learning.complete ? "下一关" : paused ? "开始 / 继续" : "暂停";
+  $("startButton").textContent = learning.complete ? "下一关" : paused ? "继续" : mode === "auto" ? "接手" : "暂停";
   $("resumeButton").textContent = learning.complete ? "下一关" : "继续出发";
   $("speakButton").disabled = !learning.current || window.STUDY_AUDIO?.isMuted();
   $("muteButton").textContent = window.STUDY_AUDIO?.isMuted() ? "已静音 · L1" : "声音开启 · L1";
   $("muteButton").setAttribute("aria-pressed", String(Boolean(window.STUDY_AUDIO?.isMuted())));
   $("startButton").disabled = $("resumeButton").disabled = !learning.targets.length;
-  $("stageHint").textContent = mode === "auto"
-    ? "按方向键，接过小飞星的方向盘" : "方向键转向 · 按住场地拖动 · 空格暂停";
 }
+
+function closeSettings(focus = false) {
+  $("settingsMenu").hidden = true;
+  $("settingsButton").setAttribute("aria-expanded", "false");
+  if (focus) $("settingsButton").focus({ preventScroll: true });
+}
+$("settingsButton").addEventListener("click", () => {
+  if (!$("settingsMenu").hidden) { closeSettings(true); return; }
+  menuPaused = false;
+  setPaused(true);
+  $("settingsMenu").hidden = false;
+  $("settingsButton").setAttribute("aria-expanded", "true");
+});
+$("closeSettings").addEventListener("click", () => closeSettings(true));
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape" && !$("settingsMenu").hidden) { event.preventDefault(); closeSettings(true); }
+});
+window.addEventListener("studysystem:gamepad-back", event => {
+  if (!$("settingsMenu").hidden) { event.preventDefault(); closeSettings(true); }
+});
 
 function spawnFoods() {
   if (!learning.active) { foods = []; return; }
@@ -101,6 +108,7 @@ function reset() {
   // Keep upstream's eight-segment silhouette, using this game's eligible pool.
   trail.reset(history, learning.runIds.slice(0, 8).map(id => learning.byId.get(id).char));
   camera = { x: 780, y: 560 };
+  fitCamera();
   paused = true;
   $("pauseTitle").textContent = "小飞星 · 汉字长龙";
   $("pauseOverlay").hidden = false;
@@ -156,6 +164,7 @@ function restore(saved) {
   collected = Number.isSafeInteger(saved.collected) && saved.collected >= 0 ? saved.collected : 0;
   trail.reset(saved.points, saved.glyphs);
   camera = point(saved.camera) ? { ...saved.camera } : { ...head };
+  fitCamera();
   // Restore exact option positions only while they still match the sanitized question.
   const matches = Array.isArray(saved.foods) && saved.foods.length === learning.options.length &&
     saved.foods.every(f => point(f) && learning.options.some(o => o.wordId === f.wordId && o.glyph === f.glyph && o.correct === f.correct)) &&
@@ -166,6 +175,7 @@ function restore(saved) {
 }
 function resume() {
   if (!ready || window.STUDY_CONTROLLER_MOUSE?.isActive()) return;
+  closeSettings();
   if (mode === "auto") setMode("manual");
   if (learning.complete) { learning.nextBatch(); spawnFoods(); }
   if (!learning.active) return;
@@ -181,12 +191,19 @@ function resize() {
   canvas.width = Math.round(viewWidth * dpr);
   canvas.height = Math.round(viewHeight * dpr);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  zoom = viewWidth < 500 ? 0.77 : Math.min(1.1, viewWidth / 820);
+  // Keep the enlarged stage within the meadow, including tall phones/wide screens.
+  zoom = Math.max(viewWidth / WORLD.width, viewHeight / WORLD.height,
+    viewWidth < 500 ? 0.77 : Math.min(1.1, viewWidth / 820));
+  fitCamera();
+}
+
+function fitCamera() {
+  camera.x = clamp(camera.x, viewWidth / zoom / 2, WORLD.width - viewWidth / zoom / 2);
+  camera.y = clamp(camera.y, viewHeight / zoom / 2, WORLD.height - viewHeight / zoom / 2);
 }
 
 function update(dt) {
   clock += dt;
-  if (clock > toastUntil) $("message").classList.add("is-quiet");
   if (mode === "auto" && foods[0]) desiredAngle = Math.atan2(foods[0].y - head.y, foods[0].x - head.x);
   else if (pointer) {
     const destination = { x: (pointer.x - viewWidth / 2) / zoom + camera.x,
@@ -321,11 +338,12 @@ function nativeTarget(target) {
   return target instanceof Element && target !== canvas && Boolean(target.closest('a,button,input,textarea,select,summary,[contenteditable]:not([contenteditable="false"]),[role="button"],[role="link"],[role="checkbox"],[role="radio"],[role="switch"],[role="slider"],[role="tab"],[role="menuitem"],[role="option"],[role="combobox"],[tabindex]'));
 }
 $("startButton").addEventListener("click", () => { if (paused || mode === "auto") resume(); else setPaused(true); });
-$("autoButton").addEventListener("click", () => setMode("auto"));
+$("autoButton").addEventListener("click", () => { closeSettings(); setMode("auto"); window.STUDY_GAMEPAD_CURSOR?.leaveMenu(); canvas.focus({ preventScroll: true }); });
 $("resetButton").addEventListener("click", () => {
   if (!ready) return;
   if (demoCheckpoint) restore(demoCheckpoint);
   mode = "manual"; demoCheckpoint = null; menuPaused = false;
+  closeSettings();
   reset(); save();
 });
 $("resumeButton").addEventListener("click", resume);
@@ -371,7 +389,7 @@ $("fullscreenButton").addEventListener("click", fullscreen);
 window.addEventListener("studysystem:gamepad-fullscreen", fullscreen);
 window.addEventListener("studysystem:gamepad-menu", event => {
   if (event.detail.active) { menuPaused = !paused; setPaused(true, "菜单"); }
-  else if (menuPaused) { menuPaused = false; setPaused(false); }
+  else if (menuPaused && $("settingsMenu").hidden) { menuPaused = false; setPaused(false); }
 });
 window.addEventListener("studysystem:controller-mouse", () => {
   if (window.STUDY_CONTROLLER_MOUSE?.isActive()) { menuPaused = false; setPaused(true); }

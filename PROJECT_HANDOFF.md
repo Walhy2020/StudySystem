@@ -7,7 +7,16 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.85** (2026-10-25). Poison sprites are tinted once
+System display version: **v1.0.86** (2026-10-25). Removed poison's rising bubbles
+and their per-frame particle drawing. Poison now only selects the cached green
+head/body sprites; timers, tail loss, cure cost, shortcuts and storage stay the
+same. Version/notifiers1.0.86, Snake JS/entry1.6 and display-entry caches updated.
+Static refresh only; no service restart or build. Required check/test/knowledge/
+diff checks plus focused real Edge1440/390 acceptance verify green sprites remain,
+no poison particles/main-canvas filters, no resource errors or viewport overflow.
+Only the task's temporary server is used and stopped; existing41 PNG edits stay.
+
+Previous **v1.0.85** (2026-10-25). Poison sprites are tinted once
 at load with src/snake-render-assets.js and reused by all head/body draws; no
 main-canvas per-segment/per-frame filter remains. Nine rising bubbles remain.
 MotionPolicy now filters injected mouse button pairs as well as motion under the

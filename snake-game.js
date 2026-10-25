@@ -668,13 +668,6 @@ function draw(alpha) {
     ctx.drawImage(assets.segment, -star.size / 2, -star.size / 2, star.size, star.size);
     ctx.restore();
   }
-  if (poison.active) {
-    ctx.fillStyle="#72e76088"; ctx.strokeStyle="#337d2fbb"; ctx.lineWidth=1.5;
-    for (let i=0;i<9;i++) {
-      const phase=(clock*.7+i*.173)%1, px=renderHead.x+Math.sin(i*2.4+clock)*55, py=renderHead.y-15-phase*95;
-      ctx.beginPath(); ctx.arc(px,py,3+(i%3)*2,0,Math.PI*2); ctx.fill(); ctx.stroke();
-    }
-  }
   ctx.restore();
   ctx.restore();
 }

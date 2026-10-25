@@ -15,7 +15,8 @@ with `src/snake-config.js` wrapping the unchanged upstream numeric fields. Local
 `src/snake-actions.js` adds vacuum, aligned speed and poison/cure; shortcut capture
 uses `src/snake-bindings.js`. Their callbacks write only the existing Snake
 snapshot. Learning choices use local Canvas hexagons, body stars retain upstream
-artwork and poison applies a runtime tint/particles. Poison tint is pre-rendered
+artwork and poison only changes the head/body color, without particle effects.
+Poison tint is pre-rendered
 once by `src/snake-render-assets.js` and cached for head/body draws instead of
 filtering the main canvas on every segment/frame. Upstream browser controls,
 update service and separate config/audio storage APIs are not used.

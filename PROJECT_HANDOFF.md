@@ -7,7 +7,41 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.83** (2026-10-25). Snake now exposes a dedicated
+System display version: **v1.0.84** (2026-10-25). Snake learning choices now use
+Canvas-drawn cream hexagons with centered Hanzi/pinyin; star body/particles stay.
+Fullscreen hides the entire top menu, closes settings/properties and expands the
+stage to viewport bounds, with only the current prompt at top left. State follows
+the shared shell's isFullscreen(), including child games hosted by another page.
+No shared shell/controller changes. Every five correct targets advance immediately
+to the next batch without a completion pause, Next button or visible level number.
+The existing pool/question-type rotation, source boundaries and learning history
+remain. Old completed-batch snapshots advance during restore; refresh still pauses
+for explicit Continue. Internal batch IDs remain solely for pool/rotation/history.
+Display/notifier1.0.84, Snake entry/CSS/JS1.4, four display-entry caches and matching
+assertions updated. Static refresh only.
+
+Wrong choices now apply existing two-segment damage/cooldown. Held vacuum lasts
+at most3s and attracts only small/medium viruses in a forward cone; range is
+configurable. Held aligned steering defaults to+50% speed (1.5x); release/turning
+uses base speed. Target scale defaults2x. New numeric controls live in the local
+config/tuning wrappers; vendor modules remain unchanged. Keyboard/controller
+action capture prevents duplicate and reserved bindings, defaults F/X vacuum and
+G/B antidote, with mobile hold-vacuum/cure buttons. Poison defaults30s gameplay
+interval,1 tail segment each1s until cured,5 stars per cure; all four poison/cure
+values are configurable. Body/head turn green with rising poison bubbles. Pause
+does not advance poison, cure schedules a fresh interval, refresh preserves timing,
+bindings and config in the existing Snake key; demo stays isolated.
+
+Verification: required check/test/knowledge/diff checks; only targeted real Edge
+Snake acceptance at1440/390, including immediate batch transition, fullscreen
+geometry/prompt/menu hiding and hosted-child fullscreen, R2 exit, saved resume,
+source/demo isolation, wrong-answer damage, timed poison/tail loss/cure/persistence,
+vacuum scope/duration, speed boost and configurable keyboard/controller capture.
+Windowed/fullscreen/poison screenshots inspected for desktop/mobile layout and
+green effects. No physical controller test. Existing41
+PNG edits remain excluded; inherited53177 untouched; own53179 stopped afterward.
+
+Previous **v1.0.83** (2026-10-25). Snake now exposes a dedicated
 top-right Game Properties button instead of nesting numeric settings under Settings.
 Unmodified upstream v0.2.9 tuning.js restores eight groups/28 sliders and numeric
 inputs, three movement presets, movement-step readout, JSON copy/import and reset.

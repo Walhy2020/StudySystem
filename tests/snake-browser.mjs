@@ -81,7 +81,8 @@ try {
       await page.setViewportSize({ width, height });
       await page.waitForTimeout(80);
       const bounds = await page.locator("#game").boundingBox();
-      assert.ok(bounds.height >= height - 120 && bounds.y + bounds.height <= height, "short viewport stays on screen");
+      const header = await page.locator(".game-topbar").boundingBox();
+      assert.ok(bounds.height >= height - header.height - 35 && bounds.y + bounds.height <= height, "short viewport stays on screen");
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth && document.documentElement.scrollHeight <= innerHeight), true);
     }
     await page.setViewportSize({ width, height: 960 }); await page.waitForTimeout(80);
@@ -135,6 +136,7 @@ try {
         const saved = JSON.parse(localStorage.getItem(key));
         const food = saved.foods.find(f => f.correct === correct);
         saved.head = { x: food.x - 48, y: food.y }; saved.angle = 0; saved.desiredAngle = 0;
+        saved.lastDamageAt = -10;
         saved.points = [saved.head, { x: saved.head.x - 1000, y: saved.head.y }]; saved.camera = { ...saved.head };
         sessionStorage.setItem("snake-acceptance-fixture", JSON.stringify(saved));
       }, { key, correct });
@@ -142,6 +144,7 @@ try {
       await act("#resumeButton"); await step(18); return { before, after: await state() };
     };
     let hit = await collision(false); assert.equal(hit.after.collected, hit.before.collected); assert.ok(hit.after.learning.retry.includes(hit.before.learning.active));
+    assert.equal(hit.after.damage.hits, hit.before.damage.hits + 1); assert.equal(hit.after.length, hit.before.length - 2);
     hit = await collision(true); assert.equal(hit.after.collected, hit.before.collected + 1); assert.equal(hit.after.rewards.stars, hit.before.rewards.stars + 1);
     assert.equal(hit.after.length, hit.before.length, "correct answers award stars; virus growth builds the body");
     assert.equal(hit.after.learning.done.length, 1); assert.ok(!hit.after.learning.retry.includes(hit.before.learning.active));
@@ -154,8 +157,11 @@ try {
     assert.equal(await page.evaluate(key => localStorage.getItem(key), key), checkpoint, "demo does not overwrite real progress");
     await act("#startButton"); assert.equal((await state()).collected, resumed.collected); assert.deepEqual((await state()).learning.counts, resumed.learning.counts);
     for (let i = 0; i < 4; i++) await collision(true);
-    assert.equal((await state()).learning.done.length, 5); assert.equal((await state()).paused, true);
-    await act("#resumeButton"); assert.equal((await state()).learning.batch, 2); assert.equal((await state()).learning.type, "hanzi-to-pinyin");
+    assert.equal((await state()).learning.batch, 2); assert.equal((await state()).learning.done.length, 0);
+    assert.equal((await state()).paused, false, "five targets advance automatically without interrupting play");
+    assert.equal(await page.locator("#pauseOverlay").isVisible(), false);
+    assert.doesNotMatch(await page.locator("#batchCount").textContent(), /关/);
+    assert.equal((await state()).learning.type, "hanzi-to-pinyin");
     assert.equal(await page.locator("#targetGlyph").textContent(), (await state()).learning.prompt);
     assert.ok((await state()).foods.every(f => /^[a-züāáǎàōóǒòēéěèīíǐìūúǔùǖǘǚǜ /]+$/u.test(f.glyph)));
     await step(3); await page.screenshot({ path: `tmp/snake-pinyin-${width}.png`, fullPage: true });
@@ -188,6 +194,78 @@ try {
     gameplay = await virusFixture("super");
     assert.equal(gameplay.after.length, gameplay.before.length - 2); assert.equal(gameplay.after.damage.hits, gameplay.before.damage.hits + 1);
     await step(20); assert.equal((await state()).damage.hits, gameplay.after.damage.hits, "damage cooldown prevents immediate repeated loss");
+    await page.evaluate(key => {
+      window.dispatchEvent(new Event("pagehide")); const saved = JSON.parse(localStorage.getItem(key));
+      const template = saved.ecosystem.field.cells.flatMap(c=>c[1])[0];
+      saved.ecosystem.field.drops = [["small",180],["medium",220],["large",200],["small",-180]].map(([tier,dx],i)=>
+        ({...template,id:`vacuum-${i}`,tier,x:saved.head.x+dx,y:saved.head.y,homeX:saved.head.x+dx,homeY:saved.head.y,consumed:false}));
+      saved.angle = saved.desiredAngle = 0; saved.rewards.growthPoints = 0; saved.lastDamageAt = -10;
+      saved.foods.forEach((food,i)=>{ food.x=saved.head.x+480; food.y=saved.head.y+i*140; });
+      sessionStorage.setItem("snake-acceptance-fixture",JSON.stringify(saved));
+    },key);
+    await page.reload(); await waitReady(); await act("#resumeButton");
+    await page.keyboard.down("f"); await step(30);
+    assert.equal((await state()).vacuum.active,true); assert.equal((await state()).rewards.growthPoints,4);
+    assert.ok(!(await state()).viruses.some(v=>["vacuum-0","vacuum-1"].includes(v.id)));
+    assert.ok((await state()).viruses.some(v=>v.id==="vacuum-2")); assert.ok((await state()).viruses.some(v=>v.id==="vacuum-3"));
+    await page.screenshot({path:`tmp/snake-vacuum-${width}.png`});
+    await step(170); assert.equal((await state()).vacuum.active,false, "holding never extends the three-second vacuum");
+    await page.keyboard.up("f"); await page.keyboard.down("f"); await step(2); assert.equal((await state()).vacuum.active,true);
+    await page.keyboard.up("f"); await step(2); assert.equal((await state()).vacuum.active,false);
+    await button(2,true); assert.equal((await state()).vacuum.active,true); await button(2,false); assert.equal((await state()).vacuum.active,false);
+    await page.evaluate(key => {
+      window.dispatchEvent(new Event("pagehide")); const saved=JSON.parse(localStorage.getItem(key));
+      saved.config.speed=100; saved.config.alignedSpeedBoost=75; saved.angle=saved.desiredAngle=0;
+      saved.ecosystem.field.drops=[];
+      sessionStorage.setItem("snake-acceptance-fixture",JSON.stringify(saved));
+    },key);
+    await page.reload(); await waitReady(); await act("#resumeButton");
+    assert.equal((await state()).config.alignedSpeedBoost,75);
+    await page.keyboard.down("ArrowRight"); await step(12); assert.equal((await state()).speed,175);
+    await page.keyboard.up("ArrowRight"); await step(2); assert.equal((await state()).speed,100);
+    await page.keyboard.down("ArrowDown"); await step(1); assert.equal((await state()).speed,100);
+    await step(90); assert.equal((await state()).speed,175); await page.keyboard.up("ArrowDown");
+    // Isolate timed poison and actual configurable keyboard/controller/touch actions.
+    await page.evaluate(key=>{
+      window.dispatchEvent(new Event("pagehide")); const saved=JSON.parse(localStorage.getItem(key));
+      saved.config.speed=0; saved.config.virusSnakeCount=0; saved.config.poisonInterval=5;
+      saved.config.poisonTickInterval=.5; saved.config.poisonTailLoss=1; saved.config.antidoteCost=3;
+      saved.config.vacuumRange=400; saved.bindings={vacuum:{key:"KeyH",button:6},antidote:{key:"KeyJ",button:11}};
+      saved.poison={active:false,nextPoisonAt:saved.clock+5,nextDamageAt:saved.clock+.5,poisonings:0};
+      saved.collected=saved.rewards.stars=2; saved.glyphs=Array(12).fill("★");
+      saved.ecosystem.field.drops=[]; saved.ecosystem.enemies.snakes=[]; saved.ecosystem.enemies.respawns=[];
+      for (const [,cell] of saved.ecosystem.field.cells) for (const v of cell) v.consumed=true;
+      sessionStorage.setItem("snake-acceptance-fixture",JSON.stringify(saved));
+    },key);
+    await page.reload(); await waitReady(); const healthy=await state();
+    await step(400); assert.equal((await state()).poison.active,false,"paused time never poisons");
+    await act("#resumeButton"); await step(307); assert.equal((await state()).poison.active,true);
+    assert.equal((await state()).length,healthy.length); await step(33);
+    assert.equal((await state()).length,healthy.length-1);
+    await page.keyboard.press("j"); assert.equal((await state()).poison.active,true,"insufficient stars cannot cure");
+    await page.screenshot({path:`tmp/snake-poison-${width}.png`});
+    await page.keyboard.down("f"); await step(2); assert.equal((await state()).vacuum.active,false,"old shortcut stops acting"); await page.keyboard.up("f");
+    await page.keyboard.down("h"); await step(2); assert.equal((await state()).vacuum.active,true); await page.keyboard.up("h");
+    await button(6,true); assert.equal((await state()).vacuum.active,true); await button(6,false);
+    await page.evaluate(key=>{
+      window.dispatchEvent(new Event("pagehide")); const saved=JSON.parse(localStorage.getItem(key));
+      saved.collected=saved.rewards.stars=8; sessionStorage.setItem("snake-acceptance-fixture",JSON.stringify(saved));
+    },key);
+    await page.reload(); await waitReady(); assert.equal((await state()).poison.active,true,"refresh retains poison");
+    await act("#resumeButton"); await page.keyboard.press("j");
+    assert.equal((await state()).poison.active,false); assert.equal((await state()).collected,5);
+    const curedLength=(await state()).length;
+    await step(120); assert.equal((await state()).length,curedLength,"cure stops tail loss");
+    await step(190); assert.equal((await state()).poison.active,true,"poison returns after configured interval");
+    await button(11,true); await button(11,false);
+    assert.equal((await state()).poison.active,false); assert.equal((await state()).collected,2);
+    if (width===390) {
+      const vacuumButton=await page.locator("#vacuumButton").boundingBox();
+      await page.mouse.move(vacuumButton.x+vacuumButton.width/2,vacuumButton.y+vacuumButton.height/2); await page.mouse.down();
+      await step(2); assert.equal((await state()).vacuum.active,true);
+      await page.mouse.up();
+      await step(2); assert.equal((await state()).vacuum.active,false);
+    }
     await act("#tuningToggle");
     await act(".tuning-group:nth-of-type(2) summary");
     await page.locator("#tune-speed").fill("175"); await page.locator("#tune-speed").dispatchEvent("change");
@@ -208,9 +286,20 @@ try {
     assert.deepEqual(await beforeSource(), originalSource, "all foreign source keys are unchanged");
     // Real fullscreen via a trusted click; gamepad R2 uses the same single handler.
     await act("#settingsButton"); await act("#fullscreenButton"); await waitFor(() => Boolean(document.fullscreenElement));
+    await waitFor(() => document.body.classList.contains("snake-fullscreen"));
+    assert.equal(await page.locator(".game-topbar").isVisible(), false);
+    assert.equal(await page.locator("#settingsMenu").isVisible(), false);
+    assert.equal(await page.locator("#fullscreenTarget").textContent(), (await state()).learning.prompt);
+    const fullStage = await page.locator("#game").boundingBox();
+    const screenSize = await page.evaluate(() => ({ width:innerWidth,height:innerHeight }));
+    assert.ok(Math.abs(fullStage.width - screenSize.width) < 2 && Math.abs(fullStage.height - screenSize.height) < 2);
+    await waitFor(() => window.__snakeDemo.getState().viewport.height === innerHeight);
+    await act("#resumeButton"); await step(3);
+    await page.screenshot({ path:`tmp/snake-fullscreen-${width}.png` });
     await page.evaluate(() => { window.__pad.buttons[7] = { pressed: false, value: 0 }; window.__step(3); });
     await button(7, true); await waitFor(() => !document.fullscreenElement); await button(7, false);
-    await act("#closeSettings");
+    await waitFor(() => !document.body.classList.contains("snake-fullscreen"));
+    assert.equal(await page.locator(".game-topbar").isVisible(), true);
     // Focused return link retains native Enter; shell keeps exactly one owner.
     await page.locator("#snakeBack").focus(); await page.keyboard.press("Enter");
     await waitFor(() => STUDY_FULLSCREEN_SHELL.activeWindow()?.location.pathname.endsWith("/index.html"));
@@ -242,6 +331,15 @@ try {
     await page.evaluate(() => { window.__pad.buttons[5] = { pressed: false, value: 0 }; window.__step(3); window.__pad.buttons[5] = { pressed: true, value: 1 }; window.__step(2); });
     await waitFor(() => STUDY_FULLSCREEN_SHELL.activeWindow()?.location.pathname.endsWith("/index.html"));
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    await page.frameLocator("#study-module-frame").locator("#snakeGameEntry").click();
+    await waitFor(() => STUDY_FULLSCREEN_SHELL.activeWindow()?.__snakeDemo?.getState().ready);
+    const embedded = page.frameLocator("#study-module-frame");
+    await embedded.locator("#settingsButton").click(); await embedded.locator("#fullscreenButton").click();
+    await waitFor(() => Boolean(document.fullscreenElement)); await step(3);
+    assert.equal(await embedded.locator(".game-topbar").isVisible(), false, "embedded Snake follows the owner's fullscreen state");
+    assert.equal(await embedded.locator("#fullscreenTarget").textContent(), await page.evaluate(() => STUDY_FULLSCREEN_SHELL.activeWindow().__snakeDemo.getState().learning.prompt));
+    await button(7,true); await waitFor(() => !document.fullscreenElement); await button(7,false); await step(3);
+    assert.equal(await embedded.locator(".game-topbar").isVisible(), true);
     assert.deepEqual(errors, []);
     results.push({ width, realBrowser: "Microsoft Edge", upstream:"0.2.9", sourceIsolation: true, virusGrowthDamage:true, migration:true, configPersistence:true, bidirectional: true, savedContinue: true, simulatedGamepad: true, resources: "200", errors });
     await context.close();

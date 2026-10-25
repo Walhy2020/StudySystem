@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { mkdirSync } from "node:fs";
 import { loadChromium } from "./playwright-runtime.mjs";
-import { CONFIG_FIELDS } from "../src/snake-upstream-v029/config.js";
+import { CONFIG_FIELDS } from "../src/snake-config.js";
 const base = process.env.HANZI_BASE_URL || "http://127.0.0.1:5177/";
 const key = "mario-snake-game-progress-v1";
 mkdirSync("tmp", { recursive: true });
@@ -13,7 +13,8 @@ try {
     await context.route("**/api/controller-mouse**", route => route.fulfill({ json: { supported: true, mode: "web" } }));
     await context.addInitScript(() => {
       if (!localStorage.getItem("mario-hanzi-refactor-v1")) localStorage.setItem("mario-hanzi-refactor-v1", JSON.stringify({ records: { "0010": { status: "known", correctCount: 1 } } }));
-      Object.defineProperty(navigator, "getGamepads", { value: () => [] });
+      window.__pad={connected:true,mapping:"standard",id:"Snake tuning controller",index:0,axes:[0,0,0,0],buttons:Array.from({length:18},()=>({pressed:false,value:0}))};
+      Object.defineProperty(navigator, "getGamepads", { value: () => [window.__pad] });
       Object.defineProperty(navigator, "clipboard", { value: { writeText: async value => { window.__copiedTuning = value; } } });
     });
     const page = await context.newPage(), errors = [];
@@ -37,6 +38,8 @@ try {
     const moving = page.locator(".tuning-group").filter({ has: page.locator("#tune-speed") });
     await moving.locator("summary").click();
     await page.locator("#tune-speed").fill("210"); await page.locator("#tune-speed").press("Tab");
+    await page.locator("#tune-alignedSpeedBoost").fill("75"); await page.locator("#tune-alignedSpeedBoost").press("Tab");
+    assert.equal((await state()).config.alignedSpeedBoost,75);
     assert.equal((await state()).config.speed, 210);
     await page.locator("#tune-range-speed").focus(); await page.keyboard.press("ArrowRight");
     assert.equal((await state()).config.speed, 211);
@@ -60,9 +63,35 @@ try {
     assert.equal(await page.evaluate(() => JSON.parse(window.__copiedTuning).speed), 178);
     await page.locator("#tuningJson").fill("bad json"); await page.locator("#tuningApplyJson").click();
     assert.equal((await state()).config.speed, 178); assert.match(await page.locator("#tuningStatus").textContent(), /格式不正确/);
+    for (const [key,value] of [["targetScale",3],["vacuumRange",400],["poisonInterval",45],["poisonTickInterval",.5],["poisonTailLoss",2],["antidoteCost",3]]) {
+      const group=page.locator(".tuning-group").filter({has:page.locator(`#tune-${key}`)});
+      if (!await group.evaluate(el=>el.open)) await group.locator("summary").click();
+      await page.locator(`#tune-${key}`).fill(String(value)); await page.locator(`#tune-${key}`).press("Tab");
+      assert.equal((await state()).config[key],value);
+    }
+    assert.equal(await page.locator("#targetGlyph").evaluate(el=>parseFloat(getComputedStyle(el).fontSize)),width===390?75:81);
+    await page.locator("#bind-vacuum-key").click(); await page.keyboard.press("g");
+    assert.match(await page.locator("#bindingStatus").textContent(),/已用于解毒/);
+    await page.keyboard.press("h"); assert.equal((await state()).bindings.vacuum.key,"KeyH");
+    await page.locator("#bind-vacuum-button").click();
+    await page.evaluate(()=>{window.__pad.buttons[6]={pressed:true,value:1};});
+    await page.waitForFunction(()=>__snakeDemo.getState().bindings.vacuum.button===6);
+    await page.evaluate(()=>{window.__pad.buttons[6]={pressed:false,value:0};});
+    await page.locator("#bind-antidote-button").click();
+    await page.evaluate(()=>{window.__pad.buttons[11]={pressed:true,value:1};});
+    await page.waitForFunction(()=>__snakeDemo.getState().bindings.antidote.button===11);
+    await page.evaluate(()=>{window.__pad.buttons[11]={pressed:false,value:0};});
+    await page.locator("#bind-antidote-key").click(); await page.keyboard.press("j");
+    assert.equal((await state()).bindings.antidote.key,"KeyJ");
+    await page.locator("#bind-vacuum-key").click(); await page.keyboard.press("Escape");
+    assert.equal(await page.locator("#tuningPanel").isVisible(),true,"Escape cancels key capture first");
     const saved = await page.evaluate(key => JSON.parse(localStorage.getItem(key)), key);
     await page.reload(); await ready();
     assert.equal((await state()).config.speed, 178); assert.equal((await state()).config.virusSnakeCount, 2);
+    assert.equal((await state()).config.alignedSpeedBoost,75);
+    assert.equal((await state()).config.vacuumRange,400); assert.equal((await state()).config.targetScale,3);
+    assert.equal((await state()).config.poisonInterval,45); assert.equal((await state()).config.antidoteCost,3);
+    assert.deepEqual((await state()).bindings,saved.bindings);
     assert.deepEqual((await state()).learning, { ...saved.learning, type:(await state()).learning.type, prompt:(await state()).learning.prompt, source:(await state()).learning.source });
     await page.locator("#tuningToggle").click(); await page.keyboard.press("Escape");
     assert.equal(await page.locator("#tuningPanel").isVisible(), false); assert.equal((await state()).paused, true);

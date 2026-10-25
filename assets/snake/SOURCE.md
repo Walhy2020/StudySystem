@@ -10,8 +10,12 @@ Relevant upstream unit tests use the versioned module paths. StudySystem's
 snake-game.js adapts that runtime to its existing learning model, compact layout,
 shared controls/audio mute, explicit Continue gate and independent persistence.
 `src/snake-ecosystem.js` persists the world and enemies in the existing Snake key.
-The tuning controls now use upstream tuning.js inside StudySystem's own drawer;
-its apply callback writes only the existing Snake snapshot. Upstream browser
+The active tuning controls use `src/snake-tuning.js`, adapted from upstream tuning,
+with `src/snake-config.js` wrapping the unchanged upstream numeric fields. Local
+`src/snake-actions.js` adds vacuum, aligned speed and poison/cure; shortcut capture
+uses `src/snake-bindings.js`. Their callbacks write only the existing Snake
+snapshot. Learning choices use local Canvas hexagons, body stars retain upstream
+artwork and poison applies a runtime tint/particles. Upstream browser
 controls, update service and separate config/audio storage APIs are not used.
 
 Current artwork copied without modification: flystar-head-v1.png, sprites.json,

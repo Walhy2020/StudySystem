@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#f4f7ee">
   <title>贪吃蛇 · 小飞星汉字长龙 - 马里奥学习系统</title>
   <link rel="icon" href="./assets/snake/flystar-head-v1.png?v=1.0">
-  <link rel="stylesheet" href="./snake-game.css?v=1.3">
+  <link rel="stylesheet" href="./snake-game.css?v=1.4">
   <script src="./src/web-audio.js?v=1.0"></script>
 </head>
 <body>
@@ -32,17 +32,19 @@
           <p>方向键 / WASD / 左摇杆转向，Q / E 连续转弯，也可拖动场地。空格暂停，A / Start 继续。</p>
           <p>认字得星星；吃普通病毒积攒成长，围住超级病毒获得成长。碰到边界、超级病毒或病毒蛇会掉两节尾巴。</p>
           <p>右摇杆 / Y 菜单 · R1 返回 · View 切换鼠标</p>
+          <p>默认按住 F / 手柄 X 吸取小、中病毒，最多3秒；G / 手柄 B 解毒。快捷键、吸取范围、同向加速、中毒和解毒参数均可在游戏属性中调整。</p>
           <button id="closeSettings" type="button">关闭设置</button>
         </div>
       </nav>
     </header>
     <section class="stage" id="stage" aria-label="贪吃蛇游戏">
       <canvas id="game" tabindex="0" aria-label="小飞星游戏区域，方向键或 WASD 转向，空格暂停"></canvas>
+      <strong id="fullscreenTarget" class="fullscreen-target" aria-label="当前目标" hidden></strong>
       <div id="loading" class="loading">小飞星准备出发…</div>
       <div id="pauseOverlay" class="pause-overlay" hidden><span id="pauseTitle">休息一下</span><button id="resumeButton" type="button">继续出发</button></div>
       <div id="message" class="sr-only" aria-live="polite"></div>
       <div class="snake-minimap" aria-label="地图位置"><i id="mapView"></i><b id="mapDot"></b></div>
-      <div class="direction-pad" aria-label="方向控制"><button data-direction="up" aria-label="向上" type="button">↑</button><button data-direction="left" aria-label="向左" type="button">←</button><button data-direction="down" aria-label="向下" type="button">↓</button><button data-direction="right" aria-label="向右" type="button">→</button></div>
+      <div class="direction-pad" aria-label="方向控制"><button data-direction="up" aria-label="向上" type="button">↑</button><button data-direction="left" aria-label="向左" type="button">←</button><button data-direction="down" aria-label="向下" type="button">↓</button><button data-direction="right" aria-label="向右" type="button">→</button><button id="vacuumButton" aria-label="按住吸取病毒" type="button">吸</button><button id="antidoteButton" aria-label="消耗星星解毒" type="button">解</button></div>
     </section>
   </main>
   <section id="tuningPanel" class="tuning-panel" role="region" aria-labelledby="tuningTitle" hidden>
@@ -52,6 +54,7 @@
       <div id="tuningPresets" class="tuning-presets" aria-label="操作手感预设"></div>
       <div class="tuning-meter">当前移动步长 <strong id="tuningStep"></strong></div>
       <div id="tuningFields"></div>
+      <section class="tuning-bindings" aria-label="操作快捷键"><h3>操作快捷键</h3><div class="binding-grid"><span>功能</span><span>键盘</span><span>手柄</span><b>吸取</b><button id="bind-vacuum-key" type="button"></button><button id="bind-vacuum-button" type="button"></button><b>解毒</b><button id="bind-antidote-key" type="button"></button><button id="bind-antidote-button" type="button"></button></div><p id="bindingStatus" role="status">点击按键后，直接按下要绑定的键。</p><button id="resetBindings" type="button">恢复默认快捷键</button></section>
       <details class="tuning-json"><summary>复制 / 导入参数配置</summary><textarea id="tuningJson" rows="8" spellcheck="false" aria-label="游戏属性 JSON 配置"></textarea><div class="tuning-json-actions"><button id="tuningCopyJson" type="button">复制配置</button><button id="tuningApplyJson" type="button">应用配置</button></div></details>
     </div>
     <footer class="tuning-footer"><button id="tuningReset" type="button">恢复默认参数</button><span id="tuningStatus" role="status"></span></footer>
@@ -60,7 +63,7 @@
   <script src="./data/pinyin-readings.js?v=1.0"></script>
   <script src="./src/fullscreen-shell.js?v=1.4"></script><script src="./src/controller-mouse.js?v=1.2"></script><script src="./src/gamepad-cursor.js?v=1.18"></script>
   <script src="./src/bomb-gamepad.js?v=1.7"></script>
-  <script type="module" src="./snake-game.js?v=1.3"></script>
-  <script type="module" src="./src/version-update.js?v=1.0.83"></script>
+  <script type="module" src="./snake-game.js?v=1.4"></script>
+  <script type="module" src="./src/version-update.js?v=1.0.84"></script>
 </body>
 </html>

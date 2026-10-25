@@ -19,7 +19,7 @@
 | review | review-learning.html；review-learning.js、src/total-word-library.js、src/review-progress.js | 仅复习三个源模块实际学过的词；保存本轮及记忆标记 | tests/total-word-library.test.mjs；tests/review-progress.test.mjs；tests/review-progress-browser.mjs |
 | phonetics | phonetics.html；src/phonetics-engine.js、src/phonetics-storage.js | 48 IPA；每次复习全部未 mastered 项；新学每项认识一次后手动完成 | tests/phonetics-engine.test.mjs；tests/phonetics-browser-acceptance.mjs |
 | bomb | bomb-game.html；bomb-game.js、src/bomb-gamepad.js | 独立游戏进度；每关五个不同目标字；保留控件原生键盘行为 | tests/bomb-game.test.mjs；tests/bomb-browser-acceptance.mjs |
-| snake | snake-game.html；snake-game.js、src/snake-learning.js、src/snake-upstream-v029/trail.js、src/snake-ecosystem.js | 小飞星汉字长龙；100字池、五字关卡、双向题与同音排除沿用炸弹；演示不写正式进度；Snake v0.2.9原美术与大地图，认字得星星、病毒攒成长，危险碰撞掉尾 | tests/snake-learning.test.mjs；tests/snake-trail.test.mjs；tests/snake-browser.mjs |
+| snake | snake-game.html；snake-game.js、src/snake-learning.js、src/snake-ecosystem.js、src/snake-actions.js、src/snake-config.js、src/snake-tuning.js、src/snake-bindings.js | 小飞星汉字长龙；100字池、每批五字自动接续、双向题与同音排除；六边形选项、全屏仅目标；找错掉尾、吸取、同向加速及定时中毒/星星解毒，参数与快捷键可配置；演示不写正式进度 | tests/snake-learning.test.mjs；tests/snake-actions.test.mjs；tests/snake-browser.mjs；tests/snake-tuning-browser.mjs |
 | platform | server.py；src/fullscreen-shell.js、src/gamepad-cursor.js、src/version-update.js | 本地服务、常驻页面宿主、手柄与版本提示 | tests/fullscreen-shell.test.mjs；tests/version-update.test.mjs |
 
 ## 两种词库必须分清

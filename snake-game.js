@@ -4,8 +4,10 @@ import { VirusField, VIRUS_COLORS, WORLD_BOUNDS, setWorldSize, headingInsideMap 
 import { RunRewards, VIRUS_TYPES } from "./src/snake-upstream-v029/rewards.js";
 import { findEnclosure } from "./src/snake-upstream-v029/enclosure.js";
 import { VirusSnakes } from "./src/snake-upstream-v029/virus-snakes.js";
-import { normalizeConfig } from "./src/snake-upstream-v029/config.js";
-import { setupTuning } from "./src/snake-upstream-v029/tuning.js";
+import { normalizeConfig } from "./src/snake-config.js?v=1.0";
+import { setupTuning } from "./src/snake-tuning.js?v=1.0";
+import { HoldVacuum, PoisonState, VACUUM_SECONDS, speedForInput, pullViruses } from "./src/snake-actions.js?v=1.0";
+import { DEFAULT_BINDINGS, normalizeBindings, bindingError, keyLabel, buttonLabel } from "./src/snake-bindings.js?v=1.0";
 import { SteeringInput, actionForKey } from "./src/snake-upstream-v029/steering.js";
 import { Soundscape } from "./src/snake-upstream-v029/audio.js";
 import { StarBursts } from "./src/snake-upstream-v029/star-burst.js";
@@ -23,11 +25,16 @@ let learning, demoCheckpoint = null, menuPaused = false, fullscreenPending = fal
 const gamepad = window.createBombGamepadReader();
 let lastSave = 0;
 let config = normalizeConfig(readObject(storage, SNAKE_PROGRESS_KEY)?.config);
+let bindings = normalizeBindings(readObject(storage, SNAKE_PROGRESS_KEY)?.bindings), bindingCapture = null;
+let previousBindingButtons = new Set();
 setWorldSize(config.mapSize);
 const trail = new GlyphTrail({ spacing: config.spacing, leadGap: config.leadGap });
 const virusField = new VirusField(), virusSnakes = new VirusSnakes({ count: config.virusSnakeCount });
 const rewards = new RunRewards(config.growthPerSegment), controls = new SteeringInput();
 const sound = new Soundscape(), starBursts = new StarBursts();
+const vacuum = new HoldVacuum();
+const poison = new PoisonState(0, config);
+let padVacuumDown = false, padAntidoteDown = false, touchSteeringAngle = null;
 let motion, viruses = [], target, autoSeekingVirus = true, directPadAngle = null, padNeedsNeutral = true;
 let previousCamera, floorPattern, fieldTimer = 0, enclosureTimer = 0, captureFlash = null, capturedSuper = 0;
 let lastDamageAt = -10, damageFlashUntil = -10, damageHits = 0, lastDamageCause = null;
@@ -51,6 +58,7 @@ function applyConfig(patch) {
   if (!ready) return;
   const previous = config;
   config = normalizeConfig(patch, config); setWorldSize(config.mapSize);
+  poison.configure(previous,config,clock);
   motion?.configure(config); trail.setLayout(config.spacing, config.leadGap);
   rewards.threshold = config.growthPerSegment;
   growBody(rewards.addGrowth(0));
@@ -62,13 +70,42 @@ function applyConfig(patch) {
   }
   resize(); updateUI();
   tuning.sync(config, save());
+  syncConfigurationViews();
   if (mode === "auto") $("tuningStatus").textContent = "演示中，参数仅本次生效";
 }
 
 // All settings share the existing Snake save; do not use upstream storage keys.
 const tuning = setupTuning({ values: config, apply: applyConfig });
 $("help-gamepadDeadzone").textContent = "过滤左摇杆漂移，越小越灵敏；右摇杆仍控制网页鼠标。";
+function syncBindings() {
+  for (const action of ["vacuum","antidote"]) for (const device of ["key","button"]) {
+    const button=$("bind-"+action+"-"+device), capturing=bindingCapture?.action===action&&bindingCapture.device===device;
+    button.textContent=capturing?"请按键…":device==="key"?keyLabel(bindings[action][device]):buttonLabel(bindings[action][device]);
+    button.setAttribute("aria-pressed",String(capturing));
+  }
+}
+function syncConfigurationViews() { document.documentElement.style.setProperty("--target-scale",config.targetScale); syncBindings(); }
+function cancelBindingCapture() { bindingCapture=null; syncBindings(); }
+function captureBinding(value) {
+  if (!bindingCapture) return;
+  const {action,device}=bindingCapture, error=bindingError(bindings,action,device,value);
+  if (error) { $("bindingStatus").textContent=error; return; }
+  bindings[action][device]=value; cancelBindingCapture();
+  $("bindingStatus").textContent=save()?"快捷键已保存。":"快捷键仅本次生效。";
+}
+for (const action of ["vacuum","antidote"]) for (const device of ["key","button"]) $("bind-"+action+"-"+device).addEventListener("click",()=>{
+  bindingCapture={action,device}; syncBindings(); $("bindingStatus").textContent=device==="key"?"请按下键盘按键，Esc 取消。":"请按下手柄按键，Esc 取消。";
+});
+$("resetBindings").addEventListener("click",()=>{ bindings=structuredClone(DEFAULT_BINDINGS); cancelBindingCapture(); save(); $("bindingStatus").textContent="已恢复默认快捷键。"; });
+document.addEventListener("keydown",event=>{
+  if (!bindingCapture) return;
+  if (event.code==="Escape") { event.preventDefault(); event.stopImmediatePropagation(); cancelBindingCapture(); return; }
+  if (bindingCapture.device==="key") { event.preventDefault(); event.stopImmediatePropagation(); if (!event.repeat) captureBinding(event.code); }
+},true);
+$("tuningClose").addEventListener("click",cancelBindingCapture);
+syncConfigurationViews();
 function closeTuning(focus = false) {
+  cancelBindingCapture();
   $("tuningPanel").hidden = true;
   $("tuningToggle").setAttribute("aria-expanded", "false");
   if (focus) $("tuningToggle").focus({ preventScroll: true });
@@ -80,14 +117,17 @@ $("tuningToggle").addEventListener("click", () => {
 function updateUI() {
   if (!learning) return;
   $("starScore").textContent = rewards.stars;
+  $("starScore").parentElement.title=poison.active?`已中毒，解毒需要 ${config.antidoteCost} 颗星星`:"星星";
+  $("antidoteButton").title=`解毒需要 ${config.antidoteCost} 颗星星`;
+  $("antidoteButton").disabled=!poison.active || rewards.stars<config.antidoteCost;
   $("growthCount").textContent = `${rewards.growthPoints}/${rewards.threshold}`;
   $("growthCount").setAttribute("aria-label", `成长 ${rewards.growthPoints}，满 ${rewards.threshold} 长一节`);
-  $("targetGlyph").textContent = learning.complete ? "完成" : learning.prompt;
+  $("targetGlyph").textContent = $("fullscreenTarget").textContent = learning.prompt;
   $("missionLabel").textContent = learning.isPinyin ? "找汉字" : "找拼音";
-  $("batchCount").textContent = `第 ${learning.batch} 关 · ${learning.done.length}/${learning.targets.length}`;
+  $("batchCount").textContent = `本批 ${learning.done.length}/${learning.targets.length}`;
   $("autoButton").setAttribute("aria-pressed", String(mode === "auto"));
-  $("startButton").textContent = learning.complete ? "下一关" : paused ? "继续" : mode === "auto" ? "接手" : "暂停";
-  $("resumeButton").textContent = learning.complete ? "下一关" : "继续出发";
+  $("startButton").textContent = paused ? "继续" : mode === "auto" ? "接手" : "暂停";
+  $("resumeButton").textContent = "继续出发";
   $("speakButton").disabled = !learning.current || window.STUDY_AUDIO?.isMuted();
   $("muteButton").textContent = window.STUDY_AUDIO?.isMuted() ? "已静音 · L1" : "声音开启 · L1";
   $("muteButton").setAttribute("aria-pressed", String(Boolean(window.STUDY_AUDIO?.isMuted())));
@@ -172,6 +212,8 @@ function reset() {
   collected = 0;
   pointer = null;
   controls.clear(); directPadAngle = null;
+  vacuum.reset(); touchSteeringAngle = null;
+  poison.reset(clock,config);
   rewards.reset(config.growthPerSegment); collected = 0;
   virusField.reset(); virusSnakes.setCount(config.virusSnakeCount, head); virusSnakes.reset(head);
   starBursts.clear(); capturedSuper = 0; captureFlash = null; enclosureTimer = fieldTimer = 0;
@@ -203,6 +245,7 @@ function setMode(next) {
     else if (demoCheckpoint) { restore(demoCheckpoint); demoCheckpoint = null; }
   }
   mode = next;
+  vacuum.reset(); touchSteeringAngle = null;
   if (mode === "auto" && learning.complete) { learning.nextBatch(); spawnFoods(); }
   pointer = null;
   paused = !learning.active;
@@ -219,7 +262,8 @@ function setPaused(value, title = "休息一下") {
   pointer = null;
   controls.clear(); directPadAngle = null;
   padNeedsNeutral = true;
-  $("pauseTitle").textContent = learning.complete ? "五个目标完成！" : !learning.targets.length ? "所有汉字已掌握，暂无可学目标" : title;
+  vacuum.reset(); touchSteeringAngle = null; if (motion) motion.speed = config.speed;
+  $("pauseTitle").textContent = !learning.targets.length ? "所有汉字已掌握，暂无可学目标" : title;
   $("pauseOverlay").hidden = !value;
   gamepad.reset();
   syncSound();
@@ -232,7 +276,7 @@ function snapshot() {
     collected, glyphs: trail.glyphs.slice(), points: trail.points.map(p => ({ ...p })), foods,
     camera: { ...camera }, ecosystem: saveEcosystem(virusField, virusSnakes), clock,
     rewards: { stars: rewards.stars, growthPoints: rewards.growthPoints, glyphs: [...rewards.glyphs] },
-    damageHits, lastDamageAt, damageFlashUntil, capturedSuper };
+    damageHits, lastDamageAt, damageFlashUntil, capturedSuper, bindings:structuredClone(bindings), poison:poison.snapshot() };
 }
 function save() {
   if (!ready || mode === "auto" || window.STUDY_FULLSCREEN_SHELL?.isHosting() || !storage) return false;
@@ -245,8 +289,10 @@ function restore(saved) {
       !Array.isArray(saved.points) || !saved.points.length || saved.points.length > 100000 || !saved.points.every(point) ||
       !Array.isArray(saved.glyphs) || saved.glyphs.length > 5000 || !saved.glyphs.every(g => typeof g === "string" && [...g].length === 1)) return false;
   config = normalizeConfig(saved.config); setWorldSize(config.mapSize);
+  bindings=normalizeBindings(saved.bindings);
   trail.setLayout(config.spacing, config.leadGap);
   learning = new SnakeLearning(words, storage, readings, Math.random, saved.learning);
+  if (learning.complete) learning.nextBatch();
   head = { ...saved.head }; angle = saved.angle;
   motion = new StarMotion({ ...head, angle, ...config });
   desiredAngle = Number.isFinite(saved.desiredAngle) ? saved.desiredAngle : angle;
@@ -261,6 +307,7 @@ function restore(saved) {
   virusField.reset(); virusSnakes.setCount(config.virusSnakeCount, head); virusSnakes.reset(head);
   restoreEcosystem(saved.ecosystem, virusField, virusSnakes);
   clock = Number.isFinite(saved.clock) && saved.clock >= 0 ? saved.clock : 0;
+  poison.restore(saved.poison,clock,config);
   damageHits = Number.isSafeInteger(saved.damageHits) && saved.damageHits >= 0 ? saved.damageHits : 0;
   lastDamageAt = Number.isFinite(saved.lastDamageAt) ? saved.lastDamageAt : -10;
   damageFlashUntil = Number.isFinite(saved.damageFlashUntil) ? saved.damageFlashUntil : -10;
@@ -276,7 +323,9 @@ function restore(saved) {
   if (matches) foods = saved.foods.map(f => ({ ...f })); else spawnFoods();
   target = foods.find(f => f.correct); refreshField();
   paused = true; pointer = null; controls.clear(); directPadAngle = null;
+  vacuum.reset(); touchSteeringAngle = null;
   tuning.sync(config);
+  syncConfigurationViews();
   return true;
 }
 function resume() {
@@ -333,7 +382,10 @@ function takeDamage(cause) {
 
 function update(dt) {
   clock += dt;
-  let directTurnRate = null;
+  const wasPoisoned=poison.active;
+  poison.update(clock,config,loss=>{ trail.shrink(loss); damageHits++; lastDamageCause="中毒"; sound.play("damage"); });
+  if (wasPoisoned!==poison.active) updateUI();
+  let directTurnRate = null, movementRequest = null;
   if (mode === "auto") {
     const nearestVirus = autoSeekingVirus && viruses.filter(virus => virus.tier !== "super").reduce((nearest, virus) =>
       !nearest || distance(head, virus) < distance(head, nearest) ? virus : nearest, null);
@@ -343,16 +395,19 @@ function update(dt) {
   else if (pointer) {
     const destination = { x: (pointer.x - viewWidth / 2) / zoom + camera.x,
       y: (pointer.y - viewHeight / 2) / zoom + camera.y };
-    if (distance(head, destination) > config.pointerDeadzone) desiredAngle = Math.atan2(destination.y - head.y, destination.x - head.x);
+    if (distance(head, destination) > config.pointerDeadzone) movementRequest = desiredAngle = Math.atan2(destination.y - head.y, destination.x - head.x);
   } else if (directPadAngle !== null) {
-    desiredAngle = directPadAngle;
+    movementRequest = desiredAngle = directPadAngle;
+  } else if (touchSteeringAngle !== null) {
+    movementRequest = desiredAngle = touchSteeringAngle;
   } else {
     const input = controls.read();
     if (input.turn !== null) {
       desiredAngle = angle;
       directTurnRate = input.turn * config.keyboardTurnSpeed * Math.PI / 180;
-    } else if (input.angle !== null) desiredAngle = input.angle;
+    } else if (input.angle !== null) movementRequest = desiredAngle = input.angle;
   }
+  motion.speed = speedForInput(config, angle, movementRequest);
   const boundedAngle = mode === "auto" ? headingInsideMap(head, desiredAngle) : desiredAngle;
   motion.advance(boundedAngle, dt, boundedAngle === desiredAngle ? directTurnRate : null);
   const hitBoundary = mode !== "auto" && (motion.x < WORLD_BOUNDS.minX + 65 || motion.x > WORLD_BOUNDS.maxX - 65
@@ -386,15 +441,13 @@ function update(dt) {
     const result = learning.answer(food.wordId);
     rewards.collectGlyph(result.word.char); collected = rewards.stars;
     starBursts.add(food.x, food.y, clock); sound.play("glyph");
+    if (result.complete) learning.nextBatch();
     autoSeekingVirus = true; spawnFoods(); updateUI();
-    if (result.complete) {
-      if (mode === "auto") { learning.nextBatch(); spawnFoods(); updateUI(); }
-      else setPaused(true, "五个目标完成！");
-    }
     save();
   } else if (food && clock - lastWrong > 2.5) {
-    lastWrong = clock; learning.answer(food.wordId); save();
+    lastWrong = clock; learning.answer(food.wordId); takeDamage("认错目标"); spawnFoods(); save();
   }
+  if (vacuum.active(clock)) pullViruses(viruses, head, angle, dt, config.vacuumRange);
   const virus = viruses.find((item) => {
     const type = VIRUS_TYPES.find((entry) => entry.tier === item.tier);
     return !type.encircle && distance(head, item) < type.size / 2 + 12;
@@ -465,6 +518,28 @@ function tile(x, y, size, glyph, alpha = 1) {
   ctx.restore();
 }
 
+function choiceTile(x, y, glyph) {
+  ctx.save();
+  ctx.beginPath();
+  for (let i = 0; i < 6; i++) {
+    const direction = i * Math.PI / 3;
+    const px = x + Math.cos(direction) * 38, py = y + Math.sin(direction) * 38;
+    if (i) ctx.lineTo(px, py); else ctx.moveTo(px, py);
+  }
+  ctx.closePath();
+  ctx.fillStyle = "#fff5d9";
+  ctx.fill();
+  ctx.shadowColor = "transparent";
+  ctx.lineJoin = "round"; ctx.lineWidth = 3; ctx.strokeStyle = "#b68b3e"; ctx.stroke();
+  ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillStyle = "#5e452c";
+  const rows = glyph.split(" / ");
+  const chinese = /^[\p{Script=Han}]$/u.test(glyph);
+  const fontSize = chinese ? 35 : Math.min(24, 76 / Math.max(...rows.map(row => row.length)) * 1.5);
+  ctx.font = `700 ${fontSize}px "Microsoft YaHei", "PingFang SC", sans-serif`;
+  rows.forEach((row, i) => ctx.fillText(row, x, y + (i - (rows.length - 1) / 2) * 18 + 1, 61));
+  ctx.restore();
+}
+
 function draw(alpha) {
   const lag = paused ? 0 : motion.speed / config.physicsHz * (1 - alpha);
   const renderHead = samplePath(trail.points, [lag])[0];
@@ -487,6 +562,20 @@ function draw(alpha) {
   ctx.strokeStyle = "#d9f3ed";
   ctx.lineWidth = 10;
   ctx.strokeRect(WORLD_BOUNDS.minX, WORLD_BOUNDS.minY, WORLD_BOUNDS.size, WORLD_BOUNDS.size);
+  if (vacuum.active(clock)) {
+    ctx.save(); ctx.translate(renderHead.x, renderHead.y); ctx.rotate(angle);
+    const glow = ctx.createRadialGradient(0,0,15,0,0,config.vacuumRange);
+    glow.addColorStop(0,"#cfffff88"); glow.addColorStop(1,"#bcffff0a");
+    ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0,0,config.vacuumRange,-Math.PI/3,Math.PI/3); ctx.closePath();
+    ctx.fillStyle = glow; ctx.fill(); ctx.strokeStyle = "#d3ffffaa"; ctx.lineWidth = 2;
+    for (let i = 0; i < 5; i++) {
+      const direction = (i - 2) * Math.PI / 8, reach = config.vacuumRange * (1 - (clock * 1.7 + i * .17) % 1);
+      ctx.beginPath(); ctx.arc(0,0,Math.max(20,reach),direction-.13,direction+.13); ctx.stroke();
+    }
+    ctx.lineWidth = 4; ctx.strokeStyle = "#a5ffff"; ctx.beginPath();
+    ctx.arc(0,0,68,-Math.PI/2,-Math.PI/2+Math.PI*2*vacuum.remaining(clock)/VACUUM_SECONDS); ctx.stroke();
+    ctx.restore();
+  }
   if (captureFlash && clock < captureFlash.until) {
     ctx.save();
     ctx.globalAlpha = (captureFlash.until - clock) * 0.4;
@@ -536,14 +625,15 @@ function draw(alpha) {
       || Math.abs(food.y - renderCamera.y) > viewHeight / zoom / 2 + 75) continue;
     const bob = Math.sin(clock * 2 + food.x) * 2;
     ctx.save();
-    ctx.shadowColor = food.id === "target" ? "#fff1a3" : "#326e7540";
+    ctx.shadowColor = "#326e7540";
     ctx.shadowBlur = 8;
     ctx.shadowOffsetY = 5;
-    tile(food.x, food.y + bob, food.id === "target" ? 74 : 61, food.glyph, food.id === "target" ? 1 : 0.94);
+    choiceTile(food.x, food.y + bob, food.glyph);
     ctx.restore();
   }
   const segments = trail.positions(lag);
   ctx.save();
+  if (poison.active) ctx.filter="hue-rotate(65deg) saturate(1.35)";
   if (clock < damageFlashUntil && Math.floor(clock * 22) % 2 === 0) ctx.globalAlpha = 0.2;
   // Small stars bridge the tips, so the body reads as one continuous star chain.
   const links = samplePath(trail.points, segments.map((_, i) => lag + trail.leadGap + (i - 0.5) * trail.spacing));
@@ -578,14 +668,31 @@ function draw(alpha) {
     ctx.drawImage(assets.segment, -star.size / 2, -star.size / 2, star.size, star.size);
     ctx.restore();
   }
+  if (poison.active) {
+    ctx.filter="none"; ctx.fillStyle="#72e76088"; ctx.strokeStyle="#337d2fbb"; ctx.lineWidth=1.5;
+    for (let i=0;i<9;i++) {
+      const phase=(clock*.7+i*.173)%1, px=renderHead.x+Math.sin(i*2.4+clock)*55, py=renderHead.y-15-phase*95;
+      ctx.beginPath(); ctx.arc(px,py,3+(i%3)*2,0,Math.PI*2); ctx.fill(); ctx.stroke();
+    }
+  }
   ctx.restore();
   ctx.restore();
 }
+
+function syncFullscreenState() {
+  const active = Boolean(window.STUDY_FULLSCREEN_SHELL?.isFullscreen() || document.fullscreenElement);
+  if (document.body.classList.contains("snake-fullscreen") === active) return;
+  document.body.classList.toggle("snake-fullscreen", active);
+  $("fullscreenTarget").hidden = !active;
+  if (active) { closeSettings(); closeTuning(); }
+}
+document.addEventListener("fullscreenchange", syncFullscreenState);
 
 function frame(time) {
   let remaining = Math.min((time - lastTime) / 1000 || 0, 0.25);
   lastTime = time;
   if (window.STUDY_FULLSCREEN_SHELL?.isHosting()) { requestAnimationFrame(frame); return; }
+  syncFullscreenState();
   pollGamepad(time);
   if (ready) {
     // Substeps preserve collision checks and smooth route samples on slower devices.
@@ -610,10 +717,19 @@ function steer(direction) {
 document.addEventListener("keydown", (event) => {
   if (window.STUDY_FULLSCREEN_SHELL?.isHosting() || nativeTarget(event.target) || window.STUDY_CONTROLLER_MOUSE?.isActive()) return;
   const action = actionForKey(event.key);
+  if (event.code === bindings.vacuum.key && !paused) { event.preventDefault(); if (!event.repeat) startVacuum("keyboard"); }
+  if (event.code === bindings.antidote.key && !paused) { event.preventDefault(); if (!event.repeat) attemptAntidote(); }
   if (action && !paused) { event.preventDefault(); controls.press(event.code, action); directPadAngle = null; pointer = null; }
   if (event.code === "Space") { event.preventDefault(); if (!event.repeat) { if (paused) resume(); else setPaused(true); } }
 });
-document.addEventListener("keyup", event => controls.release(event.code));
+document.addEventListener("keyup", event => { controls.release(event.code); if (event.code === bindings.vacuum.key) vacuum.release("keyboard"); });
+function startVacuum(source) { if (ready && !paused && mode === "manual") vacuum.press(source, clock); }
+function attemptAntidote() {
+  if (!ready || paused || mode!=="manual") return;
+  const result=poison.cure(rewards.stars,config,clock);
+  if (result.cured) { rewards.stars=collected=result.stars; sound.play("growth"); updateUI(); save(); }
+  else if (poison.active) notify(`解毒需要 ${config.antidoteCost} 颗星星`);
+}
 function nativeTarget(target) {
   return target instanceof Element && target !== canvas && Boolean(target.closest('a,button,input,textarea,select,summary,[contenteditable]:not([contenteditable="false"]),[role="button"],[role="link"],[role="checkbox"],[role="radio"],[role="switch"],[role="slider"],[role="tab"],[role="menuitem"],[role="option"],[role="combobox"],[tabindex]'));
 }
@@ -628,8 +744,16 @@ $("resetButton").addEventListener("click", () => {
 });
 $("resumeButton").addEventListener("click", resume);
 document.querySelectorAll("[data-direction]").forEach((button) => {
+  button.addEventListener("pointerdown", event => {
+    if (paused) return;
+    steer(button.dataset.direction); touchSteeringAngle = desiredAngle; button.setPointerCapture(event.pointerId);
+  });
+  for (const name of ["pointerup","pointercancel","lostpointercapture"]) button.addEventListener(name, () => { touchSteeringAngle = null; });
   button.addEventListener("click", () => { steer(button.dataset.direction); canvas.focus({ preventScroll: true }); });
 });
+$("vacuumButton").addEventListener("pointerdown", event => { event.preventDefault(); startVacuum("touch"); event.currentTarget.setPointerCapture(event.pointerId); });
+for (const name of ["pointerup","pointercancel","lostpointercapture"]) $("vacuumButton").addEventListener(name, () => vacuum.release("touch"));
+$("antidoteButton").addEventListener("click",attemptAntidote);
 function pointerPosition(event) {
   const rect = canvas.getBoundingClientRect();
   pointer = { x: event.clientX - rect.left, y: event.clientY - rect.top };
@@ -685,6 +809,16 @@ function pollGamepad(time) {
   const enabled = ready && !document.hidden && document.hasFocus() && !window.STUDY_CONTROLLER_MOUSE?.isActive() &&
     $("settingsMenu").hidden && $("tuningPanel").hidden && !window.STUDY_GAMEPAD_CURSOR?.isMenuActive() && !window.STUDY_FULLSCREEN_SHELL?.isHosting();
   const input = gamepad.poll(enabled);
+  const freshButtons=input.pressedButtons.filter(button=>!previousBindingButtons.has(button));
+  previousBindingButtons=new Set(input.pressedButtons);
+  if (bindingCapture?.device==="button" && freshButtons.length) captureBinding(freshButtons[0]);
+  const vacuumPressed = input.pressedButtons.includes(bindings.vacuum.button);
+  if (enabled && !paused && vacuumPressed && !padVacuumDown) startVacuum("pad");
+  if (!enabled || paused || !vacuumPressed) vacuum.release("pad");
+  padVacuumDown = vacuumPressed;
+  const antidotePressed=input.pressedButtons.includes(bindings.antidote.button);
+  if (enabled&&!paused&&antidotePressed&&!padAntidoteDown) attemptAntidote();
+  padAntidoteDown=antidotePressed;
   if (!enabled) { directPadAngle = null; padNeedsNeutral = true; return; }
   if ((input.confirm || input.mushroom) && (paused || !nativeTarget(document.activeElement))) {
     if (paused) resume(); else if (input.confirm) setPaused(true);
@@ -704,6 +838,7 @@ function pollGamepad(time) {
   } else directPadAngle = null;
 }
 new ResizeObserver(resize).observe($("stage"));
+new ResizeObserver(()=>document.documentElement.style.setProperty("--snake-panel-top",`${Math.round(document.querySelector(".game-topbar").getBoundingClientRect().bottom+8)}px`)).observe(document.querySelector(".game-topbar"));
 
 function loadImage(path) {
   return new Promise((resolve, reject) => {
@@ -717,6 +852,8 @@ function loadImage(path) {
 // Read-only inspection for browser checks; input and growth still use the actual game loop.
 Object.defineProperty(window, "__snakeDemo", { value: Object.freeze({ getState: () => ({
   ready, paused, mode, collected, length: trail.glyphs.length, head: head && { ...head }, angle,
+  speed: motion?.speed, vacuum: { active:vacuum.active(clock), remaining:vacuum.remaining(clock), range:config.vacuumRange },
+  bindings:structuredClone(bindings), poison:poison.snapshot(),
   segments: trail.positions(), target: foods?.[0] && { ...foods[0] }, foods: foods?.map(f => ({ ...f })),
   learning: learning && { ...learning.snapshot(), type: learning.type, prompt: learning.prompt, source: learning.source },
   upstream: "0.2.9", config: { ...config }, rewards: { stars: rewards.stars, growthPoints: rewards.growthPoints, threshold: rewards.threshold },
@@ -746,7 +883,7 @@ try {
   reset();
   const restored = restore(readObject(storage, SNAKE_PROGRESS_KEY));
   ready = true;
-  setPaused(true, learning.complete ? "五个目标完成！" : restored ? "继续上次的汉字长龙" : "准备出发");
+  setPaused(true, restored ? "继续上次的汉字长龙" : "准备出发");
   $("loading").hidden = true;
   requestAnimationFrame(frame);
 } catch (error) {

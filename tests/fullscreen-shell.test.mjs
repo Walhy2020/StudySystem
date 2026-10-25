@@ -5,13 +5,13 @@ import "../src/fullscreen-shell.js";
 const { moduleUrl } = globalThis.StudyFullscreenShellTools;
 test("全屏外壳仅接收同源同目录九个页面，拒绝外链与私有/素材路径", () => {
   const base = "http://127.0.0.1:53177/study/";
-  for (const href of ["", "index.html?test=abc", "word-learning.html", "phonetics.html", "bomb-game.html?v=1.0"]) assert.ok(moduleUrl(href, base));
+  for (const href of ["", "index.html?test=abc", "word-learning.html", "phonetics.html", "bomb-game.html?v=1.0", "snake-game.html"]) assert.ok(moduleUrl(href, base));
   for (const href of ["https://example.com/index.html", "../index.html", "../study2/index.html", "assets/x.png", "javascript:alert(1)", "fullscreen.html", "//example.com/"]) assert.equal(moduleUrl(href, base), null);
 });
 test("九页在手柄光标之前加载外壳，无新存储或服务接口", () => {
-  for (const page of ["index", "pinyin", "word-learning", "book-learning", "theme-learning", "scenario-learning", "review-learning", "phonetics", "bomb-game"]) {
+  for (const page of ["index", "pinyin", "word-learning", "book-learning", "theme-learning", "scenario-learning", "review-learning", "phonetics", "bomb-game", "snake-game"]) {
     const html = readFileSync(new URL(`../${page}.html`, import.meta.url), "utf8");
-    assert.equal(html.split("src/fullscreen-shell.js?v=1.3").length - 1, 1);
+    assert.equal(html.split("src/fullscreen-shell.js?v=1.4").length - 1, 1);
     assert.ok(html.indexOf("src/fullscreen-shell.js") < html.indexOf("src/gamepad-cursor.js"));
   }
   const source = readFileSync(new URL("../src/fullscreen-shell.js", import.meta.url), "utf8");

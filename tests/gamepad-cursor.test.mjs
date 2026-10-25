@@ -6,7 +6,7 @@ const { safeDestination, cursorStep, edgeScrollAmount, restoreCursorPosition, cr
 
 test("手柄光标只允许九个系统页面同源同目录导航，不开放外链、下载或脚本", () => {
   const base = "http://127.0.0.1:53177/study/";
-  for (const page of ["", "index.html", "word-learning.html", "pinyin.html", "bomb-game.html?test=1", "theme-learning.html#learn"]) {
+  for (const page of ["", "index.html", "word-learning.html", "pinyin.html", "bomb-game.html?test=1", "snake-game.html", "theme-learning.html#learn"]) {
     assert.ok(safeDestination(page, base));
   }
   for (const page of ["https://example.com/", "//other.test/index.html", "javascript:alert(1)",
@@ -39,9 +39,9 @@ test("光标只在上下边缘继续外推时滚动，松开/死区/横推/离�
 });
 
 test("九个页面接入同一个光标资源，无新增进度存储或系统级鼠标入口", () => {
-  for (const page of ["index", "pinyin", "word-learning", "book-learning", "theme-learning", "scenario-learning", "review-learning", "phonetics", "bomb-game"]) {
+  for (const page of ["index", "pinyin", "word-learning", "book-learning", "theme-learning", "scenario-learning", "review-learning", "phonetics", "bomb-game", "snake-game"]) {
     const html = readFileSync(new URL(`../${page}.html`, import.meta.url), "utf8");
-    assert.equal(html.split('src/gamepad-cursor.js?v=1.17').length - 1, 1, page);
+    assert.equal(html.split('src/gamepad-cursor.js?v=1.18').length - 1, 1, page);
   }
   const source = readFileSync(new URL("../src/gamepad-cursor.js", import.meta.url), "utf8");
   assert.doesNotMatch(source, /localStorage|window\.open|showPicker|requestPointerLock/);

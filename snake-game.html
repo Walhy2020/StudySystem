@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#f4f7ee">
+  <title>贪吃蛇 · 小飞星汉字长龙 - 马里奥学习系统</title>
+  <link rel="icon" href="./assets/snake/flystar-head-v1.png?v=1.0">
+  <link rel="stylesheet" href="./snake-game.css?v=1.0">
+  <script src="./src/web-audio.js?v=1.0"></script>
+</head>
+<body>
+  <main class="app">
+    <header class="page-header">
+      <div class="brand"><img src="./assets/snake/flystar-head-v1.png?v=1.0" alt="" width="76" height="54"><div><h1>小飞星<span>汉字长龙</span></h1><p>吃一个字，长一节。带着汉字一起出发。</p></div></div>
+      <span class="mode-pill" id="modeLabel">自动演示</span>
+    </header>
+    <nav class="game-actions" aria-label="游戏操作"><a id="snakeBack" href="./index.html">返回学习系统</a><button id="muteButton" type="button">声音开关 · L1</button><button id="fullscreenButton" type="button">全屏 · R2</button><span id="batchCount"></span></nav>
+    <div class="layout">
+      <section class="play-column" aria-label="游戏">
+        <div class="mission-bar">
+          <div class="mission"><span class="mission-label" id="missionLabel">看拼音，找汉字</span><strong id="targetGlyph"></strong><button id="speakButton" class="sound-button" type="button" aria-label="听目标字的读音">听读音 <span aria-hidden="true">♪</span></button></div>
+          <div class="length-stat"><strong id="lengthCount">8</strong><span>节汉字</span></div>
+        </div>
+        <div class="stage" id="stage">
+          <canvas id="game" tabindex="0" aria-label="小飞星游戏区域，方向键或 WASD 转向，空格暂停"></canvas>
+          <div id="loading" class="loading">小飞星准备出发…</div>
+          <div id="pauseOverlay" class="pause-overlay" hidden><span id="pauseTitle">休息一下</span><button id="resumeButton" type="button">继续出发</button></div>
+          <div id="message" class="message" aria-live="polite">看，小飞星正在带着汉字转弯</div>
+          <span class="stage-hint" id="stageHint">按方向键，接过小飞星的方向盘</span>
+        </div>
+        <div class="controls">
+          <div class="main-controls"><button id="startButton" class="primary" type="button">开始操控 <span aria-hidden="true">↗</span></button><button id="autoButton" class="secondary" type="button" aria-pressed="true">自动演示</button><button id="resetButton" class="text-button" type="button">重新开始</button></div>
+          <p class="keyboard-hint">方向键 / WASD / 左摇杆 / 十字键转向 · 拖动转向 · 空格暂停<br>手柄 A / Start 开始、继续 · 右摇杆 / Y 菜单 · Y 回游戏 · R1 返回 · R2 全屏 · L1 静音 · View 切换鼠标</p>
+        </div>
+        <div class="direction-pad" aria-label="方向控制"><button data-direction="up" aria-label="向上" type="button">↑</button><button data-direction="left" aria-label="向左" type="button">←</button><button data-direction="down" aria-label="向下" type="button">↓</button><button data-direction="right" aria-label="向右" type="button">→</button></div>
+      </section>
+      <aside class="sidebar">
+        <section class="bag-card"><span class="section-kicker">一路收集</span><h2>我的汉字队伍</h2><p>每个字，都是身体的一节。</p><div id="glyphBag" class="glyph-bag" aria-label="当前队伍中的汉字"></div><div class="collected-line">本次收集 <strong id="collectedCount">0</strong> 个字</div></section>
+        <section class="guide-card"><span class="guide-star" aria-hidden="true">✦</span><h2>跟着小飞星，慢慢来</h2><p>每关五个不同的目标。看拼音找汉字，看汉字找拼音；找到正确选项，队伍就长一节。找错可继续重试。</p><p>转弯的时候，字也会跟着走，每个字都端端正正。边缘自动转回场内，身体不判碰撞。</p><p>自动演示不保存答题和增长进度。重新开始只影响这个游戏。</p></section>
+      </aside>
+    </div>
+  </main>
+  <script src="./data/characters.js?v=1.0"></script>
+  <script src="./data/pinyin-readings.js?v=1.0"></script>
+  <script src="./src/fullscreen-shell.js?v=1.4"></script><script src="./src/controller-mouse.js?v=1.2"></script><script src="./src/gamepad-cursor.js?v=1.18"></script>
+  <script src="./src/bomb-gamepad.js?v=1.7"></script>
+  <script type="module" src="./snake-game.js?v=1.0"></script>
+  <script type="module" src="./src/version-update.js?v=1.0.79"></script>
+</body>
+</html>

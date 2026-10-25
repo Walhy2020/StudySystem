@@ -102,6 +102,7 @@ try {
     assert.equal(scrollAfter, scrollBefore, "shoulders never scroll the page");
     await page.locator('[data-series-id="basics"]').scrollIntoViewIfNeeded();
     await aim('[data-series-id="basics"]'); await tap();
+    await page.locator('[data-theme-id="body"]').scrollIntoViewIfNeeded();
     await aim('[data-theme-id="body"]'); await tap();
     await page.locator('#bodyScene [data-target="head"]').scrollIntoViewIfNeeded();
     await aim('#bodyScene [data-target="head"]'); await tap();

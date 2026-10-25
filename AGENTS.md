@@ -22,6 +22,7 @@ The application is a build-free local learning website served by `server.py`.
 - `scenario-learning.html`, `scenario-learning.css`, `scenario-learning.js`, `data/scenarios.js`: short-dialogue scenario learning.
 - `review-learning.html`, `review-learning.js`, `src/theme-overview.js`: independent overall review and learned-word library.
 - `bomb-game.html`, `bomb-game.css`, `bomb-game.js`: independent bomb-maze game.
+- `snake-game.html`, `snake-game.css`, `snake-game.js`, `src/snake-learning.js`, `src/snake-trail.js`: independent Flying Star snake game adapted from Walhy2020/Snake; artwork/provenance under `assets/snake/`.
 - `assets/`: project-consumed images and sprites. Image-generation working outputs belong in ignored `output/`, not in page references.
 - `tests/`: Node tests, Microsoft Edge acceptance scripts, and approved screenshots.
 
@@ -65,6 +66,7 @@ Browser progress is local to each browser profile and is not synchronized by Git
 - Pinyin writes `mario-pinyin-v1` only; it never imports or resets Hanzi/IPA progress. Each review includes all non-mastered Pinyin items (0–63).
 - Words writes `mario-word-learning-v1` only. Import all source definitions, not just learned words; IDs are `word:<normalized spelling>`. Use unchanged Hanzi rules (3 new, 3 correct each, mixed round, fixed daily review up to20). New source content joins automatically after refresh without resetting existing records. Source modules' progress and overall review aggregation remain untouched. Left lesson panel shows the picture with its Chinese translation always visible below during an active lesson; English and IPA stay concealed until Show/Space/Y. Abstract words may use their source scene as context.
 - Bomb maze writes `mario-bomb-game-progress-v1` and only reads Hanzi sources needed for its learning pool.
+- Snake writes `mario-snake-game-progress-v1` only, reading Hanzi with evidence-based legacy fallback. Its independent 100-word pool/five-target batches follow the bomb learning policy; demo never saves real progress. Keep source artwork and provenance, native keyboard controls, and shared cursor/system-mouse exclusivity.
 - Theme learning writes learned-word progress through `mario-theme-learned-v1`; overall review reads it together with Book1 and Scenario Learning progress through the shared read-only total-word-library aggregator.
 - Overall review saves only its own round and per-word remembered/forgotten marks in `mario-total-review-v1`. It never changes the three source modules' learned records. Refresh resumes the same round; new rounds prioritize forgotten words.
 - Scenario learning writes `mario-scenario-learning-v1` only.
@@ -78,7 +80,7 @@ Browser progress is local to each browser profile and is not synchronized by Git
 - Preserve user-owned dirty-worktree changes. Do not use destructive Git commands.
 - When a referenced CSS or JavaScript asset changes, update its cache query and the matching tests.
 - Every delivered change must increment the displayed system version (`APP_VERSION` and `package.json`), not only asset cache queries. Report the version and Git commit after pushing.
-- Every release must also set all nine page references to `src/version-update.js?v=<package version>` so open pages detect new releases correctly; `tests/version-update.test.mjs` enforces this.
+- Every release must also set all ten page references to `src/version-update.js?v=<package version>` so open pages detect new releases correctly; `tests/version-update.test.mjs` enforces this.
 - Put final generated web assets under `assets/` with semantic versioned names. Verify dimensions, file signatures, HTTP 200, and visible page use.
 - For visual changes, verify both desktop and a 390px viewport. Check horizontal overflow, clipping, actual element geometry, keyboard/touch behavior, and resource failures.
 - Prefer real Microsoft Edge acceptance through the repository scripts. Report the actual validation surface; do not label another browser as Edge.

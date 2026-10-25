@@ -1,6 +1,6 @@
 (function () {
   const PAGES = ["index.html", "pinyin.html", "word-learning.html", "book-learning.html", "theme-learning.html",
-    "scenario-learning.html", "review-learning.html", "phonetics.html", "bomb-game.html"];
+    "scenario-learning.html", "review-learning.html", "phonetics.html", "bomb-game.html", "snake-game.html"];
   const DEADZONE = 0.25;
   const SPEED = 650;
   const SCROLL_SPEED = 500;
@@ -80,7 +80,7 @@
   const activeWindow = () => shell?.activeWindow() || (shell?.isHosting() ? null : window);
   const activeDocument = () => activeWindow()?.document;
   const pathname = () => new URL(shell?.currentUrl() || location.href).pathname;
-  const isGame = () => pathname() === base.pathname + "bomb-game.html";
+  const isGame = () => ["bomb-game.html", "snake-game.html"].some(page => pathname() === base.pathname + page);
   const isLearningSpacePage = () => pathname() === base.pathname ||
     ["index.html", "word-learning.html", "theme-learning.html"].some(page => pathname() === base.pathname + page);
   function moduleEvent(type, options) {
@@ -237,7 +237,8 @@
     if (typeof target.click === "function") target.click();
     else target.dispatchEvent(new targetWindow.MouseEvent("click", coordinates));
     if (isGame() && (target.id === "bombCanvas" || target.id === "startBombGame" ||
-      target.id === "overlayStartBombGame" || target.id === "restartBombGame")) setMenu(false);
+      target.id === "overlayStartBombGame" || target.id === "restartBombGame" ||
+      ["game", "startButton", "resumeButton", "resetButton", "autoButton"].includes(target.id))) setMenu(false);
   }
   const horizontalSnap = new Map();
   function restoreHorizontalSnap(keep = null) {

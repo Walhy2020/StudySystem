@@ -1,13 +1,67 @@
 # StudySystem cross-device handoff
 
-Last updated: 2026-10-18
+Last updated: 2026-10-25
 Repository: `https://github.com/Walhy2020/StudySystem.git`
 Branch: `main`
 Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.78** (2026-10-18). Words Chinese translation
+System display version: **v1.0.79** (2026-10-25). Independent Snake entry on
+the Hanzi homepage imports Walhy2020/Snake at94d36a64a8fdfbaecbe1301b737347765bb6b029.
+Original Flying Star head, blank body sprite, meadow and smooth route-following
+growth/soft boundary steering/non-colliding body are retained. Initial eight body
+characters now come from the eligible game pool. Runtime assets/provenance live
+in assets/snake; upstream has no LICENSE file or declared package license, so no
+new license is asserted. No nested repository, source layers or API credentials
+are shipped. See assets/snake/SOURCE.md.
+
+snake-game.html/CSS/JS and src/snake-learning.js / snake-trail.js are independent.
+The learning model mirrors CURRENT bomb code: read Hanzi with evidence-based
+read-only legacy fallback; learned non-mastered words first, lower appearance
+round first/today-new tie priority, then catalog non-mastered fill; 100 unique
+characters per run, five different targets per batch. Odd/even sublevels within
+each five-level group use pinyin-to-Hanzi / Hanzi-to-pinyin (5→6 are both pinyin).
+Polyphonic reading overlaps are excluded from distractors and pinyin-mode batch
+targets; options favor prior seen targets. Current prompt is directly visible,
+not a question mark. Foods are the answer choices: collision with the correct
+option grows one Hanzi segment and advances; wrong options keep the target and
+queue retry, cleared by a correct answer. There are no bricks/combat/HP penalties
+in Snake. Five correct answers wait for explicit Next. New targets increment
+appearance counts once, not on refresh/retry; options/positions/progress and trail
+restore behind explicit Continue. Mobile foods spawn inside the current viewport.
+
+Only mario-snake-game-progress-v1 is written. It stores its own model/appearance
+history (bounded5000)/scene; it never imports bomb history or modifies any source
+progress. Auto demo uses an in-memory checkpoint and never saves its answers or
+growth; returning/resetting from demo restores that checkpoint. Storage-disabled
+play remains usable. Shared shell/cursor allow the tenth page, still with one
+persistent cursor/native-presence owner. Left stick/D-pad steer, A/Start confirm,
+right stick/Y enter pointer menu and pause; Y or canvas/start click leaves menu.
+View system/pending mode pauses until explicit Continue; R1 returns, R2 uses one
+native-fullscreen path, L1 uses shared website mute. Keyboard/touch drag and native
+focused-control Enter/Space remain. No Python/system-mouse logic or bomb rules
+changed. Eight learning-module order is unchanged. Refresh entire page once;
+no build or service restart required. All ten notifier references/display1.0.79,
+shell1.4/cursor1.18; new Snake resources1.0 and matching tests updated.
+
+Verification: pnpm run check,243 Node tests and git diff --check passed. Only
+tests/snake-browser.mjs and tests/gamepad-cursor-browser.mjs ran in real Microsoft
+Edge at1440/390. They cover source isolation, direct prompts/both question types,
+actual collision/growth/wrong retry/five-target completion, exact paused refresh,
+demo and reset isolation, keyboard/touch, simulated standard-controller movement,
+menu/Y/A without duplicate input, embedded owner routing, View-mode responses,
+R1/native-link return, actual fullscreen click/R2 exit, shared mute, resource200
+and geometry/no overflow/no page errors. Existing cursor fixture now scrolls its
+Body card into view for the current vertical Theme picker; no Theme product change.
+Acceptance uses controlled animation time, isolated save fixtures and mocked
+speech/native-mode responses; no physical-controller/desktop-mouse certification
+or manual listening claim. Desktop/mobile ready/active/pinyin screenshots under
+ignored tmp were inspected. No unrelated full browser suite ran. Pre-existing41
+tracked PNG modifications remain preserved and excluded from this release.
+Inherited53177 unchanged; isolated53179 server is stopped after acceptance.
+
+Previous **v1.0.78** (2026-10-18). Words Chinese translation
 is now an always-visible prompt below the left picture during active lessons,
 not part of the concealed right-side answer. Switching words/reloading immediately
 updates Chinese while English/IPA reset to hidden; Show/Space/Y reveal only those.
@@ -1410,17 +1464,30 @@ In the ChatGPT/Codex desktop app, add the cloned repository as a local project a
 - Bomb saves remain version 1, with targetRevealPolicy=1 distinguishing the restored hidden-question rule. New saves preserve hidden/revealed/active/completed state; old automatically visible unanswered prompts are re-hidden where intact bricks remain, without discarding active answers or completed progress. Only actual reveals increment appearance counts.
 - Save/resume, restart, next-level flow, keyboard controls, mobile layout, and isolated bomb progress are implemented.
 
+### Snake / Flying Star Hanzi Dragon
+
+- Entry: `snake-game.html`, linked independently from the Hanzi homepage.
+- The original Snake visuals and continuous turning/growth remain; learning
+  targets/options follow the bomb policy via independent `src/snake-learning.js`.
+- Progress writes only `mario-snake-game-progress-v1`. Demo never saves progress;
+  refresh/navigation restores the same question/scene behind Continue.
+- Source and asset rights/provenance: `assets/snake/SOURCE.md`.
+- Focused acceptance: `pnpm run test:snake` (real Edge, desktop/390px, simulated controller).
+
 ## Navigation and storage
 
 Top-level navigation order is:
 
 1. Pinyin
 2. Hanzi
-3. Book1
-4. Theme Learning
-5. Scenario Learning
-6. Overall Review
-7. Phonetics
+3. Words
+4. Book1
+5. Theme Learning
+6. Scenario Learning
+7. Overall Review
+8. Phonetics
+
+Bomb maze and Snake are separate game entries, outside the learning-module tabs.
 
 Persistent browser keys:
 
@@ -1430,6 +1497,7 @@ Persistent browser keys:
 - `mario-book1-v1`
 - `mario-scenario-learning-v1`
 - `mario-bomb-game-progress-v1`
+- `mario-snake-game-progress-v1`
 - `mario-theme-learned-v1`
 - `mario-total-review-v1` (round progress and explicit memory marks only)
 - legacy migration source: `mario-literacy-desktop-mvp-v1`

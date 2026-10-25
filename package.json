@@ -1,9 +1,12 @@
 {
   "name": "mario-hanzi-refactor",
-  "version": "1.0.79",
+  "version": "1.0.80",
   "private": true,
   "type": "module",
   "scripts": {
+    "knowledge:check": "node scripts/harness-knowledge.mjs check",
+    "knowledge:refresh": "node scripts/harness-knowledge.mjs refresh",
+    "knowledge:context": "node scripts/harness-knowledge.mjs context",
     "test:snake": "node --test tests/snake-learning.test.mjs tests/snake-trail.test.mjs && node tests/snake-browser.mjs",
     "test:battery": "node --test tests/bomb-gamepad-battery.test.mjs && node tests/bomb-gamepad-battery-browser.mjs",
     "test:gamepad": "node --test tests/bomb-gamepad.test.mjs tests/gamepad-cursor.test.mjs && node tests/bomb-gamepad-browser.mjs && node tests/gamepad-cursor-browser.mjs",

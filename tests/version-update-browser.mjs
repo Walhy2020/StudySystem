@@ -18,7 +18,7 @@ async function waitUntil(page, predicate) {
 }
 
 try {
-  for (const [name, width] of [...pages.map(name => [name, 1440]), ["bomb-game", 390]]) {
+  for (const [name, width] of [...pages.map(name => [name, 1440]), ["word-learning", 390], ["bomb-game", 390], ["snake-game", 390]]) {
     const context = await browser.newContext({ viewport: { width, height: 900 }, hasTouch: width === 390 });
     const page = await context.newPage();
     let servedVersion = APP_VERSION;
@@ -86,7 +86,7 @@ try {
     await context.close();
   }
   assert.deepEqual(errors, []);
-  console.log(JSON.stringify({ ok: true, browser: "Microsoft Edge", pageCount: 7,
+  console.log(JSON.stringify({ ok: true, browser: "Microsoft Edge", pageCount: pages.length,
     desktopAnd390: true, noPromptForSameVersion: true, cancelKeepsPage: true,
     newerVersionRePrompts: true, confirmReloads: true, progressPreserved: true }));
 } finally {

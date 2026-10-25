@@ -7,7 +7,7 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.79** (2026-10-25). Independent Snake entry on
+System display version: **v1.0.80** (2026-10-25). Independent Snake entry on
 the Hanzi homepage imports Walhy2020/Snake at94d36a64a8fdfbaecbe1301b737347765bb6b029.
 Original Flying Star head, blank body sprite, meadow and smooth route-following
 growth/soft boundary steering/non-colliding body are retained. Initial eight body
@@ -42,10 +42,10 @@ View system/pending mode pauses until explicit Continue; R1 returns, R2 uses one
 native-fullscreen path, L1 uses shared website mute. Keyboard/touch drag and native
 focused-control Enter/Space remain. No Python/system-mouse logic or bomb rules
 changed. Eight learning-module order is unchanged. Refresh entire page once;
-no build or service restart required. All ten notifier references/display1.0.79,
+no build or service restart required. All ten notifier references/display1.0.80,
 shell1.4/cursor1.18; new Snake resources1.0 and matching tests updated.
 
-Verification: pnpm run check,243 Node tests and git diff --check passed. Only
+Verification: pnpm run check,249 Node tests and git diff --check passed. Only
 tests/snake-browser.mjs and tests/gamepad-cursor-browser.mjs ran in real Microsoft
 Edge at1440/390. They cover source isolation, direct prompts/both question types,
 actual collision/growth/wrong retry/five-target completion, exact paused refresh,
@@ -60,6 +60,35 @@ or manual listening claim. Desktop/mobile ready/active/pinyin screenshots under
 ignored tmp were inspected. No unrelated full browser suite ran. Pre-existing41
 tracked PNG modifications remain preserved and excluded from this release.
 Inherited53177 unchanged; isolated53179 server is stopped after acceptance.
+
+Merged remote a239305 (Harness offline knowledge) before release; its full history
+is retained below. Knowledge map/schema now include Snake,21 sourced rules and
+11 modules; source fingerprints re-audited for1.0.80. No model evaluation run.
+
+Previous **v1.0.79** (2026-10-20). Adds offline Harness knowledge
+under docs/harness/: current module/storage map,20 sourced rules,analysis-only JSON
+schema/instructions,20 synthetic evaluation cases with follow-up turns,and human
+acceptance criteria. scripts/harness-knowledge.mjs checks normalized SHA-256 source
+fingerprints,release version,anchors and references before returning module-scoped
+context; it excludes evaluator answers. pnpm knowledge:check/knowledge:refresh/
+knowledge:context expose the workflow. Refresh fingerprints ONLY after auditing
+the changed facts; hashes do not prove semantic correctness. Snapshot baseline is
+the pre-delivery HEAD,with current working-file hashes and release version recorded.
+No DeepSeek/API calls,WeCom connector,executable skill registry,action policy or
+learning-progress ingestion is implemented; model-understanding evaluation is NOT
+RUN. No learning/storage/native/controller behavior changes. Release display/entry
+caches and all nine notifier imports updated; refresh only,no server restart.
+Verified pnpm check,240 Node tests,knowledge check and diff-check. Six new offline
+tests cover stale-source/version refusal,scoped/global facts,hidden evaluator data,
+unknown modules,path boundaries,CRLF and actual CLI JSON/separator handling.
+Only version-update-browser.mjs ran in real Microsoft Edge: nine desktop pages,
+Words/bomb at390px,same-version silence,cancel/re-prompt,accepted reload and storage
+sentinel preservation. Added Words to this existing script and corrected reported
+page count. No visual layout change or unrelated browser suite; no physical input
+certification. Isolated53179 server created here was stopped; inherited services
+were preserved. Knowledge index also distinguishes Words' full definitions from
+overall-review's three-source actually-learned pool; old historical counts below
+are not authoritative learner progress or current catalog totals.
 
 Previous **v1.0.78** (2026-10-18). Words Chinese translation
 is now an always-visible prompt below the left picture during active lessons,

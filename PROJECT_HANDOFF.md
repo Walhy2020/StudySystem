@@ -7,7 +7,26 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.82** (2026-10-25). Snake upgraded from upstream
+System display version: **v1.0.83** (2026-10-25). Snake now exposes a dedicated
+top-right Game Properties button instead of nesting numeric settings under Settings.
+Unmodified upstream v0.2.9 tuning.js restores eight groups/28 sliders and numeric
+inputs, three movement presets, movement-step readout, JSON copy/import and reset.
+Panel uses the existing compact header and a scrollable drawer with fixed header/
+footer. Opening pauses play and excludes gamepad gameplay; R1/Escape close, then
+explicit Continue remains. Current Snake key stores tuning; save success is reported
+truthfully, demo changes stay temporary and checkpoint restore restores controls.
+Right stick remains the shared cursor (local help text corrected). Other controls,
+learning rules and assets are unchanged. Display/notifier1.0.83, Snake caches1.3,
+and four display-entry caches/associated tests updated. Refresh only.
+
+Verification: required check/test/knowledge/diff checks; targeted real Microsoft
+Edge Game Properties acceptance at1440/390 covers all fields, range/number inputs,
+presets, live enemy count, JSON/invalid data, mocked clipboard, save/reload,
+R1/Escape, native Space, menu exclusion and demo isolation. Screenshots inspected;
+no physical-controller certification or unrelated browser suite. Existing41 PNG
+edits excluded; inherited53177 untouched; task-owned53179 stopped after acceptance.
+
+Previous **v1.0.82** (2026-10-25). Snake upgraded from upstream
 v0.1.0 to v0.2.9 at c9b0d607f25530365c9f1b25acac6373e03813cb. Runtime modules
 are preserved under src/snake-upstream-v029/; new star body, tiled floor and four
 virus palettes live in assets/snake (SOURCE.md records provenance). Current compact

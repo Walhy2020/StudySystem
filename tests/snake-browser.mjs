@@ -188,7 +188,8 @@ try {
     gameplay = await virusFixture("super");
     assert.equal(gameplay.after.length, gameplay.before.length - 2); assert.equal(gameplay.after.damage.hits, gameplay.before.damage.hits + 1);
     await step(20); assert.equal((await state()).damage.hits, gameplay.after.damage.hits, "damage cooldown prevents immediate repeated loss");
-    await act("#settingsButton"); await act("#snakeTuning summary");
+    await act("#tuningToggle");
+    await act(".tuning-group:nth-of-type(2) summary");
     await page.locator("#tune-speed").fill("175"); await page.locator("#tune-speed").dispatchEvent("change");
     const ecosystem = await page.evaluate(key => JSON.parse(localStorage.getItem(key)).ecosystem, key);
     await page.reload(); await waitReady();

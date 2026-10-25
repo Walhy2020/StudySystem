@@ -5,12 +5,14 @@ Current runtime upgraded from https://github.com/Walhy2020/Snake **v0.2.9** at
 The owner's update request includes the current artwork and gameplay.
 
 Unmodified modules under `src/snake-upstream-v029/`: trail, motion, world,
-rewards, enclosure, virus-snakes, config, steering, audio, star-burst and random.
+rewards, enclosure, virus-snakes, config, steering, audio, star-burst, random and tuning.
 Relevant upstream unit tests use the versioned module paths. StudySystem's
 snake-game.js adapts that runtime to its existing learning model, compact layout,
 shared controls/audio mute, explicit Continue gate and independent persistence.
 `src/snake-ecosystem.js` persists the world and enemies in the existing Snake key.
-Upstream browser controls, tuning UI, update service and storage APIs are not used.
+The tuning controls now use upstream tuning.js inside StudySystem's own drawer;
+its apply callback writes only the existing Snake snapshot. Upstream browser
+controls, update service and separate config/audio storage APIs are not used.
 
 Current artwork copied without modification: flystar-head-v1.png, sprites.json,
 hanzi-star-v2.png, arena-floor-v2.jpg, virus-purple-v1.png, virus-small-v4.png,

@@ -14,6 +14,7 @@ button:focus-visible, a:focus-visible, canvas:focus-visible { outline: 3px solid
 .mission-label { font-size: 12px; color: #63785b; }
 #targetGlyph { font-size: 27px; line-height: 1.3; overflow-wrap: anywhere; }
 .game-actions { flex-shrink: 0; }
+#tuningToggle { white-space: nowrap; }
 button, .game-actions a { border: 1px solid #c9d6bb; border-radius: 8px; background: #fffdf4; padding: 9px 12px; text-decoration: none; font-size: 13px; min-height: 40px; }
 #speakButton { font-size: 20px; padding: 3px 12px; }
 #startButton, #resumeButton { color: #fffdf4; background: #466f50; border-color: #466f50; }
@@ -33,12 +34,24 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; }
 .snake-minimap { position: absolute; right: 12px; bottom: 12px; width: 82px; height: 82px; border: 1px solid #7d897c; border-radius: 7px; background: #eef1e3bb; overflow: hidden; pointer-events: none; }
 .snake-minimap i { position: absolute; transform: translate(-50%, -50%); border: 1px solid #63785b; background: #fff9; }
 .snake-minimap b { position: absolute; transform: translate(-50%, -50%); width: 6px; height: 6px; background: #c26546; border-radius: 50%; }
-#snakeTuning { min-width: 0; font-size: 13px; }
-#snakeTuning summary { cursor: pointer; padding: 8px 0; }
-#tuningFields { display: grid; gap: 10px; padding: 8px 0 14px; }
-#tuningFields label { display: grid; grid-template-columns: minmax(0, 1fr) 85px; gap: 7px; align-items: center; }
-#tuningFields input { width: 100%; min-width: 0; padding: 6px; border: 1px solid #c9d6bb; border-radius: 5px; font: inherit; color: inherit; background: white; }
-#resetTuning { width: 100%; }
+.tuning-panel { position: fixed; right: 10px; top: 66px; bottom: 10px; z-index: 10; width: min(430px, calc(100vw - 20px)); display: flex; flex-direction: column; background: #fffdf4; border: 1px solid #bcccad; border-radius: 12px; box-shadow: 0 8px 28px #304b4033; font-size: 13px; }
+.tuning-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid #dfe6d8; }
+.tuning-header h2 { margin: 0; font-size: 19px; }
+.tuning-header button { padding: 3px 12px; font-size: 24px; }
+.tuning-content { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; padding: 0 16px 16px; }
+.tuning-intro, .tuning-row p { line-height: 1.65; color: #63785b; }
+.tuning-group, .tuning-json { border-top: 1px solid #dfe6d8; }
+.tuning-panel summary { cursor: pointer; padding: 13px 0; font-weight: 600; }
+.tuning-group-count { float: right; color: #63785b; font-weight: 400; }
+.tuning-row { display: grid; grid-template-columns: minmax(0, 1fr) 85px 48px; gap: 6px; align-items: center; padding: 10px 0; }
+.tuning-row input[type="number"], .tuning-json textarea { min-width: 0; width: 100%; border: 1px solid #c9d6bb; border-radius: 5px; padding: 7px; font: inherit; color: inherit; background: white; }
+.tuning-row input[type="range"] { grid-column: 1 / -1; width: 100%; accent-color: #466f50; min-height: 28px; margin: 0; }
+.tuning-row p { grid-column: 1 / -1; margin: 0; font-size: 12px; }
+.tuning-unit { color: #63785b; font-size: 11px; }
+.tuning-presets, .tuning-json-actions { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 0 10px; }
+.tuning-meter { margin: 6px 0 12px; color: #63785b; }
+.tuning-footer { flex-shrink: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px 16px; border-top: 1px solid #dfe6d8; }
+#tuningStatus { color: #63785b; font-size: 12px; }
 @media (max-width: 760px) {
   .app { padding: 6px; gap: 6px; }
   .game-topbar { flex-wrap: wrap; gap: 6px; }
@@ -55,4 +68,5 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; }
   .snake-rewards { gap: 2px; font-size: 11px; }
   .snake-rewards img { width: 19px; height: 19px; }
   #batchCount { font-size: 12px; }
+  .tuning-panel { right: 6px; top: 105px; bottom: 6px; width: calc(100vw - 12px); }
 }

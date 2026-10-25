@@ -33,6 +33,7 @@
     "snake-learning": "src/snake-learning.js",
     "snake-trail": "src/snake-upstream-v029/trail.js",
     "snake-style": "snake-game.css",
+    "snake-tuning": "src/snake-upstream-v029/tuning.js",
     "snake-origin": "assets/snake/SOURCE.md",
     "server": "server.py",
     "shell": "src/fullscreen-shell.js",

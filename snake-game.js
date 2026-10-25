@@ -4,7 +4,8 @@ import { VirusField, VIRUS_COLORS, WORLD_BOUNDS, setWorldSize, headingInsideMap 
 import { RunRewards, VIRUS_TYPES } from "./src/snake-upstream-v029/rewards.js";
 import { findEnclosure } from "./src/snake-upstream-v029/enclosure.js";
 import { VirusSnakes } from "./src/snake-upstream-v029/virus-snakes.js";
-import { DEFAULT_CONFIG, CONFIG_FIELDS, normalizeConfig } from "./src/snake-upstream-v029/config.js";
+import { normalizeConfig } from "./src/snake-upstream-v029/config.js";
+import { setupTuning } from "./src/snake-upstream-v029/tuning.js";
 import { SteeringInput, actionForKey } from "./src/snake-upstream-v029/steering.js";
 import { Soundscape } from "./src/snake-upstream-v029/audio.js";
 import { StarBursts } from "./src/snake-upstream-v029/star-burst.js";
@@ -47,6 +48,7 @@ function syncSound() {
 }
 
 function applyConfig(patch) {
+  if (!ready) return;
   const previous = config;
   config = normalizeConfig(patch, config); setWorldSize(config.mapSize);
   motion?.configure(config); trail.setLayout(config.spacing, config.leadGap);
@@ -58,20 +60,22 @@ function applyConfig(patch) {
     motion.x = head.x; motion.y = head.y; trail.reset([head, {x:head.x-1000,y:head.y}], trail.glyphs);
     virusField.reset(); virusSnakes.reset(head); camera = { ...head }; fitCamera(); previousCamera = { ...camera }; spawnFoods();
   }
-  resize(); updateUI(); save();
-  for (const field of CONFIG_FIELDS) $("tune-" + field.key).value = config[field.key];
+  resize(); updateUI();
+  tuning.sync(config, save());
+  if (mode === "auto") $("tuningStatus").textContent = "演示中，参数仅本次生效";
 }
 
 // All settings share the existing Snake save; do not use upstream storage keys.
-for (const field of CONFIG_FIELDS) {
-  const label = document.createElement("label"), input = document.createElement("input");
-  label.textContent = field.label;
-  input.type = "number"; input.id = "tune-" + field.key; input.min = field.min; input.max = field.max; input.step = field.step;
-  input.value = config[field.key]; input.title = field.help; input.setAttribute("aria-label", field.label);
-  input.addEventListener("change", () => applyConfig({ [field.key]: input.valueAsNumber }));
-  label.append(input); $("tuningFields").append(label);
+const tuning = setupTuning({ values: config, apply: applyConfig });
+$("help-gamepadDeadzone").textContent = "过滤左摇杆漂移，越小越灵敏；右摇杆仍控制网页鼠标。";
+function closeTuning(focus = false) {
+  $("tuningPanel").hidden = true;
+  $("tuningToggle").setAttribute("aria-expanded", "false");
+  if (focus) $("tuningToggle").focus({ preventScroll: true });
 }
-$("resetTuning").addEventListener("click", () => applyConfig(DEFAULT_CONFIG));
+$("tuningToggle").addEventListener("click", () => {
+  if (!$("tuningPanel").hidden) { closeSettings(); menuPaused = false; setPaused(true); }
+});
 
 function updateUI() {
   if (!learning) return;
@@ -97,6 +101,7 @@ function closeSettings(focus = false) {
 }
 $("settingsButton").addEventListener("click", () => {
   if (!$("settingsMenu").hidden) { closeSettings(true); return; }
+  closeTuning();
   menuPaused = false;
   setPaused(true);
   $("settingsMenu").hidden = false;
@@ -107,6 +112,7 @@ document.addEventListener("keydown", event => {
   if (event.key === "Escape" && !$("settingsMenu").hidden) { event.preventDefault(); closeSettings(true); }
 });
 window.addEventListener("studysystem:gamepad-back", event => {
+  if (!$("tuningPanel").hidden) { event.preventDefault(); closeTuning(true); return; }
   if (!$("settingsMenu").hidden) { event.preventDefault(); closeSettings(true); }
 });
 
@@ -229,8 +235,9 @@ function snapshot() {
     damageHits, lastDamageAt, damageFlashUntil, capturedSuper };
 }
 function save() {
-  if (!ready || mode === "auto" || window.STUDY_FULLSCREEN_SHELL?.isHosting()) return;
-  try { storage?.setItem(SNAKE_PROGRESS_KEY, JSON.stringify(snapshot())); } catch { /* Storage can be unavailable. */ }
+  if (!ready || mode === "auto" || window.STUDY_FULLSCREEN_SHELL?.isHosting() || !storage) return false;
+  try { storage.setItem(SNAKE_PROGRESS_KEY, JSON.stringify(snapshot())); return true; }
+  catch { return false; }
 }
 function restore(saved) {
   const point = p => p && Number.isFinite(p.x) && Number.isFinite(p.y) && Math.abs(p.x) <= 30000 && Math.abs(p.y) <= 30000;
@@ -269,11 +276,12 @@ function restore(saved) {
   if (matches) foods = saved.foods.map(f => ({ ...f })); else spawnFoods();
   target = foods.find(f => f.correct); refreshField();
   paused = true; pointer = null; controls.clear(); directPadAngle = null;
-  for (const field of CONFIG_FIELDS) $("tune-" + field.key).value = config[field.key];
+  tuning.sync(config);
   return true;
 }
 function resume() {
   if (!ready || window.STUDY_CONTROLLER_MOUSE?.isActive()) return;
+  closeTuning();
   closeSettings();
   if (mode === "auto") setMode("manual");
   if (learning.complete) { learning.nextBatch(); spawnFoods(); }
@@ -615,7 +623,7 @@ $("resetButton").addEventListener("click", () => {
   if (!ready) return;
   if (demoCheckpoint) restore(demoCheckpoint);
   mode = "manual"; demoCheckpoint = null; menuPaused = false;
-  closeSettings();
+  closeSettings(); closeTuning();
   reset(); save();
 });
 $("resumeButton").addEventListener("click", resume);
@@ -662,7 +670,7 @@ $("fullscreenButton").addEventListener("click", fullscreen);
 window.addEventListener("studysystem:gamepad-fullscreen", fullscreen);
 window.addEventListener("studysystem:gamepad-menu", event => {
   if (event.detail.active) { menuPaused = !paused; setPaused(true, "菜单"); }
-  else if (menuPaused && $("settingsMenu").hidden) { menuPaused = false; setPaused(false); }
+  else if (menuPaused && $("settingsMenu").hidden && $("tuningPanel").hidden) { menuPaused = false; setPaused(false); }
 });
 window.addEventListener("studysystem:controller-mouse", () => {
   if (window.STUDY_CONTROLLER_MOUSE?.isActive()) { menuPaused = false; setPaused(true); }
@@ -675,7 +683,7 @@ window.addEventListener("gamepaddisconnected", () => { menuPaused = false; setPa
 function pollGamepad(time) {
   window.STUDY_GAMEPAD_CURSOR?.poll(time);
   const enabled = ready && !document.hidden && document.hasFocus() && !window.STUDY_CONTROLLER_MOUSE?.isActive() &&
-    $("settingsMenu").hidden && !window.STUDY_GAMEPAD_CURSOR?.isMenuActive() && !window.STUDY_FULLSCREEN_SHELL?.isHosting();
+    $("settingsMenu").hidden && $("tuningPanel").hidden && !window.STUDY_GAMEPAD_CURSOR?.isMenuActive() && !window.STUDY_FULLSCREEN_SHELL?.isHosting();
   const input = gamepad.poll(enabled);
   if (!enabled) { directPadAngle = null; padNeedsNeutral = true; return; }
   if ((input.confirm || input.mushroom) && (paused || !nativeTarget(document.activeElement))) {

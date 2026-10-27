@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#f4f7ee">
   <title>贪吃蛇 · 小飞星汉字长龙 - 马里奥学习系统</title>
   <link rel="icon" href="./assets/snake/flystar-head-v1.png?v=1.0">
-  <link rel="stylesheet" href="./snake-game.css?v=1.5">
+  <link rel="stylesheet" href="./snake-game.css?v=1.6">
   <script src="./src/web-audio.js?v=1.0"></script>
 </head>
 <body>
@@ -42,10 +42,10 @@
       <strong id="fullscreenTarget" class="fullscreen-target" aria-label="当前目标" hidden></strong>
       <span id="fullscreenStars" class="fullscreen-stars" aria-label="星星 0" hidden><img src="./assets/snake/hanzi-star-v2.png?v=0.2.9" alt=""><b id="fullscreenStarScore">0</b></span>
       <div id="loading" class="loading">小飞星准备出发…</div>
-      <div id="pauseOverlay" class="pause-overlay" hidden><span id="pauseTitle">休息一下</span><button id="resumeButton" type="button">继续出发</button></div>
+      <div id="pauseOverlay" class="pause-overlay" hidden><span id="pauseTitle">暂停</span><div class="pause-actions"><button id="resumeButton" type="button">继续</button><button id="pauseRestartButton" type="button">重开</button></div></div>
       <div id="message" class="sr-only" aria-live="polite"></div>
       <div class="snake-minimap" aria-label="地图位置"><i id="mapView"></i><b id="mapDot"></b></div>
-      <div class="direction-pad" aria-label="方向控制"><button data-direction="up" aria-label="向上" type="button">↑</button><button data-direction="left" aria-label="向左" type="button">←</button><button data-direction="down" aria-label="向下" type="button">↓</button><button data-direction="right" aria-label="向右" type="button">→</button><button id="vacuumButton" aria-label="按住吸取病毒" type="button">吸</button><button id="antidoteButton" aria-label="消耗星星解毒" type="button">解</button></div>
+      <div class="direction-pad" aria-label="方向控制"><button data-direction="up" aria-label="向上" type="button">↑</button><button data-direction="left" aria-label="向左" type="button">←</button><button data-direction="down" aria-label="向下" type="button">↓</button><button data-direction="right" aria-label="向右" type="button">→</button><button id="vacuumButton" aria-label="按住吸取病毒" type="button">吸</button><button id="antidoteButton" aria-label="消耗星星解毒" type="button">解</button><button id="slowButton" aria-label="按住减速读拼音" aria-pressed="false" type="button">慢</button></div>
     </section>
   </main>
   <section id="tuningPanel" class="tuning-panel" role="region" aria-labelledby="tuningTitle" hidden>
@@ -55,7 +55,7 @@
       <div id="tuningPresets" class="tuning-presets" aria-label="操作手感预设"></div>
       <div class="tuning-meter">当前移动步长 <strong id="tuningStep"></strong></div>
       <div id="tuningFields"></div>
-      <section class="tuning-bindings" aria-label="操作快捷键"><h3>操作快捷键</h3><div class="binding-grid"><span>功能</span><span>键盘</span><span>手柄</span><b>吸取</b><button id="bind-vacuum-key" type="button"></button><button id="bind-vacuum-button" type="button"></button><b>解毒</b><button id="bind-antidote-key" type="button"></button><button id="bind-antidote-button" type="button"></button></div><p id="bindingStatus" role="status">点击按键后，直接按下要绑定的键。</p><button id="resetBindings" type="button">恢复默认快捷键</button></section>
+      <section class="tuning-bindings" aria-label="操作快捷键"><h3>操作快捷键</h3><div class="binding-grid"><span>功能</span><span>键盘</span><span>手柄</span><b>吸取</b><button id="bind-vacuum-key" type="button"></button><button id="bind-vacuum-button" type="button"></button><b>解毒</b><button id="bind-antidote-key" type="button"></button><button id="bind-antidote-button" type="button"></button><b>阅读减速</b><button id="bind-slow-key" type="button"></button><button id="bind-slow-button" type="button"></button></div><p id="bindingStatus" role="status">点击按键后，直接按下要绑定的键。</p><button id="resetBindings" type="button">恢复默认快捷键</button></section>
       <details class="tuning-json"><summary>复制 / 导入参数配置</summary><textarea id="tuningJson" rows="8" spellcheck="false" aria-label="游戏属性 JSON 配置"></textarea><div class="tuning-json-actions"><button id="tuningCopyJson" type="button">复制配置</button><button id="tuningApplyJson" type="button">应用配置</button></div></details>
     </div>
     <footer class="tuning-footer"><button id="tuningReset" type="button">恢复默认参数</button><span id="tuningStatus" role="status"></span></footer>
@@ -64,7 +64,7 @@
   <script src="./data/pinyin-readings.js?v=1.0"></script>
   <script src="./src/fullscreen-shell.js?v=1.4"></script><script src="./src/controller-mouse.js?v=1.2"></script><script src="./src/gamepad-cursor.js?v=1.18"></script>
   <script src="./src/bomb-gamepad.js?v=1.7"></script>
-  <script type="module" src="./snake-game.js?v=1.8"></script>
-  <script type="module" src="./src/version-update.js?v=1.0.89"></script>
+  <script type="module" src="./snake-game.js?v=1.9"></script>
+  <script type="module" src="./src/version-update.js?v=1.0.90"></script>
 </body>
 </html>

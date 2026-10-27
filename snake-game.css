@@ -23,6 +23,9 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; }
 .loading, .pause-overlay { position: absolute; inset: 0; z-index: 3; display: flex; flex-direction: column; gap: 20px; align-items: center; justify-content: center; background: #f5f8e8c9; backdrop-filter: blur(4px); color: #466f50; font-size: 22px; text-align: center; padding: 20px; }
 .pause-overlay > span { font-weight: 700; }
 #resumeButton { padding: 12px 24px; font-size: 17px; }
+.pause-actions { display:flex; flex-wrap:wrap; justify-content:center; gap:14px; }
+#pauseRestartButton { padding:12px 24px; font-size:17px; }
+#slowButton[aria-pressed="true"] { background:#466f50; color:#fffdf4; }
 .settings-menu { position: absolute; right: 0; top: calc(100% + 7px); width: min(300px, calc(100vw - 20px)); max-height: calc(100dvh - 125px); overflow: auto; display: grid; gap: 10px; padding: 15px; border: 1px solid #bcccad; border-radius: 12px; background: #fffdf4; box-shadow: 0 8px 28px #304b4033; }
 .settings-menu p { margin: 0; font-size: 12px; line-height: 1.7; color: #63785b; }
 #autoButton[aria-pressed="true"] { background: #e1ebd3; }
@@ -73,8 +76,8 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; }
   .game-actions { width: 100%; gap: 6px; }
   .game-actions > button, .game-actions > a { flex: 1; text-align: center; }
   .settings-menu { width: min(300px, calc(100vw - 12px)); }
-  .direction-pad { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; }
-  .direction-pad button { width: 46px; height: 44px; padding: 0; font-size: 23px; background: #fffdf4d9; touch-action: manipulation; }
+  .direction-pad { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); display: flex; width:min(370px,calc(100% - 12px)); gap:6px; }
+  .direction-pad button { flex:1; min-width:0; width:auto; height:44px; padding:0; font-size:23px; background:#fffdf4d9; touch-action:manipulation; }
   .stage:has(.pause-overlay:not([hidden])) .direction-pad { visibility: hidden; }
   .snake-minimap { width: 58px; height: 58px; right: 8px; bottom: 65px; }
   .snake-rewards { gap: 2px; font-size: 11px; }

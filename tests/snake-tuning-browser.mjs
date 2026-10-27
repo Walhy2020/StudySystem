@@ -63,13 +63,18 @@ try {
     assert.equal(await page.evaluate(() => JSON.parse(window.__copiedTuning).speed), 178);
     await page.locator("#tuningJson").fill("bad json"); await page.locator("#tuningApplyJson").click();
     assert.equal((await state()).config.speed, 178); assert.match(await page.locator("#tuningStatus").textContent(), /格式不正确/);
-    for (const [key,value] of [["targetScale",3],["vacuumRange",400],["poisonInterval",45],["poisonSpeedPercent",60],["poisonTickInterval",.5],["poisonTailLoss",2],["antidoteCost",3]]) {
+    for (const [key,value] of [["readingSpeedPercent",30],["targetScale",3],["vacuumRange",400],["poisonInterval",45],["poisonSpeedPercent",60],["poisonTickInterval",.5],["poisonTailLoss",2],["antidoteCost",3]]) {
       const group=page.locator(".tuning-group").filter({has:page.locator(`#tune-${key}`)});
       if (!await group.evaluate(el=>el.open)) await group.locator("summary").click();
       await page.locator(`#tune-${key}`).fill(String(value)); await page.locator(`#tune-${key}`).press("Tab");
       assert.equal((await state()).config[key],value);
     }
     assert.equal(await page.locator("#targetGlyph").evaluate(el=>parseFloat(getComputedStyle(el).fontSize)),width===390?75:81);
+    await page.locator("#bind-slow-key").click(); await page.keyboard.press("r");
+    await page.locator("#bind-slow-button").click();
+    await page.evaluate(()=>{window.__pad.buttons[10]={pressed:true,value:1};});
+    await page.waitForFunction(()=>__snakeDemo.getState().bindings.slow.button===10);
+    await page.evaluate(()=>{window.__pad.buttons[10]={pressed:false,value:0};});
     await page.locator("#bind-vacuum-key").click(); await page.keyboard.press("g");
     assert.match(await page.locator("#bindingStatus").textContent(),/已用于解毒/);
     await page.keyboard.press("h"); assert.equal((await state()).bindings.vacuum.key,"KeyH");
@@ -92,6 +97,7 @@ try {
     assert.equal((await state()).config.vacuumRange,400); assert.equal((await state()).config.targetScale,3);
     assert.equal((await state()).config.poisonInterval,45); assert.equal((await state()).config.antidoteCost,3);
     assert.equal((await state()).config.poisonSpeedPercent,60);
+    assert.equal((await state()).config.readingSpeedPercent,30);
     assert.deepEqual((await state()).bindings,saved.bindings);
     assert.deepEqual((await state()).learning, { ...saved.learning, type:(await state()).learning.type, prompt:(await state()).learning.prompt, source:(await state()).learning.source });
     await page.locator("#tuningToggle").click(); await page.keyboard.press("Escape");

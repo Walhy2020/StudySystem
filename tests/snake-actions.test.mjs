@@ -62,9 +62,27 @@ test("poison parameters reconfigure the active schedule and tail loss", () => {
 });
 test("shortcut normalization preserves saved swaps and rejects shared or duplicate controls", () => {
   const swapped={vacuum:{key:"KeyG",button:1},antidote:{key:"KeyF",button:2}};
-  assert.deepEqual(normalizeBindings(swapped),swapped);
+  assert.deepEqual(normalizeBindings(swapped),{...swapped,slow:DEFAULT_BINDINGS.slow});
   assert.deepEqual(normalizeBindings({vacuum:{key:"Space",button:7}}),DEFAULT_BINDINGS);
   assert.ok(bindingError(DEFAULT_BINDINGS,"vacuum","key","KeyG"));
   assert.ok(bindingError(DEFAULT_BINDINGS,"vacuum","button",1));
   assert.deepEqual(normalizeBindings({vacuum:{key:"KeyH",button:6},antidote:{key:"KeyH",button:6}}),DEFAULT_BINDINGS);
+});
+
+test("reading slow has an editable speed cap, suppresses boost and never speeds up poison",()=>{
+  const config=normalizeConfig({speed:100});
+  assert.equal(speedForInput(config,0,0,false,true),50);
+  assert.equal(speedForInput(config,0,null,false,true),50);
+  assert.equal(speedForInput(normalizeConfig({speed:100,readingSpeedPercent:25}),0,0,true,true),25);
+  assert.equal(speedForInput(normalizeConfig({speed:100,readingSpeedPercent:80}),0,0,true,true),50);
+  assert.equal(speedForInput(config,0,0,false,false),150);
+});
+test("new slow shortcut preserves old custom controls and all three actions stay unique",()=>{
+  const old={vacuum:{key:"KeyH",button:6},antidote:{key:"KeyJ",button:11}};
+  const next=normalizeBindings(old);
+  assert.deepEqual(next.vacuum,old.vacuum); assert.deepEqual(next.antidote,old.antidote);
+  assert.equal(next.slow.key,"KeyR"); assert.equal(next.slow.button,10);
+  assert.deepEqual(normalizeBindings(next),next);
+  assert.match(bindingError(next,"slow","key","KeyH"),/吸取/);
+  assert.match(bindingError(DEFAULT_BINDINGS,"vacuum","button",6),/阅读减速/);
 });

@@ -1,4 +1,4 @@
-import { CONFIG_FIELDS, DEFAULT_CONFIG, PRESETS, normalizeConfig } from "./snake-config.js?v=1.1";
+import { CONFIG_FIELDS, DEFAULT_CONFIG, PRESETS, normalizeConfig } from "./snake-config.js?v=1.2";
 
 export function setupTuning({ values, apply }) {
   const panel = document.getElementById("tuningPanel");

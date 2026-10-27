@@ -7,7 +7,28 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.89** (2026-10-27). Hanzi polyphonic reading panels
+System display version: **v1.0.90** (2026-10-27). Snake held reading slowdown
+defaults to H/LT(L2),50% of base speed; editable percentage and captured bindings.
+Aligned boost is suppressed while reading, lower poison speed still wins.
+Keyboard/pad/touch holds coexist and clear on pause, restore, mode, blur and
+disconnect. Old user bindings are reserved first; the new action gets a free key
+if H/LT was already taken. No held-input state is persisted.
+Local src/snake-world.js wraps unchanged upstream VirusField. Small/medium world
+spawns return after10 gameplay seconds at home positions with player clearance.
+Countdowns travel with existing saved cell records; old consumed cells join on
+next update. Dropped loot and large/super viruses keep their existing behavior.
+Menu/Start pause offers Continue and Restart; Restart starts a fresh run while
+preserving settings and learning history. Only existing Snake storage is written.
+Version/notifiers1.0.90, Snake JS/entry1.9/CSS1.6, config/actions/tuning1.2,
+bindings1.1 and version-display caches updated. Refresh only; no service restart.
+Validation: syntax and307 Node tests passed. Focused real Microsoft Edge1440/390
+checks keyboard/pad/touch reading slow and release/blur, boost override, config
+and binding persistence, actual-loop respawn across pause/refresh, Menu/Start
+Continue/Restart, page bounds and resource errors. Controller input is simulated;
+pause-menu screenshots inspected. No unrelated browser suites; existing41 PNG
+changes excluded. The temporary acceptance server alone is stopped afterward.
+
+Previous **v1.0.89** (2026-10-27). Hanzi polyphonic reading panels
 grow with wrapped content instead of retaining the <=1180px fixed height. The
 scoped .pinyin-line:has(.pinyin-readings) override only affects revealed Hanzi
 readings; IPA/Pinyin/Words layouts and learning/storage rules stay unchanged.

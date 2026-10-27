@@ -12,8 +12,14 @@ shared controls/audio mute, explicit Continue gate and independent persistence.
 `src/snake-ecosystem.js` persists the world and enemies in the existing Snake key.
 The active tuning controls use `src/snake-tuning.js`, adapted from upstream tuning,
 with `src/snake-config.js` wrapping the unchanged upstream numeric fields. Local
-`src/snake-actions.js` adds vacuum, aligned speed and poison/cure; shortcut capture
-uses `src/snake-bindings.js`. Their callbacks write only the existing Snake
+`src/snake-actions.js` adds vacuum, aligned speed and poison/cure. Shortcut capture
+uses `src/snake-bindings.js` and also covers held reading slowdown with a
+configurable speed cap. Local
+`src/snake-world.js` wraps upstream VirusField to replenish small/medium world
+spawns after10 playing seconds, persisting countdowns in existing cell records.
+Upstream world code and one-time enemy drops remain unchanged. The local pause
+menu adds Continue/Restart, retaining settings and learning history.
+Their callbacks write only the existing Snake
 snapshot. Learning choices use local Canvas hexagons, body stars retain upstream
 artwork and poison only changes the head/body color, without particle effects.
 Local poison movement defaults to50% of normal speed, configurable in properties,

@@ -1,13 +1,14 @@
 import { GlyphTrail, samplePath } from "./src/snake-upstream-v029/trail.js";
 import { StarMotion } from "./src/snake-upstream-v029/motion.js";
-import { VirusField, VIRUS_COLORS, WORLD_BOUNDS, setWorldSize, headingInsideMap } from "./src/snake-upstream-v029/world.js";
+import { VIRUS_COLORS, WORLD_BOUNDS, setWorldSize, headingInsideMap } from "./src/snake-upstream-v029/world.js";
+import { VirusField } from "./src/snake-world.js?v=1.0";
 import { RunRewards, VIRUS_TYPES } from "./src/snake-upstream-v029/rewards.js";
 import { findEnclosure } from "./src/snake-upstream-v029/enclosure.js";
 import { VirusSnakes } from "./src/snake-upstream-v029/virus-snakes.js";
-import { normalizeConfig } from "./src/snake-config.js?v=1.1";
-import { setupTuning } from "./src/snake-tuning.js?v=1.1";
-import { HoldVacuum, PoisonState, VACUUM_SECONDS, speedForInput, pullViruses } from "./src/snake-actions.js?v=1.1";
-import { DEFAULT_BINDINGS, normalizeBindings, bindingError, keyLabel, buttonLabel } from "./src/snake-bindings.js?v=1.0";
+import { normalizeConfig } from "./src/snake-config.js?v=1.2";
+import { setupTuning } from "./src/snake-tuning.js?v=1.2";
+import { HoldVacuum, PoisonState, VACUUM_SECONDS, speedForInput, pullViruses } from "./src/snake-actions.js?v=1.2";
+import { ACTION_LABELS, DEFAULT_BINDINGS, normalizeBindings, bindingError, keyLabel, buttonLabel } from "./src/snake-bindings.js?v=1.1";
 import { createPoisonSprites } from "./src/snake-render-assets.js?v=1.0";
 import { SteeringInput, actionForKey } from "./src/snake-upstream-v029/steering.js";
 import { Soundscape } from "./src/snake-upstream-v029/audio.js";
@@ -34,6 +35,7 @@ const virusField = new VirusField(), virusSnakes = new VirusSnakes({ count: conf
 const rewards = new RunRewards(config.growthPerSegment), controls = new SteeringInput();
 const sound = new Soundscape(), starBursts = new StarBursts();
 const vacuum = new HoldVacuum();
+const slowSources = new Set();
 const poison = new PoisonState(0, config);
 let padVacuumDown = false, padAntidoteDown = false, touchSteeringAngle = null;
 let motion, viruses = [], target, autoSeekingVirus = true, directPadAngle = null, padNeedsNeutral = true;
@@ -79,7 +81,7 @@ function applyConfig(patch) {
 const tuning = setupTuning({ values: config, apply: applyConfig });
 $("help-gamepadDeadzone").textContent = "过滤左摇杆漂移，越小越灵敏；右摇杆仍控制网页鼠标。";
 function syncBindings() {
-  for (const action of ["vacuum","antidote"]) for (const device of ["key","button"]) {
+  for (const action of Object.keys(ACTION_LABELS)) for (const device of ["key","button"]) {
     const button=$("bind-"+action+"-"+device), capturing=bindingCapture?.action===action&&bindingCapture.device===device;
     button.textContent=capturing?"请按键…":device==="key"?keyLabel(bindings[action][device]):buttonLabel(bindings[action][device]);
     button.setAttribute("aria-pressed",String(capturing));
@@ -94,7 +96,7 @@ function captureBinding(value) {
   bindings[action][device]=value; cancelBindingCapture();
   $("bindingStatus").textContent=save()?"快捷键已保存。":"快捷键仅本次生效。";
 }
-for (const action of ["vacuum","antidote"]) for (const device of ["key","button"]) $("bind-"+action+"-"+device).addEventListener("click",()=>{
+for (const action of Object.keys(ACTION_LABELS)) for (const device of ["key","button"]) $("bind-"+action+"-"+device).addEventListener("click",()=>{
   bindingCapture={action,device}; syncBindings(); $("bindingStatus").textContent=device==="key"?"请按下键盘按键，Esc 取消。":"请按下手柄按键，Esc 取消。";
 });
 $("resetBindings").addEventListener("click",()=>{ bindings=structuredClone(DEFAULT_BINDINGS); cancelBindingCapture(); save(); $("bindingStatus").textContent="已恢复默认快捷键。"; });
@@ -129,7 +131,7 @@ function updateUI() {
   $("batchCount").textContent = `本批 ${learning.done.length}/${learning.targets.length}`;
   $("autoButton").setAttribute("aria-pressed", String(mode === "auto"));
   $("startButton").textContent = paused ? "继续" : mode === "auto" ? "接手" : "暂停";
-  $("resumeButton").textContent = "继续出发";
+  $("resumeButton").textContent = "继续";
   $("speakButton").disabled = !learning.current || window.STUDY_AUDIO?.isMuted();
   $("muteButton").textContent = window.STUDY_AUDIO?.isMuted() ? "已静音 · L1" : "声音开启 · L1";
   $("muteButton").setAttribute("aria-pressed", String(Boolean(window.STUDY_AUDIO?.isMuted())));
@@ -213,7 +215,7 @@ function reset() {
   collected = 0;
   pointer = null;
   controls.clear(); directPadAngle = null;
-  vacuum.reset(); touchSteeringAngle = null;
+  vacuum.reset(); clearReadingSlow(); touchSteeringAngle = null;
   poison.reset(clock,config);
   rewards.reset(config.growthPerSegment); collected = 0;
   virusField.reset(); virusSnakes.setCount(config.virusSnakeCount, head); virusSnakes.reset(head);
@@ -246,7 +248,7 @@ function setMode(next) {
     else if (demoCheckpoint) { restore(demoCheckpoint); demoCheckpoint = null; }
   }
   mode = next;
-  vacuum.reset(); touchSteeringAngle = null;
+  vacuum.reset(); clearReadingSlow(); touchSteeringAngle = null;
   if (mode === "auto" && learning.complete) { learning.nextBatch(); spawnFoods(); }
   pointer = null;
   paused = !learning.active;
@@ -257,13 +259,13 @@ function setMode(next) {
   notify(mode === "auto" ? "自动演示" : "轮到你啦！找到上面的目标字");
 }
 
-function setPaused(value, title = "休息一下") {
+function setPaused(value, title = "暂停") {
   if (!ready) return;
   paused = value;
   pointer = null;
   controls.clear(); directPadAngle = null;
   padNeedsNeutral = true;
-  vacuum.reset(); touchSteeringAngle = null; if (motion) motion.speed = config.speed;
+  vacuum.reset(); clearReadingSlow(); touchSteeringAngle = null; if (motion) motion.speed = config.speed;
   $("pauseTitle").textContent = !learning.targets.length ? "所有汉字已掌握，暂无可学目标" : title;
   $("pauseOverlay").hidden = !value;
   gamepad.reset();
@@ -324,7 +326,7 @@ function restore(saved) {
   if (matches) foods = saved.foods.map(f => ({ ...f })); else spawnFoods();
   target = foods.find(f => f.correct); refreshField();
   paused = true; pointer = null; controls.clear(); directPadAngle = null;
-  vacuum.reset(); touchSteeringAngle = null;
+  vacuum.reset(); clearReadingSlow(); touchSteeringAngle = null;
   tuning.sync(config);
   syncConfigurationViews();
   return true;
@@ -408,7 +410,7 @@ function update(dt) {
       directTurnRate = input.turn * config.keyboardTurnSpeed * Math.PI / 180;
     } else if (input.angle !== null) movementRequest = desiredAngle = input.angle;
   }
-  motion.speed = speedForInput(config, angle, movementRequest, poison.active);
+  motion.speed = speedForInput(config, angle, movementRequest, poison.active, slowSources.size > 0);
   const boundedAngle = mode === "auto" ? headingInsideMap(head, desiredAngle) : desiredAngle;
   motion.advance(boundedAngle, dt, boundedAngle === desiredAngle ? directTurnRate : null);
   const hitBoundary = mode !== "auto" && (motion.x < WORLD_BOUNDS.minX + 65 || motion.x > WORLD_BOUNDS.maxX - 65
@@ -419,7 +421,7 @@ function update(dt) {
   angle = motion.angle;
   trail.moveTo(head);
   if (hitBoundary) takeDamage("撞到边界");
-  virusField.advance(dt, config.virusDriftSpeed);
+  virusField.advance(dt, config.virusDriftSpeed, head, config.headSize / 2 + 90);
   fieldTimer += dt;
   if (target && distance(head, target) > 650) spawnFoods();
   else if (fieldTimer >= 0.3) refreshField();
@@ -714,10 +716,18 @@ document.addEventListener("keydown", (event) => {
   const action = actionForKey(event.key);
   if (event.code === bindings.vacuum.key && !paused) { event.preventDefault(); if (!event.repeat) startVacuum("keyboard"); }
   if (event.code === bindings.antidote.key && !paused) { event.preventDefault(); if (!event.repeat) attemptAntidote(); }
+  if (event.code === bindings.slow.key && !paused) { event.preventDefault(); setReadingSlow("keyboard",true); }
   if (action && !paused) { event.preventDefault(); controls.press(event.code, action); directPadAngle = null; pointer = null; }
   if (event.code === "Space") { event.preventDefault(); if (!event.repeat) { if (paused) resume(); else setPaused(true); } }
 });
-document.addEventListener("keyup", event => { controls.release(event.code); if (event.code === bindings.vacuum.key) vacuum.release("keyboard"); });
+document.addEventListener("keyup", event => { controls.release(event.code); if (event.code === bindings.vacuum.key) vacuum.release("keyboard"); if (event.code === bindings.slow.key) setReadingSlow("keyboard",false); });
+function setReadingSlow(source, held) {
+  const wasActive=slowSources.size>0;
+  if (held && ready && !paused && mode === "manual") slowSources.add(source);
+  else slowSources.delete(source);
+  if (wasActive!==(slowSources.size>0)) $("slowButton").setAttribute("aria-pressed",String(slowSources.size>0));
+}
+function clearReadingSlow() { slowSources.clear(); $("slowButton").setAttribute("aria-pressed","false"); }
 function startVacuum(source) { if (ready && !paused && mode === "manual") vacuum.press(source, clock); }
 function attemptAntidote() {
   if (!ready || paused || mode!=="manual") return;
@@ -738,6 +748,7 @@ $("resetButton").addEventListener("click", () => {
   reset(); save();
 });
 $("resumeButton").addEventListener("click", resume);
+$("pauseRestartButton").addEventListener("click", () => { $("resetButton").click(); resume(); });
 document.querySelectorAll("[data-direction]").forEach((button) => {
   button.addEventListener("pointerdown", event => {
     if (paused) return;
@@ -749,6 +760,8 @@ document.querySelectorAll("[data-direction]").forEach((button) => {
 $("vacuumButton").addEventListener("pointerdown", event => { event.preventDefault(); startVacuum("touch"); event.currentTarget.setPointerCapture(event.pointerId); });
 for (const name of ["pointerup","pointercancel","lostpointercapture"]) $("vacuumButton").addEventListener(name, () => vacuum.release("touch"));
 $("antidoteButton").addEventListener("click",attemptAntidote);
+$("slowButton").addEventListener("pointerdown", event => { event.preventDefault(); setReadingSlow("touch",true); event.currentTarget.setPointerCapture(event.pointerId); });
+for (const name of ["pointerup","pointercancel","lostpointercapture"]) $("slowButton").addEventListener(name, () => setReadingSlow("touch",false));
 function pointerPosition(event) {
   const rect = canvas.getBoundingClientRect();
   pointer = { x: event.clientX - rect.left, y: event.clientY - rect.top };
@@ -766,7 +779,7 @@ canvas.addEventListener("pointermove", (event) => { if (pointer) pointerPosition
 for (const name of ["pointerup", "pointercancel", "lostpointercapture"]) canvas.addEventListener(name, () => { pointer = null; });
 function releaseInput() {
   pointer = null; controls.clear(); directPadAngle = touchSteeringAngle = null;
-  vacuum.reset(); gamepad.reset(); padNeedsNeutral = true;
+  vacuum.reset(); clearReadingSlow(); gamepad.reset(); padNeedsNeutral = true;
   save(); syncSound();
 }
 window.addEventListener("blur", releaseInput);
@@ -803,6 +816,7 @@ function pollGamepad(time) {
   const enabled = ready && !document.hidden && document.hasFocus() && !window.STUDY_CONTROLLER_MOUSE?.isActive() &&
     $("settingsMenu").hidden && $("tuningPanel").hidden && !window.STUDY_FULLSCREEN_SHELL?.isHosting();
   const input = gamepad.poll(enabled);
+  setReadingSlow("pad",enabled && !paused && input.pressedButtons.includes(bindings.slow.button));
   const freshButtons=input.pressedButtons.filter(button=>!previousBindingButtons.has(button));
   previousBindingButtons=new Set(input.pressedButtons);
   if (bindingCapture?.device==="button" && freshButtons.length) captureBinding(freshButtons[0]);
@@ -847,6 +861,7 @@ function loadImage(path) {
 Object.defineProperty(window, "__snakeDemo", { value: Object.freeze({ getState: () => ({
   ready, paused, mode, collected, length: trail.glyphs.length, head: head && { ...head }, angle,
   speed: motion?.speed, vacuum: { active:vacuum.active(clock), remaining:vacuum.remaining(clock), range:config.vacuumRange },
+  readingSlow:slowSources.size>0,
   bindings:structuredClone(bindings), poison:poison.snapshot(),
   segments: trail.positions(), target: foods?.[0] && { ...foods[0] }, foods: foods?.map(f => ({ ...f })),
   learning: learning && { ...learning.snapshot(), type: learning.type, prompt: learning.prompt, source: learning.source },

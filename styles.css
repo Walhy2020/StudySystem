@@ -280,6 +280,7 @@ button:disabled { cursor: not-allowed; opacity: .45; }
   background: #fbfdff;
 }
 .idle-copy { color: var(--muted); font-size: 20px; font-weight: 800; text-align: center; }
+.pinyin-line:has(.pinyin-readings) { height: auto; }
 .pinyin-readings {
   display: flex;
   width: 100%;

@@ -74,7 +74,7 @@ assert.ok(!html.includes("<p>炸开砖块</p>"));
 assert.ok(html.includes('<h2 id="bombStartTitle">炸弹迷宫</h2>'));
 assert.ok(html.includes('<a href="./index.html">返回</a>'));
 assert.ok(index.includes('href="./bomb-game.html?v=1.0"'));
-assert.ok(index.includes('styles.css?v=2.2'));
+assert.ok(index.includes('styles.css?v=2.3'));
 assert.ok(!index.match(/<nav class="module-tabs"[\s\S]*?炸弹迷宫[\s\S]*?<\/nav>/));
 assert.ok(index.match(/<header class="topbar">[\s\S]*?<div class="top-actions">[\s\S]*?id="bombGameEntry"[\s\S]*?<\/div>[\s\S]*?<\/header>/));
 assert.ok(!index.match(/<header class="topbar">[\s\S]*?id="resetProgress"[\s\S]*?<\/header>/));

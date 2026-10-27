@@ -1,13 +1,28 @@
 # StudySystem cross-device handoff
 
-Last updated: 2026-10-25
+Last updated: 2026-10-27
 Repository: `https://github.com/Walhy2020/StudySystem.git`
 Branch: `main`
 Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.88** (2026-10-25). Snake fullscreen now shows
+System display version: **v1.0.89** (2026-10-27). Hanzi polyphonic reading panels
+grow with wrapped content instead of retaining the <=1180px fixed height. The
+scoped .pinyin-line:has(.pinyin-readings) override only affects revealed Hanzi
+readings; IPA/Pinyin/Words layouts and learning/storage rules stay unchanged.
+Font sizes, colored segments and separators stay the same; controls flow below.
+Focused real Edge1440/1024/800/390 acceptance covers three-reading 的/着,
+five-reading 和 and single-reading 天, bounds, no horizontal overflow, unchanged
+font size and Space/touch reveal. Prior1024px 着 reproduced a240px box with its
+last row ending at327px; after the fix it grows to348px. Screenshots inspected.
+Version/notifiers1.0.89, styles2.3 and version-display entry caches updated.
+Refresh only; existing41 PNG edits remain excluded. No unrelated browser suites.
+Syntax checks passed; all303 Node tests passed in a serial rerun. The standard
+run hit the previously observed scenario-playback timer flake; no scenario files
+were changed. Focused browser checks passed with no page/resource errors.
+
+Previous **v1.0.88** (2026-10-25). Snake fullscreen now shows
 the existing star artwork and current owned count at top right, alongside the
 target at top left. Award/cure updates use the same rewards.stars value as the
 normal header. Both direct and shell-hosted fullscreen show it; windowed mode

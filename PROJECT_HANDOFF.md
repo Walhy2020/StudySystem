@@ -7,7 +7,25 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.91** (2026-10-30). Opt-in --desktop-mouse starts
+System display version: **v1.0.92** (2026-10-30). Native system mouse uses left
+stick for pointer, right stick for vertical/horizontal wheel, A/B for left/right
+click. Wheel deltas accumulate whole120-unit notches; neutral, transitions and
+capture suppress stale/held scroll. Native samples include both sticks.
+Bomb/Snake R1 no longer invokes shared back; R1 can bind game actions, and Bomb
+also releasesL2. L1 mute stays reserved per the user's final correction, together
+with R2 fullscreen and View mode. Game-local menu/click/Start/directional controls
+remain game-owned; other learning pages keep R1 back. Existing bindings/storage
+are preserved. Version/notifiers1.0.92, cursor1.19, bomb bindings1.6/reader1.8,
+snake bindings1.2/entry1.10 and version-display entry queries updated.
+Restart the project service and refresh pages; no build required.
+Validation: syntax and307 Node tests passed; native mouse suite now has16 tests,
+including separate stick roles, signed Windows wheel records, deadzone/neutral,
+A/B pairs and no desktop output in web mode. Focused real Edge1440/390 checks
+both games' R1 isolation/L1 mute and prior mouse-mode safeguards with simulated
+input. Native service was restarted through its login shortcut and status checked.
+No unrelated browser suites; existing41 screenshot edits remain excluded.
+
+Previous **v1.0.91** (2026-10-30). Opt-in --desktop-mouse starts
 the native Xbox worker at server launch without HTTP clients. Desktop defaults
 to system output; focused learning pages initially use web mode, with physical
 View toggling the page preference. Blur/closed/stale pages restore desktop;

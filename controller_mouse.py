@@ -22,10 +22,12 @@ class MouseEngine:
         self.armed = False
         self.last_input = self.started = 0
         self.fraction = [0.0, 0.0]
+        self.scroll_fraction = [0.0, 0.0]
 
     def reset(self):
         self.mode, self.slot, self.armed = "system" if self.desktop else "web", None, False
         self.fraction = [0.0, 0.0]
+        self.scroll_fraction = [0.0, 0.0]
 
     def step(self, pads, active, alive, now, dt, focused=None):
         old = self.previous
@@ -36,7 +38,8 @@ class MouseEngine:
                                       now - self.last_input > 120 or now - self.started > 1800):
             self.reset()
         # A held View on startup/reconnection is not a fresh press.
-        for slot, (buttons, _, _) in pads.items():
+        for slot, pad in pads.items():
+            buttons = pad[0]
             fresh = slot in old and buttons & VIEW and not old[slot] & VIEW
             if fresh and (self.mode == "system" and slot == self.slot or self.mode == "web" and active):
                 if self.mode == "system":
@@ -59,34 +62,39 @@ class MouseEngine:
         if not pads:
             self.slot, self.armed = None, False
             self.fraction = [0.0, 0.0]
+            self.scroll_fraction = [0.0, 0.0]
             return
         if self.slot not in pads:
             self.slot = next(iter(pads))
         if changed:
             self.armed = False
             self.fraction = [0.0, 0.0]
+            self.scroll_fraction = [0.0, 0.0]
         buttons = pads[self.slot][0]
         if active and self.slot in old and buttons & VIEW and not old[self.slot] & VIEW:
             self.page_mode = self.mode = "web" if self.page_mode == "system" else "system"
             self.armed = False
             self.fraction = [0.0, 0.0]
+            self.scroll_fraction = [0.0, 0.0]
             return
         # A focused key-binding capture must not become desktop clicks/motion.
         if self.mode == "system" and (not focused or active):
             self.output(pads, old, now, dt)
         else:
             self.armed = False
+            self.scroll_fraction = [0.0, 0.0]
 
     def output(self, pads, old, now, dt):
-        buttons, x, y = pads[self.slot]
+        buttons, x, y, *scroll = pads[self.slot]
         def strength(value):
             return math.copysign((min(1, abs(value)) - .25) / .75, value) if abs(value) > .25 else 0
         x, y = strength(x), -strength(y)  # XInput Y is up-positive.
+        sx, sy = (strength(value) for value in scroll) if scroll else (0, 0)
         if not self.armed:
-            self.armed = not buttons and not x and not y
+            self.armed = not buttons and not x and not y and not sx and not sy
             return
         length = max(1, math.hypot(x, y))
-        if buttons or x or y:
+        if buttons or x or y or sx or sy:
             self.last_input = now
         for i, value in enumerate((x, y)):
             self.fraction[i] += value / length * 900 * max(0, min(.05, dt))
@@ -95,6 +103,16 @@ class MouseEngine:
         self.fraction[1] -= dy
         if dx or dy:
             self.emit("move", dx, dy)
+        # Windows wheel deltas are 120 per notch; accumulating full notches
+        # also works in desktop applications that ignore fractional wheel input.
+        wheel = []
+        for i, value in enumerate((sx, sy)):
+            self.scroll_fraction[i] = self.scroll_fraction[i] + value * 720 * max(0, min(.05, dt)) if value else 0
+            delta = math.trunc(self.scroll_fraction[i] / 120) * 120
+            self.scroll_fraction[i] -= delta
+            wheel.append(delta)
+        if any(wheel):
+            self.emit("wheel", *wheel)
         for mask, kind in ((A, "left"), (B, "right")):
             if buttons & mask and not old.get(self.slot, 0) & mask:
                 self.emit(kind, 0, 0)  # Complete down/up pair; never hold a mouse button.
@@ -138,9 +156,17 @@ def windows_io():
         for slot in range(4):
             state = State()
             if query(slot, ctypes.byref(state)) == 0:
-                pads[slot] = (state.pad.buttons, state.pad.rx / 32768, state.pad.ry / 32768)
+                pads[slot] = (state.pad.buttons, state.pad.lx / 32768, state.pad.ly / 32768,
+                              state.pad.rx / 32768, state.pad.ry / 32768)
         return pads
     def emit(kind, dx, dy):
+        if kind == "wheel":
+            for delta, flag in ((dx, 0x1000), (dy, 0x0800)):
+                if delta:
+                    record = Input(0, InputUnion(MouseInput(0, 0, ctypes.c_uint32(delta).value, flag, 0, 0)))
+                    if send(1, ctypes.byref(record), ctypes.sizeof(Input)) != 1:
+                        raise OSError("Windows rejected controller wheel input")
+            return
         flags = (1,) if kind == "move" else (2, 4) if kind == "left" else (8, 16)
         records = (Input * len(flags))(*(Input(0, InputUnion(MouseInput(dx, dy, 0, f, 0, 0))) for f in flags))
         sent = send(len(records), records, ctypes.sizeof(Input))

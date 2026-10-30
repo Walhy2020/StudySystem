@@ -319,7 +319,7 @@
       if (!isGame() || shell?.isNavigating()) { setMenu(true); pointer.hidden = false; }
       return;
     }
-    if (!shell?.isNavigating() && buttons.back && !previous.back) {
+    if (!isGame() && !shell?.isNavigating() && buttons.back && !previous.back) {
       previous = buttons; returnOneLevel(); return;
     }
     if (buttons.fullscreen && !previous.fullscreen) void toggleFullscreen();

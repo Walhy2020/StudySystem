@@ -1,7 +1,7 @@
 (function () {
   const reservedKeys = new Set(["KeyW", "KeyA", "KeyS", "KeyD"]);
-  const reservedButtons = new Map([[3, "菜单光标"], [4, "网页静音"], [5, "返回"],
-    [6, "系统预留"], [7, "全屏"], [8, "鼠标模式切换"], [9, "开始/继续"], [11, "菜单点选"],
+  const reservedButtons = new Map([[3, "游戏菜单光标"], [4, "网页静音"],
+    [7, "全屏"], [8, "鼠标模式切换"], [9, "开始/继续"], [11, "游戏菜单点选"],
     [12, "向上移动"], [13, "向下移动"], [14, "向左移动"], [15, "向右移动"], [16, "系统按钮"]]);
   function validKey(code) {
     return typeof code === "string" && !reservedKeys.has(code) &&

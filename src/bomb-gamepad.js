@@ -25,7 +25,7 @@
       const direction = directions.length === 1 ? directions[0] : "";
       const aim = Math.max(Math.abs(x), Math.abs(y)) >= DEADZONE
         ? (Math.abs(x) > Math.abs(y) ? (x > 0 ? "right" : "left") : (y > 0 ? "down" : "up")) : "";
-      // Shared cursor owns R1 return and R2 fullscreen, never browser refresh.
+      // Shared cursor owns R2 fullscreen and View mode; R1 belongs to the game.
       const buttons = { mushroom: pressed(pad, attackButtons.mushroom), ice: pressed(pad, attackButtons.ice), confirm: pressed(pad, 9) };
       const neutral = !aim && !directions.length && !Object.values(buttons).some(Boolean) && !pressed(pad, 5) && !pressed(pad, 7) && !pressed(pad, 8);
       if (!enabled) { reset(); return result; }

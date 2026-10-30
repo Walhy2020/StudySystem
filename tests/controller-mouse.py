@@ -1,12 +1,14 @@
 import http.client
+import ctypes
 import json
 from pathlib import Path
 import sys
 import threading
 import unittest
 from unittest.mock import patch
+from types import SimpleNamespace
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from controller_mouse import MouseEngine, ControllerMouse, VIEW, A, B
+from controller_mouse import MouseEngine, ControllerMouse, State, windows_io, VIEW, A, B
 from server import LearningAppHandler, ThreadingHTTPServer, LearningHTTPServer
 from controller_pointer_guard import MotionPolicy
 
@@ -31,6 +33,50 @@ class FakeGuard:
 
 
 class MouseTests(unittest.TestCase):
+    def test_left_stick_pointer_right_stick_wheel_and_neutral_safety(self):
+        calls = []
+        e = MouseEngine(lambda *args: calls.append(args), desktop=True)
+        def step(lx=0, ly=0, rx=0, ry=0, buttons=0, focused=False, active=False):
+            e.step({0: (buttons, lx, ly, rx, ry)}, active, focused, 10, .02, focused=focused)
+        for _ in range(12): step(ry=1)
+        self.assertEqual(calls, [], "Held right stick at connection cannot scroll")
+        step(); step(lx=1, ly=1)
+        self.assertEqual(calls[-1][0], "move")
+        self.assertGreater(calls[-1][1], 0); self.assertLess(calls[-1][2], 0)
+        calls.clear()
+        for _ in range(10): step(rx=1, ry=-1)
+        self.assertEqual(calls, [("wheel", 120, -120)], "Right stick scrolls both axes without pointer movement")
+        step(); step(buttons=A); step(buttons=A); step(); step(buttons=B)
+        self.assertEqual([c[0] for c in calls], ["wheel", "left", "right"])
+        calls.clear()
+        for _ in range(12): step(lx=.2, ly=-.2, rx=.2, ry=-.2)
+        self.assertEqual(calls, [], "Both sticks keep the existing deadzone")
+        step(focused=True, active=True)
+        for _ in range(12): step(lx=1, ry=1, focused=True, active=True)
+        self.assertEqual(calls, [], "Web mode never moves or scrolls the desktop")
+
+    def test_native_sample_uses_left_for_move_and_signed_wheel_records(self):
+        sent = []
+        def query(slot, pointer):
+            if slot: return 1167
+            sample = ctypes.cast(pointer, ctypes.POINTER(State)).contents.pad
+            sample.buttons, sample.lx, sample.ly, sample.rx, sample.ry = A, 16384, -16384, -8192, 8192
+            return 0
+        def send(count, records, size):
+            for i in range(count):
+                record = records._obj if hasattr(records, "_obj") else records[i]
+                mouse = record.value.mouse
+                sent.append((mouse.dx, mouse.dy, mouse.data, mouse.flags))
+            return count
+        api = SimpleNamespace(XInputGetState=query, SendInput=send)
+        with patch("controller_mouse.sys.platform", "win32"), patch("controller_mouse.ctypes.WinDLL", return_value=api, create=True):
+            read, emit = windows_io()
+            self.assertEqual(read(), {0: (A, .5, -.5, -.25, .25)})
+            emit("wheel", -120, 120)
+            emit("left", 0, 0); emit("right", 0, 0)
+        self.assertEqual(sent[:2], [(0, 0, 0xffffff88, 0x1000), (0, 0, 120, 0x0800)])
+        self.assertEqual([r[3] for r in sent[2:]], [2, 4, 8, 16])
+
     def test_desktop_without_page_and_view_only_inside_learning(self):
         calls = []
         e = MouseEngine(lambda *args: calls.append(args), desktop=True)

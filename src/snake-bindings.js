@@ -1,7 +1,7 @@
 export const ACTION_LABELS = Object.freeze({vacuum:"吸取",antidote:"解毒",slow:"阅读减速"});
 export const DEFAULT_BINDINGS = Object.freeze({vacuum:Object.freeze({key:"KeyF",button:2}),antidote:Object.freeze({key:"KeyG",button:1}),slow:Object.freeze({key:"KeyH",button:6})});
 const reservedKeys=new Set(["Space","Escape","Enter","Tab","ArrowUp","ArrowDown","ArrowLeft","ArrowRight","KeyW","KeyA","KeyS","KeyD","KeyQ","KeyE"]);
-const reservedButtons=new Set([0,3,4,5,7,8,9,12,13,14,15,16]);
+const reservedButtons=new Set([0,3,4,7,8,9,12,13,14,15,16]);
 export function bindingError(bindings,action,device,value) {
   if (device==="key" && (!/^(Key[A-Z]|Digit\d|F[1-9]|F1[0-2]|Numpad\d|ShiftLeft|ShiftRight|ControlLeft|ControlRight|AltLeft|AltRight)$/.test(value) || reservedKeys.has(value))) return "这个键已用于移动、暂停或页面操作，请换一个键。";
   if (device==="button" && (!Number.isInteger(value)||value<0||value>17||reservedButtons.has(value))) return "这个手柄键已用于移动、菜单或全屏，请换一个键。";

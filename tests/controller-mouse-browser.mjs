@@ -87,9 +87,13 @@ try {
     await page.waitForFunction(() => !window.STUDY_CONTROLLER_MOUSE.isActive());
     assert.ok(await page.locator("#overlayStartBombGame").isVisible(), "web return still needs explicit Continue");
     await page.locator("#overlayStartBombGame").click(); await page.locator("#bombSettingsToggle").click();
-    await tap(5); assert.ok(await page.locator("#bombSettingsMenu").isHidden(), "R1 closes settings");
+    const muted = await page.evaluate(() => window.STUDY_AUDIO?.isMuted());
+    await tap(5); await tap(4);
+    assert.ok(await page.locator("#bombSettingsMenu").isVisible(), "R1 no longer triggers shared return in game");
+    assert.notEqual(await page.evaluate(() => window.STUDY_AUDIO?.isMuted()), muted, "L1 retains shared mute in game");
+    await tap(4);
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), "no horizontal overflow");
-    for (const asset of ["src/controller-mouse.js?v=1.3", "src/gamepad-cursor.js?v=1.18", "bomb-game.js?v=2.43"]) {
+    for (const asset of ["src/controller-mouse.js?v=1.3", "src/gamepad-cursor.js?v=1.19", "bomb-game.js?v=2.43"]) {
       assert.equal((await page.request.get(base + asset)).status(), 200);
     }
     assert.deepEqual(errors, []);
@@ -109,8 +113,15 @@ try {
     await page.evaluate(() => window.STUDY_CONTROLLER_MOUSE.refresh());
     await page.waitForTimeout(500);
     assert.equal(await page.locator("#study-controller-mouse-mode").textContent(), "网页鼠标");
+    await page.goto(base + "snake-game.html?demo=1"); await page.bringToFront();
+    await page.waitForFunction(() => window.__snakeDemo?.getState().ready);
+    const snakeMuted = await page.evaluate(() => window.STUDY_AUDIO?.isMuted());
+    await tap(5); await tap(4);
+    assert.match(page.url(), /snake-game/);
+    assert.notEqual(await page.evaluate(() => window.STUDY_AUDIO?.isMuted()), snakeMuted, "Snake retains L1 mute");
+    await tap(4);
     assert.deepEqual(errors, []);
-    console.log(`PASS Edge ${width}: R1 return, View互斥、重连/捕捉、防重复点击与游戏暂停（模拟手柄/本机状态）`);
+    console.log(`PASS Edge ${width}: 游戏R1不返回/L1静音、View互斥、重连/捕捉、防重复点击与游戏暂停（模拟手柄/本机状态）`);
     await context.close();
   }
 } finally { await browser.close(); }

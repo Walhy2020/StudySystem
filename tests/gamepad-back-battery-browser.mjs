@@ -66,7 +66,9 @@ try {
     await load("bomb-game"); await page.locator("#bombSettingsToggle").click();
     await page.locator("#bombFullscreenToggle").click();
     await page.waitForFunction(() => document.fullscreenElement);
-    await back(); // Direct game -> home in the fullscreen shell.
+    await back(); // Game R1 cannot navigate out; use the explicit return control.
+    assert.match(page.url(), /bomb-game/);
+    await page.locator('a[href="./index.html"]').click();
     await page.waitForSelector("#study-module-frame");
     let frame = page.frames().find(frame => frame !== page.mainFrame());
     await frame.waitForSelector('a[href="./scenario-learning.html"]');
@@ -157,7 +159,7 @@ try {
     await back(); await back(); await home();
     }
     assert.deepEqual(errors, []);
-    for (const resource of ["src/gamepad-cursor.js?v=1.18", "src/bomb-gamepad.js?v=1.7", "src/bomb-gamepad-battery.js?v=1.1", "bomb-game.css?v=1.10", "bomb-game.js?v=2.43"]) {
+    for (const resource of ["src/gamepad-cursor.js?v=1.19", "src/bomb-gamepad.js?v=1.8", "src/bomb-gamepad-battery.js?v=1.1", "bomb-game.css?v=1.10", "bomb-game.js?v=2.43"]) {
       assert.equal((await page.request.get(base + resource)).status(), 200, resource);
     }
     results.push({ width, r1BackLevels: true, r2NativeFullscreenPages: 8, fullscreenPreserved: true, batteryChecks: !shortcutsOnly });

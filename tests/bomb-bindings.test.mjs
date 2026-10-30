@@ -9,8 +9,11 @@ test("旧快捷键迁移仅返回绑定字段，默认手柄按钮独立且不�
     mushroomKey: "KeyJ", iceBombKey: "Space", mushroomGamepadButton: 0, iceBombGamepadButton: 1 });
   assert.deepEqual(b.restore({ mushroomKey: "KeyB", iceBombKey: "KeyB", mushroomGamepadButton: 1, iceBombGamepadButton: 1 }), {
     mushroomKey: "KeyB", iceBombKey: "Space", mushroomGamepadButton: 1, iceBombGamepadButton: 0 });
-  const restored = b.restore({ mushroomKey: "KeyW", iceBombKey: "Escape", mushroomGamepadButton: 5, iceBombGamepadButton: 7 });
-  assert.deepEqual(restored, b.restore({}));
+  const restored = b.restore({ mushroomKey: "KeyW", iceBombKey: "Escape", mushroomGamepadButton: 7, iceBombGamepadButton: 8 });
+  assert.equal(restored.mushroomGamepadButton, 0);
+  assert.equal(restored.iceBombGamepadButton, null);
+  assert.equal(restored.mushroomKey, "Space");
+  assert.equal(restored.iceBombKey, "KeyB");
   assert.deepEqual(b.restore(restored), restored);
 });
 
@@ -18,11 +21,11 @@ test("键盘和手柄捕捉支持单键，允许转移攻击键但拒绝保留�
   const state = b.restore({}); const before = structuredClone(state);
   for (const code of ["KeyJ", "Digit1", "Numpad3", "Slash"]) assert.equal(b.validKey(code), true);
   for (const code of ["KeyW", "ArrowUp", "Enter", "Escape", "Tab", "ShiftLeft", "F5", ""]) assert.equal(b.validKey(code), false);
-  for (const index of [0, 1, 2, 10, 17]) assert.equal(b.validButton(index), true);
-  for (const index of [-1, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16, 32, NaN]) assert.equal(b.validButton(index), false);
+  for (const index of [0, 1, 2, 5, 6, 10, 17]) assert.equal(b.validButton(index), true);
+  for (const index of [-1, 3, 4, 7, 8, 9, 11, 12, 13, 14, 15, 16, 32, NaN]) assert.equal(b.validButton(index), false);
   assert.equal(b.conflict(state, "mushroom", "keyboard", "KeyB"), "");
   assert.equal(b.conflict(state, "iceBomb", "gamepad", 0), "");
-  assert.match(b.conflict(state, "mushroom", "gamepad", 5), /返回/);
+  assert.equal(b.conflict(state, "mushroom", "gamepad", 5), "");
   assert.equal(b.conflict(state, "mushroom", "gamepad", 2), "");
   assert.equal(b.conflict(state, "mushroom", "keyboard", "Space"), "");
   assert.deepEqual(state, before);
@@ -42,7 +45,7 @@ test("攻击绑定转移仅清空另一攻击的同设备槽，空绑定刷新�
   assert.equal(b.keyLabel(null), "未设置");
   assert.deepEqual(b.restore(state), state);
   const before = structuredClone(state);
-  assert.match(b.assign(state, "mushroom", "gamepad", 5).error, /返回/);
+  assert.match(b.assign(state, "mushroom", "gamepad", 7).error, /全屏/);
   assert.match(b.assign(state, "mushroom", "keyboard", "KeyW").error, /移动/);
   assert.deepEqual(state, before);
   assert.equal(b.assign(state, "mushroom", "keyboard", "KeyB").clearedAction, "");
@@ -52,7 +55,7 @@ test("攻击绑定转移仅清空另一攻击的同设备槽，空绑定刷新�
 
 test("页面接入捕捉按钮、同步前验证和固定青色箭头", () => {
   const html = readFileSync(new URL("../bomb-game.html", import.meta.url), "utf8");
-  assert.match(html, /src\/bomb-bindings.js\?v=1.5/);
+  assert.match(html, /src\/bomb-bindings.js\?v=1.6/);
   assert.match(html, /<button id="mushroomAttackKey"/);
   assert.match(html, /<button id="iceBombAttackKey"/);
   assert.doesNotMatch(html, /<select/);

@@ -333,7 +333,7 @@
         if (control && !control.disabled && control.getClientRects().length) control.click();
       }
     }
-    if (!shell?.isNavigating() && isGame() && buttons.toggle && !previous.toggle) {
+    if (!shell?.isNavigating() && isGame() && pathname() !== base.pathname + "snake-game.html" && buttons.toggle && !previous.toggle) {
       if (menu) { suspend(); return; }
       setMenu(true);
     }

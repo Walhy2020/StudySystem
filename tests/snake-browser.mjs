@@ -140,7 +140,9 @@ try {
     await page.evaluate(()=>window.dispatchEvent(new Event("blur"))); await step(3);
     assert.equal((await state()).paused,false,"focus/input reset does not create a rest prompt");
     await page.evaluate(() => { window.__pad.axes[2] = 0; window.__step(3); window.__pad.axes[2] = .8; window.__step(5); window.__pad.axes[2] = 0; window.__step(3); });
-    await button(3, true); assert.equal(await page.evaluate(() => STUDY_GAMEPAD_CURSOR.isMenuActive()), false); assert.equal((await state()).paused, false); await button(3, false);
+    await button(3, true); assert.equal(await page.evaluate(() => STUDY_GAMEPAD_CURSOR.isMenuActive()), true, "Y no longer toggles Snake cursor menu"); assert.equal((await state()).paused, false); await button(3, false);
+    await button(9, true); await button(9, false); await button(9, true); await button(9, false);
+    assert.equal(await page.evaluate(() => STUDY_GAMEPAD_CURSOR.isMenuActive()), false, "Start resume closes game cursor menu");
     await button(4, true); assert.equal(await page.evaluate(() => STUDY_AUDIO.isMuted()), true); await button(4, false);
     assert.equal(await page.locator("#speakButton").isDisabled(), true);
     await button(4, true); await button(4, false); await act("#speakButton"); assert.equal(await page.evaluate(() => window.__speech), 1);

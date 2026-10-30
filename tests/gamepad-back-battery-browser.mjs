@@ -159,7 +159,7 @@ try {
     await back(); await back(); await home();
     }
     assert.deepEqual(errors, []);
-    for (const resource of ["src/gamepad-cursor.js?v=1.19", "src/bomb-gamepad.js?v=1.8", "src/bomb-gamepad-battery.js?v=1.1", "bomb-game.css?v=1.10", "bomb-game.js?v=2.43"]) {
+    for (const resource of ["src/gamepad-cursor.js?v=1.20", "src/bomb-gamepad.js?v=1.8", "src/bomb-gamepad-battery.js?v=1.1", "bomb-game.css?v=1.10", "bomb-game.js?v=2.43"]) {
       assert.equal((await page.request.get(base + resource)).status(), 200, resource);
     }
     results.push({ width, r1BackLevels: true, r2NativeFullscreenPages: 8, fullscreenPreserved: true, batteryChecks: !shortcutsOnly });

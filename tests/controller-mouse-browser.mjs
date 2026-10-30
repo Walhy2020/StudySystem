@@ -93,7 +93,7 @@ try {
     assert.notEqual(await page.evaluate(() => window.STUDY_AUDIO?.isMuted()), muted, "L1 retains shared mute in game");
     await tap(4);
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), "no horizontal overflow");
-    for (const asset of ["src/controller-mouse.js?v=1.3", "src/gamepad-cursor.js?v=1.19", "bomb-game.js?v=2.43"]) {
+    for (const asset of ["src/controller-mouse.js?v=1.3", "src/gamepad-cursor.js?v=1.20", "bomb-game.js?v=2.43"]) {
       assert.equal((await page.request.get(base + asset)).status(), 200);
     }
     assert.deepEqual(errors, []);

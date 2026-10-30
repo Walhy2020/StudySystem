@@ -7,7 +7,20 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.92** (2026-10-30). Native system mouse uses left
+System display version: **v1.0.93** (2026-10-30). Snake Y is no longer reserved
+by bindings or the shared cursor's game-menu toggle. Y can bind any Snake action,
+persists across reload, and is labeled Y/triangle. Reserved pad errors name the
+actual purpose. Snake keeps right-stick menu and Start pause/resume; Bomb's Y
+menu and learning-page Y/Space behavior stay unchanged. L1/R2/View stay reserved.
+Version/notifiers1.0.93, cursor1.20, Snake bindings1.3/entry1.11 and displayed
+version entry queries updated. Refresh only, no native service restart.
+Validation: syntax and307 Node tests passed. Focused real Edge1440/390 with
+simulated pad captures Y for vacuum, checks its label/save/reload persistence,
+then holds Y in the actual game loop to activate/release vacuum without opening
+the shared cursor menu. No unrelated browser suites or production-service restart.
+Existing41 tracked screenshot edits remain excluded.
+
+Previous **v1.0.92** (2026-10-30). Native system mouse uses left
 stick for pointer, right stick for vertical/horizontal wheel, A/B for left/right
 click. Wheel deltas accumulate whole120-unit notches; neutral, transitions and
 capture suppress stale/held scroll. Native samples include both sticks.

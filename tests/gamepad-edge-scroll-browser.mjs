@@ -145,7 +145,7 @@ try {
     assert.ok(await frame.locator("#child-horizontal").evaluate(node => node.scrollLeft) > 0, "horizontal scroll routes to the active child");
     await axes(0,0); await advance(.05);
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
-    assert.equal((await page.request.get(base + "src/gamepad-cursor.js?v=1.19")).status(), 200);
+    assert.equal((await page.request.get(base + "src/gamepad-cursor.js?v=1.20")).status(), 200);
     assert.deepEqual(errors, []);
     results.push({ width, actualLearningScroll: true, stopAndReverse: true, bounds: true,
       nestedFallback: true, noHorizontalConversion: true, horizontalEdges: true, snapPreserved: true, activeChild: true, inputSafety: true, clickPreserved: true });

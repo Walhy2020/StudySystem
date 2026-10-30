@@ -1,5 +1,5 @@
 import { HanziEngine } from "./src/engine.js";
-import { APP_VERSION, PHASE } from "./src/constants.js?v=1.0.92";
+import { APP_VERSION, PHASE } from "./src/constants.js?v=1.0.93";
 import { THEME_CONFIGS, speakEnglish } from "./theme-learning.js?v=2.26";
 import { buildThemeCatalog, renderArt } from "./src/theme-overview.js?v=1.20";
 import { buildWordLearningItems, WordLearningStorage } from "./src/word-learning-model.js?v=1.0";

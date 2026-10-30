@@ -22,7 +22,8 @@ test("八页先接入互斥层；R1仅学习页返回，游戏保留L1静音/R2/
   assert.match(cursor, /if \(!isGame\(\) && !shell\?\.isNavigating\(\) && buttons.back/);
   assert.match(cursor, /if \(buttons.mute && !previous.mute\)/);
   const bindings = normalizeBindings();
-  for (const button of [5]) {
+  assert.match(cursor, /pathname\(\) !== base.pathname \+ "snake-game.html" && buttons.toggle/);
+  for (const button of [3, 5]) {
     assert.equal(bindingError(bindings, "vacuum", "button", button), "");
     const restored = normalizeBindings({ ...bindings, vacuum: { ...bindings.vacuum, button } });
     assert.equal(restored.vacuum.button, button);

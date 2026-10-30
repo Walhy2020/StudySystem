@@ -8,7 +8,7 @@ import { VirusSnakes } from "./src/snake-upstream-v029/virus-snakes.js";
 import { normalizeConfig } from "./src/snake-config.js?v=1.2";
 import { setupTuning } from "./src/snake-tuning.js?v=1.2";
 import { HoldVacuum, PoisonState, VACUUM_SECONDS, speedForInput, pullViruses } from "./src/snake-actions.js?v=1.2";
-import { ACTION_LABELS, DEFAULT_BINDINGS, normalizeBindings, bindingError, keyLabel, buttonLabel } from "./src/snake-bindings.js?v=1.2";
+import { ACTION_LABELS, DEFAULT_BINDINGS, normalizeBindings, bindingError, keyLabel, buttonLabel } from "./src/snake-bindings.js?v=1.3";
 import { createPoisonSprites } from "./src/snake-render-assets.js?v=1.0";
 import { SteeringInput, actionForKey } from "./src/snake-upstream-v029/steering.js";
 import { Soundscape } from "./src/snake-upstream-v029/audio.js";

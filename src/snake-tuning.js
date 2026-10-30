@@ -1,4 +1,4 @@
-import { CONFIG_FIELDS, DEFAULT_CONFIG, PRESETS, normalizeConfig } from "./snake-config.js?v=1.2";
+import { CONFIG_FIELDS, DEFAULT_CONFIG, PRESETS, normalizeConfig } from "./snake-config.js?v=1.3";
 
 export function setupTuning({ values, apply }) {
   const panel = document.getElementById("tuningPanel");
@@ -26,7 +26,7 @@ export function setupTuning({ values, apply }) {
       currentGroup = field.group;
       groupDetails = document.createElement("details");
       groupDetails.className = "tuning-group";
-      groupDetails.open = currentGroup === "地图";
+      groupDetails.open = currentGroup === "地图" || currentGroup === "阅读减速";
       const summary = document.createElement("summary");
       const title = document.createElement("span");
       title.textContent = currentGroup;

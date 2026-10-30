@@ -33,6 +33,10 @@ try {
     assert.equal(await page.locator(".tuning-group").count(), new Set(CONFIG_FIELDS.map(f => f.group)).size);
     assert.equal(await page.locator('#tuningFields input[type="number"]').count(), CONFIG_FIELDS.length);
     assert.equal(await page.locator('#tuningFields input[type="range"]').count(), CONFIG_FIELDS.length);
+    const reading = page.locator(".tuning-group").first();
+    assert.equal(await reading.evaluate(el => el.open), true, "reading speed is expanded at the top");
+    assert.equal(await reading.locator("label").textContent(), "阅读减速速度");
+    assert.equal(await reading.locator("#tune-readingSpeedPercent").isVisible(), true);
     const head = (await state()).head;
     await page.waitForTimeout(100); assert.deepEqual((await state()).head, head);
     const moving = page.locator(".tuning-group").filter({ has: page.locator("#tune-speed") });

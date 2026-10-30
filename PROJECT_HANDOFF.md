@@ -7,7 +7,16 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.93** (2026-10-30). Snake Y is no longer reserved
+System display version: **v1.0.94** (2026-10-30). Snake game properties now show
+reading slowdown speed first in its own expanded group, labeled 阅读减速速度.
+The existing single-source percentage config (5–100%, default50%) still applies
+instantly and persists on reload. Input/slider, held-key speed and release are
+checked in focused real Edge1440/390; no unrelated browser suites.
+Version/notifiers1.0.94, Snake config/tuning1.3 and entry1.12. Refresh only.
+Validation: syntax,307 Node tests, knowledge check and diff check passed.
+Existing41 tracked screenshot edits remain excluded.
+
+Previous **v1.0.93** (2026-10-30). Snake Y is no longer reserved
 by bindings or the shared cursor's game-menu toggle. Y can bind any Snake action,
 persists across reload, and is labeled Y/triangle. Reserved pad errors name the
 actual purpose. Snake keeps right-stick menu and Start pause/resume; Bomb's Y

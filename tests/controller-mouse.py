@@ -31,6 +31,71 @@ class FakeGuard:
 
 
 class MouseTests(unittest.TestCase):
+    def test_desktop_without_page_and_view_only_inside_learning(self):
+        calls = []
+        e = MouseEngine(lambda *args: calls.append(args), desktop=True)
+        def step(buttons=0, x=0, focused=False, active=False, slot=0):
+            e.step({slot: (buttons, x, 0)}, active, focused, 10, .02, focused=focused)
+        step(VIEW, x=1)
+        self.assertEqual(e.mode, "system")
+        self.assertEqual(calls, [], "Held connection cannot emit until neutral")
+        step(); step(x=1); step(A)
+        self.assertEqual([call[0] for call in calls], ["move", "left"])
+        step(); step(VIEW); step()
+        self.assertEqual(e.mode, "system", "View outside learning never disables desktop mouse")
+        step(focused=True, active=True)
+        self.assertEqual(e.mode, "web", "Entering learning initially uses web cursor")
+        step(A, x=1, focused=True, active=True)
+        self.assertEqual(len(calls), 2)
+        step(focused=True, active=True); step(VIEW, focused=True, active=True)
+        self.assertEqual(e.mode, "system")
+        step(focused=True, active=True); step(x=1, focused=True, active=True)
+        self.assertEqual(len(calls), 3)
+        step(focused=True, active=True); step(VIEW, focused=True, active=True)
+        self.assertEqual(e.mode, "web")
+        step(A, x=1)
+        self.assertEqual(e.mode, "system", "Leaving learning restores desktop automatically")
+        self.assertEqual(len(calls), 3, "Held transition cannot click desktop")
+        step(); step(x=1)
+        self.assertEqual(len(calls), 4)
+        step(focused=True, active=True)
+        self.assertEqual(e.mode, "web", "Returning retains page's web selection")
+
+    def test_desktop_capture_disconnect_and_new_slot(self):
+        calls = []
+        e = MouseEngine(lambda *args: calls.append(args), desktop=True)
+        def step(buttons=0, x=0, focused=True, active=True, slot=0):
+            e.step({slot: (buttons, x, 0)}, active, True, 10, .02, focused=focused)
+        step(); step(VIEW); step()
+        self.assertEqual(e.mode, "system")
+        step(A, x=1, active=False)
+        self.assertEqual(calls, [], "Capture has focus but must suppress desktop input")
+        step(A, x=1)
+        self.assertEqual(calls, [], "Capture release requires neutral before output")
+        step(); step(A)
+        self.assertEqual(len(calls), 1)
+        e.step({}, False, False, 11, .02, focused=False)
+        step(VIEW, x=1, focused=False, active=False, slot=2)
+        self.assertEqual(e.mode, "system")
+        self.assertEqual(len(calls), 1)
+        step(focused=False, active=False, slot=2)
+        step(x=1, focused=False, active=False, slot=2)
+        self.assertEqual(len(calls), 2, "Wireless replacement slot recovers without page")
+
+    def test_desktop_service_starts_before_any_http_client(self):
+        calls, guard = [], FakeGuard()
+        service = ControllerMouse(desktop=True, io_factory=lambda: (lambda: {}, lambda *args: calls.append(args)), guard_factory=lambda: guard)
+        try:
+            self.assertTrue(guard.updated.wait(1))
+            self.assertEqual(service.clients, {})
+            self.assertTrue(service.worker.is_alive())
+            self.assertEqual(service.status()["mode"], "system")
+            self.assertEqual(calls, [])
+        finally:
+            service.close()
+        disabled = ControllerMouse(disabled=True, desktop=True)
+        self.assertIsNone(disabled.worker, "Acceptance flag always prevents desktop output")
+
     def polled_service(self, emit):
         service = ControllerMouse(disabled=True)
         service.engine = MouseEngine(emit)
@@ -210,6 +275,10 @@ class MouseTests(unittest.TestCase):
                 (good, {"Origin": "https://other.test"}, 403),
                 ({**good, "click": True}, {"Origin": "http://" + host}, 400),
                 ({**good, "active": "yes"}, {"Origin": "http://" + host}, 400),
+                ({**good, "focused": True}, {"Origin": "http://" + host}, 200),
+                ({**good, "active": False, "focused": True}, {"Origin": "http://" + host}, 200),
+                ({**good, "focused": False}, {"Origin": "http://" + host}, 400),
+                ({**good, "focused": "yes"}, {"Origin": "http://" + host}, 400),
                 ({**good, "client": "short"}, {"Origin": "http://" + host}, 400),
                 (good, {"Host": "other.test", "Origin": "http://other.test"}, 403),
                 (good, {"Origin": "http://" + host, "Content-Type": "text/plain"}, 400),

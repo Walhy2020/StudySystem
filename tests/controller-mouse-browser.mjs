@@ -9,17 +9,20 @@ try {
   for (const width of [1440, 390]) {
     const context = await browser.newContext({ viewport: { width, height: 844 }, hasTouch: width === 390 });
     await context.addInitScript(() => {
+      window.__focused = true;
+      Object.defineProperty(document, "hasFocus", { value: () => window.__focused });
       window.__pad = { index: 0, id: "Xbox XInput test", connected: true, mapping: "standard",
         axes: [0, 0, 0, 0], buttons: Array.from({ length: 17 }, () => ({ pressed: false, value: 0 })) };
       if (location.search.includes("held-view")) window.__pad.buttons[8] = { pressed: true, value: 1 };
       Object.defineProperty(navigator, "getGamepads", { value: () => window.__pad.connected ? [window.__pad] : [] });
     });
-    let mode = "web", activeLease = false, supported = true, reason = "";
+    let mode = "web", activeLease = false, focusedLease = false, supported = true, reason = "";
     // Native engine has separate pure tests. Browser test never controls desktop input.
     await context.route("**/api/controller-mouse", route => {
       const request = route.request().postDataJSON();
-      assert.deepEqual(Object.keys(request).sort(), ["active", "client"]);
+      assert.deepEqual(Object.keys(request).sort(), ["active", "client", "focused"]);
       activeLease = request.active;
+      focusedLease = request.focused;
       return route.fulfill({ contentType: "application/json", body: JSON.stringify({ supported, mode, reason }) });
     });
     const page = await context.newPage(), errors = [];
@@ -62,8 +65,15 @@ try {
     assert.equal(await page.evaluate(() => window.__clicks), 2);
     await page.evaluate(() => window.STUDY_GAMEPAD_CURSOR.setInputCapture(true));
     await page.waitForTimeout(500); assert.equal(activeLease, false, "capture cannot arm native View");
+    assert.equal(focusedLease, true, "capture retains page focus and cannot enable desktop fallback");
     await tap(8); assert.equal(await page.evaluate(() => window.STUDY_CONTROLLER_MOUSE.isActive()), false);
     await page.evaluate(() => window.STUDY_GAMEPAD_CURSOR.setInputCapture(false));
+    await page.evaluate(() => { window.__focused = false; window.dispatchEvent(new Event("blur")); });
+    await page.waitForTimeout(600);
+    assert.equal(activeLease, false); assert.equal(focusedLease, false, "Leaving learning enables desktop fallback");
+    await page.evaluate(() => { window.__focused = true; window.dispatchEvent(new Event("focus")); });
+    await page.waitForTimeout(600);
+    assert.equal(focusedLease, true, "Returning learning restores page ownership");
     await page.goto(base + "bomb-game.html?test=1"); await page.bringToFront();
     await page.locator("#overlayStartBombGame").click(); await page.waitForTimeout(120);
     mode = "system"; await tap(8); await page.waitForTimeout(500);
@@ -79,7 +89,7 @@ try {
     await page.locator("#overlayStartBombGame").click(); await page.locator("#bombSettingsToggle").click();
     await tap(5); assert.ok(await page.locator("#bombSettingsMenu").isHidden(), "R1 closes settings");
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), "no horizontal overflow");
-    for (const asset of ["src/controller-mouse.js?v=1.2", "src/gamepad-cursor.js?v=1.18", "bomb-game.js?v=2.43"]) {
+    for (const asset of ["src/controller-mouse.js?v=1.3", "src/gamepad-cursor.js?v=1.18", "bomb-game.js?v=2.43"]) {
       assert.equal((await page.request.get(base + asset)).status(), 200);
     }
     assert.deepEqual(errors, []);

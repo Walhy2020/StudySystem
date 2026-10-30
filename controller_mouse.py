@@ -1,4 +1,4 @@
-"""Opt-in local Xbox View/right-stick mouse. No HTTP mouse commands."""
+"""Local Xbox mouse with optional desktop fallback. No HTTP mouse commands."""
 import ctypes
 import math
 import sys
@@ -11,9 +11,12 @@ VIEW, A, B = 0x0020, 0x1000, 0x2000
 
 class MouseEngine:
     """Pure state machine; tests inject a fake output, never desktop input."""
-    def __init__(self, emit):
+    def __init__(self, emit, desktop=False):
         self.emit = emit
-        self.mode = "web"
+        self.desktop = desktop
+        self.mode = "system" if desktop else "web"
+        self.page_mode = "web"
+        self.focused = False
         self.slot = None
         self.previous = {}
         self.armed = False
@@ -21,12 +24,14 @@ class MouseEngine:
         self.fraction = [0.0, 0.0]
 
     def reset(self):
-        self.mode, self.slot, self.armed = "web", None, False
+        self.mode, self.slot, self.armed = "system" if self.desktop else "web", None, False
         self.fraction = [0.0, 0.0]
 
-    def step(self, pads, active, alive, now, dt):
+    def step(self, pads, active, alive, now, dt, focused=None):
         old = self.previous
         self.previous = {slot: pad[0] for slot, pad in pads.items()}
+        if self.desktop:
+            return self.desktop_step(pads, old, active, active if focused is None else focused, now, dt)
         if self.mode == "system" and (self.slot not in pads or not alive or
                                       now - self.last_input > 120 or now - self.started > 1800):
             self.reset()
@@ -43,6 +48,36 @@ class MouseEngine:
                 return
         if self.mode != "system":
             return
+        self.output(pads, old, now, dt)
+
+    def desktop_step(self, pads, old, active, focused, now, dt):
+        # Desktop output never needs a web lease. Only a focused learning page
+        # can toggle View; leaving it always restores desktop control.
+        desired = self.page_mode if focused else "system"
+        changed = focused != self.focused or desired != self.mode or self.slot not in pads
+        self.focused, self.mode = focused, desired
+        if not pads:
+            self.slot, self.armed = None, False
+            self.fraction = [0.0, 0.0]
+            return
+        if self.slot not in pads:
+            self.slot = next(iter(pads))
+        if changed:
+            self.armed = False
+            self.fraction = [0.0, 0.0]
+        buttons = pads[self.slot][0]
+        if active and self.slot in old and buttons & VIEW and not old[self.slot] & VIEW:
+            self.page_mode = self.mode = "web" if self.page_mode == "system" else "system"
+            self.armed = False
+            self.fraction = [0.0, 0.0]
+            return
+        # A focused key-binding capture must not become desktop clicks/motion.
+        if self.mode == "system" and (not focused or active):
+            self.output(pads, old, now, dt)
+        else:
+            self.armed = False
+
+    def output(self, pads, old, now, dt):
         buttons, x, y = pads[self.slot]
         def strength(value):
             return math.copysign((min(1, abs(value)) - .25) / .75, value) if abs(value) > .25 else 0
@@ -119,36 +154,46 @@ def windows_io():
 
 
 class ControllerMouse:
-    def __init__(self, disabled=False, io_factory=windows_io, guard_factory=windows_motion_guard):
+    def __init__(self, disabled=False, io_factory=windows_io, guard_factory=windows_motion_guard, desktop=False):
         self.disabled, self.io_factory = disabled, io_factory
+        self.desktop = desktop
         self.guard_factory, self.guard = guard_factory, None
         self.lock = threading.RLock()
         self.stop = threading.Event()
         self.clients = {}
+        self.focus_clients = {}
         self.worker = None
         self.engine = None
         self.supported = False
         self.reason = "disabled" if disabled else "not-started"
         self.output_failed = False
+        if desktop:
+            self.start()
 
-    def attach(self, client, active):
+    def start(self):
         with self.lock:
-            now = time.monotonic()
-            self.clients = {k: v for k, v in self.clients.items() if now - v[0] < 5}
-            if client not in self.clients and len(self.clients) >= 16:
-                raise ValueError("Too many clients")
-            self.clients[client] = (now, active)
             if self.worker is None and not self.disabled:
                 io = self.io_factory()
                 if io:
                     self.guard = self.guard_factory()
-                    self.engine = MouseEngine(io[1])
+                    self.engine = MouseEngine(io[1], desktop=self.desktop)
                     self.supported = True
                     self.reason = ""
                     self.worker = threading.Thread(target=self.run, args=(io[0],), daemon=True)
                     self.worker.start()
                 else:
                     self.reason = "unsupported"
+
+    def attach(self, client, active, focused=None):
+        with self.lock:
+            now = time.monotonic()
+            self.clients = {k: v for k, v in self.clients.items() if now - v[0] < 5}
+            if client not in self.clients and len(self.clients) >= 16:
+                raise ValueError("Too many clients")
+            self.clients[client] = (now, active)
+            self.focus_clients = {k: v for k, v in self.focus_clients.items() if k in self.clients}
+            self.focus_clients[client] = (now, active if focused is None else focused)
+            self.start()
             if self.guard:
                 self.guard.authorize(client, active)
             return self.status()
@@ -185,8 +230,9 @@ class ControllerMouse:
                 self.supported, self.reason = True, ""
                 active = any(enabled and after_read - at < 1.5 for at, enabled in self.clients.values())
                 alive = any(after_read - at < 5 for at, _ in self.clients.values())
+                focused = any(enabled and after_read - at < 1.5 for at, enabled in self.focus_clients.values())
                 try:
-                    self.engine.step(pads, active, alive, after_read, after_read - last)
+                    self.engine.step(pads, active, alive, after_read, after_read - last, focused=focused if self.desktop else None)
                 except Exception:
                     # Never repeatedly retry rejected desktop output. Web-only
                     # guarding still needs fresh read-only connection samples.

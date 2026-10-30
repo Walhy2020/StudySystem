@@ -34,9 +34,10 @@
     if (inFlight || performance.now() < retryAfter) return;
     inFlight = true;
     try {
-      const active = !document.hidden && document.hasFocus() && !capture;
+      const focused = !document.hidden && document.hasFocus();
+      const active = focused && !capture;
       const response = await fetch("./api/controller-mouse", { method: "POST", cache: "no-store",
-        headers: { "Content-Type": "application/json" }, body: JSON.stringify({ client, active }), signal: AbortSignal.timeout(1200) });
+        headers: { "Content-Type": "application/json" }, body: JSON.stringify({ client, active, focused }), signal: AbortSignal.timeout(1200) });
       if (!response.ok) throw Error("Local mouse service unavailable");
       const data = await response.json();
       available = true; supported = data.supported === true; reason = data.reason || "";
@@ -74,6 +75,7 @@
     setCapture: value => { capture = Boolean(value); void poll(); }, refresh: poll });
   document.addEventListener("fullscreenchange", mount);
   window.addEventListener("focus", poll);
+  window.addEventListener("blur", poll);
   document.addEventListener("visibilitychange", poll);
   setInterval(() => { void poll(); }, 400);
   void poll();

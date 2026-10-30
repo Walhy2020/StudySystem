@@ -82,7 +82,7 @@ try {
     assert.deepEqual(await second.locator("#study-gamepad-cursor").evaluate(node =>
       ({ x: parseFloat(node.style.left), y: parseFloat(node.style.top) })), { x: width / 2, y: 450 });
     await second.close();
-    for (const asset of ["src/fullscreen-shell.js?v=1.4", "fullscreen-shell.css?v=1.2", "src/gamepad-cursor.js?v=1.18", "src/controller-mouse.js?v=1.2"])
+    for (const asset of ["src/fullscreen-shell.js?v=1.4", "fullscreen-shell.css?v=1.2", "src/gamepad-cursor.js?v=1.18", "src/controller-mouse.js?v=1.3"])
       assert.equal((await page.request.get(base + asset)).status(), 200);
     assert.deepEqual(errors, []);
     console.log("PASS Edge " + width + ": nested game fullscreen owner/exit, constant DOM identity, root refresh, x/y only, clamp, tab isolation, asset200");

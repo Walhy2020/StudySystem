@@ -1,13 +1,36 @@
 # StudySystem cross-device handoff
 
-Last updated: 2026-10-27
+Last updated: 2026-10-30
 Repository: `https://github.com/Walhy2020/StudySystem.git`
 Branch: `main`
 Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.90** (2026-10-27). Snake held reading slowdown
+System display version: **v1.0.91** (2026-10-30). Opt-in --desktop-mouse starts
+the native Xbox worker at server launch without HTTP clients. Desktop defaults
+to system output; focused learning pages initially use web mode, with physical
+View toggling the page preference. Blur/closed/stale pages restore desktop;
+returning preserves the page choice. Capture sends focused=true/active=false,
+suppressing native output until neutral release. Held connection/transition
+inputs cannot click; replacement wireless slots recover without a web page.
+scripts/install-desktop-mouse.ps1 installs the hidden login startup shortcut and
+backs up/disables the JoyXoff Run entry and sign-in helper service, stops duplicate mouse output, and
+preserves its profiles. Backups stay in local AppData, never Git; -Undo restores
+startup entries (restart without --desktop-mouse to complete undo). Existing
+service/mouse shares one host/port, no second native worker. Acceptance servers
+retain --disable-system-mouse. Version/notifiers1.0.91, controller cache1.3 and
+display-entry cache queries updated. Native behavior tested with fake output;
+actual controller/logon behavior needs user observation after installation.
+Validation: required syntax and307 Node tests passed, including14 native mouse
+tests with fake desktop output. Focused real Microsoft Edge1440/390 checks
+mode/cursor exclusivity, capture focus, simulated blur/focus, held buttons and
+game pause/Continue. No unrelated browser suites. The actual login shortcut was
+used to launch the53177 service; GET status confirmed supported system mode
+without a page registration. Local JoyXoff output/autostart are disabled with
+backups. Existing41 tracked screenshot edits remain excluded from this release.
+
+Previous **v1.0.90** (2026-10-27). Snake held reading slowdown
 defaults to H/LT(L2),50% of base speed; editable percentage and captured bindings.
 Aligned boost is suppressed while reading, lower poison speed still wins.
 Keyboard/pad/touch holds coexist and clear on pause, restore, mode, blur and

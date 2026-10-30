@@ -67,9 +67,11 @@ class LearningAppHandler(SimpleHTTPRequestHandler):
                 raise ValueError()
             self.connection.settimeout(2)
             data = json.loads(self.rfile.read(size))
-            if not isinstance(data, dict) or set(data) != {"client", "active"} or type(data["active"]) is not bool or not isinstance(data["client"], str) or not re.fullmatch(r"[a-zA-Z0-9-]{16,64}", data["client"]):
+            if not isinstance(data, dict) or set(data) not in ({"client", "active"}, {"client", "active", "focused"}) or type(data["active"]) is not bool or not isinstance(data["client"], str) or not re.fullmatch(r"[a-zA-Z0-9-]{16,64}", data["client"]):
                 raise ValueError()
-            return self.json_response(self.server.controller_mouse.attach(data["client"], data["active"]))
+            if "focused" in data and (type(data["focused"]) is not bool or data["active"] and not data["focused"]):
+                raise ValueError()
+            return self.json_response(self.server.controller_mouse.attach(data["client"], data["active"], data.get("focused")))
         except (ValueError, OSError):
             return self.send_error(400)
 
@@ -108,9 +110,10 @@ def main():
     parser.add_argument("--bind", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=5177)
     parser.add_argument("--disable-system-mouse", action="store_true", help="Disable native controller mouse (e.g. isolated acceptance server)")
+    parser.add_argument("--desktop-mouse", action="store_true", help="Start Xbox desktop mouse immediately; View switches modes in the learning app")
     args = parser.parse_args()
     server = LearningHTTPServer((args.bind, args.port), LearningAppHandler)
-    server.controller_mouse = ControllerMouse(disabled=args.disable_system_mouse)
+    server.controller_mouse = ControllerMouse(disabled=args.disable_system_mouse, desktop=args.desktop_mouse)
     print(f"Mario learning app: http://{args.bind}:{args.port}/")
     try:
         server.serve_forever()

@@ -84,8 +84,10 @@ export class SnakeLearning {
     const candidates = this.words.filter(w => learned.has(w.id) && !mastered.has(w.id)).sort((a, b) =>
       (this.counts[a.id] || 0) - (this.counts[b.id] || 0) || Number(today.has(b.id)) - Number(today.has(a.id))).slice(0, RUN_SIZE);
     const seen = new Set();
-    this.runIds = this.validIds([...list(previous), ...candidates.map(w => w.id), ...this.words.map(w => w.id)])
-      .filter(id => { const w = this.byId.get(id); if (mastered.has(id) || seen.has(w.char)) return false; seen.add(w.char); return true; }).slice(0, RUN_SIZE);
+    // A run may be smaller than100. Neither an old save nor catalog padding
+    // is evidence that the child has studied a character.
+    this.runIds = this.validIds([...list(previous), ...candidates.map(w => w.id)])
+      .filter(id => { const w = this.byId.get(id); if (!learned.has(id) || mastered.has(id) || seen.has(w.char)) return false; seen.add(w.char); return true; }).slice(0, RUN_SIZE);
     this.cursor = this.runIds.length ? this.cursor % this.runIds.length : 0;
   }
 

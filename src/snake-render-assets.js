@@ -1,14 +1,17 @@
-// Tint each original once. Applying a Canvas filter to every body segment on
-// every frame forces expensive offscreen filtering, especially on long snakes.
-export function createPoisonSprites(originals) {
-  return Object.fromEntries(Object.entries(originals).map(([name, source]) => {
+// Tint once, then decode an immutable PNG image. Using the filtered canvas
+// itself as a repeatedly scaled drawImage source is much slower in Edge.
+export async function createPoisonSprites(originals) {
+  return Object.fromEntries(await Promise.all(Object.entries(originals).map(async ([name, source]) => {
     const sprite = document.createElement("canvas");
     sprite.width = source.naturalWidth || source.width;
     sprite.height = source.naturalHeight || source.height;
-    sprite.dataset.snakePoisonSprite = name;
     const context = sprite.getContext("2d");
     context.filter = "hue-rotate(65deg) saturate(1.35)";
     context.drawImage(source, 0, 0);
-    return [name, sprite];
-  }));
+    const image = new Image();
+    image.dataset.snakePoisonSprite = name;
+    image.src = sprite.toDataURL("image/png");
+    await image.decode();
+    return [name, image];
+  })));
 }

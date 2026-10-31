@@ -15,7 +15,7 @@ try {
     await context.route("**/api/controller-mouse**", route => route.fulfill({ json: { supported: true, mode: mouseMode } }));
     await context.addInitScript(({ sourceKeys, key }) => {
       for (const k of sourceKeys) if (!localStorage.getItem(k)) localStorage.setItem(k, k.includes("hanzi-refactor")
-        ? JSON.stringify({ records: { "0010": { status: "known", correctCount: 1 } }, dailyNewIds: ["0010"] }) : JSON.stringify({ sentinel: k }));
+        ? JSON.stringify({ records: Object.fromEntries(Array.from({length:30},(_,i)=>[String(i+1).padStart(4,"0"), { status: "known", correctCount: 1 }])), dailyNewIds: ["0010"] }) : JSON.stringify({ sentinel: k }));
       const fixture = sessionStorage.getItem("snake-acceptance-fixture");
       if (fixture) { localStorage.setItem(key, fixture); sessionStorage.removeItem("snake-acceptance-fixture"); }
       let callbacks = [], now = performance.now();

@@ -9,12 +9,12 @@ import { normalizeConfig } from "./src/snake-config.js?v=1.3";
 import { setupTuning } from "./src/snake-tuning.js?v=1.3";
 import { HoldVacuum, PoisonState, VACUUM_SECONDS, speedForInput, pullViruses } from "./src/snake-actions.js?v=1.2";
 import { ACTION_LABELS, DEFAULT_BINDINGS, normalizeBindings, bindingError, keyLabel, buttonLabel } from "./src/snake-bindings.js?v=1.3";
-import { createPoisonSprites } from "./src/snake-render-assets.js?v=1.0";
+import { createPoisonSprites } from "./src/snake-render-assets.js?v=1.1";
 import { SteeringInput, actionForKey } from "./src/snake-upstream-v029/steering.js";
 import { Soundscape } from "./src/snake-upstream-v029/audio.js";
 import { StarBursts } from "./src/snake-upstream-v029/star-burst.js";
 import { saveEcosystem, restoreEcosystem } from "./src/snake-ecosystem.js?v=1.0";
-import { SnakeLearning, SNAKE_PROGRESS_KEY, readObject } from "./src/snake-learning.js?v=1.0";
+import { SnakeLearning, SNAKE_PROGRESS_KEY, readObject } from "./src/snake-learning.js?v=1.1";
 
 const $ = (id) => document.getElementById(id);
 const canvas = $("game");
@@ -266,7 +266,7 @@ function setPaused(value, title = "暂停") {
   controls.clear(); directPadAngle = null;
   padNeedsNeutral = true;
   vacuum.reset(); clearReadingSlow(); touchSteeringAngle = null; if (motion) motion.speed = config.speed;
-  $("pauseTitle").textContent = !learning.targets.length ? "所有汉字已掌握，暂无可学目标" : title;
+  $("pauseTitle").textContent = !learning.targets.length ? "暂无已学且未掌握的汉字，请先到汉字模块学习" : title;
   $("pauseOverlay").hidden = !value;
   gamepad.reset();
   syncSound();
@@ -887,7 +887,7 @@ try {
   const virusPalettes = Object.fromEntries(VIRUS_TYPES.map(type => [type.tier, { violet: baseViruses[type.tier] }]));
   variants.forEach(({ tier, color }, index) => { virusPalettes[tier][color] = variantImages[index]; });
   assets = { head: headImage, segment, floor, virus, virusSmall, virusMedium, virusSuper, virusPalettes };
-  poisonedAssets = createPoisonSprites({ head: headImage, segment });
+  poisonedAssets = await createPoisonSprites({ head: headImage, segment });
   floorPattern = ctx.createPattern(assets.floor, "repeat");
   resize();
   reset();

@@ -7,16 +7,19 @@ await import("../data/pinyin-readings.js");
 const words = window.MARIO_WORD_BANK;
 const readings = word => window.MARIO_PINYIN_READINGS.getReadings(word, words);
 const storage = data => ({ getItem: key => JSON.stringify(data[key] || null), setItem: () => assert.fail("learning model must never write progress") });
-const make = (data = {}, saved = {}) => new SnakeLearning(words, storage(data), readings, () => .5, saved);
+const studied = { [HANZI_KEY]: { records: Object.fromEntries(words.map(w => [w.id, { status: "known" }])) } };
+const make = (data = studied, saved = {}) => new SnakeLearning(words, storage(data), readings, () => .5, saved);
 
-test("Snake mirrors bomb evidence precedence, mastery exclusion, today/round priority and 100 unique characters", () => {
+test("Snake only uses studied characters, preserves evidence precedence, mastery exclusion and today/round priority", () => {
   const ids = words.slice(0, 8).map(w => w.id);
   const primary = { records: Object.fromEntries(ids.map(id => [id, { status: "known" }])), dailyNewIds: [ids[4]], masteredIds: [ids[0]] };
   const model = make({ [HANZI_KEY]: primary }, { counts: { [ids[1]]: 3 } });
-  assert.equal(model.source, "hanzi"); assert.equal(model.runIds.length, 100);
+  assert.equal(model.source, "hanzi"); assert.equal(model.runIds.length, 7);
   assert.equal(model.runIds[0], ids[4]); assert.equal(model.runIds[6], ids[1]);
   assert.ok(!model.runIds.includes(ids[0]));
-  assert.equal(new Set(model.runIds.map(id => model.byId.get(id).char)).size, 100);
+  assert.equal(new Set(model.runIds.map(id => model.byId.get(id).char)).size, 7);
+  assert.ok(model.runIds.every(id => ids.includes(id)));
+  assert.equal(make().runIds.length, 100, "large studied pools still cap the run at100");
   assert.equal(learningSource(storage({ [HANZI_KEY]: { records: {} }, [LEGACY_KEY]: primary }), words).source, "legacy");
   assert.equal(learningSource(storage({ [HANZI_KEY]: primary, [LEGACY_KEY]: { masteredIds: [ids[4]] } }), words).source, "hanzi");
   assert.equal(make({ [HANZI_KEY]: { dailyNewIds: ids } }).source, "none", "dailyNewIds alone is not evidence");
@@ -31,7 +34,7 @@ test("five distinct targets, bidirectional sublevel parity, unambiguous polyphon
     const targetIds = model.targets.slice();
     if (model.isPinyin) targetIds.forEach((a, i) => targetIds.slice(i + 1).forEach(b => assert.equal(model.shares(a, b), false)));
     const before = model.counts[model.active];
-    const restored = make({}, model.snapshot());
+    const restored = make(studied, model.snapshot());
     assert.deepEqual(restored.counts, model.counts); assert.equal(before, restored.counts[restored.active]);
     assert.deepEqual(restored.options, model.options, "refresh retains the same question options");
     for (let n = 0; n < 5; n++) {
@@ -49,7 +52,7 @@ test("five distinct targets, bidirectional sublevel parity, unambiguous polyphon
       assert.equal(model.answer(target).correct, true); assert.ok(!model.retry.includes(target));
     }
     assert.equal(model.complete, true); assert.equal(model.answer(targetIds[0]), null);
-    model = make({}, model.snapshot()); assert.equal(model.complete, true);
+    model = make(studied, model.snapshot()); assert.equal(model.complete, true);
     if (batch < 21) model.nextBatch();
   }
 });
@@ -58,10 +61,28 @@ test("empty and small non-mastered pools never invent or duplicate words, corrup
   const allMastered = { masteredIds: words.map(w => w.id) };
   const empty = make({ [HANZI_KEY]: allMastered });
   assert.deepEqual(empty.targets, []); assert.equal(empty.current, null); assert.equal(empty.prompt, "暂无可学字");
+  assert.deepEqual(make({}).runIds, [], "no learning evidence means no playable characters");
+  assert.deepEqual(make({ [HANZI_KEY]: { dailyNewIds: words.slice(0,5).map(w=>w.id) } }).targets, [], "scheduled new characters have not been studied");
   const tiny = new SnakeLearning(words.slice(0, 2), storage({}), readings, () => .5);
   assert.equal(new Set(tiny.targets).size, tiny.targets.length); assert.ok(tiny.targets.length <= 2);
-  const repaired = make({}, { batch: -1, cursor: NaN, targets: ["missing"], counts: { missing: 10 }, runIds: ["missing"] });
+  const repaired = make(studied, { batch: -1, cursor: NaN, targets: ["missing"], counts: { missing: 10 }, runIds: ["missing"] });
   assert.equal(repaired.batch, 1); assert.equal(repaired.targets.length, 5);
   assert.ok(!repaired.runIds.includes("missing"));
-  assert.equal(make({}, null).targets.length, 5);
+  assert.equal(make(studied, null).targets.length, 5);
+});
+
+test("old padded runs, unfinished targets, retries and distractors are restricted to current studied records", () => {
+  const old = make().snapshot(), ids = words.slice(8,11).map(w=>w.id);
+  old.retry = [...old.runIds];
+  const data = { [HANZI_KEY]: { records: Object.fromEntries(ids.map(id=>[id,{status:"known"}])) } };
+  let model = make(data, old);
+  for (let i=0;i<8;i++) {
+    assert.equal(model.runIds.length,ids.length);
+    for (const id of [...model.runIds,...model.targets,...model.options.map(o=>o.wordId)]) assert.ok(ids.includes(id));
+    while(model.active) model.answer(model.active);
+    model.nextBatch();
+    model = make(data, model.snapshot());
+  }
+  const empty=make({},old);
+  assert.deepEqual(empty.targets,[]); assert.deepEqual(empty.options,[]);
 });

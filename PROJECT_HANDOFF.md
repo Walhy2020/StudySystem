@@ -1,13 +1,30 @@
 # StudySystem cross-device handoff
 
-Last updated: 2026-10-30
+Last updated: 2026-10-31
 Repository: `https://github.com/Walhy2020/StudySystem.git`
 Branch: `main`
 Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.94** (2026-10-30). Snake game properties now show
+System display version: **v1.0.95** (2026-10-31). Snake pools now only contain
+characters with source-Hanzi learning evidence, excluding mastered characters.
+No full-catalog padding; runs may be smaller than100 and batches smaller than5.
+Old saved runs/targets/options are sanitized against the same learned-only set;
+source progress is never written. Empty learned pools wait for Hanzi learning.
+Poison sprites are tinted once and decoded into PNG images before play, avoiding
+Edge's slow repeated filtered-canvas scaling path. Green appearance, poison
+timing, speed, tail damage and cure rules remain unchanged.
+Version/notifiers1.0.95, Snake learning/render-assets1.1 and entry1.13.
+Refresh only; no production-service restart. Existing41 screenshot edits excluded.
+Validation: syntax and308 Node tests passed; focused real Edge1440/390 checks
+learned-only pools, padded-save repair, empty pools, actual poison image draws,
+half-speed/tail damage and source storage isolation. In an isolated120-segment
+draw comparison, median CPU/flush time was9.5ms for the old tinted Canvas source
+and1.9ms for decoded poison PNG images, matching normal images; this is a draw
+benchmark rather than a claim about whole-game frame rate. No unrelated browser suites.
+
+Previous **v1.0.94** (2026-10-30). Snake game properties now show
 reading slowdown speed first in its own expanded group, labeled 阅读减速速度.
 The existing single-source percentage config (5–100%, default50%) still applies
 instantly and persists on reload. Input/slider, held-key speed and release are

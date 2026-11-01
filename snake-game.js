@@ -9,9 +9,9 @@ import { normalizeConfig } from "./src/snake-config.js?v=1.3";
 import { setupTuning } from "./src/snake-tuning.js?v=1.3";
 import { HoldVacuum, PoisonState, VACUUM_SECONDS, speedForInput, pullViruses } from "./src/snake-actions.js?v=1.2";
 import { ACTION_LABELS, DEFAULT_BINDINGS, normalizeBindings, bindingError, keyLabel, buttonLabel } from "./src/snake-bindings.js?v=1.3";
-import { createPoisonSprites } from "./src/snake-render-assets.js?v=1.1";
+import { loadPoisonSprites } from "./src/snake-render-assets.js?v=1.2";
 import { SteeringInput, actionForKey } from "./src/snake-upstream-v029/steering.js";
-import { Soundscape } from "./src/snake-upstream-v029/audio.js";
+import { Soundscape } from "./src/snake-audio.js?v=1.0";
 import { StarBursts } from "./src/snake-upstream-v029/star-burst.js";
 import { saveEcosystem, restoreEcosystem } from "./src/snake-ecosystem.js?v=1.0";
 import { SnakeLearning, SNAKE_PROGRESS_KEY, readObject } from "./src/snake-learning.js?v=1.1";
@@ -117,8 +117,16 @@ $("tuningToggle").addEventListener("click", () => {
   if (!$("tuningPanel").hidden) { closeSettings(); setPaused(true); }
 });
 
+function syncLength() {
+  const value = String(trail.glyphs.length);
+  if ($("fullscreenLengthCount").textContent === value) return;
+  $("fullscreenLengthCount").textContent = value;
+  $("fullscreenLength").setAttribute("aria-label", `当前长度 ${value}`);
+}
+
 function updateUI() {
   if (!learning) return;
+  syncLength();
   $("starScore").textContent = $("fullscreenStarScore").textContent = rewards.stars;
   $("fullscreenStars").setAttribute("aria-label", `星星 ${rewards.stars}`);
   $("starScore").parentElement.title=poison.active?`已中毒，解毒需要 ${config.antidoteCost} 颗星星`:"星星";
@@ -364,6 +372,7 @@ function fitCamera() {
 function growBody(count) {
   for (let index = 0; index < count; index++) trail.grow("★");
   if (count > 0) {
+    syncLength();
     trail.setLayout(config.spacing, config.leadGap);
     growthFlash = clock;
   }
@@ -386,7 +395,7 @@ function takeDamage(cause) {
 function update(dt) {
   clock += dt;
   const wasPoisoned=poison.active;
-  poison.update(clock,config,loss=>{ trail.shrink(loss); damageHits++; lastDamageCause="中毒"; sound.play("damage"); });
+  poison.update(clock,config,loss=>{ trail.shrink(loss); syncLength(); damageHits++; lastDamageCause="中毒"; sound.play("damage"); });
   if (wasPoisoned!==poison.active) updateUI();
   let directTurnRate = null, movementRequest = null;
   if (mode === "auto") {
@@ -681,6 +690,7 @@ function syncFullscreenState() {
   document.body.classList.toggle("snake-fullscreen", active);
   $("fullscreenTarget").hidden = !active;
   $("fullscreenStars").hidden = !active;
+  $("fullscreenLength").hidden = !active;
   if (active) { closeSettings(); closeTuning(); }
 }
 document.addEventListener("fullscreenchange", syncFullscreenState);
@@ -887,7 +897,7 @@ try {
   const virusPalettes = Object.fromEntries(VIRUS_TYPES.map(type => [type.tier, { violet: baseViruses[type.tier] }]));
   variants.forEach(({ tier, color }, index) => { virusPalettes[tier][color] = variantImages[index]; });
   assets = { head: headImage, segment, floor, virus, virusSmall, virusMedium, virusSuper, virusPalettes };
-  poisonedAssets = await createPoisonSprites({ head: headImage, segment });
+  poisonedAssets = await loadPoisonSprites(loadImage);
   floorPattern = ctx.createPattern(assets.floor, "repeat");
   resize();
   reset();

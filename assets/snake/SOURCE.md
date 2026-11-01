@@ -25,9 +25,13 @@ artwork and poison only changes the head/body color, without particle effects.
 Local poison movement defaults to50% of normal speed, configurable in properties,
 and returns to full speed after cure. Local choice placement keeps more space
 around the head, regenerating only positions from older snapshots.
-Poison tint is pre-rendered
-once by `src/snake-render-assets.js` and cached for head/body draws instead of
-filtering the main canvas on every segment/frame. Upstream browser controls,
+Green poison variants are checked-in local derivatives:
+`flystar-head-poison-green-v1.png` (532×326 RGBA) and
+`hanzi-star-poison-green-v1.png` (512×512 RGBA). They retain the original shape,
+dimensions and transparency, with hue-rotate(65deg)/saturate(1.35) baked in offline.
+`src/snake-render-assets.js` loads them directly; no runtime tint or PNG encoding.
+`src/snake-audio.js` adapts upstream output gains for normal learning-system volume,
+keeping music, effects and webpage mute behavior. Upstream browser controls,
 update service and separate config/audio storage APIs are not used.
 
 Current artwork copied without modification: flystar-head-v1.png, sprites.json,

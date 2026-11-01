@@ -1,13 +1,31 @@
 # StudySystem cross-device handoff
 
-Last updated: 2026-10-31
+Last updated: 2026-11-01
 Repository: `https://github.com/Walhy2020/StudySystem.git`
 Branch: `main`
 Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.95** (2026-10-31). Snake pools now only contain
+System display version: **v1.0.96** (2026-11-01). Snake uses checked-in green
+head/body poison PNGs (same dimensions/alpha as originals) loaded through
+loadPoisonSprites; no runtime tint, canvas snapshots or PNG encoding.
+Fullscreen shows current body-segment length at top center, updating on growth,
+damage, poison tail loss and restore. Narrow layouts reserve space for all3 HUD badges.
+Local src/snake-audio.js wraps unchanged upstream audio with master1/music0.9/
+effects1.6 gains; webpage mute and resume recreate the louder mix correctly.
+Version/notifiers1.0.96, Snake render-assets1.2, audio1.0, CSS1.7 and entry1.14.
+Refresh only; no production-service restart. Existing41 screenshot edits excluded.
+
+Validation: syntax,309 Node tests, knowledge and diff checks passed. Focused real
+Edge1440/390 verifies PNG HTTP/signatures/dimensions and actual drawing, rejects
+runtime PNG encoding, checks poison/cure and live fullscreen length placement
+and tail-loss updates. Offline Edge audio rendering of music plus the glyph cue
+increased RMS from0.0162 to0.0759 with peak0.495 (no clipping in this sample).
+Webpage mute/re-enable output gains are covered by the local audio regression.
+No unrelated browser suites or production-service restarts.
+
+Previous **v1.0.95** (2026-10-31). Snake pools now only contain
 characters with source-Hanzi learning evidence, excluding mastered characters.
 No full-catalog padding; runs may be smaller than100 and batches smaller than5.
 Old saved runs/targets/options are sanitized against the same learned-only set;

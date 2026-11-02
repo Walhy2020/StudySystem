@@ -1,0 +1,12 @@
+.game-preview { display: grid; place-items: center; }
+.game-preview img { display: block; max-width: 100%; object-fit: contain; }
+.bomb-preview { background: repeating-conic-gradient(#f2d9b8 0 25%, #e4c39a 0 50%) 0 / 64px 64px; }
+.bomb-preview > img { width: 68%; height: 260px; filter: drop-shadow(0 12px 12px #62452035); }
+.snake-preview { background: url("./assets/snake/arena-floor-v2.jpg?v=0.2.9") center / cover; }
+.snake-preview .preview-head { position: absolute; width: 76%; height: auto; left: 20%; top: 27%; }
+.snake-preview .preview-star { position: absolute; width: 35%; height: auto; top: 46%; }
+.snake-preview .star-one { left: 5%; transform: rotate(-14deg); }
+.snake-preview .star-two { left: 24%; top: 39%; }
+.game-enter { display: inline-flex; align-items: center; justify-content: center; min-height: 50px; border-radius: 14px; padding: 0 20px; color: #fff; background: var(--blue); box-shadow: 0 6px 0 #174ba9; font-weight: 1000; text-decoration: none; }
+.game-enter:hover { background: #1855d8; }
+@media (max-width: 560px) { .bomb-preview > img { height: 200px; } .snake-preview .preview-head { width: 64%; left: 30%; top: 19%; } .snake-preview .preview-star { width: 28%; top: 42%; } .snake-preview .star-one { left: 12%; } .snake-preview .star-two { left: 28%; top: 33%; } }

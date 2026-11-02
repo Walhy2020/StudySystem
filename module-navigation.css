@@ -1,4 +1,5 @@
 .module-tabs, .book-nav, .theme-nav, .scenario-nav { min-width: 0; max-width: 100%; }
+.topbar:not(:has(.top-actions)) { grid-template-columns: minmax(0, 1fr) auto; }
 @media (max-width: 1280px) {
   .topbar { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "brand actions" "tabs tabs"; }
   .topbar .brand { grid-area: brand; min-width: 0; }

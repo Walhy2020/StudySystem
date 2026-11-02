@@ -75,6 +75,8 @@ test("reading slow has an editable speed cap, suppresses boost and never speeds 
   assert.equal(speedForInput(config,0,null,false,true),50);
   assert.equal(speedForInput(normalizeConfig({speed:100,readingSpeedPercent:25}),0,0,true,true),25);
   assert.equal(speedForInput(normalizeConfig({speed:100,readingSpeedPercent:80}),0,0,true,true),50);
+  assert.equal(speedForInput(normalizeConfig({speed:100,readingSpeedPercent:1}),0,0,false,true),1);
+  assert.equal(normalizeConfig({readingSpeedPercent:0}).readingSpeedPercent,1);
   assert.equal(speedForInput(config,0,0,false,false),150);
 });
 test("new slow shortcut preserves old custom controls and all three actions stay unique",()=>{

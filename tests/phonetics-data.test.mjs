@@ -68,14 +68,15 @@ test("旧运行映射完整覆盖 48 项全部示例词且保留整词音标斜�
   assert.equal(transcriptions.teacher, "/ˈti:tʃə/");
 });
 
-test("炸弹入口位于音标页 header，地图内只保留重置按钮，提示区仅供读屏", () => {
+test("音标页导航进入独立游戏页，地图内只保留重置按钮，提示区仅供读屏", () => {
   const html = fs.readFileSync(new URL("../phonetics.html", import.meta.url), "utf8");
   const appSource = fs.readFileSync(new URL("../src/phonetics-app.js", import.meta.url), "utf8");
   const css = fs.readFileSync(new URL("../phonetics.css", import.meta.url), "utf8");
   const header = html.match(/<header\b[\s\S]*?<\/header>/)?.[0] || "";
   const map = html.match(/<div class="map-visual">[\s\S]*?<\/div>\s*<section class="challenge"/)?.[0] || "";
   const currentCard = html.match(/<button class="hanzi phonetic-symbol"[\s\S]*?<\/button>/)?.[0] || "";
-  assert.match(header, /top-actions[\s\S]*bombGameEntry/);
+  assert.match(header, /href="\.\/games\.html"/);
+  assert.doesNotMatch(header, /bombGameEntry/);
   assert.doesNotMatch(header, /resetPhonetics/);
   assert.match(map, /phonetics-map-reset[\s\S]*resetPhonetics/);
   assert.doesNotMatch(map, /bombGameEntry/);
@@ -91,5 +92,5 @@ test("炸弹入口位于音标页 header，地图内只保留重置按钮，提�
   assert.doesNotMatch(html, /<p class="feedback"/);
   assert.match(html, /phonetics\.css\?v=1\.9/);
   assert.match(html, /phonetics-transcriptions\.js\?v=1\.0/);
-  assert.match(html, /phonetics-app\.js\?v=1\.73/);
+  assert.match(html, /phonetics-app\.js\?v=1\.74/);
 });

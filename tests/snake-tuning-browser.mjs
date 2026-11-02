@@ -37,6 +37,8 @@ try {
     assert.equal(await reading.evaluate(el => el.open), true, "reading speed is expanded at the top");
     assert.equal(await reading.locator("label").textContent(), "阅读减速速度");
     assert.equal(await reading.locator("#tune-readingSpeedPercent").isVisible(), true);
+    assert.equal(await reading.locator("#tune-readingSpeedPercent").getAttribute("min"), "1");
+    assert.equal(await reading.locator("#tune-range-readingSpeedPercent").getAttribute("step"), "1");
     const head = (await state()).head;
     await page.waitForTimeout(100); assert.deepEqual((await state()).head, head);
     const moving = page.locator(".tuning-group").filter({ has: page.locator("#tune-speed") });

@@ -64,22 +64,24 @@ async function restoreBombSnapshot(snapshot) {
 await page.goto(baseUrl);
 assert.equal(await page.locator("#appVersionLabel").textContent(), `v${APP_VERSION}`, "system display version updated");
 assert.equal(await page.locator('.module-tabs a[href="./bomb-game.html?v=1.0"]').count(), 0, "bomb entry is not a module tab");
-assert.equal(await page.locator('.topbar .top-actions #bombGameEntry').isVisible(), true, "header shows bomb-game entry");
+assert.equal(await page.locator('#bombGameEntry').count(), 0, "Hanzi no longer contains direct game entries");
 assert.equal(await page.locator('.topbar #resetProgress').count(), 0, "header does not contain Hanzi reset");
 assert.equal(await page.locator('.map-visual .map-actions #bombGameEntry').count(), 0, "map background does not contain bomb entry");
 assert.equal(await page.locator('.map-visual .map-actions #resetProgress').isVisible(), true, "map background keeps Hanzi reset");
-const entry = page.locator('.topbar .top-actions a[href="./bomb-game.html?v=1.0"]');
+await page.locator('nav a[href="./games.html"]').click();
+await page.waitForURL((url) => url.pathname.endsWith("/games.html"));
+const entry = page.locator('#bombGameEntry');
 assert.equal(await entry.isVisible(), true, "header bomb-game entry is visible");
-await tabTo('.topbar .top-actions a[href="./bomb-game.html?v=1.0"]');
+await tabTo('#bombGameEntry');
 assert.equal(await entry.evaluate((node) => document.activeElement === node), true, "bomb entry is keyboard focusable");
 await page.keyboard.press("Enter");
 await page.waitForURL(/bomb-game\.html/);
-const returnLink = page.locator('a[href="./index.html"]');
+const returnLink = page.locator('a[href="./games.html"]');
 assert.equal(await returnLink.isVisible(), true, "game shows return link");
-await tabTo('a[href="./index.html"]');
+await tabTo('a[href="./games.html"]');
 assert.equal(await returnLink.evaluate((node) => document.activeElement === node), true, "Tab focuses the game return link");
 await page.keyboard.press("Enter");
-await page.waitForURL((url) => url.pathname.endsWith("/index.html"));
+await page.waitForURL((url) => url.pathname.endsWith("/games.html"));
 await page.goto(bombUrl);
 assert.equal(await page.locator("#bombCanvas").getAttribute("width"), "1280");
 assert.equal(await page.locator("#bombCanvas").getAttribute("height"), "720");
@@ -90,7 +92,7 @@ assert.equal(await page.locator("#bombStartTitle").count(), 1, "central level he
 for (const selector of ["#bombHp", "#bombAmmo", "#mushroomLeft", "#bombLevel", "#bombPower"]) {
   assert.equal(await page.locator(selector).isVisible(), true, selector + " HUD value remains visible");
 }
-for (const selector of ["#startBombGame", "#restartBombGame", '.bomb-actions a[href="./index.html"]']) {
+for (const selector of ["#startBombGame", "#restartBombGame", '.bomb-actions a[href="./games.html"]']) {
   assert.equal(await page.locator(selector).isVisible(), true, selector + " action remains visible");
 }
 
@@ -201,7 +203,7 @@ const resourcePaths = [
   "bomb-game.html",
   "bomb-game.css?v=1.5",
   "bomb-game.js?v=2.34",
-  "src/gamepad-cursor.js?v=1.20",
+  "src/gamepad-cursor.js?v=1.21",
   "gamepad-cursor.css?v=1.1",
   "src/bomb-gamepad.js?v=1.8",
   "src/bomb-bindings.js?v=1.6",
@@ -388,9 +390,8 @@ assert.equal(mobileLayout.actionsVisible, true);
 assert.equal(mobileLayout.overflow, false);
 await page.screenshot({ path: "tmp/bomb-ready-390.png", fullPage: true });
 
-await page.locator('a[href="./index.html"]').click();
-await page.waitForURL(/\/index\.html$/);
-assert.equal(await page.locator("#hanziView").isVisible(), true, "return link reaches new index");
+await page.locator('a[href="./games.html"]').click();
+await page.waitForURL(/\/games\.html$/);
 
 await page.goto(baseUrl + "bomb-game.css?legacy-fixture=1");
 await page.evaluate(({ bombKey, hanziKey, legacyKey }) => {

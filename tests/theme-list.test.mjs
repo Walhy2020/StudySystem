@@ -2,12 +2,12 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
-test("八个学习页面导航统一使用主题、情景短标题且保留导航顺序", () => {
-  for (const name of ["index", "pinyin", "word-learning", "book-learning", "theme-learning", "scenario-learning", "review-learning", "phonetics"]) {
+test("学习页和独立游戏页导航保留学习模块顺序，游戏位于最后", () => {
+  for (const name of ["index", "pinyin", "word-learning", "book-learning", "theme-learning", "scenario-learning", "review-learning", "phonetics", "games"]) {
     const html = readFileSync(new URL(`../${name}.html`, import.meta.url), "utf8");
     const nav = html.match(/<nav[\s\S]*?<\/nav>/)[0];
     const labels = Array.from(nav.matchAll(/<(?:a|span)\b[^>]*>([^<]+)<\/(?:a|span)>/g), match => match[1]);
-    assert.deepEqual(labels, ["拼音", "汉字", "单词", "Book1", "主题", "情景", "总复习", "音标"], name);
+    assert.deepEqual(labels, ["拼音", "汉字", "单词", "Book1", "主题", "情景", "总复习", "音标", "游戏"], name);
   }
   for (const [name, title] of [["theme-learning", "主题"], ["scenario-learning", "情景"]]) {
     const html = readFileSync(new URL(`../${name}.html`, import.meta.url), "utf8");

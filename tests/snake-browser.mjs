@@ -395,7 +395,7 @@ try {
     assert.equal((await state()).collected,0); assert.equal((await state()).length,8);
     // Focused return link retains native Enter; shell keeps exactly one owner.
     await page.locator("#snakeBack").focus(); await page.keyboard.press("Enter");
-    await waitFor(() => STUDY_FULLSCREEN_SHELL.activeWindow()?.location.pathname.endsWith("/index.html"));
+    await waitFor(() => STUDY_FULLSCREEN_SHELL.activeWindow()?.location.pathname.endsWith("/games.html"));
     assert.equal(await page.locator("#study-gamepad-cursor").count(), 1);
     assert.equal(await page.frameLocator("#study-module-frame").locator("#snakeGameEntry").count(), 1);
     await page.frameLocator("#study-module-frame").locator("#snakeGameEntry").click();
@@ -425,6 +425,8 @@ try {
     await page.evaluate(() => { window.__pad.buttons[5] = { pressed: false, value: 0 }; window.__step(3); window.__pad.buttons[5] = { pressed: true, value: 1 }; window.__step(2); });
     await waitFor(() => STUDY_FULLSCREEN_SHELL.activeWindow()?.location.pathname.endsWith("/index.html"));
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    await page.frameLocator("#study-module-frame").locator('a[href="./games.html"]').click();
+    await waitFor(() => STUDY_FULLSCREEN_SHELL.activeWindow()?.location.pathname.endsWith("/games.html"));
     await page.frameLocator("#study-module-frame").locator("#snakeGameEntry").click();
     await waitFor(() => STUDY_FULLSCREEN_SHELL.activeWindow()?.__snakeDemo?.getState().ready);
     const embedded = page.frameLocator("#study-module-frame");

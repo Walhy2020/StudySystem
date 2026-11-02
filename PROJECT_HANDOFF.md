@@ -1,13 +1,30 @@
 # StudySystem cross-device handoff
 
-Last updated: 2026-11-01
+Last updated: 2026-11-02
 Repository: `https://github.com/Walhy2020/StudySystem.git`
 Branch: `main`
 Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.96** (2026-11-01). Snake uses checked-in green
+System display version: **v1.0.97** (2026-11-02). Snake reading slowdown now
+supports1–100% in1% increments, default50%. Number/slider normalization and
+saved settings share the same minimum. games.html is a top-level selector using
+scenario cards for Bomb/Snake, with a ninth nav tab after Phonetics on all8
+learning pages. Remove direct Hanzi/Pinyin/Words/IPA game entries; both games return to games.
+Shell/cursor allowlists include games, retaining a single cursor/fullscreen owner.
+Version/all11 notifiers1.0.97, Snake config/tuning1.4/entry1.15, shell1.5,
+cursor1.21 and navigation1.2. Refresh only; no production-service restart.
+Existing41 screenshot edits remain excluded.
+
+Validation: syntax,309 Node tests, knowledge and diff checks passed. Focused real
+Edge1440/390 checks game cards and image loading, desktop keyboard/mobile touch
+entry and return, navigation without page overflow, right-stick cursor and R2
+fullscreen retained across both games. Focused reading-speed checks cover1%
+number/slider input,1% steps, reload persistence and actual held/released speed.
+No unrelated browser suites or production-service restart.
+
+Previous **v1.0.96** (2026-11-01). Snake uses checked-in green
 head/body poison PNGs (same dimensions/alpha as originals) loaded through
 loadPoisonSprites; no runtime tint, canvas snapshots or PNG encoding.
 Fullscreen shows current body-segment length at top center, updating on growth,

@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="./styles.css?v=2.3" />
   <link rel="stylesheet" href="./phonetics.css?v=1.9" />
   <link rel="stylesheet" href="./module-navigation.css?v=1.2" />
-  <link rel="stylesheet" href="./pinyin.css?v=1.0" />
+  <link rel="stylesheet" href="./pinyin.css?v=1.1" />
   <script src="./src/web-audio.js?v=1.0"></script>
 </head>
 <body>
@@ -58,7 +58,7 @@
           <button class="plain-button icon-action wrong-action hidden" id="markWrong" type="button" aria-label="不认识" title="不认识"><span aria-hidden="true">×</span></button>
           <button class="plain-button icon-action mastery-action hidden" id="markMastered" type="button" aria-label="完全认识" title="完全认识"><span aria-hidden="true">★</span></button>
         </div>
-        <span class="phonetics-sr-only" id="feedback" role="status"></span>
+        <p class="pinyin-feedback" id="feedback" role="status" hidden></p>
       </section>
     </section>
     <aside class="side-panel">
@@ -84,8 +84,8 @@
     </aside>
   </main>
 </div>
-<script type="module" src="./src/pinyin-app.js?v=1.49"></script>
+<script type="module" src="./src/pinyin-app.js?v=1.50"></script>
 <script src="./src/fullscreen-shell.js?v=1.5"></script><script src="./src/controller-mouse.js?v=1.3"></script><script src="./src/gamepad-cursor.js?v=1.21"></script>
-<script type="module" src="./src/version-update.js?v=1.0.97"></script>
+<script type="module" src="./src/version-update.js?v=1.0.98"></script>
 </body>
 </html>

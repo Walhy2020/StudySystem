@@ -11,11 +11,17 @@ fs.mkdirSync("tmp", { recursive: true });
 try {
   for (const width of [1440, 390]) {
     const context = await browser.newContext({ viewport: { width, height: 1000 }, hasTouch: width === 390 });
+    await context.route("**/api/controller-mouse", route => route.fulfill({ json: { supported: false, mode: "web" } }));
     const page = await context.newPage(); const errors = [];
     page.on("pageerror", error => errors.push(error.message));
     page.on("response", response => { if (response.status() >= 400) errors.push(response.url()); });
     await page.goto(base + "index.html?test=pinyin-nav");
     await page.locator('nav [href="./pinyin.html"]').focus(); await page.keyboard.press("Enter");
+    const embedded = await (await page.locator("#study-module-frame").elementHandle()).contentFrame();
+    await embedded.waitForFunction(() => window.__PINYIN_APP__);
+    // Navigation now retains the owner document. Exercise the lesson below in
+    // its own direct page after checking that the real navigation target boots.
+    await page.goto(base + "pinyin.html?test=pinyin-browser");
     await page.waitForFunction(() => window.__PINYIN_APP__);
     const protectedKeys = ["mario-hanzi-refactor-v1", "mario-literacy-desktop-mvp-v1", "mario-phonetics-v1",
       "mario-bomb-game-progress-v1", "mario-book1-v1", "mario-theme-learned-v1", "mario-scenario-learning-v1", "mario-total-review-v1"];
@@ -101,7 +107,8 @@ try {
     // Navigation-only checks: do not run the other modules' learning/gameplay suites.
     for (const module of ["pinyin", "index", "phonetics", "book-learning", "theme-learning", "scenario-learning", "review-learning"]) {
       await page.goto(base + `${module}.html?test=pinyin-nav`);
-      assert.deepEqual((await page.locator('nav[aria-label="学习模块"] > *').allTextContents()).map(text => text.trim()), names);
+      const expected = await page.locator('nav a[href="./games.html"]').count() ? [...names, "游戏"] : names;
+      assert.deepEqual((await page.locator('nav[aria-label="学习模块"] > *').allTextContents()).map(text => text.trim()), expected);
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
       const last = page.locator('nav[aria-label="学习模块"] > *').last(); await last.scrollIntoViewIfNeeded();
       const box = await last.boundingBox(); assert.ok(box.x >= 0 && box.x + box.width <= width);

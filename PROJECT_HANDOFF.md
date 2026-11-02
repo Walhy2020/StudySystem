@@ -7,7 +7,19 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.97** (2026-11-02). Snake reading slowdown now
+System display version: **v1.0.98** (2026-11-02). Pinyin's all-mastered state
+now clearly explains that no new/review items remain. Daily, Review and Next
+Batch return visible feedback without changing progress or creating empty rounds.
+Existing double-confirmed reset remains user-controlled. Other modules and the
+63-item non-mastered review rule are unchanged. Pinyin entry1.50/CSS1.1 and
+all11 release notifiers1.0.98. Refresh only; no service restart.
+Focused real Edge1440/390 covers direct and shell-embedded pages, mouse/touch,
+native keyboard, simulated Xbox A hit testing, reload and storage isolation.
+The normal63-item learning/review and fixed-order suites also pass.
+Validation: syntax,309 Node tests, knowledge and diff checks passed.
+Existing tracked screenshot edits remain excluded.
+
+Previous **v1.0.97** (2026-11-02). Snake reading slowdown now
 supports1–100% in1% increments, default50%. Number/slider normalization and
 saved settings share the same minimum. games.html is a top-level selector using
 scenario cards for Bomb/Snake, with a ninth nav tab after Phonetics on all8

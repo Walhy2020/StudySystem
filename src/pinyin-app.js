@@ -1,9 +1,10 @@
 import { PINYIN_ITEMS } from "../data/pinyin.js?v=1.0";
 import { PinyinEngine } from "./pinyin-engine.js?v=1.1";
 import { PinyinStorage } from "./pinyin-storage.js?v=1.0";
-import { APP_VERSION, PHASE } from "./constants.js?v=1.0.97";
+import { APP_VERSION, PHASE } from "./constants.js?v=1.0.98";
 
 const items = PINYIN_ITEMS;
+const allMasteredMessage = `${items.length} 项拼音均已标为“完全认识”，暂无新拼音或待复习项。`;
 const dom = Object.fromEntries([...document.querySelectorAll("[id]")].map(node => [node.id, node]));
 dom.appVersionLabel.textContent = `v${APP_VERSION}`;
 if (items.length !== 63 || new Set(items.map(item => item.id)).size !== 63) {
@@ -56,22 +57,24 @@ function renderList(container, ids, source, emptyText) {
 
 function render() {
   const item = engine.currentWord();
+  const stats = engine.stats();
+  const allMastered = stats.mastered === items.length;
   const active = Boolean(item) && engine.state.dailyTaskStarted && !engine.state.dailyTaskDone && engine.state.dailyPhase !== PHASE.IDLE;
   const ready = engine.canFinishNewLearning();
   const phases = { [PHASE.IDLE]: "等待开始", [PHASE.SCREENING]: "筛选今日新拼音",
     [PHASE.NEW_LEARNING]: "今日新拼音学习", [PHASE.REVIEW]: "复习拼音" };
   const progress = engine.progress();
-  dom.phaseLabel.textContent = phases[engine.state.dailyPhase] || "等待开始";
+  dom.phaseLabel.textContent = allMastered ? "全部已掌握" : phases[engine.state.dailyPhase] || "等待开始";
   dom.taskProgress.textContent = engine.state.inlineReviewContext ? "临时复习 · 完成后返回原任务"
     : engine.state.dailyPhase === PHASE.SCREENING ? `已选 ${engine.state.dailyNewIds.length}/3`
     : engine.state.dailyPhase === PHASE.NEW_LEARNING ? `完成 ${progress.newDone}/${progress.newTotal} · 每项认识 1 次`
     : engine.state.dailyPhase === PHASE.REVIEW ? `普通 ${progress.reviewDone}/${progress.reviewTotal} · 错拼音 ${progress.wrongDone}/${progress.wrongTotal}` : "";
   dom.currentPinyin.dataset.contentKind = active ? "character" : "placeholder";
-  dom.pinyinSymbol.textContent = active ? item.symbol : engine.state.dailyTaskDone ? "完成" : ready ? "学完了" : "开始";
+  dom.pinyinSymbol.textContent = active ? item.symbol : allMastered ? "已掌握" : engine.state.dailyTaskDone ? "完成" : ready ? "学完了" : "开始";
   dom.pinyinSymbol.classList.toggle("phonetic-state-label", !active);
   dom.categoryLabel.textContent = active ? item.title : "";
   dom.categoryLabel.classList.toggle("hidden", !active);
-  dom.idleMessage.textContent = active ? "" : engine.state.dailyTaskDone ? "本次任务已完成"
+  dom.idleMessage.textContent = allMastered ? allMasteredMessage : active ? "" : engine.state.dailyTaskDone ? "本次任务已完成"
     : ready ? "本轮已学完，请点击“学习完毕”。" : "选择今日新拼音或复习拼音";
   dom.idleMessage.classList.toggle("hidden", active);
   dom.masteredBadge.classList.add("hidden");
@@ -85,10 +88,10 @@ function render() {
   });
   [dom.startDaily, dom.startReview].forEach(button => button.classList.toggle("hidden", active));
   const learning = engine.state.dailyTaskStarted && !engine.state.dailyTaskDone;
-  dom.startDaily.disabled = learning && engine.state.dailyPhase !== PHASE.REVIEW;
-  dom.startReview.disabled = learning && engine.state.dailyPhase === PHASE.REVIEW;
-  dom.finishNewWords.classList.toggle("hidden", !ready);
-  const stats = engine.stats();
+  dom.startDaily.disabled = !allMastered && learning && engine.state.dailyPhase !== PHASE.REVIEW;
+  dom.startReview.disabled = !allMastered && learning && engine.state.dailyPhase === PHASE.REVIEW;
+  dom.finishNewWords.classList.toggle("hidden", !ready || allMastered);
+  dom.feedback.hidden = !dom.feedback.textContent;
   for (const field of ["known", "mastered", "wrong", "due"]) dom[`${field}Count`].textContent = stats[field];
   dom.progressCount.textContent = `${stats.touched}/${stats.total}`;
   dom.starCount.textContent = engine.state.stars;
@@ -99,13 +102,19 @@ function render() {
 
 function act(callback) {
   const result = callback();
-  dom.feedback.textContent = (result?.message || "").replaceAll("音标", "拼音").replaceAll("汉字", "拼音").replaceAll("这个字", "这项拼音");
+  dom.feedback.textContent = (result?.message || "").replaceAll("音标", "拼音").replaceAll("今日新字", "今日新拼音").replaceAll("汉字", "拼音").replaceAll("这个字", "这项拼音");
   storage.save(engine.state); render();
   return result;
 }
+function startRound(mode, options) {
+  if (engine.stats().mastered === items.length) {
+    return { type: "all-mastered", message: `${allMasteredMessage}如需重新学习，可使用“重置拼音状态”。` };
+  }
+  return mode === "review" ? engine.startReview() : engine.startDaily(options);
+}
 const actions = {
-  startDaily: () => engine.startDaily(), nextBatch: () => engine.startDaily({ resetCursor: true }),
-  startReview: () => engine.startReview(), correct: () => engine.correct(), wrong: () => engine.wrong(),
+  startDaily: () => startRound("daily"), nextBatch: () => startRound("daily", { resetCursor: true }),
+  startReview: () => startRound("review"), correct: () => engine.correct(), wrong: () => engine.wrong(),
   master: () => engine.master(), finishNew: () => engine.finishNewLearning(),
 };
 for (const [id, action] of Object.entries({ startDaily: "startDaily", nextBatch: "nextBatch", startReview: "startReview",

@@ -50,7 +50,7 @@
     "package": "package.json"
   },
   "modules": [
-    {"id":"pinyin","label":"拼音","summary":"63 项；复用音标策略，独立状态。","entry":"pinyin.html","sourceIds":["pinyin-data","pinyin-engine","pinyin-storage","ipa-engine"],"storageKey":"mario-pinyin-v1","tests":["tests/pinyin.test.mjs"],"browserTests":["tests/pinyin-browser-acceptance.mjs"]},
+    {"id":"pinyin","label":"拼音","summary":"63 项；复用音标策略，独立状态。","entry":"pinyin.html","sourceIds":["pinyin-data","pinyin-engine","pinyin-storage","ipa-engine"],"storageKey":"mario-pinyin-v1","tests":["tests/pinyin.test.mjs"],"browserTests":["tests/pinyin-browser-acceptance.mjs","tests/pinyin-empty-browser.mjs"]},
     {"id":"hanzi","label":"汉字","summary":"1600 字；新学最多 3 项，每项认识 3 次，普通复习每日最多 20 项。","entry":"index.html","sourceIds":["constants","hanzi-engine","hanzi-storage"],"storageKey":"mario-hanzi-refactor-v1","tests":["tests/engine.test.mjs","tests/storage.test.mjs"],"browserTests":["tests/browser-acceptance.mjs"]},
     {"id":"words","label":"单词","summary":"三个来源的全量定义目录，规范化拼写去重；直接复用汉字引擎，独立进度。","entry":"word-learning.html","sourceIds":["words-model","words-entry","word-library","hanzi-engine"],"storageKey":"mario-word-learning-v1","tests":["tests/word-learning.test.mjs"],"browserTests":["tests/word-learning-browser.mjs"]},
     {"id":"book1","label":"Book1","summary":"A–Z，每字母 4 词；104 词和 26 字母卡；仅迁移旧 opw1。","entry":"book-learning.html","sourceIds":["book-data","book-storage"],"storageKey":"mario-book1-v1","tests":["tests/book1.test.mjs"],"browserTests":["tests/book1-browser-acceptance.mjs"]},

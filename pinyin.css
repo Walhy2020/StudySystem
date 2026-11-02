@@ -6,6 +6,7 @@
 .pinyin-view .phonetic-card-category { max-width: calc(100% - 70px); }
 .pinyin-view .voice-row { justify-content: center; }
 .pinyin-view .idle-message { margin: 8px 0 0; min-height: 24px; text-align: center; color: var(--muted); }
+.pinyin-view .pinyin-feedback { margin: 12px 0 0; padding: 10px 14px; border-radius: 12px; background: rgba(255, 255, 255, 0.85); color: var(--ink); line-height: 1.6; text-align: center; overflow-wrap: anywhere; }
 .pinyin-list .word-chip { min-width: 4.6rem; font-size: clamp(1.8rem, 2.8vw, 2.5rem); }
 @media (max-width: 760px) {
   .pinyin-word-card { min-height: 0; }

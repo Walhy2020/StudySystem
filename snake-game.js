@@ -488,8 +488,11 @@ function update(dt) {
     }, bosses.map(boss => ({ ...boss, radius: superType.size / 2 })));
     if (enclosure) {
       const ids = new Set(enclosure.enclosed.map(boss => boss.id));
-      for (const id of ids) virusField.consume(id);
-      viruses = viruses.filter(item => !ids.has(item.id));
+      for (const boss of enclosure.enclosed) {
+        virusField.consume(boss.id);
+        virusField.spill(boss, config.superVirusValue);
+      }
+      refreshField();
       const value = ids.size * config.superVirusValue;
       const grown = rewards.addGrowth(value);
       growBody(grown);

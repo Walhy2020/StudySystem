@@ -7,7 +7,20 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.99** (2026-11-03). Virus snakes already touching
+System display version: **v1.0.100** (2026-11-03). Super-virus captures now
+spill a visible ordinary-virus loot cluster via the existing spill mechanic
+(default10 mixed small/medium/large), in addition to the existing capture growth.
+RefreshField immediately exposes the drops; existing ecosystem persistence keeps
+uneaten loot across reload and consumed drops stay single-use. Snake entry1.17,
+all11 release notifiers1.0.100. Refresh only; no production-service restart.
+Existing screenshot edits remain excluded.
+
+Validation: syntax,311 Node tests, knowledge and diff checks passed. Focused
+real Edge1440/390 verifies visible mixed loot after capture, no drops for an open
+loop, one capture reward, reload persistence, actual pickup growth and unchanged
+Hanzi storage. Screenshots confirm the pile appears inside the captured ring.
+
+Previous **v1.0.99** (2026-11-03). Virus snakes already touching
 the player's body now die immediately, including stationary/restored overlaps;
 head-on contact still hurts the player. Ordinary-virus pickup matches head size
 and processes simultaneous contacts. Super-virus capture closes on visible

@@ -71,18 +71,39 @@ try {
       assert.equal(after.enclosure.capturedSuper,captured?1:0,scenario);
       assert.equal(after.viruses.some(v=>v.id==="capture-boss"),!captured,scenario);
       assert.equal(after.length,captured?103:100,"capture growth awarded once");
+      if(captured){
+        const loot=after.viruses.filter(v=>v.id.startsWith("drop:"));
+        assert.ok(loot.length>=6,"captured super virus leaves visible consumable loot");
+        assert.ok(loot.every(v=>v.tier!=="super"));
+        assert.ok(loot.some(v=>v.tier==="small") && loot.some(v=>v.tier==="medium"));
+      }else assert.equal(after.viruses.filter(v=>v.id.startsWith("drop:")).length,0);
       if(scenario==="closed"){
         await page.screenshot({path:`tmp/snake-capture-${width}.png`});
         await page.evaluate(()=>window.dispatchEvent(new Event("pagehide")));
         await page.reload();await ready();
         assert.equal((await state()).enclosure.capturedSuper,1);
         assert.ok(!(await state()).viruses.some(v=>v.id==="capture-boss"));
+        const restoredLoot=(await state()).viruses.filter(v=>v.id.startsWith("drop:"));
+        assert.ok(restoredLoot.length>=6,"uneaten loot survives refresh");
+        // Eat the central large drop using the real movement loop after reload.
+        await page.evaluate(k=>{
+          const saved=JSON.parse(localStorage.getItem(k));
+          const loot=saved.ecosystem.field.drops.find(v=>v.id.startsWith("drop:")&&!v.consumed);
+          saved.head={x:loot.x,y:loot.y};saved.points=[{...saved.head},{x:loot.x-1800,y:loot.y}];
+          sessionStorage.setItem("snake-contact-fixture",JSON.stringify(saved));
+        },key);
+        await page.reload();await ready();
+        const beforeLoot=await state();
+        await page.locator("#resumeButton").click();await page.evaluate(()=>__step(2));
+        const eatenLoot=await state();
+        assert.ok(eatenLoot.viruses.filter(v=>v.id.startsWith("drop:")).length<restoredLoot.length,"loot can actually be eaten");
+        assert.ok(eatenLoot.length*10+eatenLoot.rewards.growthPoints>beforeLoot.length*10+beforeLoot.rewards.growthPoints,"eating loot grants growth");
       }
     }
     assert.equal(await page.evaluate(k=>localStorage.getItem(k),sourceKey),originalSource);
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
     assert.deepEqual(errors,[]);
-    console.log(`PASS Edge ${width}: immediate head/body contacts, visible/tight super-virus enclosure, open-loop rejection, rewards and save/reload`);
+    console.log(`PASS Edge ${width}: contacts, enclosure and open-loop rejection; visible super-virus loot, saved loot and actual pickup growth`);
     await context.close();
   }
 }finally{await browser.close();}

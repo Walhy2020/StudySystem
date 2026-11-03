@@ -1,13 +1,29 @@
 # StudySystem cross-device handoff
 
-Last updated: 2026-11-02
+Last updated: 2026-11-03
 Repository: `https://github.com/Walhy2020/StudySystem.git`
 Branch: `main`
 Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.98** (2026-11-02). Pinyin's all-mastered state
+System display version: **v1.0.99** (2026-11-03). Virus snakes already touching
+the player's body now die immediately, including stationary/restored overlaps;
+head-on contact still hurts the player. Ordinary-virus pickup matches head size
+and processes simultaneous contacts. Super-virus capture closes on visible
+head/body contact and requires the whole virus inside the centerline loop without
+an extra body-width clearance. Open loops/partial enclosure and tail history
+remain excluded. Capture growth and consumed state are preserved across reload.
+Snake entry1.16, enclosure/enemies1.1 and all11 release notifiers1.0.99.
+Refresh only; no service restart. Existing screenshot edits remain excluded.
+
+Validation: syntax,311 Node tests, knowledge and diff checks passed. Focused real
+Edge1440/390 replays simultaneous small-virus pickup and stationary/restored
+enemy body contact, then visible/tight super-virus loops versus open loops.
+Checks immediate removal, one-time rewards, capture growth, consumed-state
+save/reload, source-storage isolation and screenshots. No unrelated browser suites.
+
+Previous **v1.0.98** (2026-11-02). Pinyin's all-mastered state
 now clearly explains that no new/review items remain. Daily, Review and Next
 Batch return visible feedback without changing progress or creating empty rounds.
 Existing double-confirmed reset remains user-controlled. Other modules and the

@@ -26,9 +26,10 @@ export function circleInsidePolygon(circle, polygon, clearance = 0) {
 }
 
 /** Only the currently visible body can close a loop; discarded history cannot. */
-export function findEnclosure(history, { bodyLength, bodyRadius, closureGap }, circles) {
+export function findEnclosure(history, { bodyLength, bodyRadius, closureGap, headRadius = 0, virusClearance = bodyRadius }, circles) {
   if (history.length < 3 || !circles.length || bodyLength <= 0) return null;
-  const possible = circles.filter(circle => bodyLength + closureGap >= 2 * Math.PI * (circle.radius + bodyRadius));
+  const closingDistance = Math.max(Math.min(closureGap, bodyRadius * 2), headRadius + bodyRadius);
+  const possible = circles.filter(circle => bodyLength + closingDistance >= 2 * Math.PI * (circle.radius + virusClearance));
   if (!possible.length) return null;
   const step = Math.max(6, bodyLength / 1600);
   const offsets = [];
@@ -39,9 +40,9 @@ export function findEnclosure(history, { bodyLength, bodyRadius, closureGap }, c
   const minimumArc = Math.max(120, closureGap * 4, bodyRadius * 4);
   for (let index = Math.max(2, Math.ceil(minimumArc / step)); index < path.length - 1; index++) {
     const closure = closestOnSegment(head, path[index], path[index + 1]);
-    if (distance(head, closure) > Math.min(closureGap, bodyRadius * 2)) continue;
+    if (distance(head, closure) > closingDistance) continue;
     const polygon = [...path.slice(0, index + 1), closure];
-    const enclosed = possible.filter(circle => circleInsidePolygon(circle, polygon, bodyRadius));
+    const enclosed = possible.filter(circle => circleInsidePolygon(circle, polygon, virusClearance));
     if (enclosed.length) return { polygon, enclosed };
   }
   return null;

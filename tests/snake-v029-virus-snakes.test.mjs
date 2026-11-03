@@ -158,6 +158,18 @@ test("enemy head contact hurts player instead of killing the enemy",()=>{
   assert.equal(swarm.snakes.length,1);
 });
 
+test("existing body overlap kills immediately, including stationary or restored enemies",()=>{
+  for (const previous of [{x:0,y:0},{x:20,y:0}]) {
+    const swarm=new VirusSnakes({count:1});swarm.reset(player,333);
+    const snake=swarm.snakes[0];snake.head={x:0,y:0};snake.previousHead=previous;
+    assert.equal(swarm.defeatOnBody({x:500,y:0},[{x:0,y:0}]).length,1);
+    assert.equal(swarm.snakes.length,0);
+    assert.equal(swarm.defeatOnBody({x:500,y:0},[{x:0,y:0}]).length,0);
+    assert.equal(swarm.defeated,1);
+    assert.equal(swarm.respawns.length,1);
+  }
+});
+
 test("old configurations gain the slow default and custom virus snake speed persists",()=>{
   const data=new Map();const storage={getItem:key=>data.get(key),setItem:(key,value)=>data.set(key,value)};
   assert.equal(loadConfig(storage).virusSnakeSpeed,35);

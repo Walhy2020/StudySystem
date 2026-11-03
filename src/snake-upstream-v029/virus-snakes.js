@@ -93,8 +93,7 @@ export class VirusSnakes {
     const defeated = [];
     this.snakes = this.snakes.filter(snake => {
       if (distance(snake.head, playerHead) < 44
-        || !body.some(segment => distance(snake.head, segment) < collisionRadius)
-        || body.some(segment => distance(snake.previousHead, segment) < collisionRadius)) return true;
+        || !body.some(segment => distance(snake.head, segment) <= collisionRadius)) return true;
       defeated.push({ id: snake.id, head: { ...snake.head }, length: snake.trail.glyphs.length });
       this.respawns.push({ index: Number(snake.id.split("-").at(-1)), remaining: 8 });
       this.defeated++;

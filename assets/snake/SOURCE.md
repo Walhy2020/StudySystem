@@ -5,7 +5,11 @@ Current runtime upgraded from https://github.com/Walhy2020/Snake **v0.2.9** at
 The owner's update request includes the current artwork and gameplay.
 
 Unmodified modules under `src/snake-upstream-v029/`: trail, motion, world,
-rewards, enclosure, virus-snakes, config, steering, audio, star-burst, random and tuning.
+rewards, config, steering, audio, star-burst, random and tuning.
+Local fixes to enclosure and virus-snakes remove the previous-frame overlap
+exemption and support head/body contact when closing a loop around a whole virus.
+The game supplies zero additional virus clearance; partially outside viruses and
+open loops still cannot be captured. Head-on enemy contact keeps its damage rule.
 Relevant upstream unit tests use the versioned module paths. StudySystem's
 snake-game.js adapts that runtime to its existing learning model, compact layout,
 shared controls/audio mute, explicit Continue gate and independent persistence.

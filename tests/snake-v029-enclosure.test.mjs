@@ -41,6 +41,19 @@ test("noncircular loops can enclose multiple whole viruses without rewarding out
   assert.equal(circleInsidePolygon({...boss,x:220},polygon),false);
 });
 
+test("game-sized head and body close visible gaps around a whole super virus", () => {
+  const config={bodyLength:1400,bodyRadius:37,headRadius:64,closureGap:32,virusClearance:0};
+  const giant={...boss,radius:144};
+  for (const sign of [-1,1]) {
+    // The head visibly touches the body, though their centers remain over32 apart.
+    assert.ok(findEnclosure(circlePath(180,Math.PI*2-.35,sign),config,[giant]));
+    assert.ok(findEnclosure(circlePath(165,Math.PI*2,sign),config,[giant]));
+    assert.equal(findEnclosure(circlePath(180,Math.PI*1.6,sign),config,[giant]),null);
+    assert.equal(findEnclosure(circlePath(180),config,[{...giant,x:90}]),null);
+    assert.equal(findEnclosure(circlePath(180),{...config,bodyLength:400},[giant]),null);
+  }
+});
+
 test("the only character target stays separate from super viruses, which remain consumed nearby", () => {
   const field = new VirusField({seed:12345});
   field.sync({x:0,y:0});

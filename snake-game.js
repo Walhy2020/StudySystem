@@ -3,8 +3,8 @@ import { StarMotion } from "./src/snake-upstream-v029/motion.js";
 import { VIRUS_COLORS, WORLD_BOUNDS, setWorldSize, headingInsideMap } from "./src/snake-upstream-v029/world.js";
 import { VirusField } from "./src/snake-world.js?v=1.0";
 import { RunRewards, VIRUS_TYPES } from "./src/snake-upstream-v029/rewards.js";
-import { findEnclosure } from "./src/snake-upstream-v029/enclosure.js";
-import { VirusSnakes } from "./src/snake-upstream-v029/virus-snakes.js";
+import { findEnclosure } from "./src/snake-upstream-v029/enclosure.js?v=1.1";
+import { VirusSnakes } from "./src/snake-upstream-v029/virus-snakes.js?v=1.1";
 import { normalizeConfig } from "./src/snake-config.js?v=1.4";
 import { setupTuning } from "./src/snake-tuning.js?v=1.4";
 import { HoldVacuum, PoisonState, VACUUM_SECONDS, speedForInput, pullViruses } from "./src/snake-actions.js?v=1.2";
@@ -460,11 +460,11 @@ function update(dt) {
     lastWrong = clock; learning.answer(food.wordId); takeDamage("认错目标"); spawnFoods(); save();
   }
   if (vacuum.active(clock)) pullViruses(viruses, head, angle, dt, config.vacuumRange);
-  const virus = viruses.find((item) => {
+  const touchingViruses = viruses.filter((item) => {
     const type = VIRUS_TYPES.find((entry) => entry.tier === item.tier);
-    return !type.encircle && distance(head, item) < type.size / 2 + 12;
+    return !type.encircle && distance(head, item) <= type.size / 2 + config.headSize / 2;
   });
-  if (virus) {
+  for (const virus of touchingViruses) {
     const type = VIRUS_TYPES.find((entry) => entry.tier === virus.tier);
     const value = config[type.valueKey];
     const grown = rewards.addGrowth(value);
@@ -483,7 +483,8 @@ function update(dt) {
     const bosses = viruses.filter(item => item.tier === "super");
     const enclosure = findEnclosure(trail.points, {
       bodyLength: trail.leadGap + (trail.glyphs.length - 1) * trail.spacing,
-      bodyRadius: config.bodySize * 0.35, closureGap: config.enclosureGap,
+      bodyRadius: config.bodySize / 2, headRadius: config.headSize / 2,
+      closureGap: config.enclosureGap, virusClearance: 0,
     }, bosses.map(boss => ({ ...boss, radius: superType.size / 2 })));
     if (enclosure) {
       const ids = new Set(enclosure.enclosed.map(boss => boss.id));

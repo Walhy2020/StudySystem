@@ -1,13 +1,31 @@
 # StudySystem cross-device handoff
 
-Last updated: 2026-11-03
+Last updated: 2026-11-04
 Repository: `https://github.com/Walhy2020/StudySystem.git`
 Branch: `main`
 Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.100** (2026-11-03). Super-virus captures now
+System display version: **v1.0.101** (2026-11-04). Long/dense Snake rendering
+culls fully offscreen stars and coalesces near-coincident body/link images in
+separate4-screen-pixel grids without dropping simulation segments. Avoid per-star
+save/restore and no-enemy collision sampling. Cosmetic bursts cap136 recent
+particles; offscreen particles and per-particle blurred shadows are skipped.
+Reading slowdown paints Hanzi/Pinyin choices after body/head/particles, restores
+normal order on release, and supports keyboard/pad/touch. Snake entry1.18,
+drawing1.0, star-burst1.1; all11 release notifiers1.0.101. Refresh only.
+No service restart; preserve the existing tracked screenshot edits.
+
+Validation: syntax,314 Node tests, knowledge and diff checks passed. Focused
+real Microsoft Edge1440/390 checks 2000-segment straight/coiled bodies, retained
+length, Hanzi/Pinyin choices above the body during keyboard/pad/touch reading
+slowdown, unchanged source Hanzi storage, resource loads and horizontal overflow.
+At1440px the isolated coiled-scene render/flush benchmark dropped from55.5ms
+to14.2ms (4002 to746 sprite draws); this measures rendering, not whole-game FPS.
+Only the isolated acceptance server was used; production53177 is untouched.
+
+Previous **v1.0.100** (2026-11-03). Super-virus captures now
 spill a visible ordinary-virus loot cluster via the existing spill mechanic
 (default10 mixed small/medium/large), in addition to the existing capture growth.
 RefreshField immediately exposes the drops; existing ecosystem persistence keeps

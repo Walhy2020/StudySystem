@@ -1,4 +1,5 @@
 const TAU = Math.PI * 2;
+export const MAX_STAR_PARTICLES = 136;
 
 export class StarBursts {
   constructor(random = Math.random) {
@@ -17,6 +18,7 @@ export class StarBursts {
         size: 12 + this.random() * 16, spin: (this.random() - 0.5) * 7,
         rotation: this.random() * TAU });
     }
+    if (this.particles.length > MAX_STAR_PARTICLES) this.particles.splice(0, this.particles.length - MAX_STAR_PARTICLES);
   }
 
   active(time) {

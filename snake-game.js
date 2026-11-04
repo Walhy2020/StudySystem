@@ -10,9 +10,10 @@ import { setupTuning } from "./src/snake-tuning.js?v=1.4";
 import { HoldVacuum, PoisonState, VACUUM_SECONDS, speedForInput, pullViruses } from "./src/snake-actions.js?v=1.2";
 import { ACTION_LABELS, DEFAULT_BINDINGS, normalizeBindings, bindingError, keyLabel, buttonLabel } from "./src/snake-bindings.js?v=1.3";
 import { loadPoisonSprites } from "./src/snake-render-assets.js?v=1.2";
+import { createStarBatch } from "./src/snake-drawing.js?v=1.0";
 import { SteeringInput, actionForKey } from "./src/snake-upstream-v029/steering.js";
 import { Soundscape } from "./src/snake-audio.js?v=1.0";
-import { StarBursts } from "./src/snake-upstream-v029/star-burst.js";
+import { StarBursts } from "./src/snake-upstream-v029/star-burst.js?v=1.1";
 import { saveEcosystem, restoreEcosystem } from "./src/snake-ecosystem.js?v=1.0";
 import { SnakeLearning, SNAKE_PROGRESS_KEY, readObject } from "./src/snake-learning.js?v=1.1";
 
@@ -441,7 +442,8 @@ function update(dt) {
     const ids=new Set(npcEaten);
     viruses=viruses.filter(virus=>!ids.has(virus.id));
   }
-  const defeated = virusSnakes.defeatOnBody(head, trail.positions(), config.bodySize / 2 + 18);
+  const defeated = virusSnakes.snakes.length
+    ? virusSnakes.defeatOnBody(head, trail.positions(), config.bodySize / 2 + 18) : [];
   if (defeated.length) {
     let dropped = 0;
     for (const snake of defeated) dropped += virusField.spill(snake.head, snake.length).length;
@@ -516,24 +518,6 @@ function update(dt) {
   camera.y += (clamp(head.y, WORLD_BOUNDS.minY + halfHeight, WORLD_BOUNDS.maxY - halfHeight) - camera.y) * follow;
 }
 
-function tile(x, y, size, glyph, alpha = 1, sprite = assets.segment) {
-  ctx.save();
-  ctx.globalAlpha = alpha;
-  ctx.drawImage(sprite, x - size / 2, y - size / 2, size, size);
-  if (glyph) {
-    ctx.font = `700 ${Math.round(size * 0.49)}px "Microsoft YaHei", "PingFang SC", sans-serif`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillStyle = "#685035";
-    if ([...glyph].length > 1) {
-      const rows = glyph.split(" / ");
-      ctx.font = `700 ${Math.min(21, 45 / Math.max(...rows.map(r => r.length)) * 1.5)}px "Microsoft YaHei", sans-serif`;
-      rows.forEach((row, i) => ctx.fillText(row, x, y + (i - (rows.length - 1) / 2) * 17, size - 10));
-    } else ctx.fillText(glyph, x, y + size * 0.018);
-  }
-  ctx.restore();
-}
-
 function choiceTile(x, y, glyph) {
   ctx.save();
   ctx.beginPath();
@@ -554,6 +538,20 @@ function choiceTile(x, y, glyph) {
   ctx.font = `700 ${fontSize}px "Microsoft YaHei", "PingFang SC", sans-serif`;
   rows.forEach((row, i) => ctx.fillText(row, x, y + (i - (rows.length - 1) / 2) * 18 + 1, 61));
   ctx.restore();
+}
+
+function drawChoices(renderCamera) {
+  for (const food of foods) {
+    if (Math.abs(food.x - renderCamera.x) > viewWidth / zoom / 2 + 75
+      || Math.abs(food.y - renderCamera.y) > viewHeight / zoom / 2 + 75) continue;
+    const bob = Math.sin(clock * 2 + food.x) * 2;
+    ctx.save();
+    ctx.shadowColor = "#326e7540";
+    ctx.shadowBlur = 8;
+    ctx.shadowOffsetY = 5;
+    choiceTile(food.x, food.y + bob, food.glyph);
+    ctx.restore();
+  }
 }
 
 function draw(alpha) {
@@ -635,34 +633,25 @@ function draw(alpha) {
     }
     ctx.drawImage(assets.virusPalettes.large[snake.color],snake.head.x-24,snake.head.y-24,48,48);
   }
-  // Independent image sprites, not a stretched full-character illustration.
-  for (const food of foods) {
-    if (Math.abs(food.x - renderCamera.x) > viewWidth / zoom / 2 + 75
-      || Math.abs(food.y - renderCamera.y) > viewHeight / zoom / 2 + 75) continue;
-    const bob = Math.sin(clock * 2 + food.x) * 2;
-    ctx.save();
-    ctx.shadowColor = "#326e7540";
-    ctx.shadowBlur = 8;
-    ctx.shadowOffsetY = 5;
-    choiceTile(food.x, food.y + bob, food.glyph);
-    ctx.restore();
-  }
+  const reading = slowSources.size > 0;
+  if (!reading) drawChoices(renderCamera);
   const segments = trail.positions(lag);
+  const star = createStarBatch(ctx, { camera: renderCamera, width: viewWidth, height: viewHeight, zoom });
   ctx.save();
   const bodyAssets = poison.active ? poisonedAssets : assets;
   if (clock < damageFlashUntil && Math.floor(clock * 22) % 2 === 0) ctx.globalAlpha = 0.2;
   // Small stars bridge the tips, so the body reads as one continuous star chain.
   const links = samplePath(trail.points, segments.map((_, i) => lag + trail.leadGap + (i - 0.5) * trail.spacing));
-  for (const link of links) tile(link.x, link.y, config.bodySize * 0.54, "", 1, bodyAssets.segment);
+  for (const link of links) star(bodyAssets.segment, link.x, link.y, config.bodySize * 0.54, "links");
   for (let i = segments.length - 1; i >= 0; i--) {
     const item = segments[i];
     const newlyGrown = i === segments.length - 1 && clock - growthFlash < 0.65;
     const size = newlyGrown ? config.bodySize * (1 + Math.sin((clock - growthFlash) / 0.65 * Math.PI) * 0.135) : config.bodySize;
-    tile(item.x, item.y, size, "", 1, bodyAssets.segment);
+    star(bodyAssets.segment, item.x, item.y, size, newlyGrown ? null : "body");
   }
   if (segments.length) {
     const neck = trail.neck(lag);
-    tile(neck.x, neck.y, config.bodySize * 0.69, "", 1, bodyAssets.segment);
+    star(bodyAssets.segment, neck.x, neck.y, config.bodySize * 0.69);
   }
   ctx.save();
   ctx.translate(renderHead.x, renderHead.y - 4 + Math.sin(clock * 3) * config.hover);
@@ -675,16 +664,17 @@ function draw(alpha) {
     metadata.head.width * scale, metadata.head.height * scale);
   ctx.restore();
   for (const star of starBursts.active(clock)) {
+    if (Math.abs(star.x - renderCamera.x) > viewWidth / zoom / 2 + star.size
+      || Math.abs(star.y - renderCamera.y) > viewHeight / zoom / 2 + star.size) continue;
     ctx.save();
     ctx.translate(star.x, star.y);
     ctx.rotate(star.rotation);
     ctx.globalAlpha *= star.opacity;
-    ctx.shadowColor = "#fff1a2";
-    ctx.shadowBlur = 9;
     ctx.drawImage(assets.segment, -star.size / 2, -star.size / 2, star.size, star.size);
     ctx.restore();
   }
   ctx.restore();
+  if (reading) drawChoices(renderCamera);
   ctx.restore();
 }
 

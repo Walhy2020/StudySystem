@@ -1,6 +1,6 @@
 import { PHONETIC_STRESS_MARKS } from "./src/phonetic-segmenter.js?v=1.0";
 import { ReviewProgress } from "./src/review-progress.js?v=1.0";
-import { THEME_CONFIGS, speakEnglish, splitPhonetic } from "./theme-learning.js?v=2.26";
+import { THEME_CONFIGS, speakEnglish, splitPhonetic } from "./theme-learning.js?v=2.27";
 import { initializeThemeOverview } from "./src/theme-overview.js?v=1.20";
 
 let reviewStorage = null;

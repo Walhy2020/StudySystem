@@ -1,4 +1,4 @@
-import { collectScenarioVocabulary, knownScenarioWords, normalizeWord } from "./scenario-vocabulary.js?v=1.18";
+import { collectNewScenarioVocabulary, knownScenarioWords, normalizeWord } from "./scenario-vocabulary.js?v=1.19";
 
 const el = (tag, text, className) => {
   const node = document.createElement(tag);
@@ -15,7 +15,7 @@ const button = (text, action, label) => {
 };
 
 // Authoring and imagegen happen in the conversation; this view only learns the active scenario's words.
-export function initializeScenarioWords({ store, speaker, getScenario }) {
+export function initializeScenarioWords({ store, speaker, getScenario, scenarios }) {
   const dom = Object.fromEntries([...document.querySelectorAll("[id]")].map((node) => [node.id, node]));
   const suffix = store.key.slice("mario-scenario-learning-v1".length);
   function markLearned(word, learned) {
@@ -29,12 +29,12 @@ export function initializeScenarioWords({ store, speaker, getScenario }) {
   }
   function renderWords() {
     const scenario = getScenario();
-    const words = collectScenarioVocabulary([scenario], knownScenarioWords(window.localStorage, store.state.learnedWords, suffix));
+    const words = collectNewScenarioVocabulary(scenarios, scenario.id, knownScenarioWords(window.localStorage, store.state.learnedWords, suffix));
     const pending = words.filter((word) => !word.learned);
     dom.scenarioWordCount.textContent = pending.length;
     dom.scenarioWordsTitle.textContent = `${scenario.chineseTitle} · 新单词`;
-    dom.scenarioWordsIntro.textContent = `这里只显示“${scenario.chineseTitle}”当前情景中的单词，不与其他情景合并。`;
-    dom.scenarioWordsStatus.textContent = pending.length ? `${pending.length} 个新单词 · ${words.length - pending.length} 个已学` : "当前情景的单词都已经学过了。";
+    dom.scenarioWordsIntro.textContent = "按情景添加顺序收词，前面情景出现过的单词不再重复列出。";
+    dom.scenarioWordsStatus.textContent = !words.length ? "当前情景没有新增单词。" : pending.length ? `${pending.length} 个新单词 · ${words.length - pending.length} 个已学` : "当前情景新增的单词都已经学过了。";
     dom.scenarioWordCards.replaceChildren();
     for (const word of dom.showLearnedScenarioWords.checked ? words : pending) {
       const card = el("article", undefined, "scenario-word-card");

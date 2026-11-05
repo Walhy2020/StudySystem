@@ -92,5 +92,5 @@ test("音标页导航进入独立游戏页，地图内只保留重置按钮，�
   assert.doesNotMatch(html, /<p class="feedback"/);
   assert.match(html, /phonetics\.css\?v=1\.9/);
   assert.match(html, /phonetics-transcriptions\.js\?v=1\.0/);
-  assert.match(html, /phonetics-app\.js\?v=1\.78/);
+  assert.match(html, /phonetics-app\.js\?v=1\.79/);
 });

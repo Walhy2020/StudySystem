@@ -69,7 +69,7 @@ try {
     await page.locator("#backToScenarios").click();
     await page.locator('[data-scenario-id="what-is-it"] [data-start-label]').click();
     await page.locator("#wordsStage").click();
-    assert.equal(await page.locator(".scenario-word-card").count(), 18);
+    assert.equal(await page.locator(".scenario-word-card").count(), 16);
     assert.equal(await page.locator('[data-word="hello"]').count(), 0);
     assert.equal(await page.locator('[data-word="pen"]').count(), 0, "Book1 已学词必须按总单词库判定为非新词");
     assert.match(await page.locator('[data-word="marker"] .word-source').textContent(), /这是什么/);

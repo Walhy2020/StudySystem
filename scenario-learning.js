@@ -1,5 +1,5 @@
 import { SCENARIOS, scenarioById, scenarioLineById } from "./data/scenarios.js?v=1.11";
-import { initializeScenarioWords } from "./src/scenario-workshop.js?v=1.19";
+import { initializeScenarioWords } from "./src/scenario-workshop.js?v=1.20";
 import { createDialoguePlayback } from "./src/scenario-playback.js?v=1.1";
 
 export { SCENARIOS };
@@ -466,6 +466,7 @@ function initializePage() {
   const wordsView = initializeScenarioWords({
     store,
     speaker,
+    scenarios: SCENARIOS,
     getScenario: () => scenario,
   });
 

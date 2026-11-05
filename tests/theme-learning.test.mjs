@@ -296,11 +296,11 @@ test("主题朗读延迟重启且只保留最后请求，结束回调后再推�
   assert.equal(secondEnded, 1);
   speaker.cancel();
 });
-test("总词库覆盖十四个主题100个唯一表达且数数配图无歧义", () => {
+test("总词库覆盖十四个主题106个唯一表达且数数配图无歧义", () => {
   const catalog = buildThemeCatalog(THEME_CONFIGS);
-  assert.equal(catalog.length, 103);
-  assert.equal(new Set(catalog.map(({ key }) => key)).size, 103);
-  assert.equal(new Set(catalog.map(({ word }) => word.toLowerCase())).size, 100);
+  assert.equal(catalog.length, 109);
+  assert.equal(new Set(catalog.map(({ key }) => key)).size, 109);
+  assert.equal(new Set(catalog.map(({ word }) => word.toLowerCase())).size, 106);
   assert.equal(catalog.filter(({ word }) => word === "ten").length, 2);
   assert.equal(catalog.filter(({ art }) => art.type === "image").length, 50);
   assert.equal(catalog.filter(({ art }) => art.type === "song-word").length, 8);
@@ -350,9 +350,9 @@ test("总词库覆盖十四个主题100个唯一表达且数数配图无歧义",
   assert.ok(classroomEntries.every(({ art }) => art.src === "./assets/themes/classroom/classroom-things-scene-v1.png"));
   const store = new ThemeLearnedStore(catalog, null);
   for (const themeId of Object.keys(THEME_CONFIGS)) store.recordTheme(themeId);
-  assert.equal(store.entries().length, 100);
+  assert.equal(store.entries().length, 106);
   assert.equal(store.entries().filter(({ word }) => word === "ten").length, 1);
-  assert.equal(store.uniqueCatalogEntries().length, 100);
+  assert.equal(store.uniqueCatalogEntries().length, 106);
 });
 test("学习完毕整批入库，复习完毕单独记录并保持幂等", () => {
   const catalog = buildThemeCatalog(THEME_CONFIGS);
@@ -525,7 +525,7 @@ test("主题页十二个卡片、九十一个互动目标、歌词音标、阶�
   assert.doesNotMatch(html, /id="openTotalReview"|id="openWordLibrary"|id="wordLibraryView"|id="totalReviewView"/);
   assert.match(html, /href="\.\/review-learning\.html">总复习<\/a>/);
   assert.match(html, /theme-learning\.css\?v=3\.7/);
-  assert.match(html, /theme-learning\.js\?v=2\.26/);
+  assert.match(html, /theme-learning\.js\?v=2\.27/);
   assert.match(html, /id="reviewWordStage"[^>]*>2 复习单词<\/button>/);
   assert.match(html, /id="practiceStage"[^>]*>3 互动练习<\/button>/);
   const script = await readFile(new URL("../theme-learning.js", import.meta.url), "utf8");
@@ -608,9 +608,9 @@ test("总复习是独立并列模块，主题页只记录学习进度", async ()
   assert.match(reviewHtml, /id="totalReviewView"/);
   assert.match(reviewHtml, /id="wordLibraryView" hidden/);
   assert.match(reviewHtml, /theme-learning\.css\?v=3\.7/);
-  assert.match(reviewHtml, /review-learning\.js\?v=1\.23/);
-  assert.match(reviewHtml, /id="wordLibraryCount">0\/284<\/b>/);
-  assert.match(reviewScript, /theme-learning\.js\?v=2\.26/);
+  assert.match(reviewHtml, /review-learning\.js\?v=1\.24/);
+  assert.match(reviewHtml, /id="wordLibraryCount">0\/290<\/b>/);
+  assert.match(reviewScript, /theme-learning\.js\?v=2\.27/);
   assert.match(reviewScript, /theme-overview\.js\?v=1\.20/);
   assert.match(reviewScript, /overview\.openReview\(\)/);
 });

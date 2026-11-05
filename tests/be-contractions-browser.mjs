@@ -36,7 +36,7 @@ try {
     await act("[data-series-id='basics']");
     await page.locator("#startBeContractions").focus(); await page.keyboard.press("Enter");
     assert.equal(await page.locator(scene).isVisible(), true);
-    assert.equal(await page.locator(`${scene} .scene-target`).count(), 6);
+    assert.equal(await page.locator(`${scene} .scene-target`).count(), 12);
     assert.equal(await page.evaluate(() => window.__spoken.length), 0, "entering and selecting never auto-play speech");
     for (const word of BE_CONTRACTION_WORDS) {
       await act(`${scene} [data-target='${word.id}']`);
@@ -52,6 +52,7 @@ try {
     }
     assert.equal(await page.evaluate(() => window.__spoken.length), 0);
     assert.equal(await page.evaluate(() => window.__writes.length), 0, "looking alone never learns words");
+    await act(`${scene} [data-target='it-short']`);
     await act("#repeatWord");
     await page.waitForFunction(() => window.__spoken.length > 0);
     assert.ok((await page.evaluate(() => window.__spoken)).some(text => text.includes("It's a cat.")));
@@ -62,7 +63,7 @@ try {
     await act("#completeThemeLearning");
     const saved = await page.evaluate(key => JSON.parse(localStorage.getItem(key)), themeKey);
     assert.ok(saved.learned.includes("body:head"));
-    assert.equal(saved.learned.filter(key => key.startsWith("beContractions:")).length, 6);
+    assert.equal(saved.learned.filter(key => key.startsWith("beContractions:")).length, 12);
     assert.ok((await page.evaluate(() => window.__writes)).every(key => key === themeKey));
 
     await act("#reviewWordStage");
@@ -83,15 +84,15 @@ try {
     assert.equal(await page.evaluate(() => window.__THEME_LEARNING__.session.questionIndex), 0);
     assert.match(await page.locator("#practiceFeedback").textContent(), /再试一次/);
     const tested = [];
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 12; i++) {
       const target = await page.evaluate(() => window.__THEME_LEARNING__.session.target());
       tested.push(target.id);
       assert.equal(await page.locator("#practiceInstruction").textContent(), target.instruction);
       await act(`${scene} [data-target='${target.id}']`);
-      await page.waitForFunction(i => i === 5 ? !document.getElementById("resultPanel").hidden : document.getElementById("roundProgress").textContent.startsWith(`第 ${i + 2}/`), i);
+      await page.waitForFunction(i => i === 11 ? !document.getElementById("resultPanel").hidden : document.getElementById("roundProgress").textContent.startsWith(`第 ${i + 2}/`), i);
     }
-    assert.equal(new Set(tested).size, 6);
-    assert.equal(await page.locator("#resultScore").textContent(), "6/6");
+    assert.equal(new Set(tested).size, 12);
+    assert.equal(await page.locator("#resultScore").textContent(), "12/12");
     await overflow();
     await page.screenshot({ path: `tmp/be-contractions-complete-${width}.png`, fullPage: true });
     await page.reload(); await page.waitForFunction(() => Boolean(window.__THEME_LEARNING__));
@@ -102,7 +103,7 @@ try {
     await page.goto(`${base}review-learning.html`);
     await page.waitForFunction(() => Boolean(window.__THEME_OVERVIEW__));
     const grammarPool = await page.evaluate(() => window.__THEME_OVERVIEW__.reviewSession.words.filter(word => word.themeId === "beContractions"));
-    assert.equal(grammarPool.length, 6);
+    assert.equal(grammarPool.length, 12);
     await act("#openWordLibrary");
     for (const word of BE_CONTRACTION_WORDS) {
       const card = page.locator(`.library-card[data-word-key="total:${word.word.toLowerCase()}"]`);
@@ -117,7 +118,7 @@ try {
     await act("#startDaily");
     for (const word of BE_CONTRACTION_WORDS) {
       await page.evaluate(id => window.__WORD_LEARNING__.dispatch("inline", id, "catalog-test"), `word:${word.word.toLowerCase()}`);
-      assert.equal(await page.locator("#wordTranslation").isVisible(), false);
+      assert.equal(await page.locator("#wordTranslation").isVisible(), true);
       await page.locator("#wordPicture img").waitFor();
       await act("#currentWord");
       assert.equal(await page.locator("#currentWord").textContent(), word.word);
@@ -125,7 +126,7 @@ try {
     assert.equal(await page.evaluate(key => localStorage.getItem(key), themeKey), sourceBefore);
     await overflow();
     assert.deepEqual(errors, []);
-    results.push({ width, forms: 6, practice: "6/6", library: grammarPool.length, saved: true, overflow: false });
+    results.push({ width, forms: 12, practice: "12/12", library: grammarPool.length, saved: true, overflow: false });
     await context.close();
   }
   console.log(JSON.stringify({ browser: "Microsoft Edge", results }, null, 2));

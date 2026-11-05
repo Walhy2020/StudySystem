@@ -1,6 +1,6 @@
 import { PHONETIC_STRESS_MARKS, splitPhonetic } from "./src/phonetic-segmenter.js?v=1.0";
 import { initializeThemeProgress } from "./src/theme-overview.js?v=1.20";
-import { BE_CONTRACTION_PAIRS, BE_CONTRACTION_WORDS } from "./data/be-contractions.js?v=1.0";
+import { BE_CONTRACTION_PAIRS, BE_CONTRACTION_WORDS } from "./data/be-contractions.js?v=1.1";
 
 export { BE_CONTRACTION_PAIRS, BE_CONTRACTION_WORDS };
 
@@ -276,13 +276,13 @@ export const THEME_CONFIGS = Object.freeze({
     completeText: "你完成了中秋节 Mid-Autumn Festival 的听音点击练习。"
   }),
   beContractions: Object.freeze({
-    id: "beContractions", chineseTitle: "人称与缩写", englishTitle: "I am · He is · It is", words: BE_CONTRACTION_WORDS,
-    sceneId: "beContractionsScene", sceneLabel: "我是、他是、它是的完整形式与缩写对照卡",
-    learnPrompt: "点击完整形式或缩写，比较三组表达", practicePrompt: "看清题目，在完整形式与缩写之间互选",
-    learnPlaceholderTitle: "点一个表达", learnPlaceholderText: "学习 I am、He is、It is，以及对应的 I'm、He's、It's。",
+    id: "beContractions", chineseTitle: "人称与缩写", englishTitle: "I · He · It · They · She · You", words: BE_CONTRACTION_WORDS,
+    sceneId: "beContractionsScene", sceneLabel: "六组人称表达的完整形式与缩写对照卡",
+    learnPrompt: "点击完整形式或缩写，比较六组表达", practicePrompt: "看清题目，在完整形式与缩写之间互选",
+    learnPlaceholderTitle: "点一个表达", learnPlaceholderText: "学习 I am、He is、It is、They are、She is、You are，以及对应的缩写。",
     retryLabel: word => word.word + "（" + word.formLabel + "）", instruction: word => word.instruction,
-    completePrompt: "完成！三组完整形式和缩写全部找对", completeTitle: "人称与缩写全部找对！",
-    completeText: "你学会了 I am ↔ I'm、He is ↔ He's、It is ↔ It's。"
+    completePrompt: "完成！六组完整形式和缩写全部找对", completeTitle: "人称与缩写全部找对！",
+    completeText: "你学会了 I am ↔ I'm、He is ↔ He's、It is ↔ It's、They are ↔ They're、She is ↔ She's、You are ↔ You're。"
   })
 });
 

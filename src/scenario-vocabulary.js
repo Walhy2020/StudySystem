@@ -1,4 +1,4 @@
-import { THEME_CONFIGS } from "../theme-learning.js?v=2.26";
+import { THEME_CONFIGS } from "../theme-learning.js?v=2.27";
 import { buildThemeCatalog } from "./theme-overview.js?v=1.20";
 import { totalLearnedWordSet } from "./total-word-library.js?v=1.9";
 import { FIRST_MEETING_VOCABULARY } from "../data/scenarios.js?v=1.11";
@@ -27,4 +27,14 @@ export function collectScenarioVocabulary(scenarios, known = new Set()) {
     }
   }
   return [...entries.values()];
+}
+
+// Catalog order is the authored addition order, independent of learning progress.
+export function collectNewScenarioVocabulary(scenarios, scenarioId, known = new Set()) {
+  const index = scenarios.findIndex((scenario) => scenario.id === scenarioId);
+  if (index < 0) return [];
+  const earlierWords = new Set(scenarios.slice(0, index).flatMap((scenario) =>
+    (scenario.vocabulary || []).map((item) => normalizeWord(item.word))));
+  return collectScenarioVocabulary([scenarios[index]], known)
+    .filter((item) => !earlierWords.has(item.word));
 }

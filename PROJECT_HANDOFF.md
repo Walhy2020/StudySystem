@@ -1,13 +1,31 @@
 # StudySystem cross-device handoff
 
-Last updated: 2026-11-04
+Last updated: 2026-11-05
 Repository: `https://github.com/Walhy2020/StudySystem.git`
 Branch: `main`
 Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.101** (2026-11-04). Long/dense Snake rendering
+System display version: **v1.0.102** (2026-11-05). Scenario new-word cards
+belong only to their earliest scenario in SCENARIOS addition order, even if earlier
+scenarios are unfinished. Showing learned words never restores later duplicates.
+Raw vocabulary and learnedWords remain intact for source catalogs and progress.
+The BE theme adds They are/They're, She is/She's and You are/You're, with IPA,
+Chinese, examples and twelve bidirectional practice targets. Existing IDs remain.
+Scenario entry2.17/workshop1.20/vocabulary1.19; Theme entry2.27/data1.1;
+review entry1.24; all11 release notifiers1.0.102. Refresh only, no service restart.
+Preserve existing tracked screenshot edits.
+
+Validation: syntax,316 Node tests, knowledge and diff checks passed. Focused real
+Microsoft Edge1440/390 verifies all11 scenarios introduce111 unique words with
+no cross-scenario repeats, show-learned filtering and learning/reload persistence.
+BE acceptance covers all12 forms, exact displayed IPA/examples, hidden-answer
+review,12/12 practice, learned library/word-module inclusion, unchanged foreign
+storage and no clipping/overflow/resource failures. Screenshots inspected at both
+sizes. Only isolated test service53226 was used; production service untouched.
+
+Previous **v1.0.101** (2026-11-04). Long/dense Snake rendering
 culls fully offscreen stars and coalesces near-coincident body/link images in
 separate4-screen-pixel grids without dropping simulation segments. Avoid per-star
 save/restore and no-enemy collision sampling. Cosmetic bursts cap136 recent

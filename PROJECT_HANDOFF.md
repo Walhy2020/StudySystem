@@ -1,13 +1,29 @@
 # StudySystem cross-device handoff
 
-Last updated: 2026-11-05
+Last updated: 2026-11-06
 Repository: `https://github.com/Walhy2020/StudySystem.git`
 Branch: `main`
 Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.102** (2026-11-05). Scenario new-word cards
+System display version: **v1.0.103** (2026-11-06). Archive W01 信's three DOCX
+resources under 信/ with a README recommending the24pt large-pinyin version.
+The corrected and large versions each contain1404 explicit annotations; their
+readings match, and all3 preserve original body text and non-document XML parts
+(including images). No DOCX content was rewritten for this archive. W01 was
+read via the app and recorded in collaboration docs/chat-layout with its observed
+2026-11-06 model gpt-6.1-sol/high; no running chat settings were changed.
+All11 release notifiers1.0.103. Resources and release metadata only; no learning
+storage changes, service restarts or unrelated browser acceptance. Preserve the
+existing tracked screenshot edits; tmp previews/PDFs/scripts remain excluded.
+
+Validation: all3 DOCX ZIP packages pass CRC/XML checks; original body text and
+non-document parts match byte-for-byte, and corrected/large readings match.
+Sampled existing first/last render previews from W01; documents unchanged.
+Syntax,316 Node tests, knowledge/diff checks and W01 resource/model mapping pass.
+
+Previous **v1.0.102** (2026-11-05). Scenario new-word cards
 belong only to their earliest scenario in SCENARIOS addition order, even if earlier
 scenarios are unfinished. Showing learned words never restores later duplicates.
 Raw vocabulary and learnedWords remain intact for source catalogs and progress.

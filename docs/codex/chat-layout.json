@@ -1,6 +1,7 @@
 {
   "schemaVersion": 1,
   "snapshotDate": "2026-10-06",
+  "updatedAt": "2026-11-06",
   "relationshipKind": "logical-coordination-not-restorable-chat-tree",
   "repository": "https://github.com/Walhy2020/StudySystem.git",
   "main": {
@@ -87,6 +88,18 @@
       "modelEvidence": "Last observed turn_context on 2026-09-08; not an assertion about current global defaults",
       "preset": "t02-images",
       "scope": "使用imagegen技能生成和检查素材；中间稿output，批准后assets；不泄露密钥。"
+    },
+    {
+      "role": "W01",
+      "title": "W01 信",
+      "originalThreadId": "01a1b0e0-fc08-7173-95d2-79fd6a1619c7",
+      "coordinatorOriginalThreadId": "01a014e5-4a69-7941-9d31-4095a09be774",
+      "model": "gpt-6.1-sol",
+      "reasoningEffort": "high",
+      "modelEvidence": "Last observed turn_context on 2026-11-06; existing chat settings unchanged",
+      "scope": "信件、拼音核对和儿童阅读排版；保留原稿，主会话统一归档提交。",
+      "resourceDirectory": "信",
+      "recommendedResource": "信/马里奥的信1-大拼音版.docx"
     }
   ],
   "limitations": [

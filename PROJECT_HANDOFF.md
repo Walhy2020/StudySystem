@@ -1,13 +1,28 @@
 # StudySystem cross-device handoff
 
-Last updated: 2026-11-06
+Last updated: 2026-11-07
 Repository: `https://github.com/Walhy2020/StudySystem.git`
 Branch: `main`
 Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.103** (2026-11-06). Archive W01 信's three DOCX
+System display version: **v1.0.104** (2026-11-07). Add
+信/马里奥的信1-大拼音对齐版.docx as the recommended reading copy. Remove variable
+tracking inside ruby bases and move spacing to symmetric separate padding runs.
+All1404 readings,24pt pinyin,36pt Hanzi and non-document XML ZIP parts are
+preserved; body text differs only by layout spaces. Original three DOCX files
+remain untouched. Microsoft Word PDF export verifies29 pages and1404 guide/base
+pairs: maximum horizontal center error0.108pt, minimum adjacent pinyin gap17.036pt.
+Every rendered page inspected. Previews/PDFs/helpers remain ignored under tmp/.
+All11 release notifiers1.0.104; display-entry cache queries updated. Resource
+layout and release metadata only; no learning, storage or service changes.
+
+Validation: Microsoft Word rendering and full1404-pair geometry/content checks
+pass; all29 page images inspected. Syntax,316 Node tests, knowledge and diff
+checks pass. No web UI layout changed; no browser acceptance or server restart.
+
+Previous **v1.0.103** (2026-11-06). Archive W01 信's three DOCX
 resources under 信/ with a README recommending the24pt large-pinyin version.
 The corrected and large versions each contain1404 explicit annotations; their
 readings match, and all3 preserve original body text and non-document XML parts

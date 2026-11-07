@@ -1,7 +1,7 @@
 import { PINYIN_ITEMS } from "../data/pinyin.js?v=1.0";
 import { PinyinEngine } from "./pinyin-engine.js?v=1.1";
 import { PinyinStorage } from "./pinyin-storage.js?v=1.0";
-import { APP_VERSION, PHASE } from "./constants.js?v=1.0.104";
+import { APP_VERSION, PHASE } from "./constants.js?v=1.0.105";
 
 const items = PINYIN_ITEMS;
 const allMasteredMessage = `${items.length} 项拼音均已标为“完全认识”，暂无新拼音或待复习项。`;

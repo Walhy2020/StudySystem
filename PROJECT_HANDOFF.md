@@ -7,7 +7,20 @@ Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.104** (2026-11-07). Add
+System display version: **v1.0.105** (2026-11-07). Persist the user-requested
+W02 故事与信件 project chat policy, gpt-6.1-sol/high, for future children's
+stories and letters. docs/codex/w02-stories-and-letters.md includes scope,
+24pt pinyin/36pt Hanzi layout, preservation/verification requirements and a
+copyable startup prompt for the home computer. Chat-layout records the creation
+arguments and local ID; Git synchronizes policy/materials, not chat history or
+app parent pointers. W01 remains for existing materials; main coordinates shared
+files and releases. Collaboration docs recommend the aligned letter copy.
+All11 release notifiers1.0.105; only documentation and release metadata changed.
+Validation: W02 JSON role/model/high, resource references, strategy and startup
+prompt links verified. Syntax,316 Node tests, knowledge and diff checks pass.
+No learning behavior, storage, web UI layout or service changes.
+
+Previous **v1.0.104** (2026-11-07). Add
 信/马里奥的信1-大拼音对齐版.docx as the recommended reading copy. Remove variable
 tracking inside ruby bases and move spacing to symmetric separate padding runs.
 All1404 readings,24pt pinyin,36pt Hanzi and non-document XML ZIP parts are

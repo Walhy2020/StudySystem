@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "snapshotDate": "2026-10-06",
-  "updatedAt": "2026-11-06",
+  "updatedAt": "2026-11-07",
   "relationshipKind": "logical-coordination-not-restorable-chat-tree",
   "repository": "https://github.com/Walhy2020/StudySystem.git",
   "main": {
@@ -99,7 +99,20 @@
       "modelEvidence": "Last observed turn_context on 2026-11-06; existing chat settings unchanged",
       "scope": "信件、拼音核对和儿童阅读排版；保留原稿，主会话统一归档提交。",
       "resourceDirectory": "信",
-      "recommendedResource": "信/马里奥的信1-大拼音版.docx"
+      "recommendedResource": "信/马里奥的信1-大拼音对齐版.docx"
+    },
+    {
+      "role": "W02",
+      "title": "W02 故事与信件",
+      "originalThreadId": "01a1b5a3-f579-76b2-9591-06126438e09e",
+      "relationshipKind": "user-requested-independent-project-chat",
+      "model": "gpt-6.1-sol",
+      "reasoningEffort": "high",
+      "modelEvidence": "Explicit user request and create_thread model/thinking arguments on 2026-11-07",
+      "scope": "后续儿童故事、角色来信和阅读材料；保留原稿、逐字拼音居中，主会话统一验收与Git整合。",
+      "resourceDirectory": "信",
+      "recommendedResource": "信/马里奥的信1-大拼音对齐版.docx",
+      "strategyDocument": "docs/codex/w02-stories-and-letters.md"
     }
   ],
   "limitations": [

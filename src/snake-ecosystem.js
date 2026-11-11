@@ -7,7 +7,7 @@ const finiteTree = value => value === null || typeof value === "boolean" || type
 
 export function saveEcosystem(field, enemies) {
   return { field: { seed: field.seed, animationTime: field.animationTime, dropSerial: field.dropSerial,
-    cells: [...field.cells], drops: field.drops }, enemies: { seed: enemies.seed, defeated: enemies.defeated,
+    cells: [...field.cells], drops: field.drops, giants: field.giants ?? [], giantPoisonings: field.giantPoisonings ?? 0 }, enemies: { seed: enemies.seed, defeated: enemies.defeated,
     respawns: enemies.respawns, snakes: enemies.snakes.map(s => ({ ...s, trail: {
       points: s.trail.points, glyphs: s.trail.glyphs, spacing: s.trail.spacing, leadGap: s.trail.leadGap } })) } };
 }
@@ -15,13 +15,16 @@ export function saveEcosystem(field, enemies) {
 export function restoreEcosystem(saved, field, enemies) {
   if (!saved || !finiteTree(saved)) return false;
   const { field: f, enemies: e } = saved;
-  const virus = v => point(v) && typeof v.id === "string" && ["small", "medium", "large", "super"].includes(v.tier) &&
+  const virus = v => point(v) && typeof v.id === "string" && ["small", "medium", "large", "super", "giant"].includes(v.tier) &&
     ["violet", "sky", "mint", "coral"].includes(v.color) &&
     ["swayPhase", "swayRate", "swayAmplitude", "pulsePhase", "pulseRate"].every(k => Number.isFinite(v[k]));
   if (!f || !e || !Number.isInteger(f.seed) || !Number.isFinite(f.animationTime) || f.animationTime < 0 ||
       !Number.isInteger(f.dropSerial) || f.dropSerial < 0 || !Array.isArray(f.cells) || f.cells.length > 2000 ||
       !f.cells.every(c => Array.isArray(c) && c.length === 2 && /^-?\d+,-?\d+$/.test(c[0]) && Array.isArray(c[1]) && c[1].length <= 20 && c[1].every(virus)) ||
       !Array.isArray(f.drops) || f.drops.length > 100 || !f.drops.every(virus) ||
+      (f.giants !== undefined && (!Array.isArray(f.giants) || f.giants.length > 1000 ||
+        !f.giants.every(v => virus(v) && v.tier === "giant") || new Set(f.giants.map(v => v.id)).size !== f.giants.length)) ||
+      (f.giantPoisonings !== undefined && (!Number.isSafeInteger(f.giantPoisonings) || f.giantPoisonings < 0)) ||
       !Number.isInteger(e.seed) || !Number.isInteger(e.defeated) || e.defeated < 0 ||
       !Array.isArray(e.respawns) || e.respawns.length > 20 || !e.respawns.every(r => Number.isInteger(r.index) && r.index >= 0 && r.index < enemies.count && r.remaining >= 0 && r.remaining <= 10) ||
       !Array.isArray(e.snakes) || e.snakes.length > enemies.count || !e.snakes.every(s => point(s.head) && point(s.previousHead) &&
@@ -32,6 +35,7 @@ export function restoreEcosystem(saved, field, enemies) {
         s.trail.spacing >= 16 && s.trail.spacing <= 200 && s.trail.leadGap >= 20 && s.trail.leadGap <= 260)) return false;
   field.reset(f.seed);
   field.cells = new Map(f.cells); field.drops = f.drops; field.dropSerial = f.dropSerial; field.animationTime = f.animationTime;
+  field.giants = f.giants ?? []; field.giantPoisonings = f.giantPoisonings ?? 0;
   enemies.reset({ x: 0, y: 0 }, e.seed);
   enemies.defeated = e.defeated; enemies.respawns = e.respawns;
   enemies.snakes = e.snakes.map(s => {

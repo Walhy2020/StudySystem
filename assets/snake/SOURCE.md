@@ -42,6 +42,17 @@ dimensions and transparency, with hue-rotate(65deg)/saturate(1.35) baked in offl
 keeping music, effects and webpage mute behavior. Upstream browser controls,
 update service and separate config/audio storage APIs are not used.
 
+StudySystem v1.0.106 adds `virus-giant-v1.png` (1254×1254 RGBA), the
+user-approved final generated illustration: a round, faceless purple virus with
+green-tipped protrusions across its front and silhouette, with pufferfish-like
+volume. Generated with gpt-image-2 through the imagegen skill's API workflow;
+transparent-background cleanup was applied before user approval. Final approved
+pixels were copied unchanged from the ignored v5 working preview. No API or
+generation dependency is used by the game. `src/snake-virus-types.js` adds the
+local864-unit giant without modifying upstream random generation. Each poisoning
+creates one, persisted independently of streamed cells; it uses the existing
+super-virus encirclement, growth and loot behavior at its actual larger radius.
+
 Current artwork copied without modification: flystar-head-v1.png, sprites.json,
 hanzi-star-v2.png, arena-floor-v2.jpg, virus-purple-v1.png, virus-small-v4.png,
 virus-medium-v4.png, virus-super-v2.png and twelve

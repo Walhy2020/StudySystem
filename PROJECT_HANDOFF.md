@@ -1,13 +1,33 @@
 # StudySystem cross-device handoff
 
-Last updated: 2026-11-07
+Last updated: 2026-11-11
 Repository: `https://github.com/Walhy2020/StudySystem.git`
 Branch: `main`
 Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.105** (2026-11-07). Persist the user-requested
+System display version: **v1.0.106** (2026-11-11). Snake poisoning spawns one
+faceless spherical giant using the approved purple/green artwork. Diameter864,
+three times the existing288 super virus. Spawn once per poison cycle, clear of
+the player/body/learning choices and within map bounds; persist position and cycle
+marker so refresh never duplicates alive or captured giants. Upgrade already-poisoned
+old saves once. Subsequent poisoning adds one; cure does not remove existing giants.
+Reuse super-virus enclosure/growth/loot behavior with actual per-type radii; exclude
+giants from NPC food and auto-seeking. Giant artwork lives in assets/snake/;
+working previews remain ignored. Snake entry1.19/world1.1/ecosystem1.1/types1.0;
+all11 release notifiers1.0.106. Refresh only; preserve screenshot edits and all
+learning storage. No production service changes.
+
+Validation: syntax,319 Node tests, knowledge and diff checks pass. Focused real
+Microsoft Edge1440/390 verifies poison-triggered single spawn, approved image
+actually drawn at864 units, safe placement, save/reload and already-poisoned old
+saves, next poison cycle, enlarged collision radius, full enclosure and loot,
+no repeated capture, source storage isolation and no resource errors/overflow.
+Existing Snake contact/capture acceptance also passes. Screenshots inspected at
+both sizes. Only isolated test service53227 used; production untouched.
+
+Previous **v1.0.105** (2026-11-07). Persist the user-requested
 W02 故事与信件 project chat policy, gpt-6.1-sol/high, for future children's
 stories and letters. docs/codex/w02-stories-and-letters.md includes scope,
 24pt pinyin/36pt Hanzi layout, preservation/verification requirements and a

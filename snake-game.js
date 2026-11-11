@@ -1,8 +1,9 @@
 import { GlyphTrail, samplePath } from "./src/snake-upstream-v029/trail.js";
 import { StarMotion } from "./src/snake-upstream-v029/motion.js";
 import { VIRUS_COLORS, WORLD_BOUNDS, setWorldSize, headingInsideMap } from "./src/snake-upstream-v029/world.js";
-import { VirusField } from "./src/snake-world.js?v=1.0";
-import { RunRewards, VIRUS_TYPES } from "./src/snake-upstream-v029/rewards.js";
+import { VirusField } from "./src/snake-world.js?v=1.1";
+import { RunRewards } from "./src/snake-upstream-v029/rewards.js";
+import { VIRUS_TYPES, virusType } from "./src/snake-virus-types.js?v=1.0";
 import { findEnclosure } from "./src/snake-upstream-v029/enclosure.js?v=1.1";
 import { VirusSnakes } from "./src/snake-upstream-v029/virus-snakes.js?v=1.1";
 import { normalizeConfig } from "./src/snake-config.js?v=1.4";
@@ -14,7 +15,7 @@ import { createStarBatch } from "./src/snake-drawing.js?v=1.0";
 import { SteeringInput, actionForKey } from "./src/snake-upstream-v029/steering.js";
 import { Soundscape } from "./src/snake-audio.js?v=1.0";
 import { StarBursts } from "./src/snake-upstream-v029/star-burst.js?v=1.1";
-import { saveEcosystem, restoreEcosystem } from "./src/snake-ecosystem.js?v=1.0";
+import { saveEcosystem, restoreEcosystem } from "./src/snake-ecosystem.js?v=1.1";
 import { SnakeLearning, SNAKE_PROGRESS_KEY, readObject } from "./src/snake-learning.js?v=1.1";
 
 const $ = (id) => document.getElementById(id);
@@ -70,7 +71,7 @@ function applyConfig(patch) {
   if (previous.mapSize !== config.mapSize) {
     head = { x: clamp(head.x, WORLD_BOUNDS.minX + 150, WORLD_BOUNDS.maxX - 150), y: clamp(head.y, WORLD_BOUNDS.minY + 150, WORLD_BOUNDS.maxY - 150) };
     motion.x = head.x; motion.y = head.y; trail.reset([head, {x:head.x-1000,y:head.y}], trail.glyphs);
-    virusField.reset(); virusSnakes.reset(head); camera = { ...head }; fitCamera(); previousCamera = { ...camera }; spawnFoods();
+    virusField.reset(); virusSnakes.reset(head); camera = { ...head }; fitCamera(); previousCamera = { ...camera }; spawnFoods(); ensurePoisonGiant();
   }
   resize(); updateUI();
   tuning.sync(config, save());
@@ -174,7 +175,7 @@ function spawnFoods() {
   const halfW = viewWidth / zoom / 2 - 60, halfH = viewHeight / zoom / 2 - 65;
   const bounds = { left: Math.max(WORLD_BOUNDS.minX + 150, camera.x - halfW), right: Math.min(WORLD_BOUNDS.maxX - 150, camera.x + halfW),
     top: Math.max(WORLD_BOUNDS.minY + 150, camera.y - halfH), bottom: Math.min(WORLD_BOUNDS.maxY - 150, camera.y + halfH) };
-  const bosses = virusField.nearby().filter(v => v.tier === "super");
+  const bosses = virusField.nearby().filter(v => virusType(v).encircle);
   foods = [];
   for (const [index, option] of learning.options.entries()) {
     const candidates = Array.from({length: 48}, (_, i) => {
@@ -183,17 +184,29 @@ function spawnFoods() {
       return { x: clamp(head.x + Math.cos(direction) * radius, bounds.left, bounds.right),
         y: clamp(head.y + Math.sin(direction) * radius, bounds.top, bounds.bottom) };
     }).sort((a,b) => Math.min(320,distance(b,head)) - Math.min(320,distance(a,head)));
-    const safe = p => bosses.every(v => distance(v,p) > 288 / 2 + 65);
+    const safe = p => bosses.every(v => distance(v,p) > virusType(v).size / 2 + 65);
     const spot = candidates.find(p => safe(p) && distance(p,head) > 95 && foods.every(f => distance(p,f) > 125)) ||
       candidates.find(p => safe(p) && foods.every(f => distance(p,f) > 95));
     // Never force a learning choice into a super-virus hitbox; relocate the
     // obstructing world spawn instead when a narrow viewport has no safe space.
     const fallback = candidates.find(p => foods.every(f => distance(p,f) > 95)) || candidates[0];
-    if (!spot) bosses.filter(v => distance(v,fallback) <= 209).forEach(v => virusField.consume(v.id));
+    if (!spot) bosses.filter(v => distance(v,fallback) <= virusType(v).size / 2 + 65).forEach(v => {
+      if (v.tier === "giant") virusField.placeGiant(v, head, [...foods, fallback]);
+      else virusField.consume(v.id);
+    });
     foods.push({ ...(spot || fallback), ...option });
   }
   target = foods.find(f => f.correct);
   refreshField();
+}
+
+function ensurePoisonGiant() {
+  if (!poison.active) return false;
+  poison.poisonings = Math.max(1, poison.poisonings);
+  const added = virusField.spawnPoisonGiant(poison.poisonings, head,
+    [...(foods || []), ...trail.positions().map(p => ({ ...p, radius: config.bodySize / 2 }))]);
+  if (added) refreshField();
+  return added;
 }
 
 function refreshField() {
@@ -333,7 +346,7 @@ function restore(saved) {
     saved.foods.every(f => point(f) && learning.options.some(o => o.wordId === f.wordId && o.glyph === f.glyph && o.correct === f.correct)) &&
     new Set(saved.foods.map(f => f.wordId)).size === saved.foods.length;
   if (matches) foods = saved.foods.map(f => ({ ...f })); else spawnFoods();
-  target = foods.find(f => f.correct); refreshField();
+  target = foods.find(f => f.correct); ensurePoisonGiant(); refreshField();
   paused = true; pointer = null; controls.clear(); directPadAngle = null;
   vacuum.reset(); clearReadingSlow(); touchSteeringAngle = null;
   tuning.sync(config);
@@ -397,10 +410,10 @@ function update(dt) {
   clock += dt;
   const wasPoisoned=poison.active;
   poison.update(clock,config,loss=>{ trail.shrink(loss); syncLength(); damageHits++; lastDamageCause="中毒"; sound.play("damage"); });
-  if (wasPoisoned!==poison.active) updateUI();
+  if (wasPoisoned!==poison.active) { ensurePoisonGiant(); updateUI(); save(); }
   let directTurnRate = null, movementRequest = null;
   if (mode === "auto") {
-    const nearestVirus = autoSeekingVirus && viruses.filter(virus => virus.tier !== "super").reduce((nearest, virus) =>
+    const nearestVirus = autoSeekingVirus && viruses.filter(virus => !virusType(virus).encircle).reduce((nearest, virus) =>
       !nearest || distance(head, virus) < distance(head, nearest) ? virus : nearest, null);
     const destination = nearestVirus || target;
     if (destination) desiredAngle = Math.atan2(destination.y - head.y, destination.x - head.x);
@@ -435,7 +448,7 @@ function update(dt) {
   fieldTimer += dt;
   if (target && distance(head, target) > 650) spawnFoods();
   else if (fieldTimer >= 0.3) refreshField();
-  const npcEaten = virusSnakes.advance(dt, { speed:config.virusSnakeSpeed, player:head, foods:viruses,
+  const npcEaten = virusSnakes.advance(dt, { speed:config.virusSnakeSpeed, player:head, foods:viruses.filter(v => !virusType(v).encircle),
     recycleDistance:Math.max(2400,Math.hypot(viewWidth,viewHeight)/zoom/2+500),
     consume:id=>virusField.consume(id) });
   if (npcEaten.length) {
@@ -481,13 +494,12 @@ function update(dt) {
   enclosureTimer += dt;
   if (enclosureTimer >= Math.min(0.08, config.enclosureGap / Math.max(1, motion.speed))) {
     enclosureTimer = 0;
-    const superType = VIRUS_TYPES.find(type => type.encircle);
-    const bosses = viruses.filter(item => item.tier === "super");
+    const bosses = viruses.filter(item => virusType(item).encircle);
     const enclosure = findEnclosure(trail.points, {
       bodyLength: trail.leadGap + (trail.glyphs.length - 1) * trail.spacing,
       bodyRadius: config.bodySize / 2, headRadius: config.headSize / 2,
       closureGap: config.enclosureGap, virusClearance: 0,
-    }, bosses.map(boss => ({ ...boss, radius: superType.size / 2 })));
+    }, bosses.map(boss => ({ ...boss, radius: virusType(boss).size / 2 })));
     if (enclosure) {
       const ids = new Set(enclosure.enclosed.map(boss => boss.id));
       for (const boss of enclosure.enclosed) {
@@ -505,8 +517,7 @@ function update(dt) {
       updateUI();
     }
   }
-  const superType = VIRUS_TYPES.find(type => type.encircle);
-  const hitSuper = viruses.some(virus => virus.tier === "super" && distance(head, virus) < superType.size / 2 + 20);
+  const hitSuper = viruses.some(virus => virusType(virus).encircle && distance(head, virus) < virusType(virus).size / 2 + 20);
   const hitSnake = virusSnakes.snakes.some(snake => distance(head, snake.head) < 44
     || snake.trail.positions().some(segment => distance(head, segment) < 32));
   if (hitSuper) takeDamage("碰到超级病毒");
@@ -880,17 +891,18 @@ try {
   const response = await fetch("./assets/snake/sprites.json?v=1.0");
   if (!response.ok) throw new Error("素材配置加载失败");
   metadata = await response.json();
-  const variants = VIRUS_TYPES.flatMap(type => VIRUS_COLORS.slice(1).map(color => ({ tier: type.tier, color })));
-  const [headImage, segment, floor, virus, virusSmall, virusMedium, virusSuper, ...variantImages] = await Promise.all([
+  const variants = VIRUS_TYPES.filter(type => type.tier !== "giant").flatMap(type => VIRUS_COLORS.slice(1).map(color => ({ tier: type.tier, color })));
+  const [headImage, segment, floor, virus, virusSmall, virusMedium, virusSuper, virusGiant, ...variantImages] = await Promise.all([
     loadImage("./assets/snake/flystar-head-v1.png?v=0.2.9"), loadImage("./assets/snake/hanzi-star-v2.png?v=0.2.9"), loadImage("./assets/snake/arena-floor-v2.jpg?v=0.2.9"),
     loadImage("./assets/snake/virus-purple-v1.png?v=0.2.9"),
     loadImage("./assets/snake/virus-small-v4.png?v=0.2.9"), loadImage("./assets/snake/virus-medium-v4.png?v=0.2.9"), loadImage("./assets/snake/virus-super-v2.png?v=0.2.9"),
+    loadImage("./assets/snake/virus-giant-v1.png?v=1.0"),
     ...variants.map(({ tier, color }) => loadImage(`./assets/snake/virus-${tier}-${color}-v1.png?v=0.2.9`)),
   ]);
-  const baseViruses = { small: virusSmall, medium: virusMedium, large: virus, super: virusSuper };
+  const baseViruses = { small: virusSmall, medium: virusMedium, large: virus, super: virusSuper, giant: virusGiant };
   const virusPalettes = Object.fromEntries(VIRUS_TYPES.map(type => [type.tier, { violet: baseViruses[type.tier] }]));
   variants.forEach(({ tier, color }, index) => { virusPalettes[tier][color] = variantImages[index]; });
-  assets = { head: headImage, segment, floor, virus, virusSmall, virusMedium, virusSuper, virusPalettes };
+  assets = { head: headImage, segment, floor, virus, virusSmall, virusMedium, virusSuper, virusGiant, virusPalettes };
   poisonedAssets = await loadPoisonSprites(loadImage);
   floorPattern = ctx.createPattern(assets.floor, "repeat");
   resize();

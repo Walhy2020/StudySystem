@@ -65,7 +65,7 @@ assert.equal(mushroom.readUInt32BE(20), 381);
 assert.equal(mushroom[25], 6, "mushroom PNG keeps its RGBA alpha channel");
 assert.ok(html.includes('src/bomb-audio.js?v=1.4'));
 assert.ok(html.includes('./data/characters.js?v=1.0'));
-assert.ok(html.includes('./data/pinyin-readings.js?v=1.0'));
+assert.ok(html.includes('./data/pinyin-readings.js?v=1.1'));
 assert.ok(!html.includes("stable-url.js"));
 assert.ok(!html.includes("learning-backup.js"));
 assert.ok(!html.includes('class="bomb-title"'));

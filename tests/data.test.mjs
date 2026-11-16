@@ -21,3 +21,13 @@ test("多音字表与字库读音合并去重", () => {
   assert.ok(readings.includes("de"));
   assert.equal(readings.length, new Set(readings).size);
 });
+
+
+test("降同时保留降落 jiàng 和投降 xiáng，所有使用方共用且不重复", () => {
+  const word = window.MARIO_WORD_BANK.find(item => item.char === "降");
+  assert.equal(word.id, "0304");
+  assert.equal(word.pinyin, "jiàng");
+  assert.deepEqual(window.MARIO_PINYIN_READINGS.getReadings(word, window.MARIO_WORD_BANK), ["jiàng", "xiáng"]);
+  assert.deepEqual(window.MARIO_PINYIN_READINGS.getReadings({...word, pinyins:["xiáng", "jiàng"]}), ["jiàng", "xiáng"]);
+  assert.equal(window.MARIO_PINYIN_READINGS.label(word, window.MARIO_WORD_BANK), "jiàng / xiáng");
+});

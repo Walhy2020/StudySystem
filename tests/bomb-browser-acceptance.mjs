@@ -209,7 +209,7 @@ const resourcePaths = [
   "src/bomb-bindings.js?v=1.6",
   "src/bomb-audio.js?v=1.4",
   "data/characters.js?v=1.0",
-  "data/pinyin-readings.js?v=1.0",
+  "data/pinyin-readings.js?v=1.1",
   "assets/sprites/enemies-bosses.png",
   "assets/sprites/super-mushroom-v1.png?v=1.0",
   "assets/sprites/bomber-original-v1.png?v=1.0",

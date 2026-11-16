@@ -1,13 +1,21 @@
 # StudySystem cross-device handoff
 
-Last updated: 2026-11-11
+Last updated: 2026-11-16
 Repository: `https://github.com/Walhy2020/StudySystem.git`
 Branch: `main`
 Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.106** (2026-11-11). Snake poisoning spawns one
+System display version: **v1.0.107** (2026-11-16). Add the missing polyphonic
+reading for 降 to the shared reading catalog: jiàng / xiáng (降落 / 投降).
+Keep ID0304, primary jiàng, all1600 definitions and learner records unchanged.
+Hanzi, Bomb and Snake load readings1.1; all11 release notifiers1.0.107, with
+display-entry caches updated. Focused acceptance: tests/hanzi-jiang-browser.mjs
+(Microsoft Edge1440/390, reveal, geometry, reload and storage isolation).
+Refresh only; no build or service restart. Preserve existing screenshot edits.
+
+Previous **v1.0.106** (2026-11-11). Snake poisoning spawns one
 faceless spherical giant using the approved purple/green artwork. Diameter864,
 three times the existing288 super virus. Spawn once per poison cycle, clear of
 the player/body/learning choices and within map bounds; persist position and cycle

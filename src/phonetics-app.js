@@ -1,5 +1,6 @@
 import { PhoneticsEngine } from "./phonetics-engine.js?v=1.2";
-import { APP_VERSION, PHASE } from "./constants.js?v=1.0.107";
+import { confirmStudyDialog } from "./study-dialog.js?v=1.0";
+import { APP_VERSION, PHASE } from "./constants.js?v=1.0.108";
 import { PhoneticsStorage } from "./phonetics-storage.js?v=1.1";
 import { cancelPhoneticSpeech, speakPhoneticExample } from "./phonetics-tts.js?v=1.4";
 import { displaySymbol, exampleEntries } from "./phonetics-display.js?v=1.0";
@@ -253,9 +254,9 @@ window.addEventListener("keydown", (event) => {
   if (!event.repeat) playCurrentExample();
 });
 
-dom.resetPhonetics.addEventListener("click", () => {
-  if (!window.confirm("第一次确认：要重置音标学习状态吗？")) return;
-  if (!window.confirm("第二次确认：此操作只重置音标状态，不影响汉字、主题或炸弹迷宫。确定继续吗？")) return;
+dom.resetPhonetics.addEventListener("click", async () => {
+  if (!await confirmStudyDialog("要重置音标学习状态吗？", { title: "重置音标 · 第一次确认", confirmLabel: "继续" })) return;
+  if (!await confirmStudyDialog("只重置音标，不影响汉字、主题或炸弹迷宫。确定重置吗？", { title: "重置音标 · 最后确认", confirmLabel: "确定重置", danger: true })) return;
   engine = new PhoneticsEngine(storage.reset(), items);
   dom.feedback.textContent = "已重置音标学习状态。";
   render();

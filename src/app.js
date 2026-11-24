@@ -1,5 +1,6 @@
 import { HanziEngine } from "./engine.js";
-import { APP_VERSION, PHASE, REVIEW_INTERVAL_ROUNDS } from "./constants.js?v=1.0.107";
+import { confirmStudyDialog } from "./study-dialog.js?v=1.0";
+import { APP_VERSION, PHASE, REVIEW_INTERVAL_ROUNDS } from "./constants.js?v=1.0.108";
 import { HanziStorage, storageOptionsFromLocation } from "./storage.js?v=1.1";
 import { speakChineseCharacter } from "./tts.js?v=1.1";
 
@@ -249,9 +250,9 @@ window.addEventListener("keydown", (event) => {
   if (!event.repeat) revealPinyin();
 });
 
-dom.resetProgress.addEventListener("click", () => {
-  if (!window.confirm("第一次确认：要重置新系统汉字学习状态吗？")) return;
-  if (!window.confirm("第二次确认：此操作只重置新系统汉字状态，旧系统 legacy 数据不会被触碰。确定继续吗？")) return;
+dom.resetProgress.addEventListener("click", async () => {
+  if (!await confirmStudyDialog("要重置汉字学习状态吗？", { title: "重置汉字 · 第一次确认", confirmLabel: "继续" })) return;
+  if (!await confirmStudyDialog("此操作会清空新系统汉字学习状态。旧系统数据不会被触碰。确定重置吗？", { title: "重置汉字 · 最后确认", confirmLabel: "确定重置", danger: true })) return;
   engine = new HanziEngine(storage.reset(), words);
   feedbackText = "已重置新系统汉字学习状态。";
   render();
@@ -271,7 +272,7 @@ dom.importLegacyProgressFile.addEventListener("change", async () => {
     const preview = storage.previewLegacyPayload(payload, engine.state);
     if (!preview.ok) throw new Error(preview.reason);
     const summary = `旧备份包含 ${preview.legacyCounts.records} 条记录、${preview.legacyCounts.mastered} 个完全认识、${preview.legacyCounts.stars} 颗星。\n\n导入后新系统将有 ${preview.mergedCounts.records} 条记录、${preview.mergedCounts.mastered} 个完全认识、${preview.mergedCounts.stars} 颗星。\n\n只读合并不会清空当前进度，确定导入吗？`;
-    if (!window.confirm(summary)) return;
+    if (!await confirmStudyDialog(summary, { title: "导入旧版汉字进度", confirmLabel: "确定导入" })) return;
     const result = storage.importLegacyPayload(payload, engine.state);
     if (!result.ok) throw new Error(result.reason);
     engine = new HanziEngine(result.state, words);

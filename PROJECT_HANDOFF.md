@@ -1,13 +1,30 @@
 # StudySystem cross-device handoff
 
-Last updated: 2026-11-16
+Last updated: 2026-11-24
 Repository: `https://github.com/Walhy2020/StudySystem.git`
 Branch: `main`
 Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.107** (2026-11-16). Add the missing polyphonic
+System display version: **v1.0.108** (2026-11-24). Replace native browser
+confirmations in Hanzi/Pinyin/IPA/Words reset flows and legacy Hanzi import
+with the shared async DOM overlay src/study-dialog.js / study-dialog.css1.0.
+Preserve two-step reset, default Cancel focus, Escape/R1 cancellation, keyboard
+focus containment and navigation cleanup; keep shared gamepad polling/cursor
+working in fullscreen and the persistent iframe shell. No native top-layer
+dialog and no source-storage changes before final acceptance. Display caches
+and all11 version notifiers updated. Refresh only; no service restart.
+
+Validation: syntax,322 Node tests, knowledge and diff checks pass. Focused real
+Microsoft Edge1440/390 verifies all four reset flows, cancellation at either step,
+no save changes before final confirmation, keyboard/touch, fullscreen and persistent
+iframe-shell operation with the shared cursor (simulated gamepad A/Y/R1).
+No native browser dialogs, resource errors, overflow or clipped modal content;
+screenshots inspected at both sizes. Only isolated test service53228 used;
+production service and existing screenshot edits preserved.
+
+Previous **v1.0.107** (2026-11-16). Add the missing polyphonic
 reading for 降 to the shared reading catalog: jiàng / xiáng (降落 / 投降).
 Keep ID0304, primary jiàng, all1600 definitions and learner records unchanged.
 Hanzi, Bomb and Snake load readings1.1; all11 release notifiers1.0.107, with

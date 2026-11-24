@@ -55,6 +55,8 @@
     "shell": "src/fullscreen-shell.js",
     "cursor": "src/gamepad-cursor.js",
     "version": "src/version-update.js",
+    "study-dialog": "src/study-dialog.js",
+    "study-dialog-style": "study-dialog.css",
     "package": "package.json"
   },
   "modules": [
@@ -68,7 +70,7 @@
     {"id":"phonetics","label":"音标","summary":"48 IPA；每次复习所有非 mastered 项，新学每项认识一次后手动完成。","entry":"phonetics.html","sourceIds":["ipa-engine","ipa-entry","ipa-storage"],"storageKey":"mario-phonetics-v1","tests":["tests/phonetics-engine.test.mjs"],"browserTests":["tests/phonetics-browser-acceptance.mjs"]},
     {"id":"bomb","label":"炸弹迷宫","summary":"独立游戏，每关 5 个不同目标；保留交互控件原生按键。","entry":"bomb-game.html","sourceIds":["bomb-entry"],"storageKey":"mario-bomb-game-progress-v1","tests":["tests/bomb-game.test.mjs"],"browserTests":["tests/bomb-browser-acceptance.mjs"]},
     {"id":"snake","label":"贪吃蛇","summary":"小飞星汉字长龙，只从已学未掌握汉字选至多100字、每批至多五字自动接续，双向题与六边形选项；全屏显示目标、顶部居中长度和星星数量。认字得星星、病毒攒成长，找错掉尾、吸取、同向加速、中毒/解毒；每次中毒额外生成一只直径864的超级大病毒并持久化；参数和动作快捷键可配置，演示不写存档。","entry":"snake-game.html","sourceIds":["snake-entry","snake-learning","snake-trail","snake-style","snake-tuning","snake-config","snake-actions","snake-bindings","snake-origin","snake-render","snake-audio","snake-world","snake-enclosure","snake-enemies","snake-drawing","snake-bursts","snake-virus-types","snake-ecosystem"],"storageKey":"mario-snake-game-progress-v1","tests":["tests/snake-learning.test.mjs","tests/snake-audio.test.mjs","tests/snake-trail.test.mjs","tests/snake-actions.test.mjs","tests/snake-ecosystem.test.mjs","tests/snake-world.test.mjs","tests/snake-giant.test.mjs","tests/snake-v029-rewards.test.mjs","tests/snake-v029-virus-snakes.test.mjs","tests/snake-v029-enclosure.test.mjs","tests/snake-drawing.test.mjs"],"browserTests":["tests/snake-browser.mjs","tests/snake-tuning-browser.mjs","tests/snake-pool-poison-browser.mjs","tests/snake-collision-browser.mjs","tests/snake-render-browser.mjs","tests/snake-giant-browser.mjs"]},
-    {"id":"platform","label":"共享服务与导航","summary":"本地静态服务、常驻宿主、手柄与版本更新；游戏分页以情景式卡片集中展示炸弹迷宫与贪吃蛇；没有学习进度业务 API。","entry":"server.py","sourceIds":["server","shell","cursor","version","package","mouse-guard","games-page"],"storageKey":null,"tests":["tests/fullscreen-shell.test.mjs","tests/version-update.test.mjs","tests/controller-mouse.test.mjs"],"browserTests":["tests/version-update-browser.mjs","tests/games-browser.mjs"]}
+    {"id":"platform","label":"共享服务与导航","summary":"本地静态服务、常驻宿主、手柄与版本更新；游戏分页以情景式卡片集中展示炸弹迷宫与贪吃蛇；没有学习进度业务 API。","entry":"server.py","sourceIds":["server","shell","cursor","version","package","mouse-guard","games-page","study-dialog","study-dialog-style"],"storageKey":null,"tests":["tests/fullscreen-shell.test.mjs","tests/version-update.test.mjs","tests/controller-mouse.test.mjs","tests/study-dialog.test.mjs"],"browserTests":["tests/version-update-browser.mjs","tests/games-browser.mjs","tests/reset-dialog-browser.mjs"]}
   ],
   "rules": [
     {"id":"R01","scope":["hanzi","words"],"statement":"汉字和单词普通复习为当日固定批次，最多 20 项；不能套用 IPA 全量策略。","evidence":[{"sourceId":"constants","anchor":"DAILY_REVIEW_LIMIT = 20"},{"sourceId":"hanzi-engine","anchor":".slice(0, DAILY_REVIEW_LIMIT)"}]},

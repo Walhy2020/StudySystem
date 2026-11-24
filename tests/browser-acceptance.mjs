@@ -214,11 +214,6 @@ const syntheticLegacyBackup = {
     stars: 117,
   },
 };
-let importDialogText = "";
-page.once("dialog", async (dialog) => {
-  importDialogText = dialog.message();
-  await dialog.accept();
-});
 const legacyFileChooser = page.waitForEvent("filechooser");
 await page.click("#importLegacyProgress");
 const fileChooser = await legacyFileChooser;
@@ -227,6 +222,8 @@ await fileChooser.setFiles({
   mimeType: "application/json",
   buffer: Buffer.from(JSON.stringify(syntheticLegacyBackup)),
 });
+const importDialogText = await page.locator("#study-dialog-message").textContent();
+await page.locator("[data-study-dialog-confirm]").click();
 await page.waitForFunction(() => document.querySelector("#feedback").textContent.includes("旧版进度已合并"));
 const importedState = await state();
 assert.equal(Object.keys(importedState.records).length, 2);
@@ -404,8 +401,11 @@ assert.equal(JSON.stringify(await state()), beforeSpeech);
 
 // Two-step reset affects only the isolated new key.
 let dialogs = 0;
-page.on("dialog", async (dialog) => { dialogs += 1; await dialog.accept(); });
+page.on("dialog", async dialog => { await dialog.dismiss(); throw Error("Unexpected native dialog"); });
 await page.click("#resetProgress");
+await page.locator("[data-study-dialog-confirm]").click(); dialogs++;
+await page.getByRole("heading", { name: "重置汉字 · 最后确认" }).waitFor();
+await page.locator("[data-study-dialog-confirm]").click(); dialogs++;
 await page.waitForFunction(() => window.__HANZI_APP__.getState().stars === 0);
 assert.equal(dialogs, 2);
 for (const selector of ["#startDaily", "#startReview"]) {

@@ -1,7 +1,8 @@
 import { PINYIN_ITEMS } from "../data/pinyin.js?v=1.0";
+import { confirmStudyDialog } from "./study-dialog.js?v=1.0";
 import { PinyinEngine } from "./pinyin-engine.js?v=1.1";
 import { PinyinStorage } from "./pinyin-storage.js?v=1.0";
-import { APP_VERSION, PHASE } from "./constants.js?v=1.0.107";
+import { APP_VERSION, PHASE } from "./constants.js?v=1.0.108";
 
 const items = PINYIN_ITEMS;
 const allMasteredMessage = `${items.length} 项拼音均已标为“完全认识”，暂无新拼音或待复习项。`;
@@ -125,9 +126,9 @@ document.addEventListener("click", event => {
   const button = event.target.closest("[data-inline-id]");
   if (button && !button.disabled) act(() => engine.startInlineReview(button.dataset.inlineId, button.dataset.inlineSource));
 });
-dom.resetPinyin.addEventListener("click", () => {
-  if (!confirm("第一次确认：要重置拼音学习状态吗？")) return;
-  if (!confirm("第二次确认：只重置拼音，不影响汉字、音标及其他模块。确定继续吗？")) return;
+dom.resetPinyin.addEventListener("click", async () => {
+  if (!await confirmStudyDialog("要重置拼音学习状态吗？", { title: "重置拼音 · 第一次确认", confirmLabel: "继续" })) return;
+  if (!await confirmStudyDialog("只重置拼音，不影响汉字、音标及其他模块。确定重置吗？", { title: "重置拼音 · 最后确认", confirmLabel: "确定重置", danger: true })) return;
   engine = new PinyinEngine(storage.reset(), items);
   dom.feedback.textContent = "已重置拼音学习状态。";
   render();

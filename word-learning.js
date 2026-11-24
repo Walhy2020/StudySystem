@@ -1,5 +1,6 @@
 import { HanziEngine } from "./src/engine.js";
-import { APP_VERSION, PHASE } from "./src/constants.js?v=1.0.107";
+import { confirmStudyDialog } from "./src/study-dialog.js?v=1.0";
+import { APP_VERSION, PHASE } from "./src/constants.js?v=1.0.108";
 import { THEME_CONFIGS, speakEnglish } from "./theme-learning.js?v=2.27";
 import { buildThemeCatalog, renderArt } from "./src/theme-overview.js?v=1.20";
 import { buildWordLearningItems, WordLearningStorage } from "./src/word-learning-model.js?v=1.0";
@@ -112,8 +113,9 @@ window.addEventListener("keydown", event => {
   if (!engine.currentWord()) return;
   event.preventDefault(); reveal();
 });
-dom.resetWords.addEventListener("click", () => {
-  if (!confirm("第一次确认：重置单词学习状态吗？") || !confirm("第二次确认：只重置单词，不影响汉字、Book1、主题、情景及总复习。确定继续吗？")) return;
+dom.resetWords.addEventListener("click", async () => {
+  if (!await confirmStudyDialog("要重置单词学习状态吗？", { title: "重置单词 · 第一次确认", confirmLabel: "继续" })) return;
+  if (!await confirmStudyDialog("只重置单词，不影响汉字、Book1、主题、情景及总复习。确定重置吗？", { title: "重置单词 · 最后确认", confirmLabel: "确定重置", danger: true })) return;
   engine = new HanziEngine(storage.reset(), items); dom.feedback.textContent = "已重置单词状态。"; render();
 });
 window.addEventListener("studysystem:fullscreen-navigation", () => window.speechSynthesis?.cancel());

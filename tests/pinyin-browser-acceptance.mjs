@@ -78,8 +78,11 @@ try {
     assert.deepEqual((await read()).dailyReviewDoneIds, resume.dailyReviewDoneIds);
     await dispatch("startReview");
     assert.equal((await read()).dailyReviewIds.includes(starred), false);
-    page.on("dialog", dialog => dialog.accept());
+    page.on("dialog", async dialog => { await dialog.dismiss(); throw Error("Unexpected native dialog"); });
     await page.locator("#resetPinyin").click();
+    await page.locator("[data-study-dialog-confirm]").click();
+    await page.getByRole("heading", { name: "重置拼音 · 最后确认" }).waitFor();
+    await page.locator("[data-study-dialog-confirm]").click();
     assert.equal((await read()).masteredIds.length, 0);
     await page.locator("#startDaily").click();
     const seen = new Set();

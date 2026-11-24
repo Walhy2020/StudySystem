@@ -499,8 +499,11 @@ assert.equal(await page.locator("#feedback").isVisible(), false);
 for (const selector of ["#startDaily", "#startReview"]) assert.equal(await page.locator(selector).isVisible(), true);
 
 let dialogs = 0;
-page.on("dialog", async (dialog) => { dialogs += 1; await dialog.accept(); });
+page.on("dialog", async dialog => { await dialog.dismiss(); throw Error("Unexpected native dialog"); });
 await page.click("#resetPhonetics");
+await page.locator("[data-study-dialog-confirm]").click(); dialogs++;
+await page.getByRole("heading", { name: "重置音标 · 最后确认" }).waitFor();
+await page.locator("[data-study-dialog-confirm]").click(); dialogs++;
 assert.equal(dialogs, 2);
 const isolation = await page.evaluate((keys) => ({
   values: Object.fromEntries(keys.map((key) => [key, localStorage.getItem(key)])),

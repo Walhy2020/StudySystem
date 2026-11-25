@@ -1,0 +1,15 @@
+.alphabet-word-card { display: grid; grid-template-columns: 1fr; justify-items: center; min-height: 310px; }
+.alphabet-word-card .hanzi-panel { width: min(100%, 440px); }
+.alphabet-symbol { width: 100%; height: 300px; cursor: pointer; }
+.alphabet-symbol .hanzi-content { white-space: nowrap; line-height: 1; font-family: "Arial", "Calibri", sans-serif; }
+.alphabet-symbol .phonetic-state-label { font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif; }
+.alphabet-view .phonetic-card-category { max-width: calc(100% - 70px); }
+.alphabet-view .voice-row { justify-content: center; }
+.alphabet-view .idle-message { margin: 8px 0 0; min-height: 24px; text-align: center; color: var(--muted); }
+.alphabet-view .alphabet-feedback { margin: 12px 0 0; padding: 10px 14px; border-radius: 12px; background: rgba(255, 255, 255, 0.85); color: var(--ink); line-height: 1.6; text-align: center; overflow-wrap: anywhere; }
+.alphabet-list .word-chip { min-width: 4.6rem; font-size: clamp(1.8rem, 2.8vw, 2.5rem); }
+@media (max-width: 760px) {
+  .alphabet-word-card { min-height: 0; }
+  .alphabet-word-card .hanzi-panel { width: min(100%, 320px); }
+  .alphabet-symbol { width: 100%; height: 240px; }
+}

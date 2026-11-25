@@ -1,6 +1,6 @@
 import { PhoneticsEngine } from "./phonetics-engine.js?v=1.2";
 import { confirmStudyDialog } from "./study-dialog.js?v=1.0";
-import { APP_VERSION, PHASE } from "./constants.js?v=1.0.108";
+import { APP_VERSION, PHASE } from "./constants.js?v=1.0.109";
 import { PhoneticsStorage } from "./phonetics-storage.js?v=1.1";
 import { cancelPhoneticSpeech, speakPhoneticExample } from "./phonetics-tts.js?v=1.4";
 import { displaySymbol, exampleEntries } from "./phonetics-display.js?v=1.0";

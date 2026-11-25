@@ -1,5 +1,5 @@
 (function () {
-  const PAGES = ["index.html", "pinyin.html", "word-learning.html", "book-learning.html", "theme-learning.html",
+  const PAGES = ["index.html", "pinyin.html", "alphabet.html", "word-learning.html", "book-learning.html", "theme-learning.html",
     "scenario-learning.html", "review-learning.html", "phonetics.html", "games.html", "bomb-game.html", "snake-game.html"];
   const DEADZONE = 0.25;
   const SPEED = 650;

@@ -1,13 +1,28 @@
 # StudySystem cross-device handoff
 
-Last updated: 2026-11-24
+Last updated: 2026-11-25
 Repository: `https://github.com/Walhy2020/StudySystem.git`
 Branch: `main`
 Baseline before this handoff document: `3a6815d`
 
 ## Company-computer quick start
 
-System display version: **v1.0.108** (2026-11-24). Replace native browser
+System display version: **v1.0.109** (2026-11-25). Add alphabet.html before IPA in learning/selection navigation.
+26 stable alphabet-a through alphabet-z records pair uppercase/lowercase; directly reuse PhoneticsEngine.
+Three new items, one correct each, manual finish; full non-mastered review0–26, wrong-item3 repairs,
+immediate star exclusion and inline return. Storage is mario-alphabet-v1 only, no migration.
+Letter speech reuses the English helper. Update persistent shell/cursor allowlists, all12 version notifiers
+and knowledge map. Refresh only; production service untouched. Existing reset simplifications and screenshots
+remain uncommitted user work.
+
+Validation: syntax and327 Node tests pass; focused real Microsoft Edge1440/390 covers all26 letter pairs,
+new learning/manual finish, inline return,26-item review, wrong repair, star exclusion, reload, all-mastered
+feedback, cancel/Escape/reset, shell navigation and unchanged foreign saves. Letter speech requests are mocked;
+no claim of acoustic or physical-controller validation. Screenshots inspected; no resource failures or overflow.
+Only isolated test server53229 used. The committed evidence manifest follows staged sources; the local working
+manifest retains the user's existing reset simplifications so local knowledge checks remain accurate.
+
+Previous **v1.0.108** (2026-11-24). Replace native browser
 confirmations in Hanzi/Pinyin/IPA/Words reset flows and legacy Hanzi import
 with the shared async DOM overlay src/study-dialog.js / study-dialog.css1.0.
 Preserve two-step reset, default Cancel focus, Escape/R1 cancellation, keyboard

@@ -35,7 +35,7 @@ test("context keeps global boundaries and related word-library rules without lea
 test("unknown modules are not guessed and omitted scope returns the full map", async () => {
   const bundle = await loadVerifiedBundle();
   assert.throws(() => buildContext(bundle, ["复习"]), /Unknown module/);
-  assert.equal(buildContext(bundle).modules.length, 11);
+  assert.equal(buildContext(bundle).modules.length, 12);
   const snake = buildContext(bundle, ["snake"]);
   assert.equal(snake.modules[0].storageKey, "mario-snake-game-progress-v1");
   assert.ok(snake.rules.some(rule => rule.id === "R21"));

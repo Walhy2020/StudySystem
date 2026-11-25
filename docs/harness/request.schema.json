@@ -10,7 +10,7 @@
     "sourceVersion": {"type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$"},
     "request": {"type": "string", "minLength": 1},
     "taskType": {"enum": ["query", "bugfix", "content", "feature", "policy_change", "progress"]},
-    "modules": {"type": "array", "uniqueItems": true, "items": {"enum": ["pinyin", "hanzi", "words", "book1", "theme", "scenario", "review", "phonetics", "bomb", "snake", "platform"]}},
+    "modules": {"type": "array", "uniqueItems": true, "items": {"enum": ["pinyin", "alphabet", "hanzi", "words", "book1", "theme", "scenario", "review", "phonetics", "bomb", "snake", "platform"]}},
     "decision": {"enum": ["answer", "clarify", "implementation_review", "policy_conflict", "capability_gap"]},
     "facts": {
       "type": "array",

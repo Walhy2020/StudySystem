@@ -5,8 +5,8 @@
 项目是由 `server.py` 提供的免构建本地网站，前端使用原生 JavaScript、HTML 和 CSS。
 以当前 package.json、源代码和本目录指纹为准，旧交接记录用于解释演变，不用旧数字覆盖新代码。
 
-学习页导航顺序：拼音 → 汉字 → 单词 → Book1 → 主题 → 情景 → 总复习 → 音标。
-炸弹迷宫、贪吃蛇是独立游戏入口，共十个页面使用版本更新脚本。
+学习页导航顺序：拼音 → 汉字 → 单词 → Book1 → 主题 → 情景 → 总复习 → 字母 → 音标 → 游戏。
+炸弹迷宫、贪吃蛇从游戏页进入，共十二个页面使用版本更新脚本。
 
 | 模块 ID | 页面与核心实现 | 业务边界 | 对应验证 |
 | --- | --- | --- | --- |
@@ -17,6 +17,7 @@
 | theme | theme-learning.html；theme-learning.js、src/theme-overview.js | 主题内容、学习与练习；显式学习证据参与已学词聚合 | tests/theme-learning.test.mjs；tests/theme-browser-acceptance.mjs |
 | scenario | scenario-learning.html；scenario-learning.js、data/scenarios.js | 每个情景单独续学；对话完成和单词学会是不同记录 | tests/scenario-learning.test.mjs；tests/learning-reveal-browser.mjs |
 | review | review-learning.html；review-learning.js、src/total-word-library.js、src/review-progress.js | 仅复习三个源模块实际学过的词；保存本轮及记忆标记 | tests/total-word-library.test.mjs；tests/review-progress.test.mjs；tests/review-progress-browser.mjs |
+| alphabet | alphabet.html；data/alphabet.js、src/alphabet-app.js、src/alphabet-storage.js | 26字母大小写配对；直接复用音标引擎，复习全部未掌握项 | tests/alphabet.test.mjs；tests/alphabet-browser.mjs |
 | phonetics | phonetics.html；src/phonetics-engine.js、src/phonetics-storage.js | 48 IPA；每次复习全部未 mastered 项；新学每项认识一次后手动完成 | tests/phonetics-engine.test.mjs；tests/phonetics-browser-acceptance.mjs |
 | bomb | bomb-game.html；bomb-game.js、src/bomb-gamepad.js | 独立游戏进度；每关五个不同目标字；保留控件原生键盘行为 | tests/bomb-game.test.mjs；tests/bomb-browser-acceptance.mjs |
 | snake | snake-game.html；snake-game.js、src/snake-learning.js、src/snake-ecosystem.js、src/snake-actions.js、src/snake-config.js、src/snake-tuning.js、src/snake-bindings.js | 小飞星汉字长龙；100字池、每批五字自动接续、双向题与同音排除；六边形选项、全屏仅目标；找错掉尾、吸取、同向加速及定时中毒/星星解毒，参数与快捷键可配置；演示不写正式进度 | tests/snake-learning.test.mjs；tests/snake-actions.test.mjs；tests/snake-browser.mjs；tests/snake-tuning-browser.mjs |
@@ -36,7 +37,7 @@ Book1 的 learnedIds/masteredIds 或有答题记录的单词、主题 learned/le
 
 ## 状态与界面语义
 
-- 汉字/单词的 ordinary review 上限是 20；拼音/音标全非 mastered 复习分别为 0–63、0–48。
+- 汉字/单词的 ordinary review 上限是 20；拼音/音标/字母全非 mastered 复习分别为 0–63、0–48、0–26。
 - 单词页当前中文在左侧图片下始终可见；英文与 IPA 经 Show/Space/Y 揭示；换词/刷新重新隐藏英文与 IPA。
 - 情景练习先隐藏英文和 IPA，第一次点击显示 IPA，第二次显示英文与 IPA。
   同句朗读保留揭示状态；换句、重播、切换阶段、刷新重置；对话播放由用户发起。
@@ -55,6 +56,7 @@ Book1 的 learnedIds/masteredIds 或有答题记录的单词、主题 learned/le
 | theme | mario-theme-learned-v1 | 总词库按只读方式聚合源记录 |
 | scenario | mario-scenario-learning-v1 | 只读统一已学词库，learnedWords 仍写本 key |
 | review | mario-total-review-v1 | 只读 Book1、主题、情景三个来源 |
+| alphabet | mario-alphabet-v1 | 独立状态，不读写其他模块进度 |
 | phonetics | mario-phonetics-v1 | 独立状态 |
 | bomb | mario-bomb-game-progress-v1 | 读取汉字学习池所需证据 |
 | snake | mario-snake-game-progress-v1 | 只读汉字证据，主key无证据时只读旧汉字；不读取或写入炸弹进度 |
@@ -73,7 +75,7 @@ Book1 的 learnedIds/masteredIds 或有答题记录的单词、主题 learned/le
 
 代码交付运行 `pnpm run check`、`pnpm test`、`git diff --check`；界面变更只跑相关真实 Edge
 脚本，检查桌面/390px、资源 HTTP200、几何边界、键盘/触摸。模拟语音/手柄不能声称物理硬件认证。
-每次交付递增显示/包版本，十页更新脚本与版本进口缓存联动。保护已有工作；按仓库长期授权提交推送。
+每次交付递增显示/包版本，十二页更新脚本与版本进口缓存联动。保护已有工作；按仓库长期授权提交推送。
 图片在对话中用 imagegen 工作流制作，中间稿 output/，批准资源 assets/；私有旧草稿保留并忽略。
 
 ## 首批候选技能（尚未注册）

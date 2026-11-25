@@ -1,6 +1,6 @@
 import { HanziEngine } from "./engine.js";
 import { confirmStudyDialog } from "./study-dialog.js?v=1.0";
-import { APP_VERSION, PHASE, REVIEW_INTERVAL_ROUNDS } from "./constants.js?v=1.0.108";
+import { APP_VERSION, PHASE, REVIEW_INTERVAL_ROUNDS } from "./constants.js?v=1.0.109";
 import { HanziStorage, storageOptionsFromLocation } from "./storage.js?v=1.1";
 import { speakChineseCharacter } from "./tts.js?v=1.1";
 
